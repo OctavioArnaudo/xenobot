@@ -16,7 +16,7 @@ public class Pickup : MonoBehaviour
     void Start()
     {
         // Remember the original position of the GameObject
-        startPosition = transform.position;
+        startPosition = transform.localPosition;
     }
 
     void Update()
@@ -27,7 +27,7 @@ public class Pickup : MonoBehaviour
         // Create a bobbing motion up and down
         timer += Time.deltaTime * bobbingSpeed;
         float newY = startPosition.y + Mathf.Sin(timer) * bobbingAmount;
-        transform.position = new Vector3(transform.position.x, newY, transform.position.z);
+        transform.localPosition = startPosition + new Vector3(0, newY, 0);
     }
 
     void OnTriggerEnter(Collider other)
