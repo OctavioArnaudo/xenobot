@@ -5,23 +5,25 @@ TagManager:
   serializedVersion: 3
   tags:
   - CinemachineTarget
-  - Hidden_Area_1
-  - Hidden_Area_2
-  - Hidden_Area_3
-  - Cube_Spawn_Point_1
-  - Cube_Spawn_Point_2
+  - Collectible
+  - Interactable
+  - Enemy
+  - Item_Spawn_Point
+  - Enemy_Spawn_Point
+  - Zone_Trigger
+  - QuestTarget
   layers:
   - Default
   - TransparentFX
   - Ignore Raycast
-  - 
+  - Player
   - Water
   - UI
-  - 
-  - 
-  - 
-  - 
-  - 
+  - Ground
+  - Enemy
+  - Projectile
+  - Interactable
+  - Collectible
   - 
   - 
   - 
