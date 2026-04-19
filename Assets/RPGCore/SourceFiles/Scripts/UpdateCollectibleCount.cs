@@ -1,20 +1,34 @@
-using UnityEngine;
+﻿using UnityEngine;
 using TMPro;
-using System; // Required for Type handling
 
 public class UpdateCollectibleCount : MonoBehaviour
 {
-    private TextMeshProUGUI collectibleText; // Reference to the TextMeshProUGUI component
+    [Header("UI")]
+    private TextMeshProUGUI collectibleText;
+
+    [Header("Configuración")]
+    [Tooltip("Debe coincidir con el nombre exacto del Layer 'Collectible' en Project Settings")]
+    [SerializeField] private string collectibleLayerName = "Collectible";
+
+    private int _layerMask;
 
     void Start()
     {
         collectibleText = GetComponent<TextMeshProUGUI>();
         if (collectibleText == null)
         {
-            Debug.LogError("UpdateCollectibleCount script requires a TextMeshProUGUI component on the same GameObject.");
+            Debug.LogError("[UpdateCollectibleCount] Requiere un componente TextMeshProUGUI en el mismo GameObject.");
             return;
         }
-        UpdateCollectibleDisplay(); // Initial update on start
+
+        _layerMask = LayerMask.NameToLayer(collectibleLayerName);
+        if (_layerMask == -1)
+        {
+            Debug.LogError($"[UpdateCollectibleCount] Layer '{collectibleLayerName}' no existe. Crearlo en Project Settings → Tags and Layers.");
+            return;
+        }
+
+        UpdateCollectibleDisplay();
     }
 
     void Update()
@@ -24,23 +38,14 @@ public class UpdateCollectibleCount : MonoBehaviour
 
     private void UpdateCollectibleDisplay()
     {
-        int totalCollectibles = 0;
-
-        // Check and count objects of type Collectible
-        Type collectibleType = Type.GetType("Pickup");
-        if (collectibleType != null)
+        // Busca todos los Pickup activos en la escena por layer, no por tipo
+        Pickup[] activos = FindObjectsByType<Pickup>(FindObjectsSortMode.None);
+        int total = 0;
+        foreach (var p in activos)
         {
-            totalCollectibles += UnityEngine.Object.FindObjectsByType(collectibleType, FindObjectsSortMode.None).Length;
+            if (p.gameObject.layer == _layerMask)
+                total++;
         }
-
-        // Optionally, check and count objects of type Collectible2D as well if needed
-        Type collectible2DType = Type.GetType("Collectible2D");
-        if (collectible2DType != null)
-        {
-            totalCollectibles += UnityEngine.Object.FindObjectsByType(collectible2DType, FindObjectsSortMode.None).Length;
-        }
-
-        // Update the collectible count display
-        collectibleText.text = $"Collectibles remaining: {totalCollectibles}";
+        collectibleText.text = $"Collectibles restantes: {total}";
     }
 }
