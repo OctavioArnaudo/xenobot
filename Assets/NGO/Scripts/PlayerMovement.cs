@@ -1,5 +1,5 @@
 using UnityEngine;
-#if NEW_INPUT_SYSTEM_INSTALLED
+#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
@@ -17,7 +17,7 @@ public class PlayerMovement : ClientAuthoritativeMovement
 
         var multiplier = Speed * Time.deltaTime;
 
-#if ENABLE_INPUT_SYSTEM && NEW_INPUT_SYSTEM_INSTALLED
+#if ENABLE_INPUT_SYSTEM
             // New input system backends are enabled.
             if (Keyboard.current.aKey.isPressed)
             {

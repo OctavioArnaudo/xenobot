@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 6220664906547028579}
   - component: {fileID: 3807785183860687228}
   - component: {fileID: 3001321313970326406}
-  - component: {fileID: 6025240799607523195}
+  - component: {fileID: 3236104514401915147}
   - component: {fileID: 1538933143531783196}
   m_Layer: 5
   m_Name: UiPrefab
@@ -86,7 +86,7 @@ MonoBehaviour:
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
   m_PresetInfoIsWorld: 0
---- !u!114 &6025240799607523195
+--- !u!114 &3236104514401915147
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -95,11 +95,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 342950760098356532}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 59fb0945f3d4046d383e99d25802608f, type: 3}
+  m_Script: {fileID: 11500000, guid: 8d4070b7557148c4f9a5fb44868efb0a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
-  m_StartHostButton: {fileID: 0}
-  m_StartClientButton: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::MultiplayerCanvas
+  m_StartHostButton: {fileID: 8989694397424136947}
+  m_StartClientButton: {fileID: 2580068364617354058}
 --- !u!114 &1538933143531783196
 MonoBehaviour:
   m_ObjectHideFlags: 0
