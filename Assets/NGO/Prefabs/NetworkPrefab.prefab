@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 1564757456977984531}
   - component: {fileID: 612433640029583919}
   - component: {fileID: 4945708785422434572}
+  - component: {fileID: 5223759233008051733}
   m_Layer: 0
   m_Name: NetworkPrefab
   m_TagString: Untagged
@@ -52,7 +53,7 @@ MonoBehaviour:
     PlayerPrefab: {fileID: 0}
     Prefabs:
       NetworkPrefabsLists:
-      - {fileID: 11400000, guid: 431cf94c0aa4aee40a6b4f3354973f65, type: 2}
+      - {fileID: 11400000, guid: f401cd0cb3b68c74ebe4fd2415fd9d7e, type: 2}
     TickRate: 30
     ClientConnectionBufferTimeout: 10
     ConnectionApproval: 0
@@ -107,3 +108,15 @@ MonoBehaviour:
     PacketDelayMS: 0
     PacketJitterMS: 0
     PacketDropRate: 0
+--- !u!114 &5223759233008051733
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3598816697503386199}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bf1c5656a2e09594da87ef447d7d9edd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkStarter

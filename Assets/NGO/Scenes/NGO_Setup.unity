@@ -277,11 +277,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1018050912 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 342950760098356532, guid: 958af09261cf5a546a90964a68171570, type: 3}
-  m_PrefabInstance: {fileID: 1649261187}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1231522469
 GameObject:
   m_ObjectHideFlags: 0
@@ -572,10 +567,6 @@ PrefabInstance:
     - target: {fileID: 4596349905691094862, guid: c07d3688c972ce34fb40f2c637aa9410, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 2741282155
-      objectReference: {fileID: 0}
-    - target: {fileID: 4596349905691094862, guid: c07d3688c972ce34fb40f2c637aa9410, type: 3}
-      propertyPath: InScenePlacedSourceGlobalObjectIdHash
-      value: 1892064012
       objectReference: {fileID: 0}
     - target: {fileID: 8328586550946148862, guid: c07d3688c972ce34fb40f2c637aa9410, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1047,10 +1038,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: UiPrefab
       objectReference: {fileID: 0}
-    - target: {fileID: 342950760098356532, guid: df9a1ff0d1b7e5942be7f0c9fe848134, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 4977256079953864656, guid: df9a1ff0d1b7e5942be7f0c9fe848134, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -1075,18 +1062,6 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6025240799607523195, guid: df9a1ff0d1b7e5942be7f0c9fe848134, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6025240799607523195, guid: df9a1ff0d1b7e5942be7f0c9fe848134, type: 3}
-      propertyPath: m_StartHostButton
-      value: 
-      objectReference: {fileID: 5104408245396606144}
-    - target: {fileID: 6025240799607523195, guid: df9a1ff0d1b7e5942be7f0c9fe848134, type: 3}
-      propertyPath: m_StartClientButton
-      value: 
-      objectReference: {fileID: 8086180068383495376}
     - target: {fileID: 6220664906547028579, guid: df9a1ff0d1b7e5942be7f0c9fe848134, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -1653,10 +1628,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 612433640029583919, guid: eb1edb32643969c49b906fa5dab24940, type: 3}
-      propertyPath: NetworkConfig.PlayerPrefab
-      value: 
-      objectReference: {fileID: 1018050912}
     - target: {fileID: 1564757456977984531, guid: eb1edb32643969c49b906fa5dab24940, type: 3}
       propertyPath: m_LocalPosition.x
       value: 1828.4093
