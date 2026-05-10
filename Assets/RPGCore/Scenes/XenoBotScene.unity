@@ -1466,11 +1466,11 @@ MonoBehaviour:
   toggleKey: 105
   panelWidth: 1200
   panelHeight: 800
-  columns: 6
-  cellSize: 110
-  padding: 14
-  titleH: 60
-  qtyFontSize: 22
+  columns: 3
+  cellSize: 250
+  padding: 100
+  titleH: 80
+  qtyFontSize: 50
 --- !u!1001 &1917061504
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1624,8 +1624,9 @@ GameObject:
   - component: {fileID: 2466824019139306043}
   - component: {fileID: 3839766727176158297}
   - component: {fileID: 6828186194694871595}
+  - component: {fileID: 8478943806253843061}
   m_Layer: 6
-  m_Name: Obstaculos Terreno1
+  m_Name: Mascara
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1887,7 +1888,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 85419109792143243}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: -7449918442484362642, guid: 9df1f45507e0c4b4e8c780dbf67df0d7, type: 3}
 --- !u!1 &2765075023302999041
 GameObject:
   m_ObjectHideFlags: 0
@@ -2210,12 +2211,12 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 1.4464384, y: 2.237111, z: 1.4995683}
+  m_Center: {x: -0.081820965, y: 5.862262, z: -0.028469414}
 --- !u!4 &7093868400989982257
 Transform:
   m_ObjectHideFlags: 0
@@ -2417,12 +2418,29 @@ Transform:
   m_GameObject: {fileID: 85419109792143243}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.22539413, z: -0, w: 0.97426766}
-  m_LocalPosition: {x: -6.88, y: 5.5, z: -7.29}
+  m_LocalPosition: {x: 7.48, y: 1.8, z: -9.56}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 26.052, z: 0}
+--- !u!114 &8478943806253843061
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 85419109792143243}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55fcea8a4058c4d1aa6ca8fea4168f51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Pickup
+  item: {fileID: 11400000, guid: 304751ad4debcca4c830dd929d766af7, type: 2}
+  particleEffectPrefab: {fileID: 0}
+  rotationSpeed: 100
+  bobbingAmount: 0.1
+  bobbingSpeed: 1
 --- !u!1 &8642888237890314047
 GameObject:
   m_ObjectHideFlags: 0
