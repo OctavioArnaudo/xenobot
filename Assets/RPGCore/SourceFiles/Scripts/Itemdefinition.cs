@@ -26,8 +26,9 @@ public class ItemDefinition : ScriptableObject
 
 public enum ItemType
 {
-    Collectible,    // estrellas, monedas — solo se recolectan
+    Collectible,    // estrellas — solo se recolectan
     Key,            // llaves — desbloquean algo
     Consumable,     // potions — se usan y desaparecen
     Equipment,      // se equipa/desequipa
+    Currency,       // dinero — stackable, acumula sin límite visual
 }

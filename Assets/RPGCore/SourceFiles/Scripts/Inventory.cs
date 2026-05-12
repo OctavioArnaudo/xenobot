@@ -35,6 +35,12 @@ public class Inventory : MonoBehaviour
     int _dropdownIndex = -1;
     bool _open;
 
+    // Animación apertura/cierre
+    [Header("Animacion")]
+    public float animSpeed = 8f;   // velocidad de la transición
+    float _animT = 0f;             // 0 = cerrado, 1 = abierto
+    bool _isClosing = false;       // cerrando pero aún animando
+
     // Drag
     int _dragIndex = -1;
     Vector2 _dragPos;
@@ -121,10 +127,9 @@ public class Inventory : MonoBehaviour
             {
                 var sr = go.AddComponent<SpriteRenderer>();
                 sr.sprite = def.icon;
-                // Tamaño fijo en world-units sin importar resolución del sprite
                 float ppu = def.icon.pixelsPerUnit > 0 ? def.icon.pixelsPerUnit : 100f;
                 float maxSide = Mathf.Max(def.icon.rect.width, def.icon.rect.height) / ppu;
-                float desiredSize = 0.6f; // metros en mundo; ajustar aquí si hace falta
+                float desiredSize = 0.6f;
                 go.transform.localScale = Vector3.one * ((maxSide > 0f) ? desiredSize / maxSide : 1f);
             }
             var pickup = go.AddComponent<Pickup>();
@@ -135,17 +140,17 @@ public class Inventory : MonoBehaviour
 
     void SetOpen(bool open)
     {
-        _open = open;
-        if (_playerInput != null) _playerInput.enabled = !open;
         if (open)
         {
+            _open = true;
+            _isClosing = false;
+            if (_playerInput != null) _playerInput.enabled = false;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
         else
         {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            _isClosing = true;   // la animación cierra; OnGUI sigue activo hasta _animT==0
             _selectedIndex = -1;
             _dropdownIndex = -1;
             _dragging = false;
@@ -155,8 +160,21 @@ public class Inventory : MonoBehaviour
 
     void Update()
     {
+        bool wantsOpen = _open && !_isClosing;
+        _animT = Mathf.MoveTowards(_animT, wantsOpen ? 1f : 0f, Time.deltaTime * animSpeed);
+
+        // Cuando la animación de cierre termina, apagar todo
+        if (_isClosing && _animT <= 0f)
+        {
+            _isClosing = false;
+            _open = false;
+            if (_playerInput != null) _playerInput.enabled = true;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+
         if (Input.GetKeyDown(toggleKey) || Input.GetKeyDown(KeyCode.Tab))
-            SetOpen(!_open);
+            SetOpen(!(_open && !_isClosing));
     }
 
     float PanelX() => (Screen.width - panelWidth) / 2f;
@@ -260,10 +278,8 @@ public class Inventory : MonoBehaviour
 
         if (!ghost)
         {
-            // Cantidad: esquina inferior derecha
             if (def.isStackable)
                 GUI.Label(new Rect(cell.x + 2, cell.y + 2, size - 6, size - 6), "x" + slot.qty, _qtySty);
-            // Badge equipado: esquina superior izquierda, no se pisa con qty
             if (equipped)
             {
                 var badgeSty = new GUIStyle(_badgeSty);
@@ -295,9 +311,21 @@ public class Inventory : MonoBehaviour
 
     void OnGUI()
     {
-        if (!_open) return;
+        if (!_open && !_isClosing) return;
         EnsureStyles();
         EnsureTextures();
+
+        // Curva suave easeInOut
+        float t = Mathf.SmoothStep(0f, 1f, _animT);
+        float scale = Mathf.Lerp(0.85f, 1f, t);
+        float alpha = t;
+
+        // Matriz de escala centrada en pantalla
+        Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+        Matrix4x4 prevMatrix = GUI.matrix;
+        GUIUtility.ScaleAroundPivot(Vector2.one * scale, screenCenter);
+
+        GUI.color = new Color(1f, 1f, 1f, alpha);
 
         Event e = Event.current;
         Rect panel = PanelRect();
@@ -308,7 +336,6 @@ public class Inventory : MonoBehaviour
         _dragOutside = _dragging && !panel.Contains(mp);
 
         // 1 — Panel
-        GUI.color = Color.white;
         GUI.DrawTexture(panel, _texPanel);
         GUI.Label(new Rect(x0, y0 + 8, panelWidth, titleH), "INVENTARIO", _titleSty);
 
@@ -351,6 +378,10 @@ public class Inventory : MonoBehaviour
 
         // 6 — Ghost flotante
         DrawDragGhost();
+
+        // Restaurar matriz y color
+        GUI.matrix = prevMatrix;
+        GUI.color = Color.white;
 
         // 7 — Mouse Down
         if (e.type == EventType.MouseDown && e.button == 0)
