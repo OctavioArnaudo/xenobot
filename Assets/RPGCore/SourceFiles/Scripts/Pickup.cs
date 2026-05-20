@@ -2,37 +2,48 @@ using UnityEngine;
 
 public class Pickup : MonoBehaviour
 {
-    [Header("Ítem")]
-    public ItemDefinition item;
-
     [Header("Effects")]
-    public GameObject particleEffectPrefab;
+    public GameObject particleEffectPrefab; // Assign particle system prefab in Inspector
 
-    [Header("Motion")]
-    public float rotationSpeed = 100f;
-    public float bobbingAmount = 0.1f;
-    public float bobbingSpeed = 1f;
+    [Header("Motion Settings")]
+    public float rotationSpeed = 100f; // Rotation speed in degrees per second
+    public float bobbingAmount = 0.1f; // Amplitude of bobbing motion
+    public float bobbingSpeed = 1f; // Speed of bobbing motion
 
-    Vector3 _startPos;
-    float _timer;
-    bool _taken;
+    private Vector3 startPosition;
+    private float timer;
 
-    void Start() => _startPos = transform.localPosition;
+    void Start()
+    {
+        // Remember the original position of the GameObject
+        startPosition = transform.localPosition;
+    }
 
     void Update()
     {
+        // Rotate the object around its up axis
         transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.World);
-        _timer += Time.deltaTime * bobbingSpeed;
-        transform.localPosition = _startPos + new Vector3(0, Mathf.Sin(_timer) * bobbingAmount, 0);
+
+        // Create a bobbing motion up and down
+        timer += Time.deltaTime * bobbingSpeed;
+        float newY = startPosition.y + Mathf.Sin(timer) * bobbingAmount;
+        transform.localPosition = startPosition + new Vector3(0, newY, 0);
     }
 
     void OnTriggerEnter(Collider other)
     {
-        if (_taken || !other.CompareTag("Player")) return;
-        _taken = true;
-        Inventory.Add(item);
-        if (particleEffectPrefab != null)
-            Instantiate(particleEffectPrefab, transform.position, Quaternion.identity);
-        Destroy(gameObject);
+        // Check if the colliding object has the "Player" tag
+        if (other.CompareTag("Player"))
+        {
+            // Instantiate the particle effect
+            if (particleEffectPrefab != null)
+            {
+                Instantiate(particleEffectPrefab, transform.position, Quaternion.identity);
+            }
+
+            // Destroy the star
+            Destroy(gameObject);
+
+        }
     }
 }
