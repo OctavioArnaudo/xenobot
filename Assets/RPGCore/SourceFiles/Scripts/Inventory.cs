@@ -23,8 +23,8 @@ public class Inventory : MonoBehaviour
     int CellSizeSel => Mathf.RoundToInt(cellSize * 1.25f);
 
     [Header("Drop")]
-    public GameObject droppedItemPrefab;  // Prefab con Pickup (opcional)
     public float dropDistance = 2.5f;
+    public float droppedWorldSize = 0.4f; // Tamaño visual del item dropeado en unidades de mundo
 
     // Datos
     readonly Dictionary<string, (ItemDefinition def, int qty)> _bag = new();
@@ -105,27 +105,34 @@ public class Inventory : MonoBehaviour
             ? playerGo.transform.position + playerGo.transform.forward * dropDistance + Vector3.up * 0.5f
             : Vector3.zero;
 
-        if (droppedItemPrefab != null)
+        // Always build the dropped object dynamically — no prefab needed.
+        // Scale is computed from the sprite's PPU so every item looks the same size in the world.
+        var go = new GameObject("Dropped_" + def.itemId);
+        go.transform.position = pos;
+
+        if (def.icon != null)
         {
-            var go = Instantiate(droppedItemPrefab, pos, Quaternion.identity);
-            var p = go.GetComponent<Pickup>();
-            if (p != null) p.item = def;
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = def.icon;
+
+            // pixels-per-unit tells us how many pixels equal 1 Unity unit.
+            // sprite.rect.width / ppu  = sprite's native world width.
+            // We want it to appear as droppedWorldSize units wide, so:
+            //   scale = droppedWorldSize / nativeWidth
+            float ppu = def.icon.pixelsPerUnit > 0 ? def.icon.pixelsPerUnit : 100f;
+            float nativeWidth = def.icon.rect.width / ppu;
+            float scale = nativeWidth > 0 ? droppedWorldSize / nativeWidth : droppedWorldSize;
+            go.transform.localScale = Vector3.one * scale;
         }
-        else
-        {
-            var go = new GameObject("Dropped_" + def.itemId);
-            go.transform.position = pos;
-            var col = go.AddComponent<SphereCollider>();
-            col.isTrigger = true; col.radius = 0.5f;
-            if (def.icon != null)
-            {
-                var sr = go.AddComponent<SpriteRenderer>();
-                sr.sprite = def.icon;
-                go.transform.localScale = Vector3.one * 0.5f;
-            }
-            var pickup = go.AddComponent<Pickup>();
-            pickup.item = def;
-        }
+
+        // Collider sized to match the visual
+        var col = go.AddComponent<SphereCollider>();
+        col.isTrigger = true;
+        col.radius = 0.5f; // Pickup script handles the trigger, size is fine at 0.5
+
+        var pickup = go.AddComponent<Pickup>();
+        pickup.item = def;
+
         Debug.Log($"[Inventory] Dropped '{def.itemId}' al mundo");
     }
 
