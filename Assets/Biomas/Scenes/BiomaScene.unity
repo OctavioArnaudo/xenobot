@@ -3630,7 +3630,7 @@ GameObject:
   - component: {fileID: 1722581068}
   - component: {fileID: 1722581067}
   m_Layer: 0
-  m_Name: GameObject
+  m_Name: Inventory
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4362,7 +4362,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 55fcea8a4058c4d1aa6ca8fea4168f51, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Pickup
-  item: {fileID: 0}
+  item: {fileID: 11400000, guid: 75b6b99d3e052724095a1f53dea46401, type: 2}
   particleEffectPrefab: {fileID: 0}
   rotationSpeed: 100
   bobbingAmount: 0.1
