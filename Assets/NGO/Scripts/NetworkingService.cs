@@ -4,14 +4,23 @@ using UnityEngine;
 
 namespace NGO.Networking
 {
-    /// <summary>
-    /// Lógica modular y unitaria para las operaciones básicas de red.
-    /// </summary>
     public static class NetworkingService
     {
-        public static bool StartHost()
+        /// <summary>
+        /// Inicia el Host asegurando que escuche en todas las interfaces (0.0.0.0)
+        /// para permitir conexiones entrantes.
+        /// </summary>
+        public static bool StartHost(ushort port = 7777)
         {
             if (NetworkManager.Singleton == null) return false;
+
+            var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+            if (transport != null)
+            {
+                // "0.0.0.0" permite que el host acepte conexiones de cualquier IP
+                transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
+            }
+
             return NetworkManager.Singleton.StartHost();
         }
 
@@ -22,6 +31,7 @@ namespace NGO.Networking
             var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
             if (transport != null)
             {
+                if (string.IsNullOrEmpty(ip)) ip = "127.0.0.1";
                 transport.SetConnectionData(ip, port);
             }
 

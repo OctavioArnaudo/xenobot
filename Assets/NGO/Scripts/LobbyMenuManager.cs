@@ -6,10 +6,6 @@ using UnityEngine.UI;
 
 namespace NGO.Networking
 {
-    /// <summary>
-    /// Manager para la escena de Lobby.
-    /// Sincroniza el temporizador y el conteo de jugadores antes de iniciar la partida.
-    /// </summary>
     public class LobbyMenuManager : NetworkBehaviour
     {
         [Header("UI Referencias (Botones)")]
@@ -18,26 +14,31 @@ namespace NGO.Networking
         [SerializeField] private GameObject roomCanvas;
 
         [Header("Configuración")]
-        [SerializeField] private float lobbyDuration = 300f; // 5 minutos
+        [SerializeField] private float lobbyDuration = 300f;
         [SerializeField] private string biomaSceneName = "BiomaScene";
         [SerializeField] private string networkSceneName = "NetworkScene";
 
-        // Variables de red sincronizadas
-        private NetworkVariable<float> m_TimeRemaining = new NetworkVariable<float>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        private NetworkVariable<int> m_MaxPlayers = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        private NetworkVariable<float> m_TimeRemaining = new NetworkVariable<float>(300f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        private NetworkVariable<int> m_MaxPlayers = new NetworkVariable<int>(4, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         private TMP_Text m_TimerText;
         private TMP_Text m_PlayersText;
 
         private void Awake()
         {
-            // Buscamos los componentes de texto dentro de los botones
+            FindTextComponents();
+        }
+
+        private void FindTextComponents()
+        {
             if (timerButton != null) m_TimerText = timerButton.GetComponentInChildren<TMP_Text>();
             if (playersCountButton != null) m_PlayersText = playersCountButton.GetComponentInChildren<TMP_Text>();
         }
 
         public override void OnNetworkSpawn()
         {
+            Debug.Log($"[Lobby] Jugador entró al lobby. Servidor: {IsServer}");
+
             if (IsServer)
             {
                 m_TimeRemaining.Value = lobbyDuration;
@@ -49,36 +50,29 @@ namespace NGO.Networking
 
         private void Update()
         {
-            if (!IsSpawned) return;
+            // Si no hay red, mostramos estado de desconexión
+            if (!IsSpawned || NetworkManager.Singleton == null || (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer))
+            {
+                if (m_TimerText != null) m_TimerText.text = "OFFLINE";
+                if (m_PlayersText != null) m_PlayersText.text = "--/--";
+                return;
+            }
 
             if (IsServer)
             {
-                UpdateServerTimer();
+                if (m_TimeRemaining.Value > 0) m_TimeRemaining.Value -= Time.deltaTime;
                 CheckStartConditions();
             }
 
             UpdateUI();
         }
 
-        private void UpdateServerTimer()
-        {
-            if (m_TimeRemaining.Value > 0)
-            {
-                m_TimeRemaining.Value -= Time.deltaTime;
-            }
-        }
-
         private void CheckStartConditions()
         {
             int currentPlayers = NetworkManager.Singleton.ConnectedClientsIds.Count;
-
-            // Condición: Tiempo agotado o lobby lleno
             if (m_TimeRemaining.Value <= 0 || currentPlayers >= m_MaxPlayers.Value)
             {
-                if (roomCanvas != null && !roomCanvas.activeSelf)
-                {
-                    ShowRoomCanvasRpc();
-                }
+                if (roomCanvas != null && !roomCanvas.activeSelf) ShowRoomCanvasRpc();
             }
         }
 
@@ -90,33 +84,26 @@ namespace NGO.Networking
 
         private void UpdateUI()
         {
-            // Actualizar Temporizador (MM:SS) en el botón
             if (m_TimerText != null)
             {
                 float t = Mathf.Max(0, m_TimeRemaining.Value);
-                int minutes = Mathf.FloorToInt(t / 60);
-                int seconds = Mathf.FloorToInt(t % 60);
-                m_TimerText.text = string.Format("{0:00}:{1:00}", minutes, seconds);
+                m_TimerText.text = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(t / 60), Mathf.FloorToInt(t % 60));
             }
 
-            // Actualizar Jugadores (00/00) en el botón
             if (m_PlayersText != null)
             {
-                int current = NetworkManager.Singleton.ConnectedClientsIds.Count;
-                int max = m_MaxPlayers.Value;
-                m_PlayersText.text = string.Format("{0:00}/{1:00}", current, max);
+                m_PlayersText.text = string.Format("{0:00}/{1:00}", NetworkManager.Singleton.ConnectedClientsIds.Count, m_MaxPlayers.Value);
             }
         }
 
         public void OnClickStartGame()
         {
-            if (!IsServer) return;
-            NetworkManager.Singleton.SceneManager.LoadScene(biomaSceneName, LoadSceneMode.Single);
+            if (IsServer) NetworkManager.Singleton.SceneManager.LoadScene(biomaSceneName, LoadSceneMode.Single);
         }
 
         public void OnClickLeaveLobby()
         {
-            NetworkManager.Singleton.Shutdown();
+            if (NetworkManager.Singleton != null) NetworkManager.Singleton.Shutdown();
             SceneManager.LoadScene(networkSceneName);
         }
     }
