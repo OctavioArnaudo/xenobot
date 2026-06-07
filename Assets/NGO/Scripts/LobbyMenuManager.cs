@@ -114,11 +114,42 @@ namespace NGO.Networking
         [Rpc(SendTo.Everyone)]
         private void ShowRoomCanvasRpc()
         {
-            if (roomCanvas != null) roomCanvas.SetActive(true);
+            if (roomCanvas != null)
+            {
+                roomCanvas.SetActive(true);
+                roomCanvas.transform.SetAsLastSibling();
+
+                // Asegurar interactividad con CanvasGroup
+                CanvasGroup cg = roomCanvas.GetComponent<CanvasGroup>();
+                if (cg == null) cg = roomCanvas.AddComponent<CanvasGroup>();
+                cg.interactable = true;
+                cg.blocksRaycasts = true;
+
+                // Solo el Host ve y puede pulsar el botón de inicio
+                if (startGameButton != null)
+                {
+                    startGameButton.gameObject.SetActive(IsServer);
+                    startGameButton.interactable = IsServer;
+                }
+
+                // Habilitar el mouse
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+                Debug.Log($"[Lobby] Room Canvas activo. Servidor: {IsServer}");
+            }
         }
 
         private void UpdateUI()
         {
+            // Mantener el cursor libre si el panel está activo
+            if (roomCanvas != null && roomCanvas.activeSelf)
+            {
+                if (Cursor.lockState != CursorLockMode.None)
+                {
+                    Cursor.lockState = CursorLockMode.None;
+                    Cursor.visible = true;
+                }
+            }
             if (m_TimerText != null)
             {
                 float t = Mathf.Max(0, m_TimeRemaining.Value);

@@ -63,12 +63,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f79bef8f701f194fb5a2b6581791e6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NGO.Networking.HostMenuManager
-  targetScene: BiomaScene
+  targetScene: LobbyScene
   nameInputField: {fileID: 0}
   customIdInputField: {fileID: 0}
   colorDisplay: {fileID: 0}
   roomCodeDisplay: {fileID: 0}
   maxPlayersInput: {fileID: 0}
+  ipDisplay: {fileID: 0}
+  portInput: {fileID: 0}
   sceneLoader: {fileID: 8218723941116476304}
 --- !u!114 &5564721339057154130
 MonoBehaviour:
@@ -85,9 +87,10 @@ MonoBehaviour:
   nameInputField: {fileID: 0}
   customIdInputField: {fileID: 0}
   colorDisplay: {fileID: 0}
+  roomCodeInputField: {fileID: 0}
+  maxPlayersDisplay: {fileID: 0}
   ipInputField: {fileID: 0}
   portInputField: {fileID: 0}
-  roomCodeInputField: {fileID: 0}
   addressConfigurator: {fileID: 2099928477735966533}
 --- !u!114 &2099928477735966533
 MonoBehaviour:
