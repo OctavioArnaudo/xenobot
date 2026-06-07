@@ -11,5 +11,6 @@ namespace NGO.Networking
         public static string UserName = "Player";
         public static Color UserColor = Color.white;
         public static int UserCustomID = 0;
+        public static int MaxPlayers = 4;
     }
 }

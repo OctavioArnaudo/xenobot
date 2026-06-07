@@ -1,5 +1,7 @@
 using UnityEngine;
 using TMPro;
+using Unity.Netcode;
+using System.Threading.Tasks;
 
 namespace NGO.Networking
 {
@@ -10,7 +12,7 @@ namespace NGO.Networking
     public class HostMenuManager : MonoBehaviour
     {
         [Header("Configuración de Escena")]
-        [SerializeField] private string targetScene = "BiomaScene";
+        [SerializeField] private string targetScene = "LobbyScene";
 
         [Header("UI Referencias - Identidad")]
         [SerializeField] private TMP_InputField nameInputField;
@@ -20,6 +22,10 @@ namespace NGO.Networking
         [Header("UI Referencias - Sala")]
         [SerializeField] private TMP_Text roomCodeDisplay;
         [SerializeField] private TMP_InputField maxPlayersInput;
+
+        [Header("UI Referencias - Red Local")]
+        [SerializeField] private TMP_Text ipDisplay;
+        [SerializeField] private TMP_InputField portInput;
 
         [Header("Componentes Modulares")]
         [SerializeField] private NetworkSceneLoader sceneLoader;
@@ -31,6 +37,25 @@ namespace NGO.Networking
 
             if (maxPlayersInput != null && string.IsNullOrEmpty(maxPlayersInput.text))
                 maxPlayersInput.text = "4";
+
+            if (portInput != null && string.IsNullOrEmpty(portInput.text))
+                portInput.text = "7777";
+
+            // Mostrar IP local para facilitar la conexión directa
+            if (ipDisplay != null) ipDisplay.text = GetLocalIPAddress();
+        }
+
+        private string GetLocalIPAddress()
+        {
+            var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                {
+                    return ip.ToString();
+                }
+            }
+            return "127.0.0.1";
         }
 
         private void SaveLocalSettings()
@@ -39,6 +64,9 @@ namespace NGO.Networking
             if (customIdInputField != null && int.TryParse(customIdInputField.text, out int id))
                 LocalUserConfig.UserCustomID = id;
             if (colorDisplay != null) LocalUserConfig.UserColor = colorDisplay.color;
+
+            if (maxPlayersInput != null && int.TryParse(maxPlayersInput.text, out int max))
+                LocalUserConfig.MaxPlayers = max;
         }
 
         /// <summary>

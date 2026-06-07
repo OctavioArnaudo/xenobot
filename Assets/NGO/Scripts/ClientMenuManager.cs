@@ -15,10 +15,13 @@ namespace NGO.Networking
         [SerializeField] private TMP_InputField customIdInputField;
         [SerializeField] private UnityEngine.UI.Image colorDisplay;
 
-        [Header("UI Referencias - Conexión")]
+        [Header("UI Referencias - Sala")]
+        [SerializeField] private TMP_InputField roomCodeInputField;
+        [SerializeField] private TMP_Text maxPlayersDisplay;
+
+        [Header("UI Referencias - Red Local")]
         [SerializeField] private TMP_InputField ipInputField;
         [SerializeField] private TMP_InputField portInputField;
-        [SerializeField] private TMP_InputField roomCodeInputField;
 
         [Header("Componentes Modulares")]
         [SerializeField] private NetworkAddressConfigurator addressConfigurator;
@@ -66,6 +69,48 @@ namespace NGO.Networking
 
             Debug.Log($"[ClientMenu] Conectando a {ip}:{port}...");
             NetworkingService.StartClient(ip, port);
+        }
+
+        /// <summary>
+        /// Intenta conectar al servidor. Prioriza IP/Puerto si están rellenados y no hay código de sala,
+        /// o usa el código de sala si el campo de IP es el valor por defecto.
+        /// </summary>
+        public async void OnClickSmartConnect()
+        {
+            SaveLocalSettings();
+
+            string roomCode = roomCodeInputField != null ? roomCodeInputField.text.Trim() : "";
+            string ip = ipInputField != null ? ipInputField.text.Trim() : "";
+
+            // Lógica: Si hay un código de sala, priorizamos Relay.
+            // Si el código está vacío, usamos IP/Puerto.
+            if (!string.IsNullOrEmpty(roomCode))
+            {
+                Debug.Log($"[SmartConnect] Usando Código de Sala: {roomCode}");
+                bool success = await RelayManager.JoinRelay(roomCode);
+                if (success)
+                {
+                    NetworkManager.Singleton.StartClient();
+                }
+                else
+                {
+                    Debug.LogError("[SmartConnect] Error al unirse mediante código.");
+                }
+            }
+            else if (!string.IsNullOrEmpty(ip))
+            {
+                ushort port = 7777;
+                if (portInputField != null && ushort.TryParse(portInputField.text, out ushort parsedPort))
+                    port = parsedPort;
+
+                Debug.Log($"[SmartConnect] Usando IP Directa: {ip}:{port}");
+                if (addressConfigurator != null) addressConfigurator.SetIPAddress(ip, port);
+                NetworkingService.StartClient(ip, port);
+            }
+            else
+            {
+                Debug.LogWarning("[SmartConnect] No se proporcionó IP ni Código de Sala.");
+            }
         }
 
         /// <summary>
