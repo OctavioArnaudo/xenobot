@@ -53,9 +53,31 @@ namespace NGO.Networking
         /// </summary>
         public void OnClickTrade(int recipeIndex)
         {
-            if (tradeService == null || recipeIndex >= possibleTrades.Length) return;
+            if (tradeService == null)
+            {
+                Debug.LogError("[CraftingMenu] tradeService no está asignado en el Inspector.");
+                return;
+            }
+
+            if (possibleTrades == null || recipeIndex < 0 || recipeIndex >= possibleTrades.Length)
+            {
+                Debug.LogError($"[CraftingMenu] Índice de receta {recipeIndex} fuera de rango o lista vacía.");
+                return;
+            }
 
             TradeRecipe selectedRecipe = possibleTrades[recipeIndex];
+            if (selectedRecipe == null)
+            {
+                Debug.LogError($"[CraftingMenu] La receta en el índice {recipeIndex} es NULL. Revisa el Inspector.");
+                return;
+            }
+
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
+            {
+                Debug.LogWarning("[CraftingMenu] No se puede tradear sin estar conectado a la red.");
+                return;
+            }
+
             ulong myId = NetworkManager.Singleton.LocalClientId;
 
             // Enviamos la petición al servidor para validar y ejecutar
