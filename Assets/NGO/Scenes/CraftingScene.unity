@@ -558,10 +558,6 @@ PrefabInstance:
       propertyPath: tradeService
       value: 
       objectReference: {fileID: 108757018}
-    - target: {fileID: 1119622069936057783, guid: 77a42fe83ae554f479e7daa4cd7dd7a0, type: 3}
-      propertyPath: dropPreviewIcon
-      value: 
-      objectReference: {fileID: 0}
     - target: {fileID: 4801338974101988998, guid: 77a42fe83ae554f479e7daa4cd7dd7a0, type: 3}
       propertyPath: m_Pivot.x
       value: 0
@@ -663,14 +659,6 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 3038524118
       objectReference: {fileID: 0}
-    - target: {fileID: 92049608686281180, guid: 71666fe21011c9e47a8c87bcbb09e3a2, type: 3}
-      propertyPath: SceneMigrationSynchronization
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 92049608686281180, guid: 71666fe21011c9e47a8c87bcbb09e3a2, type: 3}
-      propertyPath: InScenePlacedSourceGlobalObjectIdHash
-      value: 1478110461
-      objectReference: {fileID: 0}
     - target: {fileID: 244991678767386903, guid: 71666fe21011c9e47a8c87bcbb09e3a2, type: 3}
       propertyPath: m_Name
       value: TradingPrefab
@@ -715,14 +703,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5953350490897461660, guid: 71666fe21011c9e47a8c87bcbb09e3a2, type: 3}
-      propertyPath: availableRecipes.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5953350490897461660, guid: 71666fe21011c9e47a8c87bcbb09e3a2, type: 3}
-      propertyPath: 'availableRecipes.Array.data[0]'
-      value: 
-      objectReference: {fileID: 11400000, guid: 4a708546367968d44966d3b7fb478eaa, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

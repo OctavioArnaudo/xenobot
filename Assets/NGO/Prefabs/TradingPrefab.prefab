@@ -45,14 +45,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3812631705
-  InScenePlacedSourceGlobalObjectIdHash: 0
+  GlobalObjectIdHash: 3038524118
+  InScenePlacedSourceGlobalObjectIdHash: 1478110461
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
   ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 1
+  SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
@@ -71,4 +71,5 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NGO.Gameplay.Networking.TradeServiceNetworking
   ShowTopMostFoldoutHeaderGroup: 1
-  availableRecipes: []
+  availableRecipes:
+  - {fileID: 11400000, guid: 4a708546367968d44966d3b7fb478eaa, type: 2}

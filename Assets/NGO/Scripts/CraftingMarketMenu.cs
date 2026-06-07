@@ -68,22 +68,25 @@ namespace NGO.Networking
             TradeRecipe selectedRecipe = possibleTrades[recipeIndex];
             if (selectedRecipe == null)
             {
-                Debug.LogError($"[CraftingMenu] La receta en el índice {recipeIndex} es NULL. Revisa el Inspector.");
+                Debug.LogError($"[CraftingMenu] La receta en el índice {recipeIndex} es NULL.");
                 return;
             }
 
-            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsClient)
+            // 1. Ejecución Local (Predictiva / Offline)
+            ulong myId = (NetworkManager.Singleton != null) ? NetworkManager.Singleton.LocalClientId : 0;
+            tradeService.ExecuteTradeLocal(recipeIndex, myId);
+            Debug.Log($"[CraftingMenu] Ejecución local completada: {selectedRecipe.OutputItem.ItemName}");
+
+            // 2. Sincronización de Red (Paso final)
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient)
             {
-                Debug.LogWarning("[CraftingMenu] No se puede tradear sin estar conectado a la red.");
-                return;
+                tradeService.RequestTradeRpc(recipeIndex, myId);
+                Debug.Log("[CraftingMenu] Sincronización de red enviada al servidor.");
             }
-
-            ulong myId = NetworkManager.Singleton.LocalClientId;
-
-            // Enviamos la petición al servidor para validar y ejecutar
-            tradeService.RequestTradeRpc(recipeIndex, myId);
-
-            Debug.Log($"[CraftingMenu] Solicitando intercambio: {selectedRecipe.InputAmount}x {selectedRecipe.InputItem.ItemName} por {selectedRecipe.OutputAmount}x {selectedRecipe.OutputItem.ItemName}");
+            else
+            {
+                Debug.LogWarning("[CraftingMenu] Trabajando en modo OFFLINE. La red no está conectada.");
+            }
         }
     }
 }

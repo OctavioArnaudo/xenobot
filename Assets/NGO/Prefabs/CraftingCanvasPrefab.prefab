@@ -120,7 +120,7 @@ MonoBehaviour:
   tradeService: {fileID: 0}
   possibleTrades:
   - {fileID: 11400000, guid: 4a708546367968d44966d3b7fb478eaa, type: 2}
-  dropPreviewIcon: {fileID: 0}
+  dropPreviewIcon: {fileID: 2731700304578890196}
 --- !u!1001 &2705382723053977131
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -431,3 +431,14 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 6005991716134238398, guid: d4f8454fd25ab144cb5c0084e9ef4afb, type: 3}
   m_PrefabInstance: {fileID: 8164906280226924252}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2731700304578890196 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6099951923950546696, guid: d4f8454fd25ab144cb5c0084e9ef4afb, type: 3}
+  m_PrefabInstance: {fileID: 8164906280226924252}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
