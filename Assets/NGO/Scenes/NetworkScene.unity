@@ -432,10 +432,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2105954130}
     - target: {fileID: 4489909680305946571, guid: eb1edb32643969c49b906fa5dab24940, type: 3}
-      propertyPath: targetScene
-      value: LobbyScene
-      objectReference: {fileID: 0}
-    - target: {fileID: 4489909680305946571, guid: eb1edb32643969c49b906fa5dab24940, type: 3}
       propertyPath: colorDisplay
       value: 
       objectReference: {fileID: 5213342315364925552}
@@ -753,6 +749,10 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 760773244}
+    - target: {fileID: 377141984292998663, guid: bd51bc1e79b562b41982150de8eb83c5, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1435090777662414962, guid: bd51bc1e79b562b41982150de8eb83c5, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
@@ -761,14 +761,6 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 760773249}
-    - target: {fileID: 4313938760612841421, guid: bd51bc1e79b562b41982150de8eb83c5, type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: OnClickSmartConnect
-      objectReference: {fileID: 0}
-    - target: {fileID: 4313938760612841421, guid: bd51bc1e79b562b41982150de8eb83c5, type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: NGO.Networking.ClientMenuManager, Assembly-CSharp
-      objectReference: {fileID: 0}
     - target: {fileID: 5326428019601912383, guid: bd51bc1e79b562b41982150de8eb83c5, type: 3}
       propertyPath: m_Pivot.x
       value: 0

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 9107640872868392740}
   - component: {fileID: 5219792790138555789}
   - component: {fileID: 5322820039624699279}
-  m_Layer: 0
+  m_Layer: 5
   m_Name: NetworkCanvasPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -298,10 +298,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: NetworkPanelPrefab
       objectReference: {fileID: 0}
-    - target: {fileID: 5260795481532603257, guid: 55e0910048315624a983adce9e33571a, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -323,10 +319,6 @@ PrefabInstance:
     - target: {fileID: 344963592449764796, guid: 806cf5fdc4e34304c81db8bf7842c990, type: 3}
       propertyPath: m_Name
       value: ClientPanelPrefab
-      objectReference: {fileID: 0}
-    - target: {fileID: 344963592449764796, guid: 806cf5fdc4e34304c81db8bf7842c990, type: 3}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1618387012246691422, guid: 806cf5fdc4e34304c81db8bf7842c990, type: 3}
       propertyPath: m_Pivot.x

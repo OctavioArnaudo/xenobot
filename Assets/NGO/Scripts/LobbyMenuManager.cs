@@ -3,6 +3,8 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using Unity.Collections;
+using Unity.Netcode.Transports.UTP;
 
 namespace NGO.Networking
 {
@@ -10,7 +12,9 @@ namespace NGO.Networking
     {
         [Header("UI Referencias (Botones)")]
         [SerializeField] private Button timerButton;
-        [SerializeField] private Button playersCountButton;
+        [SerializeField] private Button counterButton;
+        [SerializeField] private Button portButton;
+        [SerializeField] private Button codeButton;
         [SerializeField] private GameObject roomCanvas;
 
         [Header("Configuración")]
@@ -20,9 +24,12 @@ namespace NGO.Networking
 
         private NetworkVariable<float> m_TimeRemaining = new NetworkVariable<float>(300f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         private NetworkVariable<int> m_MaxPlayers = new NetworkVariable<int>(4, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        private NetworkVariable<FixedString32Bytes> m_JoinCode = new NetworkVariable<FixedString32Bytes>("", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         private TMP_Text m_TimerText;
         private TMP_Text m_PlayersText;
+        private TMP_Text m_PortText;
+        private TMP_Text m_CodeText;
 
         private void Awake()
         {
@@ -32,7 +39,9 @@ namespace NGO.Networking
         private void FindTextComponents()
         {
             if (timerButton != null) m_TimerText = timerButton.GetComponentInChildren<TMP_Text>();
-            if (playersCountButton != null) m_PlayersText = playersCountButton.GetComponentInChildren<TMP_Text>();
+            if (counterButton != null) m_PlayersText = counterButton.GetComponentInChildren<TMP_Text>();
+            if (portButton != null) m_PortText = portButton.GetComponentInChildren<TMP_Text>();
+            if (codeButton != null) m_CodeText = codeButton.GetComponentInChildren<TMP_Text>();
         }
 
         public override void OnNetworkSpawn()
@@ -43,14 +52,31 @@ namespace NGO.Networking
             {
                 m_TimeRemaining.Value = lobbyDuration;
                 m_MaxPlayers.Value = LocalUserConfig.MaxPlayers;
+                m_JoinCode.Value = LocalUserConfig.LastJoinCode;
             }
 
             if (roomCanvas != null) roomCanvas.SetActive(false);
+
+            UpdateConnectionInfo();
+        }
+
+        private void UpdateConnectionInfo()
+        {
+            // IP y Puerto (Solo visible si no es Relay, o como info general)
+            if (m_PortText != null)
+            {
+                var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                if (transport != null)
+                {
+                    string ip = transport.ConnectionData.Address;
+                    ushort port = transport.ConnectionData.Port;
+                    m_PortText.text = $"{ip}:{port}";
+                }
+            }
         }
 
         private void Update()
         {
-            // Si no hay red, mostramos estado de desconexión
             if (!IsSpawned || NetworkManager.Singleton == null || (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer))
             {
                 if (m_TimerText != null) m_TimerText.text = "OFFLINE";
@@ -93,6 +119,12 @@ namespace NGO.Networking
             if (m_PlayersText != null)
             {
                 m_PlayersText.text = string.Format("{0:00}/{1:00}", NetworkManager.Singleton.ConnectedClientsIds.Count, m_MaxPlayers.Value);
+            }
+
+            if (m_CodeText != null)
+            {
+                string code = m_JoinCode.Value.ToString();
+                m_CodeText.text = string.IsNullOrEmpty(code) ? "DIRECT IP" : code;
             }
         }
 

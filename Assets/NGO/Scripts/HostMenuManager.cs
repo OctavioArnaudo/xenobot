@@ -90,6 +90,7 @@ namespace NGO.Networking
             if (!string.IsNullOrEmpty(joinCode))
             {
                 Debug.Log($"[HostMenu] Relay creado con código: {joinCode}");
+                LocalUserConfig.LastJoinCode = joinCode;
                 if (roomCodeDisplay != null) roomCodeDisplay.text = joinCode;
 
                 if (NetworkingService.StartHost())
