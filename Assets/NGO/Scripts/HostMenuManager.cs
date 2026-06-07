@@ -30,6 +30,12 @@ namespace NGO.Networking
         [Header("Componentes Modulares")]
         [SerializeField] private NetworkSceneLoader sceneLoader;
 
+        private void Awake()
+        {
+            // Auto-asignación si se olvidó arrastrar en el inspector
+            if (sceneLoader == null) sceneLoader = GetComponent<NetworkSceneLoader>();
+        }
+
         private void Start()
         {
             if (nameInputField != null) nameInputField.text = "Host_" + Random.Range(10, 99);

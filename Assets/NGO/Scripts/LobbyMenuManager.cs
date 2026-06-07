@@ -7,6 +7,9 @@ using Unity.Collections;
 using Unity.Netcode.Transports.UTP;
 using System.Net.Http;
 using System.Threading.Tasks;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace NGO.Networking
 {
@@ -84,6 +87,8 @@ namespace NGO.Networking
             }
         }
 
+        private bool m_IsManuallyOpened = false;
+
         private void Update()
         {
             if (!IsSpawned || NetworkManager.Singleton == null || (!NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer))
@@ -92,6 +97,21 @@ namespace NGO.Networking
                 if (m_PlayersText != null) m_PlayersText.text = "--/--";
                 return;
             }
+
+            // Abrir/Cerrar menú localmente con la tecla Escape
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                m_IsManuallyOpened = !m_IsManuallyOpened;
+                ToggleRoomCanvasLocal(m_IsManuallyOpened);
+            }
+#else
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                m_IsManuallyOpened = !m_IsManuallyOpened;
+                ToggleRoomCanvasLocal(m_IsManuallyOpened);
+            }
+#endif
 
             if (IsServer)
             {
@@ -102,12 +122,51 @@ namespace NGO.Networking
             UpdateUI();
         }
 
+        /// <summary>
+        /// Permite abrir o cerrar el panel de la sala localmente para acceder a los botones.
+        /// </summary>
+        private void ToggleRoomCanvasLocal(bool show)
+        {
+            if (roomCanvas != null)
+            {
+                roomCanvas.SetActive(show);
+
+                if (show)
+                {
+                    roomCanvas.transform.SetAsLastSibling();
+
+                    // El Host SIEMPRE puede ver el botón de inicio si abre el menú manualmente
+                    if (startGameButton != null)
+                    {
+                        startGameButton.gameObject.SetActive(IsServer);
+                        startGameButton.interactable = IsServer;
+                    }
+
+                    Cursor.lockState = CursorLockMode.None;
+                    Cursor.visible = true;
+                }
+            }
+        }
+
         private void CheckStartConditions()
         {
             int currentPlayers = NetworkManager.Singleton.ConnectedClientsIds.Count;
-            if (m_TimeRemaining.Value <= 0 || currentPlayers >= m_MaxPlayers.Value)
+            bool timerExpired = m_TimeRemaining.Value <= 0;
+            bool isFull = currentPlayers >= m_MaxPlayers.Value;
+
+            // Auto-Mostrar: Si el tiempo acabó o está lleno
+            if (timerExpired || isFull)
             {
                 if (roomCanvas != null && !roomCanvas.activeSelf) ShowRoomCanvasRpc();
+            }
+            else
+            {
+                // Auto-Ocultar: Solo si el tiempo NO ha acabado y ya no está lleno
+                // Pero el Host puede mantenerlo abierto localmente si lo abrió con Esc
+                if (roomCanvas != null && roomCanvas.activeSelf && !m_IsManuallyOpened)
+                {
+                    HideRoomCanvasRpc();
+                }
             }
         }
 
@@ -136,6 +195,16 @@ namespace NGO.Networking
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
                 Debug.Log($"[Lobby] Room Canvas activo. Servidor: {IsServer}");
+            }
+        }
+
+        [Rpc(SendTo.Everyone)]
+        private void HideRoomCanvasRpc()
+        {
+            if (roomCanvas != null)
+            {
+                roomCanvas.SetActive(false);
+                Debug.Log("[Lobby] Room Canvas desactivado por falta de jugadores.");
             }
         }
 

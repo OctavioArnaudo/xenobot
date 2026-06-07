@@ -26,6 +26,12 @@ namespace NGO.Networking
         [Header("Componentes Modulares")]
         [SerializeField] private NetworkAddressConfigurator addressConfigurator;
 
+        private void Awake()
+        {
+            // Auto-asignación si se olvidó arrastrar en el inspector
+            if (addressConfigurator == null) addressConfigurator = GetComponent<NetworkAddressConfigurator>();
+        }
+
         private void Start()
         {
             // Valores por defecto

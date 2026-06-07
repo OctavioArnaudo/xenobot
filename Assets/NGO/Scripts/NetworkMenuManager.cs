@@ -15,6 +15,7 @@ namespace NGO.Networking
         private void Start()
         {
             Application.runInBackground = true;
+            Debug.Log("[NetworkMenu] Manager inicializado correctamente.");
             ShowMainMenu();
         }
 
