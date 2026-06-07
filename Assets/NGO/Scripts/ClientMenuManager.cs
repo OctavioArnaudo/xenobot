@@ -78,8 +78,9 @@ namespace NGO.Networking
         public async void OnClickSmartConnect()
         {
             SaveLocalSettings();
+            NetworkingService.Shutdown();
 
-            string roomCode = roomCodeInputField != null ? roomCodeInputField.text.Trim() : "";
+            string roomCode = roomCodeInputField != null ? roomCodeInputField.text.Trim().ToUpper() : "";
             string ip = ipInputField != null ? ipInputField.text.Trim() : "";
 
             // Lógica: Si hay un código de sala, priorizamos Relay.
@@ -119,8 +120,9 @@ namespace NGO.Networking
         public async void OnClickConnectByRoomCode()
         {
             SaveLocalSettings();
+            NetworkingService.Shutdown();
 
-            string code = roomCodeInputField != null ? roomCodeInputField.text : "";
+            string code = roomCodeInputField != null ? roomCodeInputField.text.Trim().ToUpper() : "";
             if (string.IsNullOrEmpty(code))
             {
                 Debug.LogWarning("[ClientMenu] El código de sala está vacío.");

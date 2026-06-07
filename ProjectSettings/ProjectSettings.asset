@@ -830,7 +830,8 @@ PlayerSettings:
   webGLCloseOnQuit: 0
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    Standalone: ENABLE_UNITY_SERVICES_VERBOSE_LOGGING;ENABLE_UNITY_MULTIPLAYER_VERBOSE_LOGGING
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
@@ -945,11 +946,11 @@ PlayerSettings:
   captureStartupLogs: {}
   activeInputHandler: 1
   windowsGamepadBackendHint: 0
-  cloudProjectId: 550f5c22-8da3-4b97-a9bb-83b6863d31c8
+  cloudProjectId: 20bd510f-f01e-4161-9af8-15f236f8e7c7
   framebufferDepthMemorylessMode: 0
   qualitySettingsNames: []
-  projectName: sodjhfiusdbhfiugbh
-  organizationId: s1lv3r-io
+  projectName: My project
+  organizationId: octavioarnaudo
   cloudEnabled: 0
   legacyClampBlendShapeWeights: 0
   hmiLoadingImage: {fileID: 0}

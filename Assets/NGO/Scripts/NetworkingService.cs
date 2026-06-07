@@ -10,15 +10,27 @@ namespace NGO.Networking
         /// Inicia el Host asegurando que escuche en todas las interfaces (0.0.0.0)
         /// para permitir conexiones entrantes.
         /// </summary>
-        public static bool StartHost(ushort port = 7777)
+        /// <summary>
+        /// Inicia el Host.
+        /// </summary>
+        /// <param name="port">Puerto local</param>
+        /// <param name="isRelay">Si es true, NO sobrescribe la configuración del transporte (necesario para Relay)</param>
+        public static bool StartHost(ushort port = 7777, bool isRelay = false)
         {
             if (NetworkManager.Singleton == null) return false;
 
-            var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-            if (transport != null)
+            if (NetworkManager.Singleton.IsListening || NetworkManager.Singleton.IsServer || NetworkManager.Singleton.IsClient)
             {
-                // "0.0.0.0" permite que el host acepte conexiones de cualquier IP
-                transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
+                NetworkManager.Singleton.Shutdown();
+            }
+
+            if (!isRelay)
+            {
+                var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                if (transport != null)
+                {
+                    transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
+                }
             }
 
             return NetworkManager.Singleton.StartHost();
@@ -27,6 +39,12 @@ namespace NGO.Networking
         public static bool StartClient(string ip, ushort port = 7777)
         {
             if (NetworkManager.Singleton == null) return false;
+
+            // Asegurar un estado limpio antes de iniciar
+            if (NetworkManager.Singleton.IsListening || NetworkManager.Singleton.IsServer || NetworkManager.Singleton.IsClient)
+            {
+                NetworkManager.Singleton.Shutdown();
+            }
 
             var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
             if (transport != null)

@@ -5,6 +5,8 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Unity.Collections;
 using Unity.Netcode.Transports.UTP;
+using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace NGO.Networking
 {
@@ -15,6 +17,7 @@ namespace NGO.Networking
         [SerializeField] private Button counterButton;
         [SerializeField] private Button portButton;
         [SerializeField] private Button codeButton;
+        [SerializeField] private Button startGameButton; // Botón para iniciar BiomaScene
         [SerializeField] private GameObject roomCanvas;
 
         [Header("Configuración")]
@@ -25,6 +28,7 @@ namespace NGO.Networking
         private NetworkVariable<float> m_TimeRemaining = new NetworkVariable<float>(300f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         private NetworkVariable<int> m_MaxPlayers = new NetworkVariable<int>(4, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         private NetworkVariable<FixedString32Bytes> m_JoinCode = new NetworkVariable<FixedString32Bytes>("", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        private NetworkVariable<FixedString32Bytes> m_ExternalIP = new NetworkVariable<FixedString32Bytes>("", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         private TMP_Text m_TimerText;
         private TMP_Text m_PlayersText;
@@ -44,7 +48,7 @@ namespace NGO.Networking
             if (codeButton != null) m_CodeText = codeButton.GetComponentInChildren<TMP_Text>();
         }
 
-        public override void OnNetworkSpawn()
+        public override async void OnNetworkSpawn()
         {
             Debug.Log($"[Lobby] Jugador entró al lobby. Servidor: {IsServer}");
 
@@ -52,26 +56,31 @@ namespace NGO.Networking
             {
                 m_TimeRemaining.Value = lobbyDuration;
                 m_MaxPlayers.Value = LocalUserConfig.MaxPlayers;
-                m_JoinCode.Value = LocalUserConfig.LastJoinCode;
+                m_JoinCode.Value = LocalUserConfig.LastJoinCode.ToUpper();
+                m_ExternalIP.Value = await GetExternalIPAddress();
             }
 
             if (roomCanvas != null) roomCanvas.SetActive(false);
 
-            UpdateConnectionInfo();
+            // Solo el servidor puede ver/interactuar con el botón de inicio
+            if (startGameButton != null)
+            {
+                startGameButton.interactable = IsServer;
+            }
         }
 
-        private void UpdateConnectionInfo()
+        private async Task<string> GetExternalIPAddress()
         {
-            // IP y Puerto (Solo visible si no es Relay, o como info general)
-            if (m_PortText != null)
+            try
             {
-                var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
-                if (transport != null)
+                using (HttpClient client = new HttpClient())
                 {
-                    string ip = transport.ConnectionData.Address;
-                    ushort port = transport.ConnectionData.Port;
-                    m_PortText.text = $"{ip}:{port}";
+                    return await client.GetStringAsync("https://api.ipify.org");
                 }
+            }
+            catch
+            {
+                return "Unknown IP";
             }
         }
 
@@ -126,11 +135,55 @@ namespace NGO.Networking
                 string code = m_JoinCode.Value.ToString();
                 m_CodeText.text = string.IsNullOrEmpty(code) ? "DIRECT IP" : code;
             }
+
+            if (m_PortText != null)
+            {
+                var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                if (transport != null)
+                {
+                    string extIp = m_ExternalIP.Value.ToString();
+                    string locIp = GetLocalIPAddress();
+                    ushort port = transport.ConnectionData.Port;
+
+                    // Priorizamos la IP externa si está disponible, si no mostramos la local.
+                    string ipToShow = (string.IsNullOrEmpty(extIp) || extIp == "Unknown IP") ? locIp : extIp;
+                    m_PortText.text = $"{ipToShow}:{port}";
+                }
+            }
+        }
+
+        private string GetLocalIPAddress()
+        {
+            var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+            foreach (var ip in host.AddressList)
+            {
+                if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) return ip.ToString();
+            }
+            return "127.0.0.1";
         }
 
         public void OnClickStartGame()
         {
-            if (IsServer) NetworkManager.Singleton.SceneManager.LoadScene(biomaSceneName, LoadSceneMode.Single);
+            if (!IsServer)
+            {
+                Debug.LogWarning("[Lobby] Solo el servidor/host puede iniciar la partida.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(biomaSceneName))
+            {
+                Debug.LogError("[Lobby] El nombre de la escena BiomaScene no está configurado en el Inspector.");
+                return;
+            }
+
+            Debug.Log($"[Lobby] Host solicitando cambio a escena: {biomaSceneName}");
+
+            var status = NetworkManager.Singleton.SceneManager.LoadScene(biomaSceneName, LoadSceneMode.Single);
+
+            if (status != SceneEventProgressStatus.Started)
+            {
+                Debug.LogError($"[Lobby] Error al intentar cargar la escena {biomaSceneName}: {status}");
+            }
         }
 
         public void OnClickLeaveLobby()

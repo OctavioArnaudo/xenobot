@@ -93,7 +93,7 @@ namespace NGO.Networking
                 LocalUserConfig.LastJoinCode = joinCode;
                 if (roomCodeDisplay != null) roomCodeDisplay.text = joinCode;
 
-                if (NetworkingService.StartHost())
+                if (NetworkingService.StartHost(isRelay: true))
                 {
                     if (sceneLoader != null)
                     {

@@ -53,7 +53,19 @@ namespace NGO.Networking
                 Allocation allocation = await Unity.Services.Relay.RelayService.Instance.CreateAllocationAsync(maxConnections);
                 string joinCode = await Unity.Services.Relay.RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
 
+                if (NetworkManager.Singleton == null)
+                {
+                    Debug.LogError("[RelayManager] NetworkManager.Singleton es NULL. Asegúrate de que el objeto NetworkManager esté en la escena.");
+                    return null;
+                }
+
                 var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                if (transport == null)
+                {
+                    Debug.LogError("[RelayManager] UnityTransport no encontrado en el NetworkManager.");
+                    return null;
+                }
+
                 transport.SetRelayServerData(
                     allocation.RelayServer.IpV4,
                     (ushort)allocation.RelayServer.Port,
@@ -82,7 +94,19 @@ namespace NGO.Networking
             {
                 JoinAllocation joinAllocation = await Unity.Services.Relay.RelayService.Instance.JoinAllocationAsync(joinCode);
 
+                if (NetworkManager.Singleton == null)
+                {
+                    Debug.LogError("[RelayManager] NetworkManager.Singleton es NULL.");
+                    return false;
+                }
+
                 var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                if (transport == null)
+                {
+                    Debug.LogError("[RelayManager] UnityTransport no encontrado.");
+                    return false;
+                }
+
                 transport.SetRelayServerData(
                     joinAllocation.RelayServer.IpV4,
                     (ushort)joinAllocation.RelayServer.Port,
