@@ -1,6 +1,7 @@
 using UnityEngine;
 using NGO.Gameplay.Base;
 using NGO.Data;
+using NGO.UI;
 using Unity.Netcode;
 
 namespace NGO.Networking
@@ -17,40 +18,135 @@ namespace NGO.Networking
         [Header("Configuración de Trades")]
         [SerializeField] private TradeRecipe[] possibleTrades;
 
-        [Header("UI - Feedback")]
-        [SerializeField] private UnityEngine.UI.Image dropPreviewIcon;
+        [Header("UI - Grid 3x3")]
+        [Tooltip("Asigna las 9 imágenes de los slots. Estas imágenes actuarán como fondo y como icono a la vez.")]
+        [SerializeField] private UnityEngine.UI.Image[] gridImages = new UnityEngine.UI.Image[9];
 
-        /// <summary>
-        /// Método llamado por ItemDropZone al arrastrar un objeto.
-        /// Intenta encontrar una receta que use este objeto.
-        /// </summary>
-        public void OnItemDroppedInZone(ItemData item, int amount)
+        private DraggableItem[] m_GridDraggables = new DraggableItem[9];
+        private int[] m_CurrentGridIds = new int[9];
+
+        private void Awake()
         {
-            if (item == null) return;
-
-            if (dropPreviewIcon != null)
+            // Inicializar la rejilla de 9 slots
+            for (int i = 0; i < 9; i++)
             {
-                dropPreviewIcon.sprite = item.Icon;
-                dropPreviewIcon.gameObject.SetActive(true);
-            }
+                m_CurrentGridIds[i] = -1;
 
-            // Buscar la primera receta que use este objeto como entrada
-            for (int i = 0; i < possibleTrades.Length; i++)
-            {
-                if (possibleTrades[i].InputItem.ItemID == item.ItemID)
+                if (gridImages[i] != null)
                 {
-                    Debug.Log($"[CraftingMenu] Receta encontrada para {item.ItemName}. Iniciando intercambio...");
-                    OnClickTrade(i);
-                    return;
+                    gridImages[i].color = new Color(0, 0, 0, 0);
+                    gridImages[i].sprite = null;
+
+                    // Configurar el componente DraggableItem en cada slot de la rejilla para permitir reubicación
+                    m_GridDraggables[i] = gridImages[i].GetComponent<DraggableItem>();
+                    if (m_GridDraggables[i] == null)
+                        m_GridDraggables[i] = gridImages[i].gameObject.AddComponent<DraggableItem>();
+
+                    m_GridDraggables[i].sourceSlotIndex = i + 1; // 1-9
+                    m_GridDraggables[i].OnBeginDragAction = OnGridItemStartDrag;
                 }
             }
+        }
 
-            Debug.LogWarning($"[CraftingMenu] No se encontró ninguna receta que use {item.ItemName}");
+        private void OnGridItemStartDrag(DraggableItem item)
+        {
+            int index = item.sourceSlotIndex - 1;
+            if (index >= 0 && index < 9)
+            {
+                Debug.Log($"[CraftingMenu] Levantando objeto del slot {item.sourceSlotIndex}.");
+
+                // Vaciamos el ID en la lógica para que el hueco se considere libre
+                m_CurrentGridIds[index] = -1;
+
+                // Mantenemos los datos en el DraggableItem que estamos moviendo,
+                // pero vaciamos la imagen visual del slot de origen
+                if (gridImages[index] != null)
+                {
+                    gridImages[index].color = new Color(0, 0, 0, 0);
+                    // No quitamos el sprite todavía para que el "fantasma" que arrastramos sea visible
+                }
+            }
+        }
+
+        private void ClearSlot(int index)
+        {
+            m_CurrentGridIds[index] = -1;
+            if (gridImages[index] != null)
+            {
+                gridImages[index].color = new Color(0, 0, 0, 0);
+                gridImages[index].sprite = null;
+            }
+            if (m_GridDraggables[index] != null)
+            {
+                m_GridDraggables[index].itemData = null;
+            }
         }
 
         /// <summary>
-        /// Ejecuta un intercambio (Dropear materiales y recoger producto).
+        /// Maneja el drop de objetos.
+        /// Slot 0 = Padre (Autoubicación)
+        /// Slots 1-9 = Cuadrantes específicos
         /// </summary>
+        public void OnItemDroppedInSlot(Data.ItemData item, int amount, int slotIndex)
+        {
+            if (item == null) return;
+
+            int targetIndex = -1;
+
+            if (slotIndex == 0)
+            {
+                // Buscamos el primer hueco vacío en los cuadrantes (índices 0-8 internos, que son slots 1-9 UI)
+                for (int i = 0; i < 9; i++)
+                {
+                    if (m_CurrentGridIds[i] == -1)
+                    {
+                        targetIndex = i;
+                        break;
+                    }
+                }
+
+                if (targetIndex == -1)
+                {
+                    Debug.LogWarning("[CraftingMenu] La rejilla está llena. No se puede autoubicación.");
+                    return;
+                }
+            }
+            else
+            {
+                // El usuario soltó en un cuadrante específico (1-9)
+                targetIndex = slotIndex - 1;
+            }
+
+            if (targetIndex >= 0 && targetIndex < 9)
+            {
+                UpdateSlot(targetIndex, item);
+            }
+        }
+
+        private void UpdateSlot(int index, Data.ItemData item)
+        {
+            m_CurrentGridIds[index] = item.ItemID;
+
+            if (gridImages[index] != null)
+            {
+                gridImages[index].color = Color.white;
+                gridImages[index].sprite = item.Icon;
+            }
+
+            if (m_GridDraggables[index] != null)
+            {
+                m_GridDraggables[index].itemData = item;
+            }
+
+            Debug.Log($"[CraftingMenu] Cuadrante {index + 1} actualizado con {item.ItemName}");
+            CheckForValidRecipe();
+        }
+
+        private void CheckForValidRecipe()
+        {
+            // Lógica para detectar recetas basadas en la posición de la rejilla
+        }
+
         public void OnClickTrade(int recipeIndex)
         {
             if (tradeService == null)
@@ -61,7 +157,7 @@ namespace NGO.Networking
 
             if (possibleTrades == null || recipeIndex < 0 || recipeIndex >= possibleTrades.Length)
             {
-                Debug.LogError($"[CraftingMenu] Índice de receta {recipeIndex} fuera de rango o lista vacía.");
+                Debug.LogError($"[CraftingMenu] Índice de receta {recipeIndex} fuera de rango.");
                 return;
             }
 
@@ -85,7 +181,7 @@ namespace NGO.Networking
             }
             else
             {
-                Debug.LogWarning("[CraftingMenu] Trabajando en modo OFFLINE. La red no está conectada.");
+                Debug.LogWarning("[CraftingMenu] Modo OFFLINE.");
             }
         }
     }

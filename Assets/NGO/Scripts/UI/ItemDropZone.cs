@@ -11,22 +11,20 @@ namespace NGO.UI
     public class ItemDropZone : MonoBehaviour, IDropHandler
     {
         [System.Serializable]
-        public class OnItemDroppedEvent : UnityEvent<ItemData, int> { }
+        public class OnItemDroppedEvent : UnityEvent<ItemData, int, int> { }
 
-        public OnItemDroppedEvent onItemDropped;
+        public int slotIndex = 0; // El ID de este slot (0-8)
+        public OnItemDroppedEvent onItemDropped = new OnItemDroppedEvent();
 
         public void OnDrop(PointerEventData eventData)
         {
             if (eventData.pointerDrag != null)
             {
                 DraggableItem draggable = eventData.pointerDrag.GetComponent<DraggableItem>();
-                if (draggable != null)
+                if (draggable != null && draggable.itemData != null)
                 {
-                    Debug.Log($"[DropZone] Objeto detectado: {draggable.itemData.ItemName}");
-                    onItemDropped.Invoke(draggable.itemData, draggable.amount);
-
-                    // Opcional: Devolver el objeto a su origen o destruirlo si el market lo "consume" visualmente
-                    // Por ahora el DraggableItem volverá a su sitio en OnEndDrag si no cambiamos su padre.
+                    Debug.Log($"[DropZone] Objeto detectado: {draggable.itemData.ItemName} en slot {slotIndex}");
+                    onItemDropped?.Invoke(draggable.itemData, draggable.amount, slotIndex);
                 }
             }
         }
