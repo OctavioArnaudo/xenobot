@@ -2,6 +2,8 @@
 #if ENABLE_INPUT_SYSTEM 
 using UnityEngine.InputSystem;
 #endif
+using Unity.Netcode;
+using Unity.Cinemachine;
 
 /* Note: animations are called via the controller for both the character and capsule using animator null checks
  */
@@ -12,7 +14,7 @@ namespace StarterAssets
 #if ENABLE_INPUT_SYSTEM 
     [RequireComponent(typeof(PlayerInput))]
 #endif
-    public class ThirdPersonController : MonoBehaviour
+    public class ThirdPersonController : NetworkBehaviour
     {
         [Header("Player")]
         [Tooltip("Move speed of the character in m/s")]
@@ -108,6 +110,12 @@ public bool IsRespawning { get; set; } = false;
         private int _animIDFreeFall;
         private int _animIDMotionSpeed;
 
+        private bool _hasAnimIDSpeed;
+        private bool _hasAnimIDGrounded;
+        private bool _hasAnimIDJump;
+        private bool _hasAnimIDFreeFall;
+        private bool _hasAnimIDMotionSpeed;
+
 #if ENABLE_INPUT_SYSTEM 
         private PlayerInput _playerInput;
 #endif
@@ -164,10 +172,81 @@ public bool IsRespawning { get; set; } = false;
     // reset our timeouts on start
     _jumpTimeoutDelta = JumpTimeout;
     _fallTimeoutDelta = FallTimeout;
+
+    // Si NO estamos en un entorno de red, configuramos todo localmente
+    if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+    {
+        SetupPlayerLocal();
+    }
 }
+
+        private void SetupPlayerLocal()
+        {
+            if (_playerInput != null)
+            {
+                _playerInput.enabled = true;
+                _playerInput.ActivateInput();
+            }
+            SetupCamera();
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            // Si el objeto ya se configuró en Start (modo local), no repetimos lógica pesada
+            // pero OnNetworkSpawn es donde NGO nos dice quién es el dueño real.
+
+            if (IsOwner)
+            {
+                SetupPlayerLocal();
+                // Suscribirse al evento de carga de escena para re-vincular la cámara
+                UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+            }
+            else
+            {
+                // Desactivar componentes que no deben correr en clones remotos
+                if (TryGetComponent<PlayerInput>(out var pInput)) pInput.enabled = false;
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (IsOwner)
+            {
+                UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+            }
+        }
+
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (IsOwner)
+            {
+                SetupCamera();
+                // A veces es necesario reactivar el input tras el cambio de escena
+                if (_playerInput != null) _playerInput.ActivateInput();
+            }
+        }
+
+        private void SetupCamera()
+        {
+            // Re-vincular la cámara principal para el cálculo de rotación
+            _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+
+            // Busca la cámara virtual de Cinemachine en la escena
+            CinemachineCamera vcam = GameObject.FindAnyObjectByType<CinemachineCamera>();
+            if (vcam != null && CinemachineCameraTarget != null)
+            {
+                vcam.Follow = CinemachineCameraTarget.transform;
+                vcam.LookAt = CinemachineCameraTarget.transform;
+                Debug.Log("[ThirdPersonController] Cámara vinculada al jugador local en la escena: " + UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+            }
+        }
 
         private void Update()
         {
+            // Si el objeto está en red y NO soy el dueño, no proceso nada.
+            // Si NO está en red (IsSpawned es false), procedo normalmente como jugador local.
+            if (IsSpawned && !IsOwner) return;
+
             _hasAnimator = TryGetComponent(out _animator);
 
             JumpAndGravity();
@@ -177,6 +256,8 @@ public bool IsRespawning { get; set; } = false;
 
         private void LateUpdate()
         {
+            if (IsSpawned && !IsOwner) return;
+
             CameraRotation();
         }
 
@@ -187,6 +268,24 @@ public bool IsRespawning { get; set; } = false;
             _animIDJump = Animator.StringToHash("Jump");
             _animIDFreeFall = Animator.StringToHash("FreeFall");
             _animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
+
+            if (_hasAnimator)
+            {
+                _hasAnimIDSpeed = HasParameter(_animator, _animIDSpeed);
+                _hasAnimIDGrounded = HasParameter(_animator, _animIDGrounded);
+                _hasAnimIDJump = HasParameter(_animator, _animIDJump);
+                _hasAnimIDFreeFall = HasParameter(_animator, _animIDFreeFall);
+                _hasAnimIDMotionSpeed = HasParameter(_animator, _animIDMotionSpeed);
+            }
+        }
+
+        private bool HasParameter(Animator animator, int paramHash)
+        {
+            foreach (AnimatorControllerParameter param in animator.parameters)
+            {
+                if (param.nameHash == paramHash) return true;
+            }
+            return false;
         }
 
         private void GroundedCheck()
@@ -198,7 +297,7 @@ public bool IsRespawning { get; set; } = false;
                 QueryTriggerInteraction.Ignore);
 
             // update animator if using character
-            if (_hasAnimator)
+            if (_hasAnimator && _hasAnimIDGrounded)
             {
                 _animator.SetBool(_animIDGrounded, Grounded);
             }
@@ -283,8 +382,14 @@ public bool IsRespawning { get; set; } = false;
             // if there is a move input rotate player when the player is moving
             if (_input.move != Vector2.zero)
             {
-                _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg +
-                                  _mainCamera.transform.eulerAngles.y;
+                if (_mainCamera == null) _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+
+                if (_mainCamera != null)
+                {
+                    _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg +
+                                      _mainCamera.transform.eulerAngles.y;
+                }
+
                 float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity,
                     RotationSmoothTime);
 
@@ -302,8 +407,8 @@ public bool IsRespawning { get; set; } = false;
             // update animator if using character
             if (_hasAnimator)
             {
-                _animator.SetFloat(_animIDSpeed, _animationBlend);
-                _animator.SetFloat(_animIDMotionSpeed, inputMagnitude);
+                if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, _animationBlend);
+                if (_hasAnimIDMotionSpeed) _animator.SetFloat(_animIDMotionSpeed, inputMagnitude);
             }
         }
 
@@ -317,8 +422,8 @@ public bool IsRespawning { get; set; } = false;
                 // update animator if using character
                 if (_hasAnimator)
                 {
-                    _animator.SetBool(_animIDJump, false);
-                    _animator.SetBool(_animIDFreeFall, false);
+                    if (_hasAnimIDJump) _animator.SetBool(_animIDJump, false);
+                    if (_hasAnimIDFreeFall) _animator.SetBool(_animIDFreeFall, false);
                 }
 
                 // stop our velocity dropping infinitely when grounded
@@ -334,7 +439,7 @@ public bool IsRespawning { get; set; } = false;
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
 
                     // update animator if using character
-                    if (_hasAnimator)
+                    if (_hasAnimator && _hasAnimIDJump)
                     {
                         _animator.SetBool(_animIDJump, true);
                     }
@@ -359,7 +464,7 @@ public bool IsRespawning { get; set; } = false;
                 else
                 {
                     // update animator if using character
-                    if (_hasAnimator)
+                    if (_hasAnimator && _hasAnimIDFreeFall)
                     {
                         _animator.SetBool(_animIDFreeFall, true);
                     }
