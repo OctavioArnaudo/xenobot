@@ -520,6 +520,8 @@ GameObject:
   - component: {fileID: 7736108665850884707}
   - component: {fileID: 582523834337148413}
   - component: {fileID: 1092917086345291418}
+  - component: {fileID: -6156563700359369647}
+  - component: {fileID: 7450631966458783124}
   m_Layer: 3
   m_Name: PlayerPrefab
   m_TagString: Player
@@ -616,6 +618,45 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &-6156563700359369647
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1804703078109025515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51c8784d31e4e104f84c06fdcde69941, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Inventory
+  panelWidth: 1500
+  panelHeight: 1000
+  columns: 6
+  cellSize: 250
+  padding: 250
+  titleH: 250
+  qtyFontSize: 22
+  cornerRadius: 12
+  dropDistance: 2.5
+  droppedWorldSize: 1
+--- !u!114 &7450631966458783124
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1804703078109025515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d1a225d463df8047ae5ef5df99cf6a9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::melee
+  attackRange: 2
+  attackDamage: 25
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 0
 --- !u!1 &1833995220940253086
 GameObject:
   m_ObjectHideFlags: 0
@@ -1971,6 +2012,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 26e54e5a728a9234ab24fcf1460ed8a2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   MoveSpeed: 6
   SprintSpeed: 12
   RotationSmoothTime: 0.12
