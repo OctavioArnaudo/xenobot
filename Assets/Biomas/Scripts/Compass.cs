@@ -33,17 +33,17 @@ public class Compass : MonoBehaviour
 
             if (element.Value.IsDirection)
             {
-                angle = Vector3.SignedAngle(m_PlayerTransform.forward,
+                angle = Vector3.SignedAngle(transform.forward,
                     element.Key.transform.localPosition.normalized, Vector3.up);
             }
             else
             {
-                Vector3 targetDir = (element.Key.transform.position - m_PlayerTransform.position).normalized;
+                Vector3 targetDir = (element.Key.transform.position - transform.position).normalized;
                 targetDir = Vector3.ProjectOnPlane(targetDir, Vector3.up);
-                Vector3 playerForward = Vector3.ProjectOnPlane(m_PlayerTransform.forward, Vector3.up);
+                Vector3 playerForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
                 angle = Vector3.SignedAngle(playerForward, targetDir, Vector3.up);
 
-                Vector3 directionVector = element.Key.transform.position - m_PlayerTransform.position;
+                Vector3 directionVector = element.Key.transform.position - transform.position;
 
                 heightDifference = (directionVector.y) * HeightDifferenceMultiplier;
                 heightDifference = Mathf.Clamp(heightDifference, -CompasRect.rect.height / 2 * CompasMarginRatio,
