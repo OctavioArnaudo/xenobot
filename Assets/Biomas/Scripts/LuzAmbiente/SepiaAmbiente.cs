@@ -29,7 +29,7 @@ public class SepiaAmbiente : MonoBehaviour
         RenderSettings.fogDensity = densidadNiebla;
 
         // Luz direccional (si existe en escena)
-        if (_luz == null) _luz = FindObjectOfType<Light>();
+        if (_luz == null) _luz = FindFirstObjectByType<Light>();
         if (_luz != null)
         {
             _luz.color = luzDireccional;
