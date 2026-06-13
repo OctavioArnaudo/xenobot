@@ -1,72 +1,93 @@
-// SepiaParticulas.cs
-using UnityEngine;
+﻿using UnityEngine;
 
-public class SepiaParticulas : MonoBehaviour
+/// <summary>
+/// Lluvia de partículas rojas que cae desde arriba del player.
+/// El emitter es una caja plana y ancha flotando sobre el player —
+/// se mueve con él, así la lluvia cubre siempre lo que la cámara ve.
+/// </summary>
+public class BiomaParticles : MonoBehaviour
 {
-    [Range(50, 500)] public int cantidad = 200;
-    [Range(0.01f, 0.2f)] public float velocidad = 0.04f;
-    [Range(1f, 20f)] public float radio = 8f;
-    [Range(0f, 1f)] public float opacidad = 0.35f;
+    [Header("Lluvia")]
+    [Tooltip("Ancho y largo del área de emisión (metros)")]
+    public float areaSize = 50f;
+    [Tooltip("Altura del emitter sobre el player")]
+    public float heightAbove = 18f;
+    [Tooltip("Velocidad de caída")]
+    public float fallSpeed = 6f;
 
+    [Header("Partículas")]
+    public int count = 400;
+    public float minSize = 0.08f;
+    public float maxSize = 0.25f;
+    public Color color = new Color(1f, 0.05f, 0.02f, 0.9f);
+
+    Transform _player;
     ParticleSystem _ps;
 
-    void Start() => Construir();
-
-    void Construir()
+    void Start()
     {
         _ps = gameObject.AddComponent<ParticleSystem>();
 
-        // ?? Main ??????????????????????????????????????????
         var main = _ps.main;
         main.loop = true;
-        main.startLifetime = new ParticleSystem.MinMaxCurve(6f, 14f);
-        main.startSpeed = new ParticleSystem.MinMaxCurve(velocidad * 0.5f, velocidad);
-        main.startSize = new ParticleSystem.MinMaxCurve(0.01f, 0.06f);
-        main.maxParticles = cantidad;
-        main.simulationSpace = ParticleSystemSimulationSpace.World;
+        main.prewarm = true;
+        main.startLifetime = heightAbove / fallSpeed + 1f; // tiempo exacto hasta el suelo
+        main.startSpeed = fallSpeed;
+        main.startSize = new ParticleSystem.MinMaxCurve(minSize, maxSize);
+        main.startColor = color;
+        main.maxParticles = count;
+        main.gravityModifier = 1f;           // caída natural con física
+        main.startRotation = new ParticleSystem.MinMaxCurve(0f, 360f * Mathf.Deg2Rad);
+        // Local: todo el volumen (emitter + partículas) se mueve con el transform
+        main.simulationSpace = ParticleSystemSimulationSpace.Local;
 
-        // color sepia�rojizo con variaci�n
-        main.startColor = new ParticleSystem.MinMaxGradient(
-            new Color(0.65f, 0.20f, 0.08f, opacidad),
-            new Color(0.40f, 0.12f, 0.05f, opacidad * 0.5f)
-        );
-
-        // ?? Emission ??????????????????????????????????????
         var em = _ps.emission;
-        em.rateOverTime = cantidad / 12f;
+        em.rateOverTime = count / main.startLifetime.constant;
 
-        // ?? Shape: esfera para polvo ambiental ????????????
+        // Caja plana y ancha — emisión distribuida en toda el área horizontal
         var sh = _ps.shape;
-        sh.shapeType = ParticleSystemShapeType.Sphere;
-        sh.radius = radio;
+        sh.enabled = true;
+        sh.shapeType = ParticleSystemShapeType.Box;
+        sh.scale = new Vector3(areaSize, 0.1f, areaSize); // plana en Y
 
-        // ?? Velocity over lifetime: deriva suave ??????????
+        // Dirección fija hacia abajo
         var vel = _ps.velocityOverLifetime;
-        vel.enabled = true;
-        vel.space = ParticleSystemSimulationSpace.World;
-        vel.x = new ParticleSystem.MinMaxCurve(-velocidad, velocidad);
-        vel.y = new ParticleSystem.MinMaxCurve(velocidad * 0.2f, velocidad * 0.6f);
-        vel.z = new ParticleSystem.MinMaxCurve(-velocidad, velocidad);
+        vel.enabled = false;
 
-        // ?? Fade in/out ???????????????????????????????????
-        var col = _ps.colorOverLifetime;
-        col.enabled = true;
-        var grad = new Gradient();
-        grad.SetKeys(
-            new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
-            new[]{ new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.15f),
-                   new GradientAlphaKey(1f, 0.85f), new GradientAlphaKey(0f, 1f) }
-        );
-        col.color = grad;
-
-        // ?? Size over lifetime: part�culas m�s peque�as al final
-        var siz = _ps.sizeOverLifetime;
-        siz.enabled = true;
-        var szCurve = new AnimationCurve(
-            new Keyframe(0f, 1f), new Keyframe(0.5f, 0.7f), new Keyframe(1f, 0.3f)
-        );
-        siz.size = new ParticleSystem.MinMaxCurve(1f, szCurve);
+        var rend = _ps.GetComponent<ParticleSystemRenderer>();
+        rend.renderMode = ParticleSystemRenderMode.Billboard;
+        rend.material = MakeMaterial();
 
         _ps.Play();
+    }
+
+    void LateUpdate()
+    {
+        // Encontrar player una sola vez
+        if (_player == null)
+        {
+            var go = GameObject.FindGameObjectWithTag("Player");
+            if (go != null) _player = go.transform;
+        }
+
+        // Emitter flota sobre el player
+        if (_player != null)
+            transform.position = _player.position + Vector3.up * heightAbove;
+    }
+
+    Material MakeMaterial()
+    {
+        string[] shaders = {
+            "Legacy Shaders/Particles/Additive",
+            "Legacy Shaders/Particles/Alpha Blended",
+            "Mobile/Particles/Additive",
+            "Sprites/Default",
+        };
+        foreach (var n in shaders)
+        {
+            var sh = Shader.Find(n);
+            if (sh != null) { var m = new Material(sh); m.color = color; return m; }
+        }
+        return new Material(Shader.Find("Standard")) { color = color };
     }
 }
