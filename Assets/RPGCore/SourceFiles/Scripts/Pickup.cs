@@ -30,9 +30,20 @@ public class Pickup : MonoBehaviour
     {
         if (_taken || !other.CompareTag("Player")) return;
         _taken = true;
-        Inventory.Add(item);
+
+        // EXP — no va al inventario, va directo al sistema de stats
+        if (item != null && item.expValue > 0f)
+        {
+            CharacterStats.Instance?.AddExp(item.expValue);
+        }
+        else
+        {
+            Inventory.Add(item);
+        }
+
         if (particleEffectPrefab != null)
             Instantiate(particleEffectPrefab, transform.position, Quaternion.identity);
+
         Destroy(gameObject);
     }
 }
