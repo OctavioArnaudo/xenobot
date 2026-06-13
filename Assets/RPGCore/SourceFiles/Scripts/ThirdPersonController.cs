@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 #endif
 using Unity.Netcode;
 using Unity.Cinemachine;
+using NGO.Networking;
 
 /* Note: animations are called via the controller for both the character and capsule using animator null checks
  */
@@ -14,7 +15,7 @@ namespace StarterAssets
 #if ENABLE_INPUT_SYSTEM 
     [RequireComponent(typeof(PlayerInput))]
 #endif
-    public class ThirdPersonController : NetworkBehaviour
+    public class ThirdPersonController : NetworkSingleton<ThirdPersonController>
     {
         [Header("Player")]
         [Tooltip("Move speed of the character in m/s")]
@@ -192,6 +193,7 @@ public bool IsRespawning { get; set; } = false;
 
         public override void OnNetworkSpawn()
         {
+            base.OnNetworkSpawn();
             // Si el objeto ya se configuró en Start (modo local), no repetimos lógica pesada
             // pero OnNetworkSpawn es donde NGO nos dice quién es el dueño real.
 
@@ -210,6 +212,7 @@ public bool IsRespawning { get; set; } = false;
 
         public override void OnNetworkDespawn()
         {
+            base.OnNetworkDespawn();
             if (IsOwner)
             {
                 UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;

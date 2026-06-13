@@ -1,13 +1,14 @@
 using Unity.Netcode;
 using UnityEngine;
 
+namespace NGO.Networking
+{
     /// <summary>
-    /// Un Singleton para NetworkBehaviours que solo gestiona duplicados si el cliente local es el dueño.
-    /// Esto evita que los prefabs de otros jugadores (proxies) sean destruidos accidentalmente
-    /// cuando intentan registrarse como la instancia local.
+    /// Base para Singletons de red que gestiona transiciones entre escenas.
+    /// Si al cargar una escena nueva ya existe un objeto persistente del jugador,
+    /// el objeto "placeholder" de la escena de destino se destruirá a sí mismo.
     /// </summary>
-    /// <typeparam name="T">El tipo del componente que hereda de NetworkBehaviour</typeparam>
-    public class NetworkSingleton<T> : NetworkBehaviour where T : NetworkBehaviour
+    public abstract class NetworkSingleton<T> : NetworkBehaviour where T : NetworkBehaviour
     {
         private static T s_Instance;
 
@@ -17,9 +18,8 @@ using UnityEngine;
             {
                 if (s_Instance == null)
                 {
-                    // Fallback: Buscar en la escena un objeto de este tipo que sea propiedad del cliente local
-                    T[] foundObjects = Object.FindObjectsByType<T>(FindObjectsSortMode.None);
-                    foreach (T obj in foundObjects)
+                    T[] objects = Object.FindObjectsByType<T>(FindObjectsSortMode.None);
+                    foreach (var obj in objects)
                     {
                         if (obj.IsOwner)
                         {
@@ -36,37 +36,47 @@ using UnityEngine;
         {
             base.OnNetworkSpawn();
 
-            // Si NO somos los dueños de este objeto, no es "nuestra" instancia singleton.
-            // Es la representación (proxy) de otro jugador en nuestro mundo.
-            if (!IsOwner) return;
-
             if (s_Instance != null && s_Instance != this)
             {
-                // Solo destruimos el objeto si somos dueños de ambos.
-                // Esto sucede típicamente si el objeto persiste entre escenas pero se spawnea uno nuevo erróneamente.
-                if (s_Instance.IsOwner)
+                // Si ya existe una instancia de la que soy dueño (la que viene de la escena anterior)
+                // y este nuevo objeto también es mío (el que estaba puesto en la escena de destino):
+                if (IsOwner && s_Instance.IsOwner)
                 {
-                    Debug.LogWarning($"[NetworkSingleton] Se detectó un duplicado de {typeof(T).Name} del cual eres dueño. Destruyendo el nuevo para mantener la unicidad local.");
+                    Debug.Log($"[NetworkSingleton] Se detectó un {typeof(T).Name} en la escena de destino. Destruyendo duplicado local para mantener el personaje persistente.");
 
-                    gameObject.SetActive(false);
-                    Destroy(gameObject);
+                    // Nos destruimos a nosotros mismos (el objeto de la escena de destino)
+                    if (gameObject != null) Destroy(gameObject);
                     return;
                 }
-            }
 
-            // Establecer como la instancia local de referencia
-            s_Instance = this as T;
-            Debug.Log($"[NetworkSingleton] {typeof(T).Name} registrado como instancia local para el Owner.");
+                // Si la instancia actual no es nuestra (proxy) pero este objeto nuevo sí lo es,
+                // tomamos el control del Singleton local para el cliente.
+                if (IsOwner && !s_Instance.IsOwner)
+                {
+                    s_Instance = this as T;
+                }
+            }
+            else if (IsOwner || s_Instance == null)
+            {
+                s_Instance = this as T;
+            }
         }
 
         public override void OnNetworkDespawn()
         {
+            if (s_Instance == this)
+            {
+                s_Instance = null;
+            }
             base.OnNetworkDespawn();
+        }
 
-            // Limpiar la referencia estática solo si el objeto que desaparece es nuestra instancia
-            if (IsOwner && s_Instance == this)
+        protected virtual void OnDestroy()
+        {
+            if (s_Instance == this)
             {
                 s_Instance = null;
             }
         }
     }
+}
