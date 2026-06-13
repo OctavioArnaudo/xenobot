@@ -71,12 +71,13 @@ namespace NGO.Networking
             base.OnNetworkDespawn();
         }
 
-        protected virtual void OnDestroy()
+        public override void OnDestroy()
         {
             if (s_Instance == this)
             {
                 s_Instance = null;
             }
+            base.OnDestroy();
         }
     }
 }
