@@ -6445,7 +6445,7 @@ GameObject:
   - component: {fileID: 2124710118}
   - component: {fileID: 2124710117}
   m_Layer: 3
-  m_Name: GameObject
+  m_Name: OrbedeExperiencia
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6464,11 +6464,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExpOrb
   expAmount: 25
-  sphereRadius: 5
+  sphereRadius: 0.5
   glowColor: {r: 1, g: 0.85, b: 0.1, a: 1}
-  lightIntensity: 5
-  lightRange: 10
-  bobSpeed: 2
+  lightIntensity: 15
+  lightRange: 15
+  bobSpeed: 25
   bobAmount: 0.15
   rotateSpeed: 90
 --- !u!4 &2124710118
@@ -6480,7 +6480,7 @@ Transform:
   m_GameObject: {fileID: 2124710116}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1102, y: 134, z: -163}
+  m_LocalPosition: {x: 327, y: 30.1, z: -431.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
