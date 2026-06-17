@@ -2577,6 +2577,7 @@ GameObject:
   m_Component:
   - component: {fileID: 660153724}
   - component: {fileID: 660153723}
+  - component: {fileID: 660153725}
   m_Layer: 0
   m_Name: Square (3)
   m_TagString: Untagged
@@ -2658,6 +2659,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 89.646, y: 0, z: 0.136}
+--- !u!65 &660153725
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 660153722}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1.0000001, y: 1.0000001, z: 0.07447728}
+  m_Center: {x: -0.00000012267108, y: -0.0000004940503, z: 0.03562099}
 --- !u!1001 &689552935
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3552,6 +3574,7 @@ GameObject:
   m_Component:
   - component: {fileID: 902488231}
   - component: {fileID: 902488230}
+  - component: {fileID: 902488232}
   m_Layer: 0
   m_Name: Square (1)
   m_TagString: Untagged
@@ -3633,6 +3656,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 89.645, y: 0.001, z: -89.947}
+--- !u!65 &902488232
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 902488229}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.9999999, y: 1.0000008, z: 0.106005564}
+  m_Center: {x: 3.0104697e-12, y: -3.796632e-14, z: 0.046997517}
 --- !u!1001 &936260162
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -7756,6 +7800,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1872854074}
   - component: {fileID: 1872854073}
+  - component: {fileID: 1872854075}
   m_Layer: 0
   m_Name: Square
   m_TagString: Untagged
@@ -7837,6 +7882,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 89.646, y: 0, z: 0.136}
+--- !u!65 &1872854075
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1872854072}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1.0000001, z: 0.02565541}
+  m_Center: {x: -0.00000012575823, y: 1.9147977e-12, z: -0.0052394303}
 --- !u!1001 &1877054447
 PrefabInstance:
   m_ObjectHideFlags: 0
