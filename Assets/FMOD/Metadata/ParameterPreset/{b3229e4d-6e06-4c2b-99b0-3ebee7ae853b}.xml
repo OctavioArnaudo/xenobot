@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{b3229e4d-6e06-4c2b-99b0-3ebee7ae853b}">
+		<property name="name">
+			<value>Arma</value>
+		</property>
+		<relationship name="folder">
+			<destination>{da8081ca-8b7b-4c9a-887d-ddd6aa7fb874}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{565312ea-f46a-4263-a914-caf24a2c243e}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{565312ea-f46a-4263-a914-caf24a2c243e}">
+		<property name="parameterType">
+			<value>1</value>
+		</property>
+		<property name="maximum">
+			<value>3</value>
+		</property>
+		<property name="initialValue">
+			<value>0</value>
+		</property>
+	</object>
+</objects>
