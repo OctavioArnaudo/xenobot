@@ -4078,7 +4078,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 26.379997
+      value: 30.949997
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalPosition.z
@@ -4759,7 +4759,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 25.45
+      value: 30.02
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalPosition.z
@@ -5316,6 +5316,14 @@ PrefabInstance:
     - target: {fileID: 7736108665850884707, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8296376290313619657, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: m_Height
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 8296376290313619657, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: m_Center.y
+      value: 2.84
       objectReference: {fileID: 0}
     - target: {fileID: 8303322781246357501, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: m_LocalPosition.x
@@ -11129,7 +11137,7 @@ Transform:
   m_GameObject: {fileID: 2124710116}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 327, y: 30.1, z: -431.3}
+  m_LocalPosition: {x: 327, y: 27.745, z: -431.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -11302,7 +11310,7 @@ GameObject:
   - component: {fileID: 39388997239660420}
   - component: {fileID: 1643024777348811118}
   - component: {fileID: 1279265236461663237}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Star_Model
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -11805,7 +11813,7 @@ GameObject:
   - component: {fileID: 7093868400989982257}
   - component: {fileID: 8020368418762922102}
   - component: {fileID: 8020368418762922103}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Collectible_Star (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
