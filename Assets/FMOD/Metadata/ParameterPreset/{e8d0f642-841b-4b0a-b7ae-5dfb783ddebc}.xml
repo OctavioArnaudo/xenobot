@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.03.00">
+	<object class="ParameterPreset" id="{e8d0f642-841b-4b0a-b7ae-5dfb783ddebc}">
+		<property name="name">
+			<value>Zona trigger</value>
+		</property>
+		<relationship name="folder">
+			<destination>{da8081ca-8b7b-4c9a-887d-ddd6aa7fb874}</destination>
+		</relationship>
+		<relationship name="parameter">
+			<destination>{e3680bc2-03a6-4cbe-b01e-ba620b31b3eb}</destination>
+		</relationship>
+	</object>
+	<object class="GameParameter" id="{e3680bc2-03a6-4cbe-b01e-ba620b31b3eb}">
+		<property name="parameterType">
+			<value>2</value>
+		</property>
+		<property name="maximum">
+			<value>2</value>
+		</property>
+		<property name="enumerationLabels">
+			<value>Chill</value>
+			<value>Enemigos- Accion</value>
+		</property>
+		<property name="initialValue">
+			<value>0</value>
+		</property>
+	</object>
+</objects>
