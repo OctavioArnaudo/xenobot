@@ -144,6 +144,8 @@ public bool IsRespawning { get; set; } = false;
 
         private void Awake()
         {
+            base.Awake();
+
             // get a reference to our main camera
             if (_mainCamera == null)
             {
@@ -194,6 +196,10 @@ public bool IsRespawning { get; set; } = false;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+
+            // Si base.OnNetworkSpawn detectó un duplicado y lo marcó para destruir, no continuamos.
+            if (Instance != this) return;
+
             // Si el objeto ya se configuró en Start (modo local), no repetimos lógica pesada
             // pero OnNetworkSpawn es donde NGO nos dice quién es el dueño real.
 

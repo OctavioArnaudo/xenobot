@@ -32,20 +32,30 @@ namespace NGO.Networking
             }
         }
 
+        protected virtual void Awake()
+        {
+            // Detección temprana para destruir placeholders de la escena si ya existe un jugador persistente
+            if (s_Instance != null && s_Instance != this && s_Instance.IsOwner)
+            {
+                Debug.Log($"[NetworkSingleton] {typeof(T).Name} duplicado detectado en Awake. Destruyendo placeholder de la escena.");
+                Destroy(gameObject);
+            }
+        }
+
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
 
+            // Si ya existe una instancia de la que soy dueño (la que viene de la escena anterior)
+            // y este nuevo objeto también es mío (el que estaba puesto en la escena de destino):
             if (s_Instance != null && s_Instance != this)
             {
-                // Si ya existe una instancia de la que soy dueño (la que viene de la escena anterior)
-                // y este nuevo objeto también es mío (el que estaba puesto en la escena de destino):
                 if (IsOwner && s_Instance.IsOwner)
                 {
                     Debug.Log($"[NetworkSingleton] Se detectó un {typeof(T).Name} en la escena de destino. Destruyendo duplicado local para mantener el personaje persistente.");
 
                     // Nos destruimos a nosotros mismos (el objeto de la escena de destino)
-                    if (gameObject != null) Destroy(gameObject);
+                    Destroy(gameObject);
                     return;
                 }
 
@@ -59,6 +69,14 @@ namespace NGO.Networking
             else if (IsOwner || s_Instance == null)
             {
                 s_Instance = this as T;
+            }
+
+            // Asegurar persistencia para el objeto del jugador local
+            if (IsOwner)
+            {
+                transform.SetParent(null);
+                DontDestroyOnLoad(gameObject);
+                Debug.Log($"[NetworkSingleton] {typeof(T).Name} marcado como persistente (DontDestroyOnLoad).");
             }
         }
 
