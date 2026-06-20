@@ -560,7 +560,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2797327281
+  GlobalObjectIdHash: 2661344303
   InScenePlacedSourceGlobalObjectIdHash: 2797327281
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1666,7 +1666,7 @@ Transform:
   m_GameObject: {fileID: 4635943162753486610}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.70710576, z: -0, w: 0.7071079}
-  m_LocalPosition: {x: -8, y: 4.140625, z: -0.1737976}
+  m_LocalPosition: {x: -8.000025, y: 4.140625, z: 6.9662313}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1983,7 +1983,7 @@ Transform:
   m_GameObject: {fileID: 5633379113638269974}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: 0.70710576, z: -0, w: 0.7071079}
-  m_LocalPosition: {x: 0, y: 0.2, z: -0.25}
+  m_LocalPosition: {x: -0, y: 0.2, z: 6.89}
   m_LocalScale: {x: 0.81251, y: 0.8125, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2010,13 +2010,13 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 1.8
+  m_Height: 5
   m_Radius: 0.28
   m_SlopeLimit: 45
   m_StepOffset: 0.25
   m_SkinWidth: 0.02
   m_MinMoveDistance: 0
-  m_Center: {x: 0, y: 0.93, z: 0}
+  m_Center: {x: 0, y: 2.84, z: 0}
 --- !u!114 &2563429732134213952
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2030,8 +2030,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  MoveSpeed: 35
-  SprintSpeed: 45
+  MoveSpeed: 20
+  SprintSpeed: 30
   RotationSmoothTime: 0.12
   SpeedChangeRate: 10
   LandingAudioClip: {fileID: 8300000, guid: ff697d3070687ce4583faa0561a145a2, type: 3}
@@ -2047,8 +2047,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 274649b0e221539409070ebf6c18918b, type: 3}
   - {fileID: 8300000, guid: a3194b8bbc96ef84fab1f98f4b7dae3e, type: 3}
   FootstepAudioVolume: 0.3
-  JumpHeight: 10
-  Gravity: -40
+  JumpHeight: 6
+  Gravity: -60
   JumpTimeout: 0.3
   FallTimeout: 0.15
   Grounded: 1
@@ -2292,7 +2292,7 @@ Transform:
   m_GameObject: {fileID: 5744773588333972899}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.70710576, z: 0, w: 0.7071079}
-  m_LocalPosition: {x: -8, y: 4.140625, z: -0.1737976}
+  m_LocalPosition: {x: -8.000025, y: 4.140625, z: 6.9662313}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2307,8 +2307,8 @@ Camera:
   m_GameObject: {fileID: 5744773588333972899}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 1
-  m_BackGroundColor: {r: 0.972549, g: 0.95686275, b: 0.92941177, a: 0}
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0.06, g: 0.02, b: 0.01, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
