@@ -522,6 +522,7 @@ GameObject:
   - component: {fileID: -6156563700359369647}
   - component: {fileID: 7450631966458783124}
   - component: {fileID: -1159158973847089039}
+  - component: {fileID: -701033391835306716}
   m_Layer: 3
   m_Name: PlayerPrefab
   m_TagString: Player
@@ -606,6 +607,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d1a225d463df8047ae5ef5df99cf6a9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::melee
+  ShowTopMostFoldoutHeaderGroup: 1
   attackRange: 2
   attackDamage: 25
   enemyLayer:
@@ -628,6 +630,26 @@ MonoBehaviour:
   attackPerLevel: 2
   defensePerLevel: 1.5
   expToLevelUp: 100
+--- !u!114 &-701033391835306716
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1804703078109025515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a2287ecea553024bafedd43a970dc61, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
+  ShowTopMostFoldoutHeaderGroup: 1
+  maxHealth: 100
+  maxJetpack: 100
+  healthColor: {r: 0.85, g: 0.1, b: 0.1, a: 1}
+  jetpackColor: {r: 0.1, g: 0.85, b: 0.85, a: 1}
+  backgroundColor: {r: 0, g: 0, b: 0, a: 0.6}
+  flashFullColor: {r: 1, g: 1, b: 1, a: 1}
+  flashEmptyColor: {r: 1, g: 0.3, b: 0.3, a: 1}
 --- !u!1 &1833995220940253086
 GameObject:
   m_ObjectHideFlags: 0
