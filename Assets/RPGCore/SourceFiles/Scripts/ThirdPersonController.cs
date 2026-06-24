@@ -142,7 +142,7 @@ public bool IsRespawning { get; set; } = false;
         }
 
 
-        private void Awake()
+        protected override void Awake()
         {
             base.Awake();
 
