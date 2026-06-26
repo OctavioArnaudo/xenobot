@@ -2307,6 +2307,18 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1253342408}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1253342415}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1253342414}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1253342413}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1253342412}
   m_SourcePrefab: {fileID: 100100000, guid: 08915c9897caf254f962383e322fc3be, type: 3}
 --- !u!1 &343670104
 GameObject:
@@ -4651,6 +4663,18 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       insertIndex: -1
       addedObject: {fileID: 802993125}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 802993132}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 802993131}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 802993130}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 802993129}
   m_SourcePrefab: {fileID: 100100000, guid: 08915c9897caf254f962383e322fc3be, type: 3}
 --- !u!1001 &689552935
 PrefabInstance:
@@ -4959,6 +4983,96 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!4 &748117254 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+  m_PrefabInstance: {fileID: 1530391672}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &748117255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 748117247}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d106, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.BasicAttackAI
+  TargetTag: Player
+  DetectionRange: 30
+  AttackRange: 8
+  MeleeRange: 1.6
+  MoveSpeed: 3.5
+  TurnSpeed: 10
+  MeleeDamage: 12
+  MeleeCooldown: 1.2
+  UseRangedAttack: 1
+--- !u!114 &748117256
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 748117247}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  AimCamera: {fileID: 0}
+  Muzzle: {fileID: 748117254}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Damage: 25
+  ProjectileSpeed: 40
+  FireRate: 30
+  AimDistance: 100
+  AimLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  HoldToFire: 1
+  UsePlayerInput: 1
+  MuzzleFlash: {fileID: 0}
+  TracerPrefab: {fileID: 0}
+  TracerLifetime: 0.05
+--- !u!114 &748117257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 748117247}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
+  Team: 2
+--- !u!114 &748117258
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 748117247}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
+  MaxHealth: 100
+  DestroyOnDeath: 1
+  DestroyDelay: 0
+  DeathVfxPrefab: {fileID: 0}
+  DeathVfxSpawnPoint: {fileID: 0}
+  DeathVfxLifetime: 4
+  OnDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDied:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &750051833 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 9df1f45507e0c4b4e8c780dbf67df0d7, type: 3}
@@ -5397,6 +5511,96 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!4 &802993128 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+  m_PrefabInstance: {fileID: 685538632}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &802993129
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 802993121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d106, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.BasicAttackAI
+  TargetTag: Player
+  DetectionRange: 30
+  AttackRange: 8
+  MeleeRange: 1.6
+  MoveSpeed: 3.5
+  TurnSpeed: 10
+  MeleeDamage: 12
+  MeleeCooldown: 1.2
+  UseRangedAttack: 1
+--- !u!114 &802993130
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 802993121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  AimCamera: {fileID: 0}
+  Muzzle: {fileID: 802993128}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Damage: 25
+  ProjectileSpeed: 40
+  FireRate: 30
+  AimDistance: 100
+  AimLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  HoldToFire: 1
+  UsePlayerInput: 1
+  MuzzleFlash: {fileID: 0}
+  TracerPrefab: {fileID: 0}
+  TracerLifetime: 0.05
+--- !u!114 &802993131
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 802993121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
+  Team: 2
+--- !u!114 &802993132
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 802993121}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
+  MaxHealth: 100
+  DestroyOnDeath: 1
+  DestroyDelay: 0
+  DeathVfxPrefab: {fileID: 0}
+  DeathVfxSpawnPoint: {fileID: 0}
+  DeathVfxLifetime: 4
+  OnDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDied:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &811153064
 GameObject:
   m_ObjectHideFlags: 0
@@ -5987,6 +6191,18 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1279295494}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1279295502}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1279295501}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1279295500}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1279295499}
   m_SourcePrefab: {fileID: 100100000, guid: 08915c9897caf254f962383e322fc3be, type: 3}
 --- !u!1001 &854087725
 PrefabInstance:
@@ -6888,6 +7104,18 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1945098324}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1945098332}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1945098331}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1945098330}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1945098329}
   m_SourcePrefab: {fileID: 100100000, guid: 08915c9897caf254f962383e322fc3be, type: 3}
 --- !u!1001 &936260162
 PrefabInstance:
@@ -7010,6 +7238,18 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1671208512}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1671208516}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1671208515}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1671208514}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1671208513}
   m_SourcePrefab: {fileID: 100100000, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
 --- !u!4 &944232373 stripped
 Transform:
@@ -8945,6 +9185,96 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!4 &1246279745 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+  m_PrefabInstance: {fileID: 1971276138}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1246279746
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1246279736}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d106, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.BasicAttackAI
+  TargetTag: Player
+  DetectionRange: 30
+  AttackRange: 8
+  MeleeRange: 1.6
+  MoveSpeed: 3.5
+  TurnSpeed: 10
+  MeleeDamage: 12
+  MeleeCooldown: 1.2
+  UseRangedAttack: 1
+--- !u!114 &1246279747
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1246279736}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  AimCamera: {fileID: 0}
+  Muzzle: {fileID: 1246279745}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Damage: 25
+  ProjectileSpeed: 40
+  FireRate: 30
+  AimDistance: 100
+  AimLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  HoldToFire: 1
+  UsePlayerInput: 1
+  MuzzleFlash: {fileID: 0}
+  TracerPrefab: {fileID: 0}
+  TracerLifetime: 0.05
+--- !u!114 &1246279748
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1246279736}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
+  Team: 2
+--- !u!114 &1246279749
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1246279736}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
+  MaxHealth: 100
+  DestroyOnDeath: 1
+  DestroyDelay: 0
+  DeathVfxPrefab: {fileID: 0}
+  DeathVfxSpawnPoint: {fileID: 0}
+  DeathVfxLifetime: 4
+  OnDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDied:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1253342402 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
@@ -9013,6 +9343,96 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!4 &1253342411 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+  m_PrefabInstance: {fileID: 320015379}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1253342412
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1253342402}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d106, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.BasicAttackAI
+  TargetTag: Player
+  DetectionRange: 30
+  AttackRange: 8
+  MeleeRange: 1.6
+  MoveSpeed: 3.5
+  TurnSpeed: 10
+  MeleeDamage: 12
+  MeleeCooldown: 1.2
+  UseRangedAttack: 1
+--- !u!114 &1253342413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1253342402}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  AimCamera: {fileID: 0}
+  Muzzle: {fileID: 1253342411}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Damage: 25
+  ProjectileSpeed: 40
+  FireRate: 30
+  AimDistance: 100
+  AimLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  HoldToFire: 1
+  UsePlayerInput: 1
+  MuzzleFlash: {fileID: 0}
+  TracerPrefab: {fileID: 0}
+  TracerLifetime: 0.05
+--- !u!114 &1253342414
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1253342402}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
+  Team: 2
+--- !u!114 &1253342415
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1253342402}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
+  MaxHealth: 100
+  DestroyOnDeath: 1
+  DestroyDelay: 0
+  DeathVfxPrefab: {fileID: 0}
+  DeathVfxSpawnPoint: {fileID: 0}
+  DeathVfxLifetime: 4
+  OnDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDied:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1256207124
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9232,6 +9652,96 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!4 &1279295498 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+  m_PrefabInstance: {fileID: 849686929}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1279295499
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1279295491}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d106, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.BasicAttackAI
+  TargetTag: Player
+  DetectionRange: 30
+  AttackRange: 8
+  MeleeRange: 1.6
+  MoveSpeed: 3.5
+  TurnSpeed: 10
+  MeleeDamage: 12
+  MeleeCooldown: 1.2
+  UseRangedAttack: 1
+--- !u!114 &1279295500
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1279295491}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  AimCamera: {fileID: 0}
+  Muzzle: {fileID: 1279295498}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Damage: 25
+  ProjectileSpeed: 40
+  FireRate: 30
+  AimDistance: 100
+  AimLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  HoldToFire: 1
+  UsePlayerInput: 1
+  MuzzleFlash: {fileID: 0}
+  TracerPrefab: {fileID: 0}
+  TracerLifetime: 0.05
+--- !u!114 &1279295501
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1279295491}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
+  Team: 2
+--- !u!114 &1279295502
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1279295491}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
+  MaxHealth: 100
+  DestroyOnDeath: 1
+  DestroyDelay: 0
+  DeathVfxPrefab: {fileID: 0}
+  DeathVfxSpawnPoint: {fileID: 0}
+  DeathVfxLifetime: 4
+  OnDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDied:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!4 &1303740255 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b1f6432d0f559d546ad0f12692ed2b50, type: 3}
@@ -9709,6 +10219,91 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &1350517945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1350517941}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
+  MaxHealth: 100
+  DestroyOnDeath: 1
+  DestroyDelay: 0
+  DeathVfxPrefab: {fileID: 0}
+  DeathVfxSpawnPoint: {fileID: 0}
+  DeathVfxLifetime: 4
+  OnDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDied:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!114 &1350517946
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1350517941}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d106, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.BasicAttackAI
+  TargetTag: Player
+  DetectionRange: 30
+  AttackRange: 8
+  MeleeRange: 1.6
+  MoveSpeed: 3.5
+  TurnSpeed: 10
+  MeleeDamage: 12
+  MeleeCooldown: 1.2
+  UseRangedAttack: 1
+--- !u!114 &1350517947
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1350517941}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  AimCamera: {fileID: 0}
+  Muzzle: {fileID: 1109106574}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Damage: 25
+  ProjectileSpeed: 40
+  FireRate: 6
+  AimDistance: 100
+  AimLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  HoldToFire: 1
+  UsePlayerInput: 0
+  MuzzleFlash: {fileID: 0}
+  TracerPrefab: {fileID: 0}
+  TracerLifetime: 0.05
+--- !u!114 &1350517948
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1350517941}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
+  Team: 2
 --- !u!1 &1352801147
 GameObject:
   m_ObjectHideFlags: 0
@@ -10715,6 +11310,91 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &1492476522
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1492476518}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d106, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.BasicAttackAI
+  TargetTag: Player
+  DetectionRange: 30
+  AttackRange: 8
+  MeleeRange: 1.6
+  MoveSpeed: 3.5
+  TurnSpeed: 10
+  MeleeDamage: 12
+  MeleeCooldown: 1.2
+  UseRangedAttack: 1
+--- !u!114 &1492476523
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1492476518}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  AimCamera: {fileID: 0}
+  Muzzle: {fileID: 1340805989}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Damage: 25
+  ProjectileSpeed: 40
+  FireRate: 30
+  AimDistance: 100
+  AimLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  HoldToFire: 1
+  UsePlayerInput: 1
+  MuzzleFlash: {fileID: 0}
+  TracerPrefab: {fileID: 0}
+  TracerLifetime: 0.05
+--- !u!114 &1492476524
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1492476518}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
+  Team: 2
+--- !u!114 &1492476525
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1492476518}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
+  MaxHealth: 100
+  DestroyOnDeath: 1
+  DestroyDelay: 0
+  DeathVfxPrefab: {fileID: 0}
+  DeathVfxSpawnPoint: {fileID: 0}
+  DeathVfxLifetime: 4
+  OnDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDied:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1511520780
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -11181,6 +11861,18 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       insertIndex: -1
       addedObject: {fileID: 748117251}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 748117258}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 748117257}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 748117256}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 748117255}
   m_SourcePrefab: {fileID: 100100000, guid: 08915c9897caf254f962383e322fc3be, type: 3}
 --- !u!1001 &1538987616
 PrefabInstance:
@@ -11706,6 +12398,91 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &1671208513
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1671208509}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d106, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.BasicAttackAI
+  TargetTag: Player
+  DetectionRange: 30
+  AttackRange: 8
+  MeleeRange: 1.6
+  MoveSpeed: 3.5
+  TurnSpeed: 10
+  MeleeDamage: 12
+  MeleeCooldown: 1.2
+  UseRangedAttack: 1
+--- !u!114 &1671208514
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1671208509}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  AimCamera: {fileID: 0}
+  Muzzle: {fileID: 800645334}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Damage: 25
+  ProjectileSpeed: 40
+  FireRate: 30
+  AimDistance: 100
+  AimLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  HoldToFire: 1
+  UsePlayerInput: 1
+  MuzzleFlash: {fileID: 0}
+  TracerPrefab: {fileID: 0}
+  TracerLifetime: 0.05
+--- !u!114 &1671208515
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1671208509}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
+  Team: 2
+--- !u!114 &1671208516
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1671208509}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
+  MaxHealth: 100
+  DestroyOnDeath: 1
+  DestroyDelay: 0
+  DeathVfxPrefab: {fileID: 0}
+  DeathVfxSpawnPoint: {fileID: 0}
+  DeathVfxLifetime: 4
+  OnDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDied:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1672792254
 GameObject:
   m_ObjectHideFlags: 0
@@ -11859,6 +12636,18 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1732938727}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1732938731}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1732938730}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1732938729}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1732938728}
   m_SourcePrefab: {fileID: 100100000, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
 --- !u!4 &1678963047 stripped
 Transform:
@@ -12090,6 +12879,91 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &1732938728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1732938724}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d106, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.BasicAttackAI
+  TargetTag: Player
+  DetectionRange: 30
+  AttackRange: 8
+  MeleeRange: 1.6
+  MoveSpeed: 3.5
+  TurnSpeed: 10
+  MeleeDamage: 12
+  MeleeCooldown: 1.2
+  UseRangedAttack: 1
+--- !u!114 &1732938729
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1732938724}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  AimCamera: {fileID: 0}
+  Muzzle: {fileID: 273662238}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Damage: 25
+  ProjectileSpeed: 40
+  FireRate: 30
+  AimDistance: 100
+  AimLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  HoldToFire: 1
+  UsePlayerInput: 1
+  MuzzleFlash: {fileID: 0}
+  TracerPrefab: {fileID: 0}
+  TracerLifetime: 0.05
+--- !u!114 &1732938730
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1732938724}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
+  Team: 2
+--- !u!114 &1732938731
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1732938724}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
+  MaxHealth: 100
+  DestroyOnDeath: 1
+  DestroyDelay: 0
+  DeathVfxPrefab: {fileID: 0}
+  DeathVfxSpawnPoint: {fileID: 0}
+  DeathVfxLifetime: 4
+  OnDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDied:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &1737110168
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12215,6 +13089,18 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1492476521}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1492476525}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1492476524}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1492476523}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1492476522}
   m_SourcePrefab: {fileID: 100100000, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
 --- !u!1001 &1739960146
 PrefabInstance:
@@ -13033,6 +13919,18 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1350517942}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1350517948}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1350517947}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1350517946}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1350517945}
   m_SourcePrefab: {fileID: 100100000, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
 --- !u!1001 &1887252411
 PrefabInstance:
@@ -13917,6 +14815,96 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!4 &1945098328 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+  m_PrefabInstance: {fileID: 933697411}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1945098329
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945098321}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d106, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.BasicAttackAI
+  TargetTag: Player
+  DetectionRange: 30
+  AttackRange: 8
+  MeleeRange: 1.6
+  MoveSpeed: 3.5
+  TurnSpeed: 10
+  MeleeDamage: 12
+  MeleeCooldown: 1.2
+  UseRangedAttack: 1
+--- !u!114 &1945098330
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945098321}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  AimCamera: {fileID: 0}
+  Muzzle: {fileID: 1945098328}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Damage: 25
+  ProjectileSpeed: 40
+  FireRate: 30
+  AimDistance: 100
+  AimLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  HoldToFire: 1
+  UsePlayerInput: 1
+  MuzzleFlash: {fileID: 0}
+  TracerPrefab: {fileID: 0}
+  TracerLifetime: 0.05
+--- !u!114 &1945098331
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945098321}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
+  Team: 2
+--- !u!114 &1945098332
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1945098321}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
+  MaxHealth: 100
+  DestroyOnDeath: 1
+  DestroyDelay: 0
+  DeathVfxPrefab: {fileID: 0}
+  DeathVfxSpawnPoint: {fileID: 0}
+  DeathVfxLifetime: 4
+  OnDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDied:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1948397696
 GameObject:
   m_ObjectHideFlags: 0
@@ -14255,6 +15243,18 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1246279742}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1246279749}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1246279748}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1246279747}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1246279746}
   m_SourcePrefab: {fileID: 100100000, guid: 08915c9897caf254f962383e322fc3be, type: 3}
 --- !u!1001 &1983535207
 PrefabInstance:
