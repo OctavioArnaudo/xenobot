@@ -3998,10 +3998,10 @@ GameObject:
   - component: {fileID: 640948715}
   - component: {fileID: 640948714}
   - component: {fileID: 640948713}
-  - component: {fileID: 640948712}
   - component: {fileID: 640948711}
-  m_Layer: 0
-  m_Name: Capsule
+  - component: {fileID: 640948712}
+  m_Layer: 7
+  m_Name: Enemigo de prueba
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4045,7 +4045,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::enemyHealth
   ShowTopMostFoldoutHeaderGroup: 1
-  maxHealth: 100
+  maxHealth: 10
   expOrbPrefab: {fileID: 0}
   orbCount: 6
   spreadRadius: 3
@@ -15529,6 +15529,7 @@ SceneRoots:
   - {fileID: 1108780417}
   - {fileID: 8478943806253843060}
   - {fileID: 960056627}
+  - {fileID: 640948716}
   - {fileID: 1807034748}
   - {fileID: 2136478607}
   - {fileID: 1182710376}
@@ -15571,4 +15572,3 @@ SceneRoots:
   - {fileID: 996042783}
   - {fileID: 848361508}
   - {fileID: 1934175661}
-  - {fileID: 640948716}
