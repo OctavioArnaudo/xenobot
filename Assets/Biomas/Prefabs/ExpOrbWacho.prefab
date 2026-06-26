@@ -104,8 +104,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f0d275e54214164285c9f98907e3576, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExpOrb
-  expAmount: 25
-  sphereRadius: 0.25
+  expAmount: 45
+  sphereRadius: 0.5
   glowColor: {r: 1, g: 0.85, b: 0.1, a: 1}
   lightIntensity: 4
   lightRange: 3
@@ -131,5 +131,5 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 6.755951
+  m_Radius: 10
   m_Center: {x: 0, y: 0, z: -6.255951}
