@@ -98,11 +98,22 @@ public class Inventory : MonoBehaviour
         }
     }
 
+    Transform GetPlayerTransform()
+    {
+        var candidates = GameObject.FindGameObjectsWithTag("Player");
+        foreach (var go in candidates)
+        {
+            var pi = go.GetComponent<UnityEngine.InputSystem.PlayerInput>();
+            if (pi != null && pi.enabled) return go.transform;
+        }
+        return candidates.Length > 0 ? candidates[0].transform : null;
+    }
+
     void SpawnDropped(ItemDefinition def)
     {
-        var playerGo = GameObject.FindGameObjectWithTag("Player");
-        Vector3 pos = playerGo != null
-            ? playerGo.transform.position + playerGo.transform.forward * dropDistance + Vector3.up * 0.5f
+        Transform player = GetPlayerTransform();
+        Vector3 pos = player != null
+            ? player.position + player.forward * dropDistance + Vector3.up * 0.5f
             : Vector3.zero;
 
         // Always build the dropped object dynamically — no prefab needed.
