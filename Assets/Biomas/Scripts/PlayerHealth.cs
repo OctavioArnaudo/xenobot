@@ -2,9 +2,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using Unity.Netcode;
 
-// Vida del player. Server-authoritative (mismo patrón que enemyHealth.cs).
-// Genera toda la UI (barra de vida + barra de jetpack) por código, sin depender
-// de ningún prefab de HUD. Solo se muestra para el Owner.
+// Vida del player. Server-authoritative (mismo patrï¿½n que enemyHealth.cs).
+// Genera toda la UI (barra de vida + barra de jetpack) por cï¿½digo, sin depender
+// de ningï¿½n prefab de HUD. Solo se muestra para el Owner.
 public class PlayerHealth : NetworkBehaviour
 {
     [Header("Vida")]
@@ -23,10 +23,16 @@ public class PlayerHealth : NetworkBehaviour
     NetworkVariable<int> currentHealth = new NetworkVariable<int>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
+    int m_OfflineHealth;
     float m_Jetpack;
 
     Image m_HealthFill, m_HealthBg, m_JetpackFill, m_JetpackBg;
     FillBarColorChange m_HealthColorChange, m_JetpackColorChange;
+
+    void Awake()
+    {
+        m_OfflineHealth = maxHealth;
+    }
 
     public override void OnNetworkSpawn()
     {
@@ -41,13 +47,44 @@ public class PlayerHealth : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void ApplyDamageRpc(int damage)
     {
-        if (currentHealth.Value <= 0) return;
+        ApplyNetworkDamage(damage);
+    }
+
+    public void TakeDamage(int damage)
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned)
+        {
+            if (IsServer)
+                ApplyNetworkDamage(damage);
+            else
+                ApplyDamageRpc(damage);
+
+            return;
+        }
+
+        ApplyOfflineDamage(damage);
+    }
+
+    void ApplyNetworkDamage(int damage)
+    {
+        if (!IsServer || currentHealth.Value <= 0) return;
 
         currentHealth.Value -= damage;
-        Debug.Log(gameObject.name + " (player) recibió " + damage + " de daño");
+        Debug.Log(gameObject.name + " (player) recibiï¿½ " + damage + " de daï¿½o");
 
         if (currentHealth.Value <= 0)
-            Debug.Log(gameObject.name + " murió"); // hook para futura lógica de muerte/respawn
+            Debug.Log(gameObject.name + " muriï¿½"); // hook para futura lï¿½gica de muerte/respawn
+    }
+
+    void ApplyOfflineDamage(int damage)
+    {
+        if (m_OfflineHealth <= 0) return;
+
+        m_OfflineHealth -= damage;
+        Debug.Log(gameObject.name + " (player) recibiï¿½ " + damage + " de daï¿½o");
+
+        if (m_OfflineHealth <= 0)
+            Debug.Log(gameObject.name + " muriï¿½");
     }
 
     void Update()
@@ -55,24 +92,27 @@ public class PlayerHealth : NetworkBehaviour
         if (!IsOwner || m_HealthFill == null) return;
 
         // Vida
-        float healthRatio = (float)currentHealth.Value / maxHealth;
+        int displayedHealth = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned
+            ? currentHealth.Value
+            : m_OfflineHealth;
+        float healthRatio = (float)displayedHealth / maxHealth;
         m_HealthFill.fillAmount = healthRatio;
         m_HealthColorChange.UpdateVisual(healthRatio);
 
-        // Jetpack: la barra refleja m_Jetpack, que se actualiza vía SetJetpackRatio().
-        // No existe (todavía) un sistema de jetpack en el proyecto; mientras tanto queda llena.
+        // Jetpack: la barra refleja m_Jetpack, que se actualiza vï¿½a SetJetpackRatio().
+        // No existe (todavï¿½a) un sistema de jetpack en el proyecto; mientras tanto queda llena.
         float jetpackRatio = m_Jetpack / maxJetpack;
         m_JetpackFill.fillAmount = jetpackRatio;
         m_JetpackColorChange.UpdateVisual(jetpackRatio);
     }
 
-    // Hook público: cuando exista el script de jetpack, llamar aquí con el ratio actual (0 a 1).
+    // Hook pï¿½blico: cuando exista el script de jetpack, llamar aquï¿½ con el ratio actual (0 a 1).
     public void SetJetpackRatio(float ratio01)
     {
         m_Jetpack = Mathf.Clamp01(ratio01) * maxJetpack;
     }
 
-    // ---------- Construcción de la UI por código ----------
+    // ---------- Construcciï¿½n de la UI por cï¿½digo ----------
 
     void BuildHud()
     {
@@ -82,7 +122,7 @@ public class PlayerHealth : NetworkBehaviour
         canvas.sortingOrder = 10;
         canvasGo.AddComponent<CanvasScaler>();
 
-        // Barra de jetpack (arriba), barra de vida (abajo) — esquina inferior izquierda
+        // Barra de jetpack (arriba), barra de vida (abajo) ï¿½ esquina inferior izquierda
         m_JetpackBg = CreateBar(canvasGo.transform, "JetpackBar", jetpackColor, backgroundColor,
             new Vector2(20, 20), out m_JetpackFill);
         m_HealthBg = CreateBar(canvasGo.transform, "HealthBar", healthColor, backgroundColor,
@@ -149,7 +189,7 @@ public class PlayerHealth : NetworkBehaviour
         fillRect.offsetMin = Vector2.zero;
         fillRect.offsetMax = Vector2.zero;
 
-        // Ícono (solo barra de vida): cruz blanca sobre cuadrado de color
+        // ï¿½cono (solo barra de vida): cruz blanca sobre cuadrado de color
         if (withIcon)
         {
             var iconBgGo = new GameObject("HealthIcon", typeof(RectTransform));

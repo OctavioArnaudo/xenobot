@@ -4000,6 +4000,10 @@ GameObject:
   - component: {fileID: 640948713}
   - component: {fileID: 640948711}
   - component: {fileID: 640948712}
+  - component: {fileID: 640948719}
+  - component: {fileID: 640948718}
+  - component: {fileID: 640948717}
+  - component: {fileID: 640948720}
   m_Layer: 7
   m_Name: Enemigo de prueba
   m_TagString: Untagged
@@ -4144,6 +4148,91 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &640948717
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 640948710}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d106, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.BasicAttackAI
+  TargetTag: Player
+  DetectionRange: 20
+  AttackRange: 8
+  MeleeRange: 1.6
+  MoveSpeed: 3.5
+  TurnSpeed: 10
+  MeleeDamage: 12
+  MeleeCooldown: 1.2
+  UseRangedAttack: 1
+--- !u!114 &640948718
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 640948710}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  AimCamera: {fileID: 0}
+  Muzzle: {fileID: 640948716}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Damage: 25
+  ProjectileSpeed: 40
+  FireRate: 6
+  AimDistance: 100
+  AimLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  HoldToFire: 1
+  UsePlayerInput: 0
+  MuzzleFlash: {fileID: 0}
+  TracerPrefab: {fileID: 0}
+  TracerLifetime: 0.05
+--- !u!114 &640948719
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 640948710}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
+  Team: 2
+--- !u!114 &640948720
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 640948710}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
+  MaxHealth: 100
+  DestroyOnDeath: 1
+  DestroyDelay: 0
+  DeathVfxPrefab: {fileID: 0}
+  DeathVfxSpawnPoint: {fileID: 0}
+  DeathVfxLifetime: 4
+  OnDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDied:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1001 &648677900
 PrefabInstance:
   m_ObjectHideFlags: 0

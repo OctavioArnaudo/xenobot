@@ -523,9 +523,12 @@ GameObject:
   - component: {fileID: 7450631966458783124}
   - component: {fileID: -1159158973847089039}
   - component: {fileID: -701033391835306716}
+  - component: {fileID: 2424458384992384426}
+  - component: {fileID: 5714182025742897013}
+  - component: {fileID: 629433202887019505}
   m_Layer: 3
   m_Name: PlayerPrefab
-  m_TagString: Player
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -650,6 +653,70 @@ MonoBehaviour:
   backgroundColor: {r: 0, g: 0, b: 0, a: 0.6}
   flashFullColor: {r: 1, g: 1, b: 1, a: 1}
   flashEmptyColor: {r: 1, g: 0.3, b: 0.3, a: 1}
+--- !u!114 &2424458384992384426
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1804703078109025515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
+  Team: 1
+--- !u!114 &5714182025742897013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1804703078109025515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  AimCamera: {fileID: 9017485172064717998}
+  Muzzle: {fileID: 7891991899054359580}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Damage: 25
+  ProjectileSpeed: 40
+  FireRate: 20
+  AimDistance: 100
+  AimLayers:
+    serializedVersion: 2
+    m_Bits: 4087
+  HoldToFire: 1
+  UsePlayerInput: 1
+  MuzzleFlash: {fileID: 0}
+  TracerPrefab: {fileID: 0}
+  TracerLifetime: 0.05
+--- !u!114 &629433202887019505
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1804703078109025515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
+  MaxHealth: 100
+  DestroyOnDeath: 1
+  DestroyDelay: 0
+  DeathVfxPrefab: {fileID: 0}
+  DeathVfxSpawnPoint: {fileID: 0}
+  DeathVfxLifetime: 4
+  OnDamaged:
+    m_PersistentCalls:
+      m_Calls: []
+  OnDied:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1833995220940253086
 GameObject:
   m_ObjectHideFlags: 0
@@ -1643,7 +1710,7 @@ Transform:
   m_GameObject: {fileID: 4635943162753486610}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.70710576, z: -0, w: 0.7071079}
-  m_LocalPosition: {x: -8.000018, y: 4.140625, z: 6.9662266}
+  m_LocalPosition: {x: -8.000049, y: 4.140625, z: 6.9662266}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2268,8 +2335,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5744773588333972899}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0.70710576, z: 0, w: 0.7071079}
-  m_LocalPosition: {x: -8.000018, y: 4.140625, z: 6.9662266}
+  m_LocalRotation: {x: 0, y: 0.7071057, z: 0, w: 0.70710784}
+  m_LocalPosition: {x: -8.000049, y: 4.140625, z: 6.9662266}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
