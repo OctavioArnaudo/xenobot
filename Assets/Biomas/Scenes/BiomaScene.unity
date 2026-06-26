@@ -4022,7 +4022,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &640948711
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4512,7 +4512,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 374.14148
+      value: 552
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalPosition.y
@@ -4520,7 +4520,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -421.32788
+      value: -335
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalRotation.w
@@ -5032,7 +5032,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
-  UsePlayerInput: 1
+  UsePlayerInput: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
@@ -5560,7 +5560,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
-  UsePlayerInput: 1
+  UsePlayerInput: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
@@ -7139,7 +7139,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -105.07178
+      value: 167
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalPosition.y
@@ -7147,7 +7147,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -97.02414
+      value: 163
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalRotation.w
@@ -9234,7 +9234,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
-  UsePlayerInput: 1
+  UsePlayerInput: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
@@ -9392,7 +9392,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
-  UsePlayerInput: 1
+  UsePlayerInput: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
@@ -9670,8 +9670,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.BasicAttackAI
   TargetTag: Player
-  DetectionRange: 30
-  AttackRange: 8
+  DetectionRange: 50
+  AttackRange: 15
   MeleeRange: 1.6
   MoveSpeed: 3.5
   TurnSpeed: 10
@@ -9701,7 +9701,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
-  UsePlayerInput: 1
+  UsePlayerInput: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
@@ -11354,7 +11354,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
-  UsePlayerInput: 1
+  UsePlayerInput: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
@@ -12442,7 +12442,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
-  UsePlayerInput: 1
+  UsePlayerInput: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
@@ -12537,7 +12537,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -100.69592
+      value: 53
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalPosition.y
@@ -12545,7 +12545,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -98.91449
+      value: 195
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalRotation.w
@@ -12923,7 +12923,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
-  UsePlayerInput: 1
+  UsePlayerInput: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
@@ -12986,7 +12986,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -105.29236
+      value: 192
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       propertyPath: m_LocalPosition.y
@@ -12994,7 +12994,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -104.91193
+      value: 127
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       propertyPath: m_LocalRotation.w
@@ -13800,7 +13800,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -101.71301
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalPosition.y
@@ -13808,7 +13808,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -98.31598
+      value: 188
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalRotation.w
@@ -14864,7 +14864,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
-  UsePlayerInput: 1
+  UsePlayerInput: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
@@ -15092,7 +15092,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 375.17062
+      value: 543
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalPosition.y
@@ -15100,7 +15100,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -430.69
+      value: -348
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalRotation.w
