@@ -1,99 +1,83 @@
 using UnityEngine;
 using Unity.Cinemachine;
+using Unity.Netcode;
 
 namespace StarterAssets
 {
+    // FIX #3: Cambiado de MonoBehaviour a NetworkBehaviour para poder checar IsOwner.
+    // El problema original era que Update() corría en TODOS los clientes para TODOS
+    // los jugadores de la escena, causando que cualquier cliente intentara hacer
+    // Respawn() de jugadores remotos y desincronizara posiciones.
     [RequireComponent(typeof(CharacterController))]
-    public class RespawnPlayer : MonoBehaviour
+    public class RespawnPlayer : NetworkBehaviour
     {
         [Tooltip("The Y position threshold at which the player will respawn.")]
-        public float yThreshold = -5f; 
+        public float yThreshold = -5f;
 
         private Vector3 _startingPosition;
-
         private Quaternion _startingRotation;
-
         private CharacterController _characterController;
 
         public CinemachineCamera vCam;
-
         private ThirdPersonController _thirdPersonController;
         public AudioClip respawnSound;
 
-
+        // Start sigue siendo válido para cachear referencias locales.
+        // Las guardamos siempre porque no cuestan nada y pueden usarse en offline.
         private void Start()
-{
-    // Save the starting position and rotation
-    _startingPosition = transform.position;
-    _startingRotation = transform.rotation;
+        {
+            _startingPosition = transform.position;
+            _startingRotation = transform.rotation;
 
-    // Get the CharacterController reference
-    _characterController = GetComponent<CharacterController>();
-    if (_characterController == null)
-    {
-        Debug.LogError("CharacterController component is required for RespawnPlayer script!");
-    }
+            _characterController = GetComponent<CharacterController>();
+            if (_characterController == null)
+                Debug.LogError("CharacterController component is required for RespawnPlayer script!");
 
-    // Get ThirdPersonController reference
-    _thirdPersonController = GetComponent<ThirdPersonController>();
-    if (_thirdPersonController == null)
-    {
-        Debug.LogError("ThirdPersonController component is required for RespawnPlayer!");
-    }
-}
+            _thirdPersonController = GetComponent<ThirdPersonController>();
+            if (_thirdPersonController == null)
+                Debug.LogError("ThirdPersonController component is required for RespawnPlayer!");
+        }
 
         private void Update()
         {
-            // Check if the player's Y position has fallen below the threshold
+            // FIX #3: Si estamos en red y este objeto NO nos pertenece, no hacemos nada.
+            // Cada cliente solo procesa el respawn de su propio jugador.
+            if (IsSpawned && !IsOwner) return;
+
             if (transform.position.y < yThreshold)
-            {
                 Respawn();
-            }
         }
 
         private void Respawn()
-{
-    // Disable the CharacterController so we can manually adjust position
-    if (_characterController != null)
-    {
-        _characterController.enabled = false; // Disable to reset position/rotation correctly
-    }
+        {
+            if (_characterController != null)
+                _characterController.enabled = false;
 
-    // Reset the player's position and rotation
-    transform.position = _startingPosition;
-    transform.rotation = Quaternion.Euler(0f, 90f, 0f); // Reset player Y rotation to 90 degrees
+            transform.position = _startingPosition;
+            transform.rotation = Quaternion.Euler(0f, 90f, 0f);
 
-    // Reset the CharacterController's vertical velocity to ensure the robot doesn't keep falling
-    if (_characterController != null)
-    {
-        _characterController.enabled = true; // Enable it back after resetting position
-        ResetVerticalVelocity();
-    }
+            if (_characterController != null)
+            {
+                _characterController.enabled = true;
+                ResetVerticalVelocity();
+            }
 
-    // Reset the camera's rotation
-    ThirdPersonController thirdPersonController = GetComponent<ThirdPersonController>();
-    if (thirdPersonController != null)
-    {
-        thirdPersonController.ResetCameraRotation(90f); // Reset camera's Y rotation to 90 degrees
-    }
+            if (_thirdPersonController != null)
+                _thirdPersonController.ResetCameraRotation(90f);
 
-    AudioSource.PlayClipAtPoint(respawnSound, transform.position);
-
-}
+            if (respawnSound != null)
+                AudioSource.PlayClipAtPoint(respawnSound, transform.position);
+        }
 
         private void ResetVerticalVelocity()
         {
-            // Ensures no residual vertical velocity after respawning
             if (TryGetComponent<ThirdPersonController>(out ThirdPersonController controller))
             {
-                // Access the private _verticalVelocity via the public interface, if exposed
                 var verticalVelocityField = typeof(ThirdPersonController).GetField("_verticalVelocity",
                     System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
 
                 if (verticalVelocityField != null)
-                {
                     verticalVelocityField.SetValue(controller, 0f);
-                }
             }
         }
     }

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 #if ENABLE_INPUT_SYSTEM 
 using UnityEngine.InputSystem;
 #endif
@@ -65,6 +65,13 @@ namespace StarterAssets
         [Tooltip("The follow target set in the Cinemachine Virtual Camera that the camera will follow")]
         public GameObject CinemachineCameraTarget;
 
+        // FIX #2: En lugar de FindAnyObjectByType (que devuelve la primera cámara de cualquier
+        // jugador), ahora se busca por tag. Asigná el tag "PlayerVCam" a la CinemachineCamera
+        // que está dentro del prefab del jugador local, o pasala por inspector.
+        [Tooltip("Tag usado para encontrar la CinemachineCamera del jugador en la escena. " +
+                 "Debe ser único y asignado a la vcam dentro del prefab local.")]
+        public string PlayerVCamTag = "PlayerVCam";
+
         [Tooltip("How far in degrees can you move the camera up")]
         public float TopClamp = 70.0f;
 
@@ -77,19 +84,18 @@ namespace StarterAssets
         [Tooltip("For locking the camera position on all axis")]
         public bool LockCameraPosition = false;
 
-        public Vector2  LookSensitivity = new Vector2(7.5f, 5.0f);
+        public Vector2 LookSensitivity = new Vector2(7.5f, 5.0f);
 
         // cinemachine
         private float _cinemachineTargetYaw;
         private float _cinemachineTargetPitch;
 
         // Camera starting position and rotation
-private Vector3 _cameraStartingPosition;
-private Quaternion _cameraStartingRotation;
+        private Vector3 _cameraStartingPosition;
+        private Quaternion _cameraStartingRotation;
 
-// Variable to indicate if we are resetting the camera 
-public bool IsRespawning { get; set; } = false;
-
+        // Variable to indicate if we are resetting the camera
+        public bool IsRespawning { get; set; } = false;
 
         // player
         private float _speed;
@@ -135,85 +141,94 @@ public bool IsRespawning { get; set; } = false;
 #if ENABLE_INPUT_SYSTEM
                 return _playerInput.currentControlScheme == "KeyboardMouse";
 #else
-				return false;
+                return false;
 #endif
             }
         }
-
 
         private void Awake()
         {
-            // get a reference to our main camera
             if (_mainCamera == null)
-            {
                 _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
-            }
         }
 
         private void Start()
-{
-    _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
+        {
+            _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
 
-    // El Animator vive en un hijo (Robot/Geometry/...), no en este GameObject
-    _animator = GetComponentInChildren<Animator>();
-    _hasAnimator = _animator != null;
-    _controller = GetComponent<CharacterController>();
-    _input = GetComponent<StarterAssetsInputs>();
-#if ENABLE_INPUT_SYSTEM 
-    _playerInput = GetComponent<PlayerInput>();
+            _animator = GetComponentInChildren<Animator>();
+            _hasAnimator = _animator != null;
+            _controller = GetComponent<CharacterController>();
+            _input = GetComponent<StarterAssetsInputs>();
+#if ENABLE_INPUT_SYSTEM
+            _playerInput = GetComponent<PlayerInput>();
 #else
-	Debug.LogError("Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
+            Debug.LogError("Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
 #endif
-    
-    AssignAnimationIDs();
 
-    // Save the starting camera position and rotation
-    _cameraStartingPosition = CinemachineCameraTarget.transform.position;
-    _cameraStartingRotation = CinemachineCameraTarget.transform.rotation;
+            AssignAnimationIDs();
 
-    // reset our timeouts on start
-    _jumpTimeoutDelta = JumpTimeout;
-    _fallTimeoutDelta = FallTimeout;
+            _cameraStartingPosition = CinemachineCameraTarget.transform.position;
+            _cameraStartingRotation = CinemachineCameraTarget.transform.rotation;
 
-    // Si NO estamos en un entorno de red, configuramos todo localmente
-    if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
-    {
-        SetupPlayerLocal();
-    }
-}
+            _jumpTimeoutDelta = JumpTimeout;
+            _fallTimeoutDelta = FallTimeout;
+
+            // FIX #4: Start() ya NO llama a SetupPlayerLocal() aunque no haya red.
+            // El ownership solo se conoce con certeza en OnNetworkSpawn().
+            // Para el modo offline (sin NetworkManager), OnNetworkSpawn no se llama,
+            // por lo que lo manejamos con IsSpawned en Update/LateUpdate y aquí:
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+            {
+                // Modo offline confirmado: activamos todo localmente sin riesgo.
+                SetupPlayerLocal();
+            }
+            // Si hay red activa, esperamos a OnNetworkSpawn para saber el ownership real.
+        }
 
         private void SetupPlayerLocal()
         {
+#if ENABLE_INPUT_SYSTEM
             if (_playerInput != null)
             {
                 _playerInput.enabled = true;
                 _playerInput.ActivateInput();
             }
+#endif
             SetupCamera();
+        }
+
+        private void DisableLocalComponents()
+        {
+#if ENABLE_INPUT_SYSTEM
+            // FIX #4: Desactivar input explícitamente en proxies remotos.
+            if (_playerInput != null)
+            {
+                _playerInput.DeactivateInput();
+                _playerInput.enabled = false;
+            }
+#endif
         }
 
         public override void OnNetworkSpawn()
         {
-            // OnNetworkSpawn es donde NGO nos dice quién es el dueño real.
+            // FIX #4: OnNetworkSpawn es el único lugar seguro para saber quién es el dueño.
+            // Start() con NetworkManager activo ya NO configura nada; todo entra por aquí.
             if (IsOwner)
             {
                 SetupPlayerLocal();
-                // Suscribirse al evento de carga de escena para re-vincular la cámara
                 UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
             }
             else
             {
-                // Desactivar componentes que no deben correr en clones remotos
-                if (TryGetComponent<PlayerInput>(out var pInput)) pInput.enabled = false;
+                DisableLocalComponents();
             }
         }
 
         public override void OnNetworkDespawn()
         {
             if (IsOwner)
-            {
                 UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
-            }
         }
 
         private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
@@ -221,30 +236,52 @@ public bool IsRespawning { get; set; } = false;
             if (IsOwner)
             {
                 SetupCamera();
-                // A veces es necesario reactivar el input tras el cambio de escena
+#if ENABLE_INPUT_SYSTEM
                 if (_playerInput != null) _playerInput.ActivateInput();
+#endif
             }
         }
 
         private void SetupCamera()
         {
-            // Re-vincular la cámara principal para el cálculo de rotación
             _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 
-            // Busca la cámara virtual de Cinemachine en la escena
-            CinemachineCamera vcam = GameObject.FindAnyObjectByType<CinemachineCamera>();
+            // FIX #2: Ya no usamos FindAnyObjectByType<CinemachineCamera>() porque con
+            // múltiples jugadores devuelve la primera que encuentra en la escena,
+            // que puede pertenecer a otro cliente. Ahora buscamos por tag específico.
+            //
+            // SETUP REQUERIDO EN UNITY:
+            //   - Asigná el tag "PlayerVCam" (o el que configures en PlayerVCamTag)
+            //     a la CinemachineCamera que vive DENTRO del prefab del jugador.
+            //   - Alternativa más robusta: convertir la vcam en hijo del prefab y
+            //     referenciarla directamente por GetComponentInChildren<CinemachineCamera>().
+            CinemachineCamera vcam = null;
+
+            // Primero intentamos por tag (requiere que la vcam esté en el prefab o sea única por jugador)
+            GameObject vcamGo = GameObject.FindGameObjectWithTag(PlayerVCamTag);
+            if (vcamGo != null)
+                vcam = vcamGo.GetComponent<CinemachineCamera>();
+
+            // Fallback: si la vcam es hija del prefab del jugador la encontramos directo
+            if (vcam == null)
+                vcam = GetComponentInChildren<CinemachineCamera>(true);
+
             if (vcam != null && CinemachineCameraTarget != null)
             {
                 vcam.Follow = CinemachineCameraTarget.transform;
                 vcam.LookAt = CinemachineCameraTarget.transform;
-                Debug.Log("[ThirdPersonController] Cámara vinculada al jugador local en la escena: " + UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+                Debug.Log("[ThirdPersonController] Cámara vinculada al jugador local en la escena: "
+                    + UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+            }
+            else
+            {
+                Debug.LogWarning("[ThirdPersonController] No se encontró CinemachineCamera con tag '"
+                    + PlayerVCamTag + "' ni como hijo del prefab. Revisá el setup.");
             }
         }
 
         private void Update()
         {
-            // Si el objeto está en red y NO soy el dueño, no proceso nada.
-            // Si NO está en red (IsSpawned es false), procedo normalmente como jugador local.
             if (IsSpawned && !IsOwner) return;
 
             JumpAndGravity();
@@ -280,89 +317,65 @@ public bool IsRespawning { get; set; } = false;
         private bool HasParameter(Animator animator, int paramHash)
         {
             foreach (AnimatorControllerParameter param in animator.parameters)
-            {
                 if (param.nameHash == paramHash) return true;
-            }
             return false;
         }
 
         private void GroundedCheck()
         {
-            // set sphere position, with offset
-            Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset,
-                transform.position.z);
-            Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers,
-                QueryTriggerInteraction.Ignore);
+            Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
+            Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
 
-            // update animator if using character
             if (_hasAnimator && _hasAnimIDGrounded)
-            {
                 _animator.SetBool(_animIDGrounded, Grounded);
-            }
         }
 
         private void CameraRotation()
-{
-    // if respawning, reset to starting position and rotation
-    if (IsRespawning)
-    {
-        _cinemachineTargetYaw = 0f; // Reset yaw to zero (or configure as needed)
-        _cinemachineTargetPitch = 0f;
+        {
+            if (IsRespawning)
+            {
+                _cinemachineTargetYaw = 0f;
+                _cinemachineTargetPitch = 0f;
 
-        // Reset Cinemachine Camera Target to its starting state
-        CinemachineCameraTarget.transform.position = _cameraStartingPosition;
-        CinemachineCameraTarget.transform.rotation = _cameraStartingRotation;
+                CinemachineCameraTarget.transform.position = _cameraStartingPosition;
+                CinemachineCameraTarget.transform.rotation = _cameraStartingRotation;
 
-        IsRespawning = false; // Reset the respawning flag
-        return;
-    }
+                IsRespawning = false;
+                return;
+            }
 
-    // if there is an input and camera position is not fixed
-    if (_input.look.sqrMagnitude >= _threshold && !LockCameraPosition)
-    {
-        float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
+            if (_input.look.sqrMagnitude >= _threshold && !LockCameraPosition)
+            {
+                float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
 
-        _cinemachineTargetYaw += _input.look.x * deltaTimeMultiplier * LookSensitivity.x;
-        _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier * LookSensitivity.y;
-    }
+                _cinemachineTargetYaw += _input.look.x * deltaTimeMultiplier * LookSensitivity.x;
+                _cinemachineTargetPitch += _input.look.y * deltaTimeMultiplier * LookSensitivity.y;
+            }
 
-    _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
-    _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
+            _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
+            _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
 
-    CinemachineCameraTarget.transform.rotation = Quaternion.Euler(
-        _cinemachineTargetPitch + CameraAngleOverride,
-        _cinemachineTargetYaw,
-        0.0f
-    );
-}
+            CinemachineCameraTarget.transform.rotation = Quaternion.Euler(
+                _cinemachineTargetPitch + CameraAngleOverride,
+                _cinemachineTargetYaw,
+                0.0f);
+        }
 
         private void Move()
         {
-            // set target speed based on move speed, sprint speed and if sprint is pressed
             float targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
 
-            // a simplistic acceleration and deceleration designed to be easy to remove, replace, or iterate upon
-
-            // note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
-            // if there is no input, set the target speed to 0
             if (_input.move == Vector2.zero) targetSpeed = 0.0f;
 
-            // a reference to the players current horizontal velocity
             float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;
 
             float speedOffset = 0.1f;
             float inputMagnitude = _input.analogMovement ? _input.move.magnitude : 1f;
 
-            // accelerate or decelerate to target speed
             if (currentHorizontalSpeed < targetSpeed - speedOffset ||
                 currentHorizontalSpeed > targetSpeed + speedOffset)
             {
-                // creates curved result rather than a linear one giving a more organic speed change
-                // note T in Lerp is clamped, so we don't need to clamp our speed
-                _speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude,
-                    Time.deltaTime * SpeedChangeRate);
-
-                // round speed to 3 decimal places
+                _speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude, Time.deltaTime * SpeedChangeRate);
                 _speed = Mathf.Round(_speed * 1000f) / 1000f;
             }
             else
@@ -373,11 +386,8 @@ public bool IsRespawning { get; set; } = false;
             _animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, Time.deltaTime * SpeedChangeRate);
             if (_animationBlend < 0.01f) _animationBlend = 0f;
 
-            // normalise input direction
             Vector3 inputDirection = new Vector3(_input.move.x, 0.0f, _input.move.y).normalized;
 
-            // note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
-            // if there is a move input rotate player when the player is moving
             if (_input.move != Vector2.zero)
             {
                 if (_mainCamera == null) _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
@@ -388,21 +398,15 @@ public bool IsRespawning { get; set; } = false;
                                       _mainCamera.transform.eulerAngles.y;
                 }
 
-                float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity,
-                    RotationSmoothTime);
-
-                // rotate to face input direction relative to camera position
+                float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
                 transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
             }
 
-
             Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
 
-            // move the player
             _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) +
                              new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
 
-            // update animator if using character
             if (_hasAnimator)
             {
                 if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, _animationBlend);
@@ -414,69 +418,47 @@ public bool IsRespawning { get; set; } = false;
         {
             if (Grounded)
             {
-                // reset the fall timeout timer
                 _fallTimeoutDelta = FallTimeout;
 
-                // update animator if using character
                 if (_hasAnimator)
                 {
                     if (_hasAnimIDJump) _animator.SetBool(_animIDJump, false);
                     if (_hasAnimIDFreeFall) _animator.SetBool(_animIDFreeFall, false);
                 }
 
-                // stop our velocity dropping infinitely when grounded
                 if (_verticalVelocity < 0.0f)
-                {
                     _verticalVelocity = -2f;
-                }
 
-                // Jump
                 if (_input.jump && _jumpTimeoutDelta <= 0.0f)
                 {
-                    // the square root of H * -2 * G = how much velocity needed to reach desired height
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
 
-                    // update animator if using character
                     if (_hasAnimator && _hasAnimIDJump)
-                    {
                         _animator.SetBool(_animIDJump, true);
-                    }
                 }
 
-                // jump timeout
                 if (_jumpTimeoutDelta >= 0.0f)
-                {
                     _jumpTimeoutDelta -= Time.deltaTime;
-                }
             }
             else
             {
-                // reset the jump timeout timer
                 _jumpTimeoutDelta = JumpTimeout;
 
-                // fall timeout
                 if (_fallTimeoutDelta >= 0.0f)
                 {
                     _fallTimeoutDelta -= Time.deltaTime;
                 }
                 else
                 {
-                    // update animator if using character
                     if (_hasAnimator && _hasAnimIDFreeFall)
-                    {
                         _animator.SetBool(_animIDFreeFall, true);
-                    }
                 }
 
-                // if we are not grounded, do not jump
                 _input.jump = false;
             }
 
-            // apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
             if (_verticalVelocity < _terminalVelocity)
-            {
                 _verticalVelocity += Gravity * Time.deltaTime;
-            }
         }
 
         private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
@@ -494,7 +476,6 @@ public bool IsRespawning { get; set; } = false;
             if (Grounded) Gizmos.color = transparentGreen;
             else Gizmos.color = transparentRed;
 
-            // when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
             Gizmos.DrawSphere(
                 new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z),
                 GroundedRadius);
@@ -515,22 +496,15 @@ public bool IsRespawning { get; set; } = false;
         private void OnLand(AnimationEvent animationEvent)
         {
             if (animationEvent.animatorClipInfo.weight > 0.5f)
-            {
                 AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
-            }
         }
+
         public void ResetCameraRotation(float targetYaw)
-{
-    // Reset the yaw and pitch to default values (targetYaw for Y rotation, and 0 for pitch)
-    _cinemachineTargetYaw = targetYaw;
-    _cinemachineTargetPitch = 0f;
-
-    // Reset the camera target's rotation explicitly
-    CinemachineCameraTarget.transform.rotation = Quaternion.Euler(_cinemachineTargetPitch, _cinemachineTargetYaw, 0f);
-
-    Debug.Log($"Camera Yaw reset to {targetYaw} degrees.");
-}
+        {
+            _cinemachineTargetYaw = targetYaw;
+            _cinemachineTargetPitch = 0f;
+            CinemachineCameraTarget.transform.rotation = Quaternion.Euler(_cinemachineTargetPitch, _cinemachineTargetYaw, 0f);
+            Debug.Log($"Camera Yaw reset to {targetYaw} degrees.");
+        }
     }
-
-    
 }

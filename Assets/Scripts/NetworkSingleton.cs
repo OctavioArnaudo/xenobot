@@ -32,46 +32,41 @@ namespace NGO.Networking
             }
         }
 
-        protected virtual void Awake()
-        {
-            // Detección temprana para destruir placeholders de la escena si ya existe un jugador persistente
-            if (s_Instance != null && s_Instance != this && s_Instance.IsOwner)
-            {
-                Debug.Log($"[NetworkSingleton] {typeof(T).Name} duplicado detectado en Awake. Destruyendo placeholder de la escena.");
-                Destroy(gameObject);
-            }
-        }
+        // FIX #1: Awake ya NO destruye nada.
+        // El problema original era que s_Instance es static y compartido entre todas
+        // las instancias del tipo. Cuando un segundo jugador spawneaba su prefab,
+        // el Awake de cualquier instancia ya existente encontraba s_Instance != null
+        // y destruía el objeto recién creado ANTES de que OnNetworkSpawn confirmara
+        // el ownership real. Ahora Awake solo hace setup seguro.
+        protected virtual void Awake() { }
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
 
-            // Si ya existe una instancia de la que soy dueño (la que viene de la escena anterior)
-            // y este nuevo objeto también es mío (el que estaba puesto en la escena de destino):
-            if (s_Instance != null && s_Instance != this)
+            // Caso 1: Ya existe una instancia propia (viene de escena anterior persistente)
+            // y este objeto nuevo también nos pertenece (el placeholder de la escena destino).
+            // Solo en este caso destruimos: ambos son nuestros y el viejo tiene prioridad.
+            if (s_Instance != null && s_Instance != this && s_Instance.IsOwner && IsOwner)
             {
-                if (IsOwner && s_Instance.IsOwner)
-                {
-                    Debug.Log($"[NetworkSingleton] Se detectó un {typeof(T).Name} en la escena de destino. Destruyendo duplicado local para mantener el personaje persistente.");
-
-                    // Nos destruimos a nosotros mismos (el objeto de la escena de destino)
-                    Destroy(gameObject);
-                    return;
-                }
-
-                // Si la instancia actual no es nuestra (proxy) pero este objeto nuevo sí lo es,
-                // tomamos el control del Singleton local para el cliente.
-                if (IsOwner && !s_Instance.IsOwner)
-                {
-                    s_Instance = this as T;
-                }
+                Debug.Log($"[NetworkSingleton] {typeof(T).Name} placeholder detectado en escena destino. Destruyendo duplicado local.");
+                Destroy(gameObject);
+                return;
             }
-            else if (IsOwner || s_Instance == null)
+
+            // Caso 2: La instancia registrada no es nuestra (proxy remoto guardado por error)
+            // pero este objeto sí lo es → tomamos el Singleton local.
+            if (s_Instance != null && s_Instance != this && IsOwner && !s_Instance.IsOwner)
+            {
+                s_Instance = this as T;
+            }
+            // Caso 3: No había instancia todavía, o este objeto es el primero.
+            else if (s_Instance == null || IsOwner)
             {
                 s_Instance = this as T;
             }
 
-            // Asegurar persistencia para el objeto del jugador local
+            // Solo el dueño local persiste entre escenas.
             if (IsOwner)
             {
                 transform.SetParent(null);
@@ -83,18 +78,16 @@ namespace NGO.Networking
         public override void OnNetworkDespawn()
         {
             if (s_Instance == this)
-            {
                 s_Instance = null;
-            }
+
             base.OnNetworkDespawn();
         }
 
         public override void OnDestroy()
         {
             if (s_Instance == this)
-            {
                 s_Instance = null;
-            }
+
             base.OnDestroy();
         }
     }
