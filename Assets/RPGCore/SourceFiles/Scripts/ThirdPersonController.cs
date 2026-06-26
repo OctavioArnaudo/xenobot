@@ -1,10 +1,9 @@
-﻿ using UnityEngine;
+﻿using UnityEngine;
 #if ENABLE_INPUT_SYSTEM 
 using UnityEngine.InputSystem;
 #endif
 using Unity.Netcode;
 using Unity.Cinemachine;
-using NGO.Networking;
 
 /* Note: animations are called via the controller for both the character and capsule using animator null checks
  */
@@ -15,7 +14,7 @@ namespace StarterAssets
 #if ENABLE_INPUT_SYSTEM 
     [RequireComponent(typeof(PlayerInput))]
 #endif
-    public class ThirdPersonController : NetworkSingleton<ThirdPersonController>
+    public class ThirdPersonController : NetworkBehaviour
     {
         [Header("Player")]
         [Tooltip("Move speed of the character in m/s")]
@@ -142,10 +141,8 @@ public bool IsRespawning { get; set; } = false;
         }
 
 
-        protected override void Awake()
+        private void Awake()
         {
-            base.Awake();
-
             // get a reference to our main camera
             if (_mainCamera == null)
             {
@@ -157,7 +154,9 @@ public bool IsRespawning { get; set; } = false;
 {
     _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
 
-    _hasAnimator = TryGetComponent(out _animator);
+    // El Animator vive en un hijo (Robot/Geometry/...), no en este GameObject
+    _animator = GetComponentInChildren<Animator>();
+    _hasAnimator = _animator != null;
     _controller = GetComponent<CharacterController>();
     _input = GetComponent<StarterAssetsInputs>();
 #if ENABLE_INPUT_SYSTEM 
@@ -195,14 +194,7 @@ public bool IsRespawning { get; set; } = false;
 
         public override void OnNetworkSpawn()
         {
-            base.OnNetworkSpawn();
-
-            // Si base.OnNetworkSpawn detectó un duplicado y lo marcó para destruir, no continuamos.
-            if (Instance != this) return;
-
-            // Si el objeto ya se configuró en Start (modo local), no repetimos lógica pesada
-            // pero OnNetworkSpawn es donde NGO nos dice quién es el dueño real.
-
+            // OnNetworkSpawn es donde NGO nos dice quién es el dueño real.
             if (IsOwner)
             {
                 SetupPlayerLocal();
@@ -218,7 +210,6 @@ public bool IsRespawning { get; set; } = false;
 
         public override void OnNetworkDespawn()
         {
-            base.OnNetworkDespawn();
             if (IsOwner)
             {
                 UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
@@ -255,8 +246,6 @@ public bool IsRespawning { get; set; } = false;
             // Si el objeto está en red y NO soy el dueño, no proceso nada.
             // Si NO está en red (IsSpawned es false), procedo normalmente como jugador local.
             if (IsSpawned && !IsOwner) return;
-
-            _hasAnimator = TryGetComponent(out _animator);
 
             JumpAndGravity();
             GroundedCheck();
