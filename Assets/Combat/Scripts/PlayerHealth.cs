@@ -34,6 +34,17 @@ public class PlayerHealth : NetworkBehaviour
         m_OfflineHealth = maxHealth;
     }
 
+    void Start()
+    {
+        // En offline, NetworkManager puede no existir o no estar escuchando.
+        // Si no se ha spawneado via red, forzamos el HUD para el jugador local.
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+        {
+            m_Jetpack = maxJetpack;
+            BuildHud();
+        }
+    }
+
     public override void OnNetworkSpawn()
     {
         if (IsServer) currentHealth.Value = maxHealth;
