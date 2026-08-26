@@ -97,7 +97,7 @@ namespace NGO.Networking
                 bool success = await RelayManager.JoinRelay(roomCode);
                 if (success)
                 {
-                    NetworkManager.Singleton.StartClient();
+                    NetworkingService.StartClient(isRelay: true);
                 }
                 else
                 {
@@ -142,7 +142,7 @@ namespace NGO.Networking
 
             if (success)
             {
-                if (NetworkManager.Singleton.StartClient())
+                if (NetworkingService.StartClient(isRelay: true))
                 {
                     Debug.Log("[ClientMenu] Conectado exitosamente vía Relay.");
                 }
