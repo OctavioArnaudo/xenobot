@@ -7,7 +7,6 @@ namespace NGO.Networking
 {
     public static class NetworkingService
     {
-        // Esto se ejecuta antes que CUALQUIER otra cosa en el juego
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         private static void DisableBurstRoot()
         {
@@ -18,6 +17,10 @@ namespace NGO.Networking
         {
             if (NetworkManager.Singleton == null) return false;
 
+            // Configuramos la aprobación para que el Host también pase por el filtro
+            NetworkManager.Singleton.NetworkConfig.ConnectionApproval = true;
+            NetworkManager.Singleton.ConnectionApprovalCallback = ApprovalCheck;
+
             if (!isRelay)
             {
                 var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
@@ -27,12 +30,32 @@ namespace NGO.Networking
                 }
             }
 
-            return NetworkManager.Singleton.StartHost();
+            Debug.Log("[NetworkingService] Iniciando Host...");
+            bool success = NetworkManager.Singleton.StartHost();
+
+            // Si el inicio fue exitoso, nos aseguramos de que el PlayerObject del Host sea persistente
+            // tal como lo hace el Inspector de Netcode.
+            if (success)
+            {
+                // NGO suele tardar un frame en asignar el PlayerObject,
+                // pero si ya existe, lo blindamos.
+                var localPlayer = NetworkManager.Singleton.LocalClient?.PlayerObject;
+                if (localPlayer != null)
+                {
+                    localPlayer.transform.SetParent(null);
+                    Object.DontDestroyOnLoad(localPlayer.gameObject);
+                }
+            }
+
+            return success;
         }
 
         public static bool StartClient(string ip = "127.0.0.1", ushort port = 7777, bool isRelay = false)
         {
             if (NetworkManager.Singleton == null) return false;
+
+            // El cliente debe coincidir en la configuración de aprobación
+            NetworkManager.Singleton.NetworkConfig.ConnectionApproval = true;
 
             if (!isRelay)
             {
@@ -43,7 +66,23 @@ namespace NGO.Networking
                 }
             }
 
+            Debug.Log($"[NetworkingService] Iniciando Cliente hacia {ip}:{port}...");
             return NetworkManager.Singleton.StartClient();
+        }
+
+        private static void ApprovalCheck(NetworkManager.ConnectionApprovalRequest request, NetworkManager.ConnectionApprovalResponse response)
+        {
+            // Aprobamos la conexión
+            response.Approved = true;
+
+            // FORZAMOS la creación del PlayerObject.
+            // La posición inicial ya no se define aquí, sino en el PlayerController según la escena.
+            response.CreatePlayerObject = true;
+
+            // Usamos el prefab asignado por defecto en el NetworkManager
+            response.PlayerPrefabHash = null;
+
+            Debug.Log($"[NetworkingService] Solicitada creación de PlayerObject para cliente {request.ClientNetworkId}.");
         }
 
         public static void Shutdown()

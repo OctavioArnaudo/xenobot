@@ -28,6 +28,12 @@ namespace NGO.Networking
         {
             if (IsOwner)
             {
+                // CENTRALIZAMOS la persistencia aquí.
+                // Desvinculamos del padre para que DontDestroyOnLoad sea legal
+                transform.SetParent(null);
+                DontDestroyOnLoad(gameObject);
+                Debug.Log($"[Identity] Jugador local {gameObject.name} marcado como persistente.");
+
                 // Al spawnear, el dueño aplica sus configuraciones locales guardadas en el menú
                 playerName.Value = LocalUserConfig.UserName;
                 playerColor.Value = LocalUserConfig.UserColor;

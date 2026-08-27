@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
 
 public class Inventory : MonoBehaviour
 {
@@ -45,9 +46,27 @@ public class Inventory : MonoBehaviour
 
     void Awake()
     {
-        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        // Solo el dueño local debe registrarse como Instance global para la UI
+        // Pero NO destruimos el gameObject de otros jugadores, solo desactivamos su script de Inventory
+        var netObj = GetComponent<NetworkObject>();
+        if (netObj != null && !netObj.IsOwner && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            this.enabled = false;
+            return;
+        }
+
+        if (Instance != null && Instance != this)
+        {
+            // Si ya hay un inventario local, este script sobra, pero no matamos al robot
+            Destroy(this);
+            return;
+        }
+
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+
+        // Solo intentamos persistencia si somos raíz
+        if (transform.parent == null)
+            DontDestroyOnLoad(gameObject);
     }
 
     void Start()

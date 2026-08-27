@@ -17,18 +17,18 @@ public class NetworkPlayerLocalSetup : NetworkBehaviour
 #endif
 #if CINEMACHINE_3_0_OR_NEWER
     [SerializeField] CinemachineBrain[] localCinemachineBrains;
+    [SerializeField] CinemachineCamera[] localCinemachineCameras;
 #endif
 
     void Awake()
     {
-        CacheReferences();
-
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
-            ApplyLocalState(true);
+        // Ya no activamos nada por defecto en Awake para evitar conflictos con NGO
+        // Esperamos a OnNetworkSpawn
     }
 
     public override void OnNetworkSpawn()
     {
+        CacheReferences();
         ApplyLocalState(IsOwner);
     }
 
@@ -44,20 +44,30 @@ public class NetworkPlayerLocalSetup : NetworkBehaviour
 
     void CacheReferences()
     {
+        // Buscamos el NetworkObject que representa la raíz de este jugador.
+        // Esto garantiza que solo gestionemos los componentes de ESTA instancia y no de otros jugadores.
+        NetworkObject netObj = GetComponentInParent<NetworkObject>();
+        if (netObj == null) return;
+
+        Transform searchRoot = netObj.transform;
+
         if (localCameras == null || localCameras.Length == 0)
-            localCameras = GetComponentsInChildren<Camera>(true);
+            localCameras = searchRoot.GetComponentsInChildren<Camera>(true);
 
         if (localAudioListeners == null || localAudioListeners.Length == 0)
-            localAudioListeners = GetComponentsInChildren<AudioListener>(true);
+            localAudioListeners = searchRoot.GetComponentsInChildren<AudioListener>(true);
 
 #if ENABLE_INPUT_SYSTEM
         if (localPlayerInputs == null || localPlayerInputs.Length == 0)
-            localPlayerInputs = GetComponentsInChildren<PlayerInput>(true);
+            localPlayerInputs = searchRoot.GetComponentsInChildren<PlayerInput>(true);
 #endif
 
 #if CINEMACHINE_3_0_OR_NEWER
         if (localCinemachineBrains == null || localCinemachineBrains.Length == 0)
-            localCinemachineBrains = GetComponentsInChildren<CinemachineBrain>(true);
+            localCinemachineBrains = searchRoot.GetComponentsInChildren<CinemachineBrain>(true);
+
+        if (localCinemachineCameras == null || localCinemachineCameras.Length == 0)
+            localCinemachineCameras = searchRoot.GetComponentsInChildren<CinemachineCamera>(true);
 #endif
     }
 
@@ -100,6 +110,12 @@ public class NetworkPlayerLocalSetup : NetworkBehaviour
         {
             if (localCinemachineBrains[i] != null)
                 localCinemachineBrains[i].enabled = isLocalOwner;
+        }
+
+        for (int i = 0; i < localCinemachineCameras.Length; i++)
+        {
+            if (localCinemachineCameras[i] != null)
+                localCinemachineCameras[i].enabled = isLocalOwner;
         }
 #endif
     }
