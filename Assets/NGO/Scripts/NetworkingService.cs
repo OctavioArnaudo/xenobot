@@ -12,7 +12,6 @@ namespace NGO.Networking
         private static void DisableBurstRoot()
         {
             BurstCompiler.Options.EnableBurstCompilation = false;
-            Debug.Log("<color=red><b>[NGO] BURST DESACTIVADO DE RAÍZ.</b></color>");
         }
 
         public static bool StartHost(ushort port = 7777, bool isRelay = false)

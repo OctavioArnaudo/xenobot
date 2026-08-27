@@ -2,7 +2,7 @@ using UnityEngine;
 using Unity.Netcode;
 
 // IA del enemigo (esfera). Un solo script para ambos tipos: Melee o Ranged.
-// Toda la lógica corre en el servidor; los clientes solo ven el resultado via NetworkTransform.
+// Funciona tanto en red (solo el servidor ejecuta la lgica) como en offline.
 public class EnemyAI : NetworkBehaviour
 {
     public enum AttackType { Melee, Ranged }
@@ -15,7 +15,7 @@ public class EnemyAI : NetworkBehaviour
     public float chaseSpeed = 4f;
     public float wanderChangeInterval = 2f;
 
-    [Header("Detección")]
+    [Header("Deteccin")]
     public float detectionRange = 8f;
 
     [Header("Ataque")]
@@ -32,6 +32,15 @@ public class EnemyAI : NetworkBehaviour
     float m_WanderTimer;
     float m_AttackTimer;
 
+    private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+    private bool CanExecuteLogic => !IsNetworkActive || IsServer;
+
+    void Start()
+    {
+        // En modo offline, inicializamos aqu
+        if (!IsNetworkActive) PickNewWanderDirection();
+    }
+
     public override void OnNetworkSpawn()
     {
         if (!IsServer) return;
@@ -40,7 +49,8 @@ public class EnemyAI : NetworkBehaviour
 
     void Update()
     {
-        if (!IsServer) return;
+        // Solo ejecuta la lgica si es offline o si es el servidor en online
+        if (!CanExecuteLogic) return;
 
         FindTarget();
 
@@ -52,7 +62,7 @@ public class EnemyAI : NetworkBehaviour
 
     void FindTarget()
     {
-        // Busca al jugador más cercano dentro del rango de detección
+        // Busca al jugador ms cercano dentro del rango de deteccin
         if (m_Target != null)
         {
             float d = Vector3.Distance(transform.position, m_Target.position);
@@ -117,11 +127,11 @@ public class EnemyAI : NetworkBehaviour
         }
     }
 
-    // Único punto de entrada para dañar al player, ahora resuelto por PlayerHealth.
+    // Punto de entrada para daar al player, resuelve segn contexto (online/offline) en PlayerHealth.
     public static void DamagePlayer(Transform player, int damage)
     {
         var health = player.GetComponent<PlayerHealth>();
-        if (health != null) health.ApplyDamageRpc(damage);
+        if (health != null) health.TakeDamage(damage);
     }
 
     void FireProjectile()
@@ -130,8 +140,15 @@ public class EnemyAI : NetworkBehaviour
 
         Vector3 dir = (m_Target.position - transform.position).normalized;
         var go = Instantiate(projectilePrefab, transform.position + dir, Quaternion.LookRotation(dir));
-        go.GetComponent<NetworkObject>().Spawn();
-        go.GetComponent<EnemyProjectile>().Launch(dir, projectileSpeed, attackDamage);
+
+        if (IsNetworkActive)
+        {
+            if (go.TryGetComponent<NetworkObject>(out var netObj))
+                netObj.Spawn();
+        }
+
+        var proj = go.GetComponent<EnemyProjectile>();
+        if (proj != null) proj.Launch(dir, projectileSpeed, attackDamage);
     }
 
     void OnDrawGizmosSelected()

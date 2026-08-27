@@ -1,8 +1,8 @@
 using UnityEngine;
 using Unity.Netcode;
 
-// Proyectil simple: esfera roja luminosa que viaja en línea recta.
-// Se construye 100% por código, sin depender de un prefab visual externo.
+// Proyectil simple: esfera roja luminosa que viaja en lnea recta.
+// Funciona en red (autoridad del servidor) y en offline.
 public class EnemyProjectile : NetworkBehaviour
 {
     public float lifeTime = 4f;
@@ -12,9 +12,12 @@ public class EnemyProjectile : NetworkBehaviour
     float m_Speed;
     int m_Damage;
 
+    private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+    private bool CanExecuteLogic => !IsNetworkActive || IsServer;
+
     void Awake()
     {
-        // Esfera visual roja luminosa (Unlit, mismo criterio que ExpOrb.cs)
+        // Esfera visual roja luminosa
         var visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         visual.transform.SetParent(transform, false);
         visual.transform.localScale = Vector3.one * radius * 2f;
@@ -43,21 +46,28 @@ public class EnemyProjectile : NetworkBehaviour
         m_Dir = direction.normalized;
         m_Speed = speed;
         m_Damage = damage;
-        if (IsServer) Destroy(gameObject, lifeTime);
+
+        if (CanExecuteLogic)
+            Destroy(gameObject, lifeTime);
     }
 
     void Update()
     {
-        if (!IsServer) return;
+        // Solo el servidor o el entorno local mueven el proyectil
+        if (!CanExecuteLogic) return;
         transform.position += m_Dir * m_Speed * Time.deltaTime;
     }
 
     void OnTriggerEnter(Collider other)
     {
-        if (!IsServer) return;
+        if (!CanExecuteLogic) return;
         if (!other.CompareTag("Player")) return;
 
         EnemyAI.DamagePlayer(other.transform, m_Damage);
-        if (NetworkObject.IsSpawned) NetworkObject.Despawn();
+
+        if (IsNetworkActive && NetworkObject.IsSpawned)
+            NetworkObject.Despawn();
+        else
+            Destroy(gameObject);
     }
 }
