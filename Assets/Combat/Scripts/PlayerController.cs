@@ -127,7 +127,9 @@ namespace Xenobot.Movement
             if (_mainCamera == null)
                 _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 
-            if (CanExecuteLocalLogic)
+            // Solo bloqueamos el cursor si no hay red (modo offline)
+            // En red, esperaremos al OnNetworkSpawn para saber si somos el Owner.
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
             {
                 SetCursorState(cursorLocked);
             }
@@ -221,10 +223,16 @@ namespace Xenobot.Movement
 #endif
             SetupCamera();
             SetCursorState(cursorLocked);
+
+            // Asegurar que CharacterController est habilitado para el owner
+            if (_controller != null) _controller.enabled = true;
         }
 
         private void DisableLocalComponents()
         {
+            // Desactivar CharacterController en proxies remotos para evitar conflictos con NetworkTransform
+            if (_controller != null) _controller.enabled = false;
+
 #if ENABLE_INPUT_SYSTEM
             if (_playerInput != null)
             {
@@ -280,6 +288,12 @@ namespace Xenobot.Movement
             if (CanExecuteLocalLogic) SprintInput(value.isPressed);
         }
 #endif
+
+        // Aliases para compatibilidad con Unity Events en Prefabs
+        public void InputMove(Vector2 newMoveDirection) => MoveInput(newMoveDirection);
+        public void InputLook(Vector2 newLookDirection) => LookInput(newLookDirection);
+        public void InputJump(bool newJumpState) => JumpInput(newJumpState);
+        public void InputSprint(bool newSprintState) => SprintInput(newSprintState);
 
         public void MoveInput(Vector2 newMoveDirection) => move = newMoveDirection;
         public void LookInput(Vector2 newLookDirection) => look = newLookDirection;

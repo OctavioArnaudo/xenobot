@@ -1,8 +1,9 @@
 using UnityEngine;
+using Unity.Netcode;
 
 namespace Xenobot.ModularCombat
 {
-    public class CombatProjectile : MonoBehaviour
+    public class CombatProjectile : NetworkBehaviour
     {
         public float Speed = 35f;
         public float Damage = 25f;
@@ -17,6 +18,8 @@ namespace Xenobot.ModularCombat
         Vector3 m_LastPosition;
         Collider[] m_OwnerColliders;
 
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+
         public void Launch(GameObject owner, Vector3 direction, float damage, float speed)
         {
             m_Owner = owner;
@@ -26,27 +29,48 @@ namespace Xenobot.ModularCombat
             transform.forward = m_Direction;
             m_LastPosition = transform.position;
             m_OwnerColliders = owner != null ? owner.GetComponentsInChildren<Collider>() : null;
+
+            if (!IsNetworkActive)
+                Destroy(gameObject, Lifetime);
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            if (IsServer)
+            {
+                Invoke(nameof(DespawnProjectile), Lifetime);
+            }
+        }
+
+        void DespawnProjectile()
+        {
+            if (IsSpawned)
+                NetworkObject.Despawn();
         }
 
         void OnEnable()
         {
             m_Direction = transform.forward;
             m_LastPosition = transform.position;
-            Destroy(gameObject, Lifetime);
         }
 
         void Update()
         {
+            // Movimiento visual en todos los clientes
             Vector3 nextPosition = transform.position + m_Direction * Speed * Time.deltaTime;
             Vector3 movement = nextPosition - m_LastPosition;
 
-            if (Physics.SphereCast(m_LastPosition, Radius, movement.normalized, out RaycastHit hit,
-                    movement.magnitude, HittableLayers, QueryTriggerInteraction.Collide))
+            // Solo el servidor o modo offline procesa colisiones
+            if (!IsNetworkActive || IsServer)
             {
-                if (IsValidHit(hit.collider))
+                if (Physics.SphereCast(m_LastPosition, Radius, movement.normalized, out RaycastHit hit,
+                        movement.magnitude, HittableLayers, QueryTriggerInteraction.Collide))
                 {
-                    Hit(hit);
-                    return;
+                    if (IsValidHit(hit.collider))
+                    {
+                        Hit(hit);
+                        return;
+                    }
                 }
             }
 
@@ -73,16 +97,38 @@ namespace Xenobot.ModularCombat
 
         void Hit(RaycastHit hit)
         {
-            CombatDamage.TryApply(hit.collider.gameObject, Damage, m_Owner);
+            if (IsNetworkActive)
+            {
+                if (IsServer)
+                {
+                    CombatDamage.TryApply(hit.collider.gameObject, Damage, m_Owner);
+                    NotifyHitClientRpc(hit.point, hit.normal);
+                    NetworkObject.Despawn();
+                }
+            }
+            else
+            {
+                CombatDamage.TryApply(hit.collider.gameObject, Damage, m_Owner);
+                SpawnImpactVisuals(hit.point, hit.normal);
+                Destroy(gameObject);
+            }
+        }
 
+        [ClientRpc]
+        void NotifyHitClientRpc(Vector3 point, Vector3 normal)
+        {
+            if (!IsServer) // El servidor ya lo hizo o lo hará localmente si no es RPC
+                SpawnImpactVisuals(point, normal);
+        }
+
+        void SpawnImpactVisuals(Vector3 point, Vector3 normal)
+        {
             if (ImpactVfxPrefab != null)
             {
-                GameObject impactVfx = Instantiate(ImpactVfxPrefab, hit.point, Quaternion.LookRotation(hit.normal));
+                GameObject impactVfx = Instantiate(ImpactVfxPrefab, point, Quaternion.LookRotation(normal));
                 if (ImpactVfxLifetime > 0f)
                     Destroy(impactVfx, ImpactVfxLifetime);
             }
-
-            Destroy(gameObject);
         }
 
         void OnDrawGizmosSelected()

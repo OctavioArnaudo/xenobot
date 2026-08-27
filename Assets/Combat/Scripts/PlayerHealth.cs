@@ -1,10 +1,11 @@
 using UnityEngine;
 using UnityEngine.UI;
 using Unity.Netcode;
+using Xenobot.ModularCombat;
 
-// Vida del player. Server-authoritative (mismo patr�n que enemyHealth.cs).
-// Genera toda la UI (barra de vida + barra de jetpack) por c�digo, sin depender
-// de ning�n prefab de HUD. Solo se muestra para el Owner.
+// Vida del player. Server-authoritative (mismo patrón que enemyHealth.cs).
+// Genera toda la UI (barra de vida + barra de jetpack) por código, sin depender
+// de ningún prefab de HUD. Solo se muestra para el Owner.
 public class PlayerHealth : NetworkBehaviour
 {
     [Header("Vida")]
@@ -23,15 +24,20 @@ public class PlayerHealth : NetworkBehaviour
     NetworkVariable<int> currentHealth = new NetworkVariable<int>(
         0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-    int m_OfflineHealth;
     float m_Jetpack;
+    CombatDamageReceiver m_DamageReceiver;
 
     Image m_HealthFill, m_HealthBg, m_JetpackFill, m_JetpackBg;
     FillBarColorChange m_HealthColorChange, m_JetpackColorChange;
 
     void Awake()
     {
-        m_OfflineHealth = maxHealth;
+        m_DamageReceiver = GetComponent<CombatDamageReceiver>();
+        if (m_DamageReceiver == null)
+            m_DamageReceiver = gameObject.AddComponent<CombatDamageReceiver>();
+
+        m_DamageReceiver.MaxHealth = maxHealth;
+        m_DamageReceiver.OnDamaged.AddListener(OnDamaged);
     }
 
     void Start()
@@ -41,24 +47,42 @@ public class PlayerHealth : NetworkBehaviour
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
         {
             m_Jetpack = maxJetpack;
+            m_DamageReceiver.Initialize(maxHealth);
             BuildHud();
         }
     }
 
     public override void OnNetworkSpawn()
     {
-        if (IsServer) currentHealth.Value = maxHealth;
+        if (IsServer)
+        {
+            currentHealth.Value = maxHealth;
+            m_DamageReceiver.Initialize(maxHealth);
+        }
+
         if (IsOwner)
         {
             m_Jetpack = maxJetpack;
             BuildHud();
+        }
+
+        currentHealth.OnValueChanged += (oldVal, newVal) => {
+            if (!IsServer) m_DamageReceiver.SyncFrom(newVal);
+        };
+    }
+
+    void OnDamaged(float damage)
+    {
+        if (IsServer)
+        {
+            currentHealth.Value = Mathf.RoundToInt(m_DamageReceiver.CurrentHealth);
         }
     }
 
     [Rpc(SendTo.Server)]
     public void ApplyDamageRpc(int damage)
     {
-        ApplyNetworkDamage(damage);
+        m_DamageReceiver.TakeDamage(damage, null);
     }
 
     public void TakeDamage(int damage)
@@ -66,36 +90,14 @@ public class PlayerHealth : NetworkBehaviour
         if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned)
         {
             if (IsServer)
-                ApplyNetworkDamage(damage);
+                m_DamageReceiver.TakeDamage(damage, null);
             else
                 ApplyDamageRpc(damage);
 
             return;
         }
 
-        ApplyOfflineDamage(damage);
-    }
-
-    void ApplyNetworkDamage(int damage)
-    {
-        if (!IsServer || currentHealth.Value <= 0) return;
-
-        currentHealth.Value -= damage;
-        Debug.Log(gameObject.name + " (player) recibi� " + damage + " de da�o");
-
-        if (currentHealth.Value <= 0)
-            Debug.Log(gameObject.name + " muri�"); // hook para futura l�gica de muerte/respawn
-    }
-
-    void ApplyOfflineDamage(int damage)
-    {
-        if (m_OfflineHealth <= 0) return;
-
-        m_OfflineHealth -= damage;
-        Debug.Log(gameObject.name + " (player) recibi� " + damage + " de da�o");
-
-        if (m_OfflineHealth <= 0)
-            Debug.Log(gameObject.name + " muri�");
+        m_DamageReceiver.TakeDamage(damage, null);
     }
 
     void Update()
@@ -105,25 +107,25 @@ public class PlayerHealth : NetworkBehaviour
         // Vida
         int displayedHealth = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned
             ? currentHealth.Value
-            : m_OfflineHealth;
+            : Mathf.RoundToInt(m_DamageReceiver.CurrentHealth);
         float healthRatio = (float)displayedHealth / maxHealth;
         m_HealthFill.fillAmount = healthRatio;
         m_HealthColorChange.UpdateVisual(healthRatio);
 
-        // Jetpack: la barra refleja m_Jetpack, que se actualiza v�a SetJetpackRatio().
-        // No existe (todav�a) un sistema de jetpack en el proyecto; mientras tanto queda llena.
+        // Jetpack: la barra refleja m_Jetpack, que se actualiza vía SetJetpackRatio().
+        // No existe (todavía) un sistema de jetpack en el proyecto; mientras tanto queda llena.
         float jetpackRatio = m_Jetpack / maxJetpack;
         m_JetpackFill.fillAmount = jetpackRatio;
         m_JetpackColorChange.UpdateVisual(jetpackRatio);
     }
 
-    // Hook p�blico: cuando exista el script de jetpack, llamar aqu� con el ratio actual (0 a 1).
+    // Hook público: cuando exista el script de jetpack, llamar aquí con el ratio actual (0 a 1).
     public void SetJetpackRatio(float ratio01)
     {
         m_Jetpack = Mathf.Clamp01(ratio01) * maxJetpack;
     }
 
-    // ---------- Construcci�n de la UI por c�digo ----------
+    // ---------- Construcción de la UI por código ----------
 
     void BuildHud()
     {
@@ -133,7 +135,7 @@ public class PlayerHealth : NetworkBehaviour
         canvas.sortingOrder = 10;
         canvasGo.AddComponent<CanvasScaler>();
 
-        // Barra de jetpack (arriba), barra de vida (abajo) � esquina inferior izquierda
+        // Barra de jetpack (arriba), barra de vida (abajo) -> esquina inferior izquierda
         m_JetpackBg = CreateBar(canvasGo.transform, "JetpackBar", jetpackColor, backgroundColor,
             new Vector2(20, 20), out m_JetpackFill);
         m_HealthBg = CreateBar(canvasGo.transform, "HealthBar", healthColor, backgroundColor,
@@ -200,7 +202,7 @@ public class PlayerHealth : NetworkBehaviour
         fillRect.offsetMin = Vector2.zero;
         fillRect.offsetMax = Vector2.zero;
 
-        // �cono (solo barra de vida): cruz blanca sobre cuadrado de color
+        // Ícono (solo barra de vida): cruz blanca sobre cuadrado de color
         if (withIcon)
         {
             var iconBgGo = new GameObject("HealthIcon", typeof(RectTransform));

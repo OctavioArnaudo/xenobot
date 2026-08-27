@@ -1,8 +1,9 @@
 using UnityEngine;
 using Unity.Netcode;
+using Xenobot.ModularCombat;
 
 // IA del enemigo (esfera). Un solo script para ambos tipos: Melee o Ranged.
-// Funciona tanto en red (solo el servidor ejecuta la lgica) como en offline.
+// Funciona tanto en red (solo el servidor ejecuta la lógica) como en offline.
 public class EnemyAI : NetworkBehaviour
 {
     public enum AttackType { Melee, Ranged }
@@ -15,7 +16,7 @@ public class EnemyAI : NetworkBehaviour
     public float chaseSpeed = 4f;
     public float wanderChangeInterval = 2f;
 
-    [Header("Deteccin")]
+    [Header("Detección")]
     public float detectionRange = 8f;
 
     [Header("Ataque")]
@@ -23,21 +24,30 @@ public class EnemyAI : NetworkBehaviour
     public float attackCooldown = 1.5f;
     public int attackDamage = 10;
 
-    [Header("Ranged (solo si AttackType = Ranged)")]
-    public GameObject projectilePrefab;
-    public float projectileSpeed = 10f;
-
     Transform m_Target;
     Vector3 m_WanderDir;
     float m_WanderTimer;
     float m_AttackTimer;
 
+    ClickToShoot m_Shooter;
+    CombatTeamMember m_TeamMember;
+
     private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
     private bool CanExecuteLogic => !IsNetworkActive || IsServer;
 
+    void Awake()
+    {
+        m_Shooter = GetComponent<ClickToShoot>();
+        m_TeamMember = GetComponent<CombatTeamMember>();
+        if (m_TeamMember == null)
+            m_TeamMember = gameObject.AddComponent<CombatTeamMember>();
+
+        m_TeamMember.Team = CombatTeam.Enemy;
+    }
+
     void Start()
     {
-        // En modo offline, inicializamos aqu
+        // En modo offline, inicializamos aquí
         if (!IsNetworkActive) PickNewWanderDirection();
     }
 
@@ -49,7 +59,7 @@ public class EnemyAI : NetworkBehaviour
 
     void Update()
     {
-        // Solo ejecuta la lgica si es offline o si es el servidor en online
+        // Solo ejecuta la lógica si es offline o si es el servidor en online
         if (!CanExecuteLogic) return;
 
         FindTarget();
@@ -62,7 +72,7 @@ public class EnemyAI : NetworkBehaviour
 
     void FindTarget()
     {
-        // Busca al jugador ms cercano dentro del rango de deteccin
+        // Busca al combatiente más cercano que no sea del mismo equipo
         if (m_Target != null)
         {
             float d = Vector3.Distance(transform.position, m_Target.position);
@@ -70,15 +80,17 @@ public class EnemyAI : NetworkBehaviour
             else return;
         }
 
-        var players = GameObject.FindGameObjectsWithTag("Player");
+        var members = FindObjectsByType<CombatTeamMember>(FindObjectsSortMode.None);
         float closest = detectionRange;
-        foreach (var p in players)
+        foreach (var m in members)
         {
-            float d = Vector3.Distance(transform.position, p.transform.position);
+            if (m.Team == m_TeamMember.Team || m.Team == CombatTeam.Neutral) continue;
+
+            float d = Vector3.Distance(transform.position, m.transform.position);
             if (d <= closest)
             {
                 closest = d;
-                m_Target = p.transform;
+                m_Target = m.transform;
             }
         }
     }
@@ -119,36 +131,19 @@ public class EnemyAI : NetworkBehaviour
     {
         if (attackType == AttackType.Melee)
         {
-            DamagePlayer(m_Target, attackDamage);
+            CombatDamage.TryApply(m_Target.gameObject, attackDamage, gameObject);
         }
         else
         {
-            FireProjectile();
+            if (m_Shooter != null)
+                m_Shooter.FireAt(m_Target.position);
         }
     }
 
-    // Punto de entrada para daar al player, resuelve segn contexto (online/offline) en PlayerHealth.
+    // Punto de entrada para dañar al player, resuelve según contexto (online/offline) en PlayerHealth.
     public static void DamagePlayer(Transform player, int damage)
     {
-        var health = player.GetComponent<PlayerHealth>();
-        if (health != null) health.TakeDamage(damage);
-    }
-
-    void FireProjectile()
-    {
-        if (projectilePrefab == null || m_Target == null) return;
-
-        Vector3 dir = (m_Target.position - transform.position).normalized;
-        var go = Instantiate(projectilePrefab, transform.position + dir, Quaternion.LookRotation(dir));
-
-        if (IsNetworkActive)
-        {
-            if (go.TryGetComponent<NetworkObject>(out var netObj))
-                netObj.Spawn();
-        }
-
-        var proj = go.GetComponent<EnemyProjectile>();
-        if (proj != null) proj.Launch(dir, projectileSpeed, attackDamage);
+        CombatDamage.TryApply(player.gameObject, damage, null);
     }
 
     void OnDrawGizmosSelected()

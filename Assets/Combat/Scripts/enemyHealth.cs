@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using Xenobot.ModularCombat;
 
 public class enemyHealth : NetworkBehaviour
 {
@@ -10,56 +11,56 @@ public class enemyHealth : NetworkBehaviour
     public int orbCount = 6;
     public float spreadRadius = 3f;
 
-    // Red: Sincroniza la vida automticamente (Todos leen, solo Servidor escribe)
+    // Red: Sincroniza la vida automáticamente (Todos leen, solo Servidor escribe)
     private NetworkVariable<int> currentHealth = new NetworkVariable<int>(100);
-    private int m_OfflineHealth;
 
+    private CombatDamageReceiver m_DamageReceiver;
     private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
     void Awake()
     {
-        m_OfflineHealth = maxHealth;
+        m_DamageReceiver = GetComponent<CombatDamageReceiver>();
+        if (m_DamageReceiver == null)
+            m_DamageReceiver = gameObject.AddComponent<CombatDamageReceiver>();
+
+        m_DamageReceiver.MaxHealth = maxHealth;
+        m_DamageReceiver.DestroyOnDeath = false; // Manejamos la muerte nosotros
+        m_DamageReceiver.OnDied.AddListener(OnDied);
+        m_DamageReceiver.OnDamaged.AddListener(OnDamaged);
     }
 
     public override void OnNetworkSpawn()
     {
-        // Solo el servidor inicializa el valor de la NetworkVariable
         if (IsServer)
         {
             currentHealth.Value = maxHealth;
+            m_DamageReceiver.Initialize(maxHealth);
+        }
+
+        currentHealth.OnValueChanged += (oldVal, newVal) => {
+            if (!IsServer) m_DamageReceiver.SyncFrom(newVal);
+        };
+    }
+
+    void OnDamaged(float damage)
+    {
+        if (IsServer)
+        {
+            currentHealth.Value = Mathf.RoundToInt(m_DamageReceiver.CurrentHealth);
         }
     }
 
+    void OnDied()
+    {
+        Die();
+    }
+
     /// <summary>
-    /// Funcin pblica para aplicar dao, funciona en red (servidor) y local.
+    /// Función pública para aplicar daño, redirige al sistema modular.
     /// </summary>
     public void TakeDamage(int damage)
     {
-        if (IsNetworkActive)
-        {
-            if (!IsServer) return;
-            if (currentHealth.Value <= 0) return;
-
-            currentHealth.Value -= damage;
-            Debug.Log($"{gameObject.name} recibi {damage} de dao (Red). Vida restante: {currentHealth.Value}");
-
-            if (currentHealth.Value <= 0)
-            {
-                Die();
-            }
-        }
-        else
-        {
-            if (m_OfflineHealth <= 0) return;
-
-            m_OfflineHealth -= damage;
-            Debug.Log($"{gameObject.name} recibi {damage} de dao (Offline). Vida restante: {m_OfflineHealth}");
-
-            if (m_OfflineHealth <= 0)
-            {
-                Die();
-            }
-        }
+        m_DamageReceiver.TakeDamage(damage, null);
     }
 
     private void Die()
@@ -67,7 +68,7 @@ public class enemyHealth : NetworkBehaviour
         // En red, solo el servidor ejecuta la muerte
         if (IsNetworkActive && !IsServer) return;
 
-        Debug.Log(gameObject.name + " muri");
+        Debug.Log(gameObject.name + " murió");
 
         // Genera las orbes
         SpawnExpOrbs();
