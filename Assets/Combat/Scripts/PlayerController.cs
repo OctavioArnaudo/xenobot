@@ -125,7 +125,7 @@ namespace Xenobot.Movement
             }
         }
 
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
         private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
         #endregion
 
@@ -181,7 +181,6 @@ namespace Xenobot.Movement
                 if (netObj != null)
                 {
                     netObj.transform.SetParent(null);
-                    DontDestroyOnLoad(netObj.gameObject);
                 }
 
                 SetupPlayerLocal();
@@ -194,9 +193,12 @@ namespace Xenobot.Movement
             else
             {
                 DisableLocalComponents();
-                // IMPORTANTE: Desactivamos el CharacterController en copias remotas
-                // para evitar que interfiera con el movimiento sincronizado
+                // IMPORTANTE: Desactivamos el CharacterController y la cámara en copias remotas
                 if (_controller != null) _controller.enabled = false;
+
+                // Desactivar cualquier cámara de Cinemachine que pudiera estar en este prefab
+                var vcam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
+                if (vcam != null) vcam.enabled = false;
             }
 
             Debug.Log($"[PlayerController] Spawned: {gameObject.name} | NetID: {NetworkObjectId} | Owner: {IsOwner}");
@@ -304,14 +306,11 @@ namespace Xenobot.Movement
             _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 
             // Buscamos la cámara recorriendo la jerarquía desde la raíz del objeto instanciado
-            // Esto es más robusto que buscar por componente en jerarquías complejas
             GameObject root = transform.root.gameObject;
             CinemachineCamera vcam = null;
 
-            // Buscamos un objeto que contenga "PlayerFollowCamera" o "Cinemachine" en el nombre
             foreach (var cam in root.GetComponentsInChildren<CinemachineCamera>(true))
             {
-                // Verificamos que esta cámara pertenezca a NUESTRO prefab (por si hay varios en la escena)
                 if (cam.transform.IsChildOf(root.transform))
                 {
                     vcam = cam;
@@ -325,13 +324,16 @@ namespace Xenobot.Movement
                 vcam.LookAt = CinemachineCameraTarget.transform;
 
                 // Solo activamos la cámara si somos el dueño
-                vcam.enabled = IsOwner || !IsNetworkActive;
+                vcam.enabled = IsOwner;
 
-                Debug.Log($"[PlayerController] CinemachineCamera ({vcam.gameObject.name}) vinculada con éxito en {gameObject.name} (NetID: {NetworkObjectId} | Owner: {IsOwner})");
+                // Prioridad absoluta para la cámara del dueño
+                vcam.Priority = IsOwner ? 100 : 0;
+
+                Debug.Log($"[PlayerController] CinemachineCamera ({vcam.gameObject.name}) configurada para {gameObject.name} (Owner: {IsOwner})");
             }
             else
             {
-                Debug.LogError($"[PlayerController] ERROR FATAL: No se encontró CinemachineCamera en la raíz {root.name}. Revisa que la cámara esté dentro del prefab.");
+                Debug.LogError($"[PlayerController] ERROR FATAL: No se encontró CinemachineCamera en {root.name}");
             }
         }
         #endregion

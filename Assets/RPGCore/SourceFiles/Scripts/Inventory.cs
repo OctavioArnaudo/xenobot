@@ -3,17 +3,17 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 
-public class Inventory : MonoBehaviour
+public class Inventory : NetworkBehaviour
 {
     public static Inventory Instance { get; private set; }
 
-    // toggleKey removed — now handled via new Input System (I key and Tab)
+    private static Dictionary<string, (ItemDefinition def, int qty)> s_PersistentBag = new();
+    private static List<string> s_PersistentKeys = new();
+    private static HashSet<string> s_PersistentEquipped = new();
 
-    [Header("Panel")]
+    [Header("Panel Settings")]
     public int panelWidth = 800;
     public int panelHeight = 600;
-
-    [Header("Celdas")]
     public int columns = 6;
     public int cellSize = 110;
     public int padding = 14;
@@ -21,22 +21,17 @@ public class Inventory : MonoBehaviour
     public int qtyFontSize = 22;
     public int cornerRadius = 12;
 
-    int CellSizeSel => Mathf.RoundToInt(cellSize * 1.25f);
-
-    [Header("Drop")]
+    [Header("Drop Settings")]
     public float dropDistance = 2.5f;
-    public float droppedWorldSize = 0.4f; // Tamaño visual del item dropeado en unidades de mundo
+    public float droppedWorldSize = 0.4f;
 
-    // Datos
-    readonly Dictionary<string, (ItemDefinition def, int qty)> _bag = new();
-    readonly List<string> _keys = new();
-    readonly HashSet<string> _equipped = new();
+    private Dictionary<string, (ItemDefinition def, int qty)> _bag => s_PersistentBag;
+    private List<string> _keys => s_PersistentKeys;
+    private HashSet<string> _equipped => s_PersistentEquipped;
 
     int _selectedIndex = -1;
     int _dropdownIndex = -1;
     bool _open;
-
-    // Drag
     int _dragIndex = -1;
     Vector2 _dragPos;
     bool _dragging = false;
@@ -44,151 +39,71 @@ public class Inventory : MonoBehaviour
 
     PlayerInput _playerInput;
 
-    void Awake()
+    public override void OnNetworkSpawn()
     {
-        // Solo el dueño local debe registrarse como Instance global para la UI
-        // Pero NO destruimos el gameObject de otros jugadores, solo desactivamos su script de Inventory
-        var netObj = GetComponent<NetworkObject>();
-        if (netObj != null && !netObj.IsOwner && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        if (IsOwner)
+        {
+            Instance = this;
+            _playerInput = GetComponent<PlayerInput>();
+        }
+        else
         {
             this.enabled = false;
-            return;
         }
-
-        if (Instance != null && Instance != this)
-        {
-            // Si ya hay un inventario local, este script sobra, pero no matamos al robot
-            Destroy(this);
-            return;
-        }
-
-        Instance = this;
-
-        // Solo intentamos persistencia si somos raíz
-        if (transform.parent == null)
-            DontDestroyOnLoad(gameObject);
-    }
-
-    void Start()
-    {
-        _playerInput = FindFirstObjectByType<PlayerInput>();
-        if (_playerInput == null)
-            Debug.LogWarning("[Inventory] No se encontro PlayerInput en la escena.");
     }
 
     void OnDestroy() { if (Instance == this) Instance = null; }
 
     public static void Add(ItemDefinition def)
     {
-        if (def == null || Instance == null) { Debug.LogWarning("[Inventory] Add failed"); return; }
+        if (def == null) return;
         string k = def.itemId.ToLowerInvariant();
         if (def.isStackable)
         {
-            if (!Instance._bag.ContainsKey(k)) Instance._keys.Add(k);
-            Instance._bag[k] = Instance._bag.TryGetValue(k, out var v)
+            if (!s_PersistentBag.ContainsKey(k)) s_PersistentKeys.Add(k);
+            s_PersistentBag[k] = s_PersistentBag.TryGetValue(k, out var v)
                 ? (v.def, Mathf.Min(v.qty + 1, def.maxStack))
                 : (def, 1);
         }
         else
         {
             int idx = 0;
-            while (Instance._bag.ContainsKey(k + "_" + idx)) idx++;
+            while (s_PersistentBag.ContainsKey(k + "_" + idx)) idx++;
             string sk = k + "_" + idx;
-            Instance._bag[sk] = (def, 1);
-            Instance._keys.Add(sk);
+            s_PersistentBag[sk] = (def, 1);
+            s_PersistentKeys.Add(sk);
         }
-        Debug.Log($"[Inventory] +1 '{def.itemId}' — {Instance._bag.Count} slot(s)");
     }
 
     void RemoveOne(string key)
     {
         if (!_bag.TryGetValue(key, out var slot)) return;
-        if (slot.qty > 1)
-        {
-            _bag[key] = (slot.def, slot.qty - 1);
-        }
+        if (slot.qty > 1) s_PersistentBag[key] = (slot.def, slot.qty - 1);
         else
         {
-            _bag.Remove(key);
-            _keys.Remove(key);
-            _equipped.Remove(key);
+            s_PersistentBag.Remove(key);
+            s_PersistentKeys.Remove(key);
+            s_PersistentEquipped.Remove(key);
             if (_selectedIndex >= _keys.Count) _selectedIndex = _keys.Count - 1;
             _dropdownIndex = -1;
         }
     }
 
-    Transform GetPlayerTransform()
-    {
-        var candidates = GameObject.FindGameObjectsWithTag("Player");
-        foreach (var go in candidates)
-        {
-            var pi = go.GetComponent<UnityEngine.InputSystem.PlayerInput>();
-            if (pi != null && pi.enabled) return go.transform;
-        }
-        return candidates.Length > 0 ? candidates[0].transform : null;
-    }
-
-    void SpawnDropped(ItemDefinition def)
-    {
-        Transform player = GetPlayerTransform();
-        Vector3 pos = player != null
-            ? player.position + player.forward * dropDistance + Vector3.up * 0.5f
-            : Vector3.zero;
-
-        // Always build the dropped object dynamically — no prefab needed.
-        // Scale is computed from the sprite's PPU so every item looks the same size in the world.
-        var go = new GameObject("Dropped_" + def.itemId);
-        go.transform.position = pos;
-
-        if (def.icon != null)
-        {
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = def.icon;
-
-            // pixels-per-unit tells us how many pixels equal 1 Unity unit.
-            // sprite.rect.width / ppu  = sprite's native world width.
-            // We want it to appear as droppedWorldSize units wide, so:
-            //   scale = droppedWorldSize / nativeWidth
-            float ppu = def.icon.pixelsPerUnit > 0 ? def.icon.pixelsPerUnit : 100f;
-            float nativeWidth = def.icon.rect.width / ppu;
-            float scale = nativeWidth > 0 ? droppedWorldSize / nativeWidth : droppedWorldSize;
-            go.transform.localScale = Vector3.one * scale;
-        }
-
-        // Collider sized to match the visual
-        var col = go.AddComponent<SphereCollider>();
-        col.isTrigger = true;
-        col.radius = 0.5f; // Pickup script handles the trigger, size is fine at 0.5
-
-        var pickup = go.AddComponent<Pickup>();
-        pickup.item = def;
-
-        Debug.Log($"[Inventory] Dropped '{def.itemId}' al mundo");
-    }
-
     void SetOpen(bool open)
     {
         _open = open;
-        if (_playerInput != null) _playerInput.enabled = !open;
-        if (open)
-        {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
-        else
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
-            _selectedIndex = -1;
-            _dropdownIndex = -1;
-            _dragging = false;
-            _dragIndex = -1;
-        }
+        if (IsOwner && _playerInput != null) _playerInput.enabled = !open;
+
+        Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = open;
+
+        if (!open) { _selectedIndex = -1; _dropdownIndex = -1; _dragging = false; }
     }
 
     void Update()
     {
-        // FIX: Use new Input System instead of legacy Input.GetKeyDown
+        if (!IsOwner) return;
+
         var keyboard = Keyboard.current;
         if (keyboard == null) return;
 
@@ -208,7 +123,7 @@ public class Inventory : MonoBehaviour
     }
 
     Rect CellRect(int i) { var c = CellCenter(i); float h = cellSize * 0.5f; return new Rect(c.x - h, c.y - h, cellSize, cellSize); }
-    Rect CellRectSel(int i) { var c = CellCenter(i); float h = CellSizeSel * 0.5f; return new Rect(c.x - h, c.y - h, CellSizeSel, CellSizeSel); }
+    Rect CellRectSel(int i) { var c = CellCenter(i); float h = Mathf.RoundToInt(cellSize * 1.25f) * 0.5f; return new Rect(c.x - h, c.y - h, Mathf.RoundToInt(cellSize * 1.25f), Mathf.RoundToInt(cellSize * 1.25f)); }
 
     Rect DropdownRectFor(int i)
     {
@@ -220,59 +135,13 @@ public class Inventory : MonoBehaviour
     }
 
     Texture2D _texNormal, _texSelected, _texDropdown, _texPanel, _texDropZone, _texGhost;
-
-    Texture2D MakeRoundedTex(int s, int r, Color fill, Color border, int bw)
-    {
-        var tex = new Texture2D(s, s, TextureFormat.RGBA32, false);
-        tex.filterMode = FilterMode.Bilinear;
-        Color clear = new Color(0, 0, 0, 0);
-        Color[] px = new Color[s * s];
-        for (int y = 0; y < s; y++)
-            for (int x = 0; x < s; x++)
-            {
-                float cx = Mathf.Clamp(x, r, s - 1 - r), cy = Mathf.Clamp(y, r, s - 1 - r);
-                float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
-                if (d > r + 1f) px[y * s + x] = clear;
-                else if (d > r - 0.5f) px[y * s + x] = Color.Lerp(fill, clear, d - (r - 0.5f));
-                else if (bw > 0 && d > r - bw) px[y * s + x] = border;
-                else px[y * s + x] = fill;
-            }
-        tex.SetPixels(px); tex.Apply(); return tex;
-    }
-
-    void EnsureTextures()
-    {
-        if (_texNormal != null) return;
-        int s = 64;
-        _texNormal = MakeRoundedTex(s, cornerRadius, new Color(1f, 1f, 1f, 0.10f), Color.clear, 0);
-        _texSelected = MakeRoundedTex(s, cornerRadius, new Color(0.08f, 0.08f, 0.08f, 0.97f), new Color(1f, 0.85f, 0f, 1f), 3);
-        _texDropdown = MakeRoundedTex(s, 8, new Color(0.10f, 0.10f, 0.10f, 0.97f), new Color(1f, 0.85f, 0f, 0.6f), 1);
-        _texPanel = MakeRoundedTex(s, 20, new Color(0f, 0f, 0f, 0.93f), Color.clear, 0);
-        _texDropZone = MakeRoundedTex(s, 16, new Color(0.8f, 0.2f, 0.1f, 0.55f), new Color(1f, 0.4f, 0.1f, 0.9f), 3);
-        _texGhost = MakeRoundedTex(s, cornerRadius, new Color(1f, 1f, 1f, 0.30f), Color.clear, 0);
-    }
-
     GUIStyle _titleSty, _qtySty, _emptySty, _badgeSty, _ddNorm, _ddHov, _dropHintSty;
     bool _stylesReady;
 
-    void EnsureStyles()
-    {
-        if (_stylesReady) return;
-        _titleSty = Sty(28, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
-        _qtySty = Sty(qtyFontSize, FontStyle.Bold, TextAnchor.LowerRight, Color.white);
-        _emptySty = Sty(18, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0.5f));
-        _badgeSty = Sty(20, FontStyle.Bold, TextAnchor.UpperRight, Color.yellow);
-        _ddNorm = Sty(15, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
-        _ddHov = Sty(15, FontStyle.Bold, TextAnchor.MiddleCenter, Color.yellow);
-        _dropHintSty = Sty(17, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.9f, 0.8f, 1f));
-        _stylesReady = true;
-    }
-
-    static GUIStyle Sty(int sz, FontStyle fs, TextAnchor a, Color c)
-    {
-        var s = new GUIStyle(GUI.skin.label) { fontSize = sz, fontStyle = fs, alignment = a };
-        s.normal.textColor = c; return s;
-    }
+    void EnsureStyles() { if (_stylesReady) return; _titleSty = Sty(28, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white); _qtySty = Sty(qtyFontSize, FontStyle.Bold, TextAnchor.LowerRight, Color.white); _emptySty = Sty(18, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0.5f)); _badgeSty = Sty(20, FontStyle.Bold, TextAnchor.UpperRight, Color.yellow); _ddNorm = Sty(15, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white); _ddHov = Sty(15, FontStyle.Bold, TextAnchor.MiddleCenter, Color.yellow); _dropHintSty = Sty(17, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.9f, 0.8f, 1f)); _stylesReady = true; }
+    void EnsureTextures() { if (_texNormal != null) return; int s = 64; _texNormal = MakeRoundedTex(s, cornerRadius, new Color(1f, 1f, 1f, 0.10f), Color.clear, 0); _texSelected = MakeRoundedTex(s, cornerRadius, new Color(0.08f, 0.08f, 0.08f, 0.97f), new Color(1f, 0.85f, 0f, 1f), 3); _texDropdown = MakeRoundedTex(s, 8, new Color(0.10f, 0.10f, 0.10f, 0.97f), new Color(1f, 0.85f, 0f, 0.6f), 1); _texPanel = MakeRoundedTex(s, 20, new Color(0f, 0f, 0f, 0.93f), Color.clear, 0); _texDropZone = MakeRoundedTex(s, 16, new Color(0.8f, 0.2f, 0.1f, 0.55f), new Color(1f, 0.4f, 0.1f, 0.9f), 3); _texGhost = MakeRoundedTex(s, cornerRadius, new Color(1f, 1f, 1f, 0.30f), Color.clear, 0); }
+    Texture2D MakeRoundedTex(int s, int r, Color fill, Color border, int bw) { var tex = new Texture2D(s, s, TextureFormat.RGBA32, false); tex.filterMode = FilterMode.Bilinear; Color clear = new Color(0, 0, 0, 0); Color[] px = new Color[s * s]; for (int y = 0; y < s; y++) for (int x = 0; x < s; x++) { float cx = Mathf.Clamp(x, r, s - 1 - r), cy = Mathf.Clamp(y, r, s - 1 - r); float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)); if (d > r + 1f) px[y * s + x] = clear; else if (d > r - 0.5f) px[y * s + x] = Color.Lerp(fill, clear, d - (r - 0.5f)); else if (bw > 0 && d > r - bw) px[y * s + x] = border; else px[y * s + x] = fill; } tex.SetPixels(px); tex.Apply(); return tex; }
+    static GUIStyle Sty(int sz, FontStyle fs, TextAnchor a, Color c) { var s = new GUIStyle(GUI.skin.label) { fontSize = sz, fontStyle = fs, alignment = a }; s.normal.textColor = c; return s; }
 
     void DrawCell(int i, bool selected, bool ghost)
     {
@@ -282,81 +151,39 @@ public class Inventory : MonoBehaviour
         bool equipped = _equipped.Contains(key);
         Rect cell = selected ? CellRectSel(i) : CellRect(i);
         int size = (int)cell.width;
-
         GUI.color = Color.white;
         GUI.DrawTexture(cell, ghost ? _texGhost : (selected ? _texSelected : _texNormal));
-
         if (def.icon != null)
         {
             int m = 10, mb = def.isStackable ? qtyFontSize + 6 : m;
             GUI.color = ghost ? new Color(1, 1, 1, 0.4f) : Color.white;
-            GUI.DrawTexture(new Rect(cell.x + m, cell.y + m, size - m * 2, size - m - mb),
-                def.icon.texture, ScaleMode.ScaleToFit);
+            GUI.DrawTexture(new Rect(cell.x + m, cell.y + m, size - m * 2, size - m - mb), def.icon.texture, ScaleMode.ScaleToFit);
             GUI.color = Color.white;
         }
-
         if (!ghost)
         {
-            if (def.isStackable)
-                GUI.Label(new Rect(cell.x + 2, cell.y + 2, size - 6, size - 6), "x" + slot.qty, _qtySty);
-            if (equipped)
-                GUI.Label(new Rect(cell.x + 2, cell.y + 2, size - 6, size - 6), "E", _badgeSty);
-        }
-    }
-
-    void DrawDragGhost()
-    {
-        if (!_dragging || _dragIndex < 0 || _dragIndex >= _keys.Count) return;
-        string key = _keys[_dragIndex];
-        if (!_bag.TryGetValue(key, out var slot)) return;
-
-        int sz = cellSize;
-        Rect r = new Rect(_dragPos.x - sz * 0.5f, _dragPos.y - sz * 0.5f, sz, sz);
-        GUI.color = Color.white;
-        GUI.DrawTexture(r, _texGhost);
-        if (slot.def.icon != null)
-        {
-            int m = 10;
-            GUI.color = new Color(1, 1, 1, 0.8f);
-            GUI.DrawTexture(new Rect(r.x + m, r.y + m, sz - m * 2, sz - m * 2), slot.def.icon.texture, ScaleMode.ScaleToFit);
-            GUI.color = Color.white;
+            if (def.isStackable) GUI.Label(new Rect(cell.x + 2, cell.y + 2, size - 6, size - 6), "x" + slot.qty, _qtySty);
+            if (equipped) GUI.Label(new Rect(cell.x + 2, cell.y + 2, size - 6, size - 6), "E", _badgeSty);
         }
     }
 
     void OnGUI()
     {
-        if (!_open) return;
+        if (!IsOwner || !_open) return;
         EnsureStyles();
         EnsureTextures();
-
         Event e = Event.current;
         Rect panel = PanelRect();
         float x0 = PanelX(), y0 = PanelY();
         Vector2 mp = e.mousePosition;
-
         if (_dragging) _dragPos = mp;
         _dragOutside = _dragging && !panel.Contains(mp);
-
-        // 1 — Panel
         GUI.color = Color.white;
         GUI.DrawTexture(panel, _texPanel);
         GUI.Label(new Rect(x0, y0 + 8, panelWidth, titleH), "INVENTARIO", _titleSty);
-
-        // 2 — Celdas normales
-        for (int i = 0; i < _keys.Count; i++)
-        {
-            if (i == _selectedIndex && !_dragging) continue;
-            DrawCell(i, false, _dragging && i == _dragIndex);
-        }
-
-        if (_bag.Count == 0)
-            GUI.Label(new Rect(x0, y0 + titleH, panelWidth, panelHeight - titleH), "Inventario vacio", _emptySty);
-
-        // 3 — Celda seleccionada encima
-        if (!_dragging && _selectedIndex >= 0 && _selectedIndex < _keys.Count)
-            DrawCell(_selectedIndex, true, false);
-
-        // 4 — Dropdown
+        for (int i = 0; i < _keys.Count; i++) { if (i == _selectedIndex && !_dragging) continue; DrawCell(i, false, _dragging && i == _dragIndex); }
+        if (_bag.Count == 0) GUI.Label(new Rect(x0, y0 + titleH, panelWidth, panelHeight - titleH), "Inventario vacio", _emptySty);
+        if (!_dragging && _selectedIndex >= 0 && _selectedIndex < _keys.Count) DrawCell(_selectedIndex, true, false);
         if (!_dragging && _dropdownIndex >= 0 && _dropdownIndex < _keys.Count)
         {
             string key = _keys[_dropdownIndex];
@@ -369,8 +196,6 @@ public class Inventory : MonoBehaviour
                 GUI.Label(dd, label, dd.Contains(mp) ? _ddHov : _ddNorm);
             }
         }
-
-        // 5 — Zona de drop
         if (_dragOutside)
         {
             Rect dz = new Rect(x0, y0 + panelHeight + 10, panelWidth, 60);
@@ -378,109 +203,39 @@ public class Inventory : MonoBehaviour
             GUI.DrawTexture(dz, _texDropZone);
             GUI.Label(dz, "Soltar aqui para tirar al suelo", _dropHintSty);
         }
-
-        // 6 — Ghost flotante
-        DrawDragGhost();
-
-        // 7 — Mouse Down
+        if (_dragging && _dragIndex >= 0 && _dragIndex < _keys.Count)
+        {
+            string key = _keys[_dragIndex];
+            if (_bag.TryGetValue(key, out var slot))
+            {
+                int sz = cellSize;
+                Rect r = new Rect(_dragPos.x - sz * 0.5f, _dragPos.y - sz * 0.5f, sz, sz);
+                GUI.color = Color.white;
+                GUI.DrawTexture(r, _texGhost);
+                if (slot.def.icon != null) { int m = 10; GUI.color = new Color(1, 1, 1, 0.8f); GUI.DrawTexture(new Rect(r.x + m, r.y + m, sz - m * 2, sz - m * 2), slot.def.icon.texture, ScaleMode.ScaleToFit); GUI.color = Color.white; }
+            }
+        }
         if (e.type == EventType.MouseDown && e.button == 0)
         {
             bool handled = false;
-
-            // Celda seleccionada (hitbox grande) — iniciar drag
-            if (_selectedIndex >= 0 && _selectedIndex < _keys.Count
-                && CellRectSel(_selectedIndex).Contains(mp))
-            {
-                _dragIndex = _selectedIndex;
-                _dragging = true; _dragPos = mp; _dropdownIndex = -1;
-                handled = true; e.Use();
-            }
-
-            // Cualquier celda normal
-            if (!handled)
-            {
-                for (int i = 0; i < _keys.Count; i++)
-                {
-                    if (CellRect(i).Contains(mp))
-                    {
-                        _selectedIndex = i; _dragIndex = i;
-                        _dragging = true; _dragPos = mp; _dropdownIndex = -1;
-                        handled = true; e.Use(); break;
-                    }
-                }
-            }
-
-            // Dropdown
+            if (_selectedIndex >= 0 && _selectedIndex < _keys.Count && CellRectSel(_selectedIndex).Contains(mp)) { _dragIndex = _selectedIndex; _dragging = true; _dragPos = mp; _dropdownIndex = -1; handled = true; e.Use(); }
+            if (!handled) { for (int i = 0; i < _keys.Count; i++) { if (CellRect(i).Contains(mp)) { _selectedIndex = i; _dragIndex = i; _dragging = true; _dragPos = mp; _dropdownIndex = -1; handled = true; e.Use(); break; } } }
             if (!handled && _dropdownIndex >= 0 && _dropdownIndex < _keys.Count)
             {
                 Rect dd = DropdownRectFor(_dropdownIndex);
-                if (dd.Contains(mp))
-                {
-                    string key = _keys[_dropdownIndex];
-                    if (_bag.TryGetValue(key, out var slot) && slot.def.type == ItemType.Equipment)
-                    {
-                        if (_equipped.Contains(key)) _equipped.Remove(key);
-                        else _equipped.Add(key);
-                        Debug.Log($"[Inventory] '{slot.def.displayName}' EQUIPADO={_equipped.Contains(key)}");
-                    }
-                    _dropdownIndex = -1; handled = true; e.Use();
-                }
+                if (dd.Contains(mp)) { string key = _keys[_dropdownIndex]; if (_bag.TryGetValue(key, out var slot) && slot.def.type == ItemType.Equipment) { if (_equipped.Contains(key)) _equipped.Remove(key); else _equipped.Add(key); } _dropdownIndex = -1; handled = true; e.Use(); }
                 else { _dropdownIndex = -1; }
             }
         }
-
-        // 8 — Mouse Up
         if (e.type == EventType.MouseUp && e.button == 0 && _dragging)
         {
-            if (_dragOutside)
-            {
-                // Tirar al suelo
-                string key = _keys[_dragIndex];
-                if (_bag.TryGetValue(key, out var slot))
-                {
-                    SpawnDropped(slot.def);
-                    RemoveOne(key);
-                    _selectedIndex = -1;
-                }
-            }
-            else
-            {
-                // Soltar dentro: abrir dropdown si es Equipment
-                _selectedIndex = _dragIndex;
-                string key = _keys[_dragIndex];
-                if (_bag.TryGetValue(key, out var slot) && slot.def.type == ItemType.Equipment)
-                    _dropdownIndex = _dragIndex;
-            }
-            _dragging = false; _dragIndex = -1;
-            e.Use();
+            if (_dragOutside) { string key = _keys[_dragIndex]; if (_bag.TryGetValue(key, out var slot)) { _selectedIndex = -1; } }
+            else { _selectedIndex = _dragIndex; string key = _keys[_dragIndex]; if (_bag.TryGetValue(key, out var slot) && slot.def.type == ItemType.Equipment) _dropdownIndex = _dragIndex; }
+            _dragging = false; _dragIndex = -1; e.Use();
         }
-
-        // 9 — Teclado
         if (e.type == EventType.KeyDown)
         {
-            int count = _keys.Count;
-            if (e.keyCode == KeyCode.Escape)
-            {
-                if (_dragging) { _dragging = false; _dragIndex = -1; }
-                else if (_dropdownIndex >= 0) { _dropdownIndex = -1; }
-                else if (_selectedIndex >= 0) { _selectedIndex = -1; _dropdownIndex = -1; }
-                else { SetOpen(false); }
-                e.Use();
-            }
-            else if (!_dragging)
-            {
-                if (e.keyCode == KeyCode.RightArrow && count > 0) { _selectedIndex = (_selectedIndex < 0) ? 0 : Mathf.Min(_selectedIndex + 1, count - 1); _dropdownIndex = -1; e.Use(); }
-                else if (e.keyCode == KeyCode.LeftArrow && count > 0) { _selectedIndex = (_selectedIndex < 0) ? 0 : Mathf.Max(_selectedIndex - 1, 0); _dropdownIndex = -1; e.Use(); }
-                else if (e.keyCode == KeyCode.DownArrow && count > 0) { _selectedIndex = (_selectedIndex < 0) ? 0 : Mathf.Min(_selectedIndex + columns, count - 1); _dropdownIndex = -1; e.Use(); }
-                else if (e.keyCode == KeyCode.UpArrow && count > 0) { _selectedIndex = (_selectedIndex < 0) ? 0 : Mathf.Max(_selectedIndex - columns, 0); _dropdownIndex = -1; e.Use(); }
-                else if (e.keyCode == KeyCode.Space && _selectedIndex >= 0 && _selectedIndex < count)
-                {
-                    string k = _keys[_selectedIndex];
-                    if (_bag.TryGetValue(k, out var s2) && s2.def.type == ItemType.Equipment)
-                        _dropdownIndex = (_dropdownIndex == _selectedIndex) ? -1 : _selectedIndex;
-                    e.Use();
-                }
-            }
+            if (e.keyCode == KeyCode.Escape) { if (_dragging) { _dragging = false; _dragIndex = -1; } else if (_dropdownIndex >= 0) { _dropdownIndex = -1; } else if (_selectedIndex >= 0) { _selectedIndex = -1; _dropdownIndex = -1; } else { SetOpen(false); } e.Use(); }
         }
     }
 }

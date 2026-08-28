@@ -1,6 +1,7 @@
 ﻿using Unity.FPS.Game;
 using UnityEngine;
 using UnityEngine.Events;
+using Unity.Netcode;
 
 namespace Unity.FPS.Gameplay
 {
@@ -45,9 +46,8 @@ namespace Unity.FPS.Gameplay
 
         void Awake()
         {
-            ActorsManager actorsManager = FindFirstObjectByType<ActorsManager>();
-            if (actorsManager != null)
-                actorsManager.SetPlayer(gameObject);
+            // Ya no asignamos el jugador aquí para evitar el secuestro de referencia en red.
+            // Se hará en el Start con validación de propiedad (Ownership).
         }
 
         void Start()
@@ -56,6 +56,15 @@ namespace Unity.FPS.Gameplay
             m_InputHandler = GetComponent<PlayerInputHandler>();
             m_WeaponsManager = GetComponent<PlayerWeaponsManager>();
             m_Health = GetComponent<Health>();
+
+            // Solo registrarse como el jugador principal si somos el dueño local
+            NetworkObject netObj = GetComponent<NetworkObject>();
+            if (netObj == null || netObj.IsOwner)
+            {
+                ActorsManager actorsManager = FindFirstObjectByType<ActorsManager>();
+                if (actorsManager != null)
+                    actorsManager.SetPlayer(gameObject);
+            }
 
             if (PlayerCamera == null)
             {
