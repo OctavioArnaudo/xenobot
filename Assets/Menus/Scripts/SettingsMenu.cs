@@ -48,7 +48,7 @@ public class SettingsMenu : MonoBehaviour
         canvasObj.layer = uiLayer;
 
         // 2. EventSystem
-        if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+        if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
         {
             GameObject esObj = new GameObject("EventSystem");
             esObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
@@ -262,7 +262,7 @@ public class SettingsMenu : MonoBehaviour
         tmp.enableAutoSizing = true;
         tmp.fontSizeMin = 12;
         tmp.fontSizeMax = size * 1.5f;
-        tmp.enableWordWrapping = false; // MUY IMPORTANTE: Evita que el texto desaparezca al intentar envolver
+        tmp.textWrappingMode = TextWrappingModes.NoWrap; // MUY IMPORTANTE: Evita que el texto desaparezca al intentar envolver
         tmp.overflowMode = TextOverflowModes.Overflow; // Asegura que se vea aunque el rect sea pequeño
         tmp.raycastTarget = false;
     }

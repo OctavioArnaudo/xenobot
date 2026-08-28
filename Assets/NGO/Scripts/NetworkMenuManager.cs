@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace NGO.Networking
 {
@@ -44,12 +45,9 @@ namespace NGO.Networking
             if (clientPanel != null) clientPanel.SetActive(false);
         }
 
-        public void QuitGame()
+        public void GoBack()
         {
-            Application.Quit();
-#if UNITY_EDITOR
-            UnityEditor.EditorApplication.isPlaying = false;
-#endif
+            SceneManager.LoadScene("MainMenuScene");
         }
     }
 }

@@ -38,7 +38,7 @@ public class MainMenu : MonoBehaviour
         canvasObj.AddComponent<GraphicRaycaster>();
 
         // 2. EventSystem
-        if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+        if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
         {
             GameObject esObj = new GameObject("EventSystem");
             esObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
