@@ -119,7 +119,7 @@ public class LevelsMenu : MonoBehaviour
         CreateAdaptiveButton(canvasObj.transform, "VOLVER AL MENÚ", new Vector2(0.5f, 0.1f), VolverAlMenu, new Color(0.8f, 0.2f, 0.2f, 0.7f));
 
         // EventSystem
-        if (FindObjectOfType<UnityEngine.EventSystems.EventSystem>() == null)
+        if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
         {
             GameObject esObj = new GameObject("EventSystem");
             esObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
@@ -178,7 +178,7 @@ public class LevelsMenu : MonoBehaviour
         tmp.color = colorTexto;
         tmp.fontSize = 24;
         tmp.alignment = TextAlignmentOptions.TopLeft;
-        tmp.enableWordWrapping = true;
+        tmp.textWrappingMode = TextWrappingModes.Normal;
         tmp.lineSpacing = 10;
     }
 
