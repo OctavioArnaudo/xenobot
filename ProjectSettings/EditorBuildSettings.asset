@@ -6,12 +6,12 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/Menus/Scenes/MenuPrincipal.unity
+    path: Assets/Menus/Scenes/MainMenuScene.unity
     guid: 3de6c2f58709d2c48bd58728d35e932c
   - enabled: 1
     path: Assets/Biomas/Scenes/BiomaScene.unity
     guid: 4ebfc30f3cb12114e95e7413ad1129e3
-  - enabled: 1
+  - enabled: 0
     path: Assets/RPGCore/Scenes/XenoBotScene.unity
     guid: 6888813f2bd9e4521b9b1343abf0c60f
   - enabled: 0
@@ -32,9 +32,18 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/NGO/Scenes/LobbyScene.unity
     guid: d7607f4f23e4a9b4baa2f7f7a11c5e72
-  - enabled: 1
+  - enabled: 0
     path: Assets/Crafting/Scenes/CraftingScene.unity
     guid: 059861d2f3f9b1e4192cee5c2f0734bc
+  - enabled: 1
+    path: Assets/Menus/Scenes/LevelsMenuScene.unity
+    guid: bdf2d60f602b60b47b3cb658459cb4d7
+  - enabled: 1
+    path: Assets/Menus/Scenes/CreditsMenuScene.unity
+    guid: 36140a41930ea3a41adf4cac1f654bc8
+  - enabled: 1
+    path: Assets/Menus/Scenes/SettingsMenuScene.unity
+    guid: 9cacb10634dee7a4a954aeaa5137764c
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

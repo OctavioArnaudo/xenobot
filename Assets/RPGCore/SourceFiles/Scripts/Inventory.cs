@@ -52,7 +52,11 @@ public class Inventory : NetworkBehaviour
         }
     }
 
-    void OnDestroy() { if (Instance == this) Instance = null; }
+    public override void OnDestroy()
+    {
+        base.OnDestroy();
+        if (Instance == this) Instance = null;
+    }
 
     public static void Add(ItemDefinition def)
     {
