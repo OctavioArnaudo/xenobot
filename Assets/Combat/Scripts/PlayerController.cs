@@ -1,4 +1,5 @@
 using UnityEngine;
+using System.Collections.Generic;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
@@ -48,7 +49,15 @@ namespace Xenobot.Movement
         #endregion
 
         #region Variables: Respawn
-        [Header("Respawn")]
+        [System.Serializable]
+        public struct SceneSpawnConfig
+        {
+            public string SceneName;
+            public string SpawnPointTag;
+        }
+
+        [Header("Respawn & Spawning")]
+        public List<SceneSpawnConfig> SceneSpawns = new List<SceneSpawnConfig>();
         public float yThreshold = -5f;
         public AudioClip respawnSound;
         private Vector3 _startingPosition;
@@ -116,7 +125,7 @@ namespace Xenobot.Movement
             }
         }
 
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
         private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
         #endregion
 
@@ -165,13 +174,34 @@ namespace Xenobot.Movement
         {
             if (IsOwner)
             {
+                // Buscamos el objeto raíz que tiene el NetworkObject
+                NetworkObject netObj = GetComponentInParent<NetworkObject>();
+                if (netObj == null) netObj = GetComponent<NetworkObject>();
+
+                if (netObj != null)
+                {
+                    netObj.transform.SetParent(null);
+                }
+
                 SetupPlayerLocal();
+
+                // Teletransportamos al punto de spawn de la escena actual de inmediato
+                TeleportToSceneSpawn(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+
                 UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
             }
             else
             {
                 DisableLocalComponents();
+                // IMPORTANTE: Desactivamos el CharacterController y la cámara en copias remotas
+                if (_controller != null) _controller.enabled = false;
+
+                // Desactivar cualquier cámara de Cinemachine que pudiera estar en este prefab
+                var vcam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
+                if (vcam != null) vcam.enabled = false;
             }
+
+            Debug.Log($"[PlayerController] Spawned: {gameObject.name} | NetID: {NetworkObjectId} | Owner: {IsOwner}");
         }
 
         public override void OnNetworkDespawn()
@@ -185,9 +215,46 @@ namespace Xenobot.Movement
             if (IsOwner || !IsNetworkActive)
             {
                 SetupCamera();
+                TeleportToSceneSpawn(scene.name);
+
 #if ENABLE_INPUT_SYSTEM
                 if (_playerInput != null) _playerInput.ActivateInput();
 #endif
+            }
+        }
+
+        private void TeleportToSceneSpawn(string sceneName)
+        {
+            // Buscamos si hay una configuración específica para esta escena
+            var config = SceneSpawns.Find(s => s.SceneName == sceneName);
+            if (string.IsNullOrEmpty(config.SpawnPointTag)) return;
+
+            // Buscamos todos los objetos con ese Tag en la escena
+            GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag(config.SpawnPointTag);
+            if (spawnPoints.Length > 0)
+            {
+                // Usamos el OwnerClientId para elegir un punto distinto para cada jugador
+                // (Si solo hay un punto, todos irán al mismo, si hay varios se repartirán)
+                int index = (int)(OwnerClientId % (ulong)spawnPoints.Length);
+                Transform targetSpawn = spawnPoints[index].transform;
+
+                // Desactivamos el CharacterController momentáneamente para permitir el teletransporte
+                if (_controller != null) _controller.enabled = false;
+
+                transform.position = targetSpawn.position;
+                transform.rotation = targetSpawn.rotation;
+
+                // Actualizamos las posiciones de inicio para el sistema de Respawn (caídas al vacío)
+                _startingPosition = transform.position;
+                _startingRotation = transform.rotation;
+
+                if (_controller != null) _controller.enabled = true;
+
+                Debug.Log($"[PlayerController] Teletransportado a punto de spawn: {targetSpawn.name} en escena: {sceneName}");
+            }
+            else
+            {
+                Debug.LogWarning($"[PlayerController] No se encontraron objetos con el Tag '{config.SpawnPointTag}' en la escena {sceneName}");
             }
         }
 
@@ -238,19 +305,35 @@ namespace Xenobot.Movement
         {
             _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 
+            // Buscamos la cámara recorriendo la jerarquía desde la raíz del objeto instanciado
+            GameObject root = transform.root.gameObject;
             CinemachineCamera vcam = null;
-            GameObject vcamGo = GameObject.FindGameObjectWithTag(PlayerVCamTag);
-            if (vcamGo != null)
-                vcam = vcamGo.GetComponent<CinemachineCamera>();
 
-            if (vcam == null)
-                vcam = GetComponentInChildren<CinemachineCamera>(true);
+            foreach (var cam in root.GetComponentsInChildren<CinemachineCamera>(true))
+            {
+                if (cam.transform.IsChildOf(root.transform))
+                {
+                    vcam = cam;
+                    break;
+                }
+            }
 
             if (vcam != null && CinemachineCameraTarget != null)
             {
                 vcam.Follow = CinemachineCameraTarget.transform;
                 vcam.LookAt = CinemachineCameraTarget.transform;
-                Debug.Log("[PlayerController] Cámara vinculada.");
+
+                // Solo activamos la cámara si somos el dueño
+                vcam.enabled = IsOwner;
+
+                // Prioridad absoluta para la cámara del dueño
+                vcam.Priority = IsOwner ? 100 : 0;
+
+                Debug.Log($"[PlayerController] CinemachineCamera ({vcam.gameObject.name}) configurada para {gameObject.name} (Owner: {IsOwner})");
+            }
+            else
+            {
+                Debug.LogError($"[PlayerController] ERROR FATAL: No se encontró CinemachineCamera en {root.name}");
             }
         }
         #endregion

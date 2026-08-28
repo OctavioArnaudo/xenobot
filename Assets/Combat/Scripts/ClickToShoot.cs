@@ -1,10 +1,11 @@
 using Unity.FPS.Gameplay;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
 
 namespace Xenobot.ModularCombat
 {
-    public class ClickToShoot : MonoBehaviour
+    public class ClickToShoot : NetworkBehaviour
     {
         [Header("References")]
         public Camera AimCamera;
@@ -44,6 +45,8 @@ namespace Xenobot.ModularCombat
 
         void Update()
         {
+            if (!IsOwner) return; // Solo el dueño dispara localmente
+
             if (!UsePlayerInput)
                 return;
 
@@ -71,6 +74,8 @@ namespace Xenobot.ModularCombat
 
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
             Vector3 direction = GetAimDirection();
+
+            // Spawn del proyectil (Idealmente esto debería ser un RPC, pero por ahora bloqueamos el input remoto)
             CombatProjectile projectile = Instantiate(ProjectilePrefab, Muzzle.position, Quaternion.LookRotation(direction));
             projectile.Launch(gameObject, direction, Damage, ProjectileSpeed);
 

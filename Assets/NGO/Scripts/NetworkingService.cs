@@ -7,7 +7,6 @@ namespace NGO.Networking
 {
     public static class NetworkingService
     {
-        // Esto se ejecuta antes que CUALQUIER otra cosa en el juego
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
         private static void DisableBurstRoot()
         {

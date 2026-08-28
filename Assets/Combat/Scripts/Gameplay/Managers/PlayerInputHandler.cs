@@ -23,6 +23,7 @@ namespace Unity.FPS.Gameplay
 
         GameFlowManager m_GameFlowManager;
         PlayerCharacterController m_PlayerCharacterController;
+        Unity.Netcode.NetworkObject m_NetworkObject;
         bool m_FireInputWasHeld;
 
         private InputAction m_MoveAction;
@@ -38,6 +39,7 @@ namespace Unity.FPS.Gameplay
         void Awake()
         {
             m_PlayerCharacterController = GetComponent<PlayerCharacterController>();
+            m_NetworkObject = GetComponent<Unity.Netcode.NetworkObject>();
             m_GameFlowManager = FindFirstObjectByType<GameFlowManager>();
 
             if (InputSystem.actions == null)
@@ -100,6 +102,9 @@ namespace Unity.FPS.Gameplay
 
         public bool CanProcessInput()
         {
+            if (m_NetworkObject != null && !m_NetworkObject.IsOwner)
+                return false;
+
             return Cursor.lockState == CursorLockMode.Locked && m_GameFlowManager != null && !m_GameFlowManager.GameIsEnding;
         }
 

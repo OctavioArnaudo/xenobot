@@ -43,6 +43,15 @@ namespace NGO.Networking
 
             if (portInputField != null && string.IsNullOrEmpty(portInputField.text))
                 portInputField.text = "7777";
+
+            // Forzar mayúsculas en el código de sala mientras se escribe
+            if (roomCodeInputField != null)
+            {
+                roomCodeInputField.onValueChanged.AddListener((value) =>
+                {
+                    roomCodeInputField.text = value.ToUpper();
+                });
+            }
         }
 
         private void SaveLocalSettings()

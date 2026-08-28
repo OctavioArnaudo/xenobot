@@ -288,8 +288,40 @@ namespace NGO.Networking
 
         public void OnClickLeaveLobby()
         {
-            if (NetworkManager.Singleton != null) NetworkManager.Singleton.Shutdown();
-            SceneManager.LoadScene(networkSceneName);
+            Debug.Log("[Lobby] Saliendo de la sesión y regresando al menú...");
+
+            if (NetworkManager.Singleton != null)
+            {
+                // 1. Detenemos la red (Host o Cliente)
+                NetworkManager.Singleton.Shutdown();
+            }
+
+            // 2. Aseguramos que el cursor sea visible y libre para interactuar con el menú principal
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            // 3. Limpieza de seguridad: Si el jugador era persistente (DontDestroyOnLoad),
+            // lo buscamos y destruimos para que no aparezca en el menú principal.
+            var localPlayers = GameObject.FindGameObjectsWithTag("Player");
+            foreach (var p in localPlayers)
+            {
+                // Solo destruimos los que no pertenezcan a la escena actual (que son los persistentes)
+                if (p.scene.name == null || p.scene.name == "DontDestroyOnLoad")
+                {
+                    Destroy(p);
+                }
+            }
+
+            // 4. Cargamos la escena inicial
+            if (!string.IsNullOrEmpty(networkSceneName))
+            {
+                SceneManager.LoadScene(networkSceneName);
+            }
+            else
+            {
+                Debug.LogWarning("[Lobby] networkSceneName no está configurado. Intentando cargar 'NetworkScene' por defecto.");
+                SceneManager.LoadScene("NetworkScene");
+            }
         }
     }
 }
