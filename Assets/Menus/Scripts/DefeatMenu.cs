@@ -204,7 +204,7 @@ namespace Menus.Scripts
 
             if (level != null)
             {
-                level.ActualizarRecord(LevelsMenu.FormatTime(timeTaken));
+                level.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), timeTaken, false);
                 Debug.Log($"[Defeat] Tiempo registrado para {level.nombreNivel}: {level.mejorTiempo}");
             }
             else
@@ -213,7 +213,7 @@ namespace Menus.Scripts
                 LevelData newLevel = ScriptableObject.CreateInstance<LevelData>();
                 newLevel.nombreNivel = currentScene;
                 newLevel.escenaNombre = currentScene;
-                newLevel.ActualizarRecord(LevelsMenu.FormatTime(timeTaken));
+                newLevel.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), timeTaken, false);
 
                 LevelsMenu.listaNiveles.Add(newLevel);
                 Debug.Log($"[Defeat] Nivel '{currentScene}' no existía. Creado y registrado.");

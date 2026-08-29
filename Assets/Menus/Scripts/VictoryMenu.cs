@@ -186,7 +186,7 @@ namespace Menus.Scripts
 
             if (level != null)
             {
-                level.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), playerName);
+                level.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), timeTaken, true, playerName);
                 Debug.Log($"[Victory] Nivel {level.nombreNivel} actualizado correctamente.");
             }
             else
@@ -195,7 +195,7 @@ namespace Menus.Scripts
                 LevelData newLevel = ScriptableObject.CreateInstance<LevelData>();
                 newLevel.nombreNivel = currentScene;
                 newLevel.escenaNombre = currentScene;
-                newLevel.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), playerName);
+                newLevel.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), timeTaken, true, playerName);
 
                 LevelsMenu.listaNiveles.Add(newLevel);
                 Debug.Log($"[Victory] Nivel '{currentScene}' creado dinámicamente con éxito de {playerName}.");
