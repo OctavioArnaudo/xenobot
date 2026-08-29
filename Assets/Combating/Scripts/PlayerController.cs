@@ -450,15 +450,34 @@ namespace Xenobot.Movement
 
         private void JumpAndGravity()
         {
-            bool isUsingJetpack = false;
-
-            // Backup check for jump hold in case New Input events miss frames
-            bool currentlyHoldingJump = _isJumpHeld;
+            bool currentlyHoldingJump = false;
             #if ENABLE_INPUT_SYSTEM
-            if (Keyboard.current != null && Keyboard.current.spaceKey.isPressed) currentlyHoldingJump = true;
+            if (Keyboard.current != null) currentlyHoldingJump = Keyboard.current.spaceKey.isPressed;
             #endif
 
-            if (Grounded)
+            // --- 1. LÓGICA PRIORITARIA: JETPACK ---
+            // Se activa si NO estamos en el suelo, tenemos fuel y mantenemos espacio
+            bool isUsingJetpack = !Grounded && currentlyHoldingJump && _playerHealth != null && _playerHealth.JetpackFuel > 0;
+
+            if (isUsingJetpack)
+            {
+                // Si estábamos cayendo, frenamos en seco para empezar a subir
+                if (_verticalVelocity < 0) _verticalVelocity = 0;
+
+                // Aplicamos fuerza de ascenso (sin gravedad que nos tire abajo)
+                _verticalVelocity += JetpackForce * Time.deltaTime;
+
+                // Límite de velocidad de vuelo para control total
+                if (_verticalVelocity > MaxUpwardVelocity) _verticalVelocity = MaxUpwardVelocity;
+
+                // Consumir combustible
+                _playerHealth.UseFuel(FuelConsumption * Time.deltaTime);
+
+                // Cancelar cualquier flag de salto pendiente
+                jump = false;
+            }
+            // --- 2. LÓGICA DE TIERRA: SALTO NORMAL ---
+            else if (Grounded)
             {
                 _fallTimeoutDelta = FallTimeout;
                 if (_hasAnimator)
@@ -471,48 +490,29 @@ namespace Xenobot.Movement
 
                 if (jump && _jumpTimeoutDelta <= 0.0f)
                 {
+                    // Impulso de salto inicial
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
                     if (_hasAnimator && _hasAnimIDJump) _animator.SetBool(_animIDJump, true);
                     jump = false;
                 }
 
                 if (_jumpTimeoutDelta >= 0.0f) _jumpTimeoutDelta -= Time.deltaTime;
+
+                // Recargar combustible solo cuando estamos tocando el suelo
+                if (_playerHealth != null) _playerHealth.AddFuel(FuelRegen * Time.deltaTime);
             }
+            // --- 3. LÓGICA DE AIRE: CAÍDA LIBRE (SIN JETPACK) ---
             else
             {
                 _jumpTimeoutDelta = JumpTimeout;
                 if (_fallTimeoutDelta >= 0.0f) _fallTimeoutDelta -= Time.deltaTime;
                 else if (_hasAnimator && _hasAnimIDFreeFall) _animator.SetBool(_animIDFreeFall, true);
 
-                // LOGICA DE JETPACK ACTIVA
-                if (currentlyHoldingJump && _playerHealth != null && _playerHealth.JetpackFuel > 0)
-                {
-                    isUsingJetpack = true;
-
-                    // Aplicamos fuerza constante hacia arriba ignorando parte de la gravedad acumulada
-                    if (_verticalVelocity < 0) _verticalVelocity *= 0.5f; // Freno de caída
-
-                    _verticalVelocity += JetpackForce * Time.deltaTime;
-
-                    // Cap de velocidad para el "Hover"
-                    if (_verticalVelocity > MaxUpwardVelocity) _verticalVelocity = MaxUpwardVelocity;
-
-                    _playerHealth.UseFuel(FuelConsumption * Time.deltaTime);
-                }
+                // Aplicar gravedad normal de caída
+                if (_verticalVelocity > -_terminalVelocity)
+                    _verticalVelocity += Gravity * Time.deltaTime;
 
                 jump = false;
-            }
-
-            // Regen fuel
-            if (!isUsingJetpack && _playerHealth != null)
-            {
-                _playerHealth.AddFuel(FuelRegen * Time.deltaTime);
-            }
-
-            // Aplicar gravedad solo si no estamos subiendo con mucha fuerza
-            if (_verticalVelocity < _terminalVelocity)
-            {
-                 _verticalVelocity += Gravity * Time.deltaTime;
             }
         }
         #endregion
