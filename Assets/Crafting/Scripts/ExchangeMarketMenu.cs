@@ -28,20 +28,20 @@ namespace NGO.Networking
         /// <summary>
         /// Método llamado por el ItemDropZone cuando se arrastra un icono aquí.
         /// </summary>
-        public void OnItemDroppedInZone(Data.ItemData item, int amount)
+        public void OnItemDroppedInZone(ItemData item, int amount)
         {
             if (item == null) return;
 
-            _currentSelectedItemId = item.ItemID;
-            if (itemIdInput != null) itemIdInput.text = item.ItemID.ToString();
+            _currentSelectedItemId = item.itemId;
+            if (itemIdInput != null) itemIdInput.text = item.itemId.ToString();
             if (amountInput != null) amountInput.text = amount.ToString();
             if (selectedItemIcon != null)
             {
-                selectedItemIcon.sprite = item.Icon;
+                selectedItemIcon.sprite = item.icon;
                 selectedItemIcon.gameObject.SetActive(true);
             }
 
-            Debug.Log($"[ExchangeMenu] Objeto seleccionado mediante arrastre: {item.ItemName}");
+            Debug.Log($"[ExchangeMenu] Objeto seleccionado mediante arrastre: {item.displayName}");
         }
 
         /// <summary>

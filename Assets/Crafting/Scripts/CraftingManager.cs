@@ -20,9 +20,9 @@ namespace Crafting.Scripts
         public float slotSize = 80f;
         public float spacing = 8f;
 
-        // The 3x3 Crafting Grid (9 slots). Synced across all clients.
+        // The 5x5 Crafting Grid (25 slots). Synced across all clients.
         public NetworkList<FixedString32Bytes> GridItems;
-        private FixedString32Bytes[] _offlineGridItems = new FixedString32Bytes[9];
+        private FixedString32Bytes[] _offlineGridItems = new FixedString32Bytes[25];
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
@@ -32,7 +32,8 @@ namespace Crafting.Scripts
         private Transform _craftingGridRoot;
 
         private string _pickedItemId = "";
-        private TextMeshProUGUI _feedbackText;
+        private TextMeshProUGUI _internalFeedbackText;
+        private TextMeshProUGUI _externalFeedbackText;
 
         private void Awake()
         {
@@ -44,6 +45,9 @@ namespace Crafting.Scripts
 
         private void Start()
         {
+            // Ensure there is an EventSystem for inputs to work
+            EnsureEventSystem();
+
             // Build the UI immediately so it's available
             BuildUI();
 
@@ -51,11 +55,21 @@ namespace Crafting.Scripts
             if (_canvasRoot != null) _canvasRoot.SetActive(false);
         }
 
+        private void EnsureEventSystem()
+        {
+            if (FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+            {
+                var esGo = new GameObject("EventSystem");
+                esGo.AddComponent<UnityEngine.EventSystems.EventSystem>();
+                esGo.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+            }
+        }
+
         public override void OnNetworkSpawn()
         {
             if (IsServer && GridItems.Count == 0)
             {
-                for (int i = 0; i < 9; i++) GridItems.Add("");
+                for (int i = 0; i < 25; i++) GridItems.Add("");
             }
 
             GridItems.OnListChanged += (changeEvent) => RefreshCraftingVisuals();
@@ -64,14 +78,38 @@ namespace Crafting.Scripts
 
         private void Update()
         {
-            // Toggle UI with 'E' or 'C' using New Input System
+            // Toggle UI with 'C' only using New Input System
             if (Keyboard.current != null)
             {
-                if (Keyboard.current.eKey.wasPressedThisFrame || Keyboard.current.cKey.wasPressedThisFrame)
+                if (Keyboard.current.cKey.wasPressedThisFrame)
                 {
                     ToggleUI();
                 }
             }
+        }
+
+        private void SetFeedbackText(string text)
+        {
+            if (_internalFeedbackText != null) _internalFeedbackText.text = text;
+            if (_externalFeedbackText != null) _externalFeedbackText.text = text;
+        }
+
+        private TextMeshProUGUI AddText(GameObject go, string content, int size, Color color, TextAlignmentOptions align)
+        {
+            var txt = go.AddComponent<TextMeshProUGUI>();
+            txt.text = content;
+            txt.fontSize = size;
+            txt.color = color;
+            txt.alignment = align;
+            txt.raycastTarget = false; // Critical: prevent text from blocking clicks
+            return txt;
+        }
+
+        private void StretchRT(RectTransform rt)
+        {
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.sizeDelta = Vector2.zero;
         }
 
         public void ToggleUI()
@@ -85,21 +123,27 @@ namespace Crafting.Scripts
                 Cursor.visible = isActive;
                 Cursor.lockState = isActive ? CursorLockMode.None : CursorLockMode.Locked;
 
-                _feedbackText.text = isActive ? "Crafting Menu Open" : "";
+                SetFeedbackText(isActive ? "Crafting Menu Open" : "");
             }
         }
 
         private void BuildUI()
         {
             // 1. Create Canvas
+            if (_canvasRoot != null) Destroy(_canvasRoot);
+
             _canvasRoot = new GameObject("MinecraftCrafting_Canvas");
-            _canvasRoot.transform.SetParent(transform);
+            // Important: Do NOT set parent to 'transform' to avoid coordinate offsets
+            _canvasRoot.transform.SetParent(null);
+
             Canvas canvas = _canvasRoot.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 100; // Ensure it's on top
 
             var scaler = _canvasRoot.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = 0.5f;
 
             _canvasRoot.AddComponent<GraphicRaycaster>();
@@ -116,45 +160,36 @@ namespace Crafting.Scripts
             // 2. Main Layout Container (Responsive Area)
             GameObject mainLayout = CreateUIElement("MainLayout", _canvasRoot.transform);
             var mainRt = mainLayout.GetComponent<RectTransform>();
-            // Use anchors to maintain margins regardless of screen size
-            mainRt.anchorMin = new Vector2(0.05f, 0.1f);
-            mainRt.anchorMax = new Vector2(0.95f, 0.9f);
+            // Centered vertically but expanded horizontally as requested
+            mainRt.anchorMin = new Vector2(0.02f, 0.1f);
+            mainRt.anchorMax = new Vector2(0.98f, 0.9f);
             mainRt.sizeDelta = Vector2.zero;
 
             var hlg = mainLayout.AddComponent<HorizontalLayoutGroup>();
             hlg.spacing = 20;
             hlg.childAlignment = TextAnchor.MiddleCenter;
-            hlg.childControlWidth = hlg.childControlHeight = true;
-            hlg.childForceExpandWidth = hlg.childForceExpandHeight = true;
+            hlg.childControlWidth = true;
+            hlg.childControlHeight = true;
+            hlg.childForceExpandWidth = false; // Don't force stretch, let preferredWidth handle it
+            hlg.childForceExpandHeight = true;
 
-            // --- LEFT: LOCAL PLAYER INVENTORY ---
-            _localInventoryContent = CreateInventoryPanel("My Inventory", mainLayout.transform, Color.gray, "LOCAL");
+            // --- LEFT: INTERNAL INVENTORY ---
+            _localInventoryContent = CreateInventoryPanel("Internal Inventory", mainLayout.transform, Color.gray, "LOCAL");
 
-            // --- MIDDLE: CRAFTING 3X3 ---
+            // --- MIDDLE: CRAFTING 5X5 ---
             _craftingGridRoot = CreateCraftingSection("Crafting Pool", mainLayout.transform);
 
-            // --- RIGHT: REMOTE PLAYER INVENTORY ---
-            _remoteInventoryContent = CreateInventoryPanel("Player 2 Inventory", mainLayout.transform, new Color(0.4f, 0.2f, 0.2f), "REMOTE");
+            // --- RIGHT: EXTERNAL INVENTORY ---
+            _remoteInventoryContent = CreateInventoryPanel("External Inventory", mainLayout.transform, new Color(0.4f, 0.2f, 0.2f), "REMOTE");
 
-            // Feedback Text
-            GameObject feedbackGo = CreateUIElement("Feedback", _canvasRoot.transform);
-            _feedbackText = feedbackGo.AddComponent<TextMeshProUGUI>();
-            _feedbackText.text = "Click to pick an item";
-            _feedbackText.alignment = TextAlignmentOptions.Center;
-            _feedbackText.fontSize = 24;
-            var fRt = feedbackGo.GetComponent<RectTransform>();
-            fRt.anchorMin = new Vector2(0.5f, 0);
-            fRt.anchorMax = new Vector2(0.5f, 0);
-            fRt.anchoredPosition = new Vector2(0, 50);
-
-            PopulateInventory(_localInventoryContent, "Item_Metal", 30, "LOCAL");
-            PopulateInventory(_remoteInventoryContent, "Item_Wood", 15, "REMOTE");
+            PopulateInventory(_localInventoryContent, "Item_Metal", 25, "LOCAL");
+            PopulateInventory(_remoteInventoryContent, "Item_Wood", 25, "REMOTE");
         }
 
         private Transform CreateInventoryPanel(string title, Transform parent, Color bgColor, string tag)
         {
             GameObject panel = CreateUIElement(title, parent);
-            panel.AddComponent<LayoutElement>().preferredWidth = 400; // Increased width
+            panel.AddComponent<LayoutElement>().preferredWidth = 600; // Significantly wider
 
             Image img = panel.AddComponent<Image>();
             img.color = new Color(0.1f, 0.1f, 0.1f, 0.9f);
@@ -202,10 +237,22 @@ namespace Crafting.Scripts
             grid.cellSize = new Vector2(slotSize + 20, slotSize + 45);
             grid.spacing = new Vector2(spacing, spacing * 2);
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            grid.constraintCount = 3;
+            grid.constraintCount = 5; // Changed to 5 to match the central grid's 5x5 structure
             grid.childAlignment = TextAnchor.UpperCenter;
 
             content.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            // Footer Feedback (New position)
+            GameObject footer = CreateUIElement("FooterFeedback", panel.transform);
+            footer.AddComponent<LayoutElement>().preferredHeight = 40;
+            var fTxt = footer.AddComponent<TextMeshProUGUI>();
+            fTxt.text = "";
+            fTxt.fontSize = 20;
+            fTxt.alignment = TextAlignmentOptions.Center;
+            fTxt.color = Color.yellow;
+
+            if (tag == "LOCAL") _internalFeedbackText = fTxt;
+            else _externalFeedbackText = fTxt;
 
             return content.transform;
         }
@@ -213,7 +260,7 @@ namespace Crafting.Scripts
         private Transform CreateCraftingSection(string title, Transform parent)
         {
             GameObject section = CreateUIElement(title, parent);
-            section.AddComponent<LayoutElement>().preferredWidth = 500;
+            section.AddComponent<LayoutElement>().preferredWidth = 750; // Wider for 5x5
 
             Image img = section.AddComponent<Image>();
             img.color = new Color(0.2f, 0.2f, 0.2f, 0.7f);
@@ -235,19 +282,21 @@ namespace Crafting.Scripts
             lTxt.alignment = TextAlignmentOptions.Center;
 
             GameObject gridHolder = CreateUIElement("GridHolder", section.transform);
-            gridHolder.AddComponent<LayoutElement>().preferredHeight = 550; // More space for controls
+            gridHolder.AddComponent<LayoutElement>().preferredHeight = 650;
 
             var grid = gridHolder.AddComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(slotSize * 1.5f, slotSize * 1.5f + 45);
-            grid.spacing = new Vector2(spacing * 2, spacing * 3);
+            grid.cellSize = new Vector2(slotSize * 1.2f, slotSize * 1.2f + 45); // Scale for 5x5
+            grid.spacing = new Vector2(spacing, spacing * 2);
             grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            grid.constraintCount = 3;
+            grid.constraintCount = 5;
             grid.childAlignment = TextAnchor.MiddleCenter;
 
-            for (int i = 0; i < 9; i++)
+            for (int i = 0; i < 25; i++)
             {
                 int index = i;
-                CreateSlotWithControls($"CraftSlot_{index}", gridHolder.transform, new Color(0.3f, 0.3f, 0.3f), true, index);
+                bool isInput = IsInputSlot(i);
+                Color slotColor = isInput ? new Color(0.3f, 0.3f, 0.3f) : new Color(0.15f, 0.15f, 0.2f);
+                CreateSlotWithControls($"CraftSlot_{index}", gridHolder.transform, slotColor, true, index);
             }
 
             // --- GENERAL CRAFTING BUTTONS ---
@@ -272,16 +321,8 @@ namespace Crafting.Scripts
             btnGo.AddComponent<Outline>().effectColor = Color.white;
 
             GameObject txtGo = CreateUIElement("Text", btnGo.transform);
-            var txt = txtGo.AddComponent<TextMeshProUGUI>();
-            txt.text = label;
-            txt.fontSize = 20;
-            txt.color = Color.white;
-            txt.alignment = TextAlignmentOptions.Center;
-
-            var rt = txtGo.GetComponent<RectTransform>();
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.sizeDelta = Vector2.zero;
+            AddText(txtGo, label, 20, Color.white, TextAlignmentOptions.Center);
+            StretchRT(txtGo.GetComponent<RectTransform>());
         }
 
         private GameObject CreateSlotWithControls(string name, Transform parent, Color color, bool isCrafting, int index, string tag = "")
@@ -296,32 +337,36 @@ namespace Crafting.Scripts
             GameObject controls = CreateUIElement("Controls", container.transform);
             controls.AddComponent<LayoutElement>().preferredHeight = 35;
             var hlg = controls.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 2;
+            hlg.spacing = 4; // Increased spacing
             hlg.childAlignment = TextAnchor.MiddleCenter;
             hlg.childControlWidth = hlg.childControlHeight = true;
 
-            // Minus Button
+            // Determine if this is an Output slot in the crafting grid
+            bool isOutputSlot = isCrafting && !IsInputSlot(index);
+
+            // Minus Button: Red for Input/Inv, Green for Output (Extract)
             GameObject minusBtn = CreateUIElement("-", controls.transform);
-            minusBtn.AddComponent<Image>().color = new Color(0.5f, 0.2f, 0.2f);
+            minusBtn.AddComponent<Image>().color = isOutputSlot ? new Color(0.2f, 0.5f, 0.2f) : new Color(0.5f, 0.2f, 0.2f);
             minusBtn.AddComponent<Button>();
-            CreateUIElement("T", minusBtn.transform).AddComponent<TextMeshProUGUI>().text = "-";
-            minusBtn.GetComponentInChildren<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+            var mTxtGo = CreateUIElement("T", minusBtn.transform);
+            AddText(mTxtGo, "-", 18, Color.white, TextAlignmentOptions.Center);
+            StretchRT(mTxtGo.GetComponent<RectTransform>());
 
             // Qty Text
             GameObject qtyTxt = CreateUIElement("Qty", controls.transform);
-            var qT = qtyTxt.AddComponent<TextMeshProUGUI>();
-            qT.text = "1"; qT.alignment = TextAlignmentOptions.Center; qT.fontSize = 18; qT.color = Color.white;
+            AddText(qtyTxt, "1", 18, Color.white, TextAlignmentOptions.Center);
 
-            // Plus Button
+            // Plus Button: Green for Input/Inv, Red for Output (Re-invest)
             GameObject plusBtn = CreateUIElement("+", controls.transform);
-            plusBtn.AddComponent<Image>().color = new Color(0.2f, 0.5f, 0.2f);
+            plusBtn.AddComponent<Image>().color = isOutputSlot ? new Color(0.5f, 0.2f, 0.2f) : new Color(0.2f, 0.5f, 0.2f);
             plusBtn.AddComponent<Button>();
-            CreateUIElement("T", plusBtn.transform).AddComponent<TextMeshProUGUI>().text = "+";
-            plusBtn.GetComponentInChildren<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+            var pTxtGo = CreateUIElement("T", plusBtn.transform);
+            AddText(pTxtGo, "+", 18, Color.white, TextAlignmentOptions.Center);
+            StretchRT(pTxtGo.GetComponent<RectTransform>());
 
             // 2. The Actual Slot
             GameObject slot = CreateUIElement(name, container.transform);
-            slot.AddComponent<LayoutElement>().preferredHeight = isCrafting ? slotSize * 1.5f : slotSize;
+            slot.AddComponent<LayoutElement>().preferredHeight = isCrafting ? slotSize * 1.2f : slotSize;
             Image img = slot.AddComponent<Image>();
             img.color = color;
             slot.AddComponent<Outline>().effectColor = Color.black;
@@ -361,37 +406,75 @@ namespace Crafting.Scripts
 
         private void ClearGrid()
         {
-            for (int i = 0; i < 9; i++) UpdateGrid(i, "");
-            _feedbackText.text = "Grid Cleared";
+            for (int i = 0; i < 25; i++) UpdateGrid(i, "");
+            SetFeedbackText("Grid Cleared");
         }
 
         private void TryCraft()
         {
-            _feedbackText.text = "Crafting... (Logic Pending)";
+            // Simple Test logic: if there is something in the center, put something in output
+            bool found = false;
+            for (int i = 0; i < 25; i++)
+            {
+                if (IsInputSlot(i) && !string.IsNullOrEmpty(IsNetworkActive ? GridItems[i].ToString() : _offlineGridItems[i].ToString()))
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found)
+            {
+                // Put result in slot 0 (an output slot) for testing
+                UpdateGrid(0, "Result_Item");
+                SetFeedbackText("Crafted! Check outer slots.");
+            }
+            else
+            {
+                SetFeedbackText("Nothing to craft.");
+            }
         }
 
         private void OnInventorySlotClicked(string itemId, string tag)
         {
             _pickedItemId = itemId;
-            _feedbackText.text = $"Picked: {itemId}";
+            SetFeedbackText($"Picked: {itemId}");
         }
 
         private void OnCraftingSlotClicked(int index)
         {
+            bool isInput = IsInputSlot(index);
+
             if (string.IsNullOrEmpty(_pickedItemId))
             {
-                // If picking from grid to clear
-                UpdateGrid(index, "");
+                // Pick item from slot to cursor
+                string itemId = IsNetworkActive ? GridItems[index].ToString() : _offlineGridItems[index].ToString();
+                if (!string.IsNullOrEmpty(itemId))
+                {
+                    _pickedItemId = itemId;
+                    UpdateGrid(index, "");
+                    SetFeedbackText($"Picked: {itemId}");
+                }
                 return;
             }
 
-            UpdateGrid(index, _pickedItemId);
-            _pickedItemId = ""; // Reset pick
-            _feedbackText.text = "Item placed. Pick another.";
+            // If we have an item in hand, only allow placing in Input slots
+            if (isInput)
+            {
+                UpdateGrid(index, _pickedItemId);
+                _pickedItemId = "";
+                SetFeedbackText("Item placed. Pick another.");
+            }
+            else
+            {
+                SetFeedbackText("Cannot place items in Output slots!");
+            }
         }
 
         private void UpdateGrid(int index, string itemId)
         {
+            if (index < 0 || index >= 25) return;
+
             if (IsNetworkActive)
             {
                 UpdateGridServerRpc(index, itemId, NetworkManager.Singleton.LocalClientId);
@@ -413,16 +496,24 @@ namespace Crafting.Scripts
         {
             if (_craftingGridRoot == null) return;
 
-            for (int i = 0; i < 9; i++)
+            for (int i = 0; i < 25; i++)
             {
                 // Slot is now the second child of the container
                 Transform container = _craftingGridRoot.GetChild(i);
                 Transform slot = container.GetChild(1);
                 string itemId = IsNetworkActive ? GridItems[i].ToString() : _offlineGridItems[i].ToString();
+                bool isInput = IsInputSlot(i);
 
-                // Simple visual refresh: if slot has item, make it brighter or add a text label
+                // Visual refresh
                 Image img = slot.GetComponent<Image>();
-                img.color = string.IsNullOrEmpty(itemId) ? new Color(0.3f, 0.3f, 0.3f) : Color.yellow;
+                if (string.IsNullOrEmpty(itemId))
+                {
+                    img.color = isInput ? new Color(0.3f, 0.3f, 0.3f) : new Color(0.15f, 0.15f, 0.2f);
+                }
+                else
+                {
+                    img.color = isInput ? Color.yellow : new Color(0.2f, 0.8f, 0.2f); // Input yellow, Output Green
+                }
 
                 // Clear old icons if any
                 foreach (Transform child in slot) if(child.name == "ItemLabel") Destroy(child.gameObject);
@@ -430,18 +521,18 @@ namespace Crafting.Scripts
                 if (!string.IsNullOrEmpty(itemId))
                 {
                     GameObject label = CreateUIElement("ItemLabel", slot);
-                    var txt = label.AddComponent<TextMeshProUGUI>();
-                    txt.text = itemId.Split('_')[0]; // Show base name
-                    txt.fontSize = 14;
-                    txt.color = Color.black;
-                    txt.alignment = TextAlignmentOptions.Center;
-
-                    var rt = label.GetComponent<RectTransform>();
-                    rt.anchorMin = Vector2.zero;
-                    rt.anchorMax = Vector2.one;
-                    rt.sizeDelta = Vector2.zero;
+                    AddText(label, itemId.Split('_')[0], 14, Color.black, TextAlignmentOptions.Center);
+                    StretchRT(label.GetComponent<RectTransform>());
                 }
             }
+        }
+
+        private bool IsInputSlot(int index)
+        {
+            int row = index / 5;
+            int col = index % 5;
+            // Inner 3x3 is between (1,1) and (3,3) in a 5x5 grid
+            return row >= 1 && row <= 3 && col >= 1 && col <= 3;
         }
     }
 }

@@ -7,7 +7,7 @@ public class Inventory : NetworkBehaviour
 {
     public static Inventory Instance { get; private set; }
 
-    private static Dictionary<string, (ItemDefinition def, int qty)> s_PersistentBag = new();
+    private static Dictionary<string, (ItemData def, int qty)> s_PersistentBag = new();
     private static List<string> s_PersistentKeys = new();
     private static HashSet<string> s_PersistentEquipped = new();
 
@@ -25,7 +25,7 @@ public class Inventory : NetworkBehaviour
     public float dropDistance = 2.5f;
     public float droppedWorldSize = 0.4f;
 
-    private Dictionary<string, (ItemDefinition def, int qty)> _bag => s_PersistentBag;
+    private Dictionary<string, (ItemData def, int qty)> _bag => s_PersistentBag;
     private List<string> _keys => s_PersistentKeys;
     private HashSet<string> _equipped => s_PersistentEquipped;
 
@@ -58,10 +58,10 @@ public class Inventory : NetworkBehaviour
         if (Instance == this) Instance = null;
     }
 
-    public static void Add(ItemDefinition def)
+    public static void Add(ItemData def)
     {
         if (def == null) return;
-        string k = def.itemId.ToLowerInvariant();
+        string k = def.itemCode.ToLowerInvariant();
         if (def.isStackable)
         {
             if (!s_PersistentBag.ContainsKey(k)) s_PersistentKeys.Add(k);

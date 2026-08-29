@@ -1,10 +1,11 @@
 ﻿using UnityEngine;
 
-[CreateAssetMenu(menuName = "Inventory/Item Definition", fileName = "Item_New")]
-public class ItemDefinition : ScriptableObject
+[CreateAssetMenu(menuName = "Inventory/Item Data", fileName = "Item_New")]
+public class ItemData : ScriptableObject
 {
+    public int itemId;
     [Header("Identificación")]
-    public string itemId;
+    public string itemCode;
     public string displayName;
 
     [Header("Visual")]

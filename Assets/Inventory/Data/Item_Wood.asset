@@ -9,9 +9,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 018e31c12e5651f46a329c1ed1f4366e, type: 3}
-  m_Name: WoodItemSO
+  m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
+  m_Name: Item_Wood
   m_EditorClassIdentifier: Assembly-CSharp::NGO.Data.ItemData
-  ItemID: 0
-  ItemName: Wood
-  Icon: {fileID: 1488804721, guid: 8fba84cdeb8d18f41a34affaaa980eec, type: 3}
+  itemId: 0
+  itemCode: 
+  displayName: 
+  icon: {fileID: 0}
+  type: 0
+  isUsable: 0
+  isStackable: 1
+  maxStack: 99
+  description: 
+  expValue: 0
