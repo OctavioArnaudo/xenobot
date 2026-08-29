@@ -169,8 +169,8 @@ namespace Crafting.Scripts
             GameObject mainLayout = CreateUIElement("MainLayout", _canvasRoot.transform);
             var mainRt = mainLayout.GetComponent<RectTransform>();
             // Centered vertically but expanded horizontally as requested
-            mainRt.anchorMin = new Vector2(0.02f, 0.1f);
-            mainRt.anchorMax = new Vector2(0.98f, 0.9f);
+            mainRt.anchorMin = new Vector2(0.1f, 0.1f);
+            mainRt.anchorMax = new Vector2(0.9f, 0.9f);
             mainRt.sizeDelta = Vector2.zero;
 
             var hlg = mainLayout.AddComponent<HorizontalLayoutGroup>();
@@ -228,7 +228,7 @@ namespace Crafting.Scripts
         private Transform CreateInventoryPanel(string title, Transform parent, Color bgColor, string tag)
         {
             GameObject panel = CreateUIElement(title, parent);
-            panel.AddComponent<LayoutElement>().preferredWidth = 600; // Significantly wider
+            panel.AddComponent<LayoutElement>().preferredWidth = 450; // Reduced from 500
 
             Image img = panel.AddComponent<Image>();
             img.color = new Color(0.1f, 0.1f, 0.1f, 0.9f);
@@ -299,7 +299,7 @@ namespace Crafting.Scripts
         private Transform CreateCraftingSection(string title, Transform parent)
         {
             GameObject section = CreateUIElement(title, parent);
-            section.AddComponent<LayoutElement>().preferredWidth = 750; // Wider for 5x5
+            section.AddComponent<LayoutElement>().preferredWidth = 600; // Reduced from 650
 
             Image img = section.AddComponent<Image>();
             img.color = new Color(0.2f, 0.2f, 0.2f, 0.7f);
