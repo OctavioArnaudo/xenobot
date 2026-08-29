@@ -23,6 +23,15 @@ public class MainMenu : MonoBehaviour
 
     private void Start()
     {
+        // Forzar visibilidad del mouse al entrar al menú
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+
+        // Asegurar que estamos offline al entrar al menú principal
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            NetworkManager.Singleton.Shutdown();
+        }
         SetupUI();
     }
 
@@ -153,6 +162,13 @@ public class MainMenu : MonoBehaviour
     {
         if (NetworkManager.Singleton != null)
         {
+            if (NetworkManager.Singleton.IsListening)
+            {
+                // Si ya está activo, no intentamos iniciarlo de nuevo para evitar el error
+                Debug.Log("[MainMenu] Network already active, skipping StartHost.");
+                CargarEscena(escenaJuego);
+                return;
+            }
             NetworkManager.Singleton.OnServerStarted += OnHostIniciado;
             NetworkManager.Singleton.StartHost();
         }

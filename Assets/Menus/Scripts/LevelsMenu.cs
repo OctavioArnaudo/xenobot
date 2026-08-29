@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
+using Unity.Netcode;
 
 public class LevelsMenu : MonoBehaviour
 {
@@ -30,6 +31,10 @@ public class LevelsMenu : MonoBehaviour
 
     private void Start()
     {
+        // Forzar visibilidad del mouse
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+
         if (listaNiveles.Count == 0 && nivelesConfig.Count > 0)
         {
             listaNiveles.AddRange(nivelesConfig);

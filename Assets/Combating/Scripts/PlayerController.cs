@@ -190,6 +190,11 @@ namespace Xenobot.Movement
 
                 SetupPlayerLocal();
                 TeleportToSceneSpawn(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+
+                // Forzar visibilidad y corregir posibles fallos de renderizado
+                var renderers = GetComponentsInChildren<Renderer>(true);
+                foreach (var r in renderers) r.enabled = true;
+
                 UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
             }
             else
