@@ -26,10 +26,20 @@ namespace Menus.Scripts
         {
             if (!_isDisplayed && Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
             {
-                _isDisplayed = true;
-                BuildUI();
-                UpdateLevelsData();
+                TriggerVictory();
             }
+        }
+
+        /// <summary>
+        /// Public method to trigger the victory menu from other scripts.
+        /// </summary>
+        public void TriggerVictory()
+        {
+            if (_isDisplayed) return;
+
+            _isDisplayed = true;
+            BuildUI();
+            UpdateLevelsData();
         }
 
         private void BuildUI()

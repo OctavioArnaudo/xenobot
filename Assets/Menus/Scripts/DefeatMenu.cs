@@ -16,20 +16,49 @@ namespace Menus.Scripts
 
         private GameObject _canvasRoot;
         private bool _isDisplayed = false;
+        private bool _hasDetectedPlayers = false;
 
         private void Start()
         {
-            // Initially hidden, waits for L key
+            // Initially hidden, waits for L key or all players destroyed
         }
 
         private void Update()
         {
+            // Manual trigger
             if (!_isDisplayed && Keyboard.current != null && Keyboard.current.lKey.wasPressedThisFrame)
             {
-                _isDisplayed = true;
-                BuildUI();
-                UpdateLevelsData();
+                TriggerDefeat();
+                return;
             }
+
+            // Automatic trigger: check for players
+            if (!_isDisplayed)
+            {
+                GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+
+                if (players.Length > 0)
+                {
+                    _hasDetectedPlayers = true;
+                }
+                else if (_hasDetectedPlayers)
+                {
+                    // All players were present but now they are gone
+                    TriggerDefeat();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Public method to trigger the defeat menu.
+        /// </summary>
+        public void TriggerDefeat()
+        {
+            if (_isDisplayed) return;
+
+            _isDisplayed = true;
+            BuildUI();
+            UpdateLevelsData();
         }
 
         private void BuildUI()
