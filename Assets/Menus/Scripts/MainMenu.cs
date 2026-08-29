@@ -23,14 +23,19 @@ public class MainMenu : MonoBehaviour
 
     private void Start()
     {
-        // Forzar visibilidad del mouse al entrar al menú
+        // Limpieza absoluta de cursor
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
-        // Asegurar que estamos offline al entrar al menú principal
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        // Asegurar que estamos offline y limpiar rastro de red
+        if (NetworkManager.Singleton != null)
         {
             NetworkManager.Singleton.Shutdown();
+            // Si el objeto persiste, forzamos su destrucción para reiniciar el estado limpio
+            if (NetworkManager.Singleton.gameObject.name.Contains("NetworkManager"))
+            {
+                 // Opcional: solo si usas DontDestroyOnLoad en el manager
+            }
         }
         SetupUI();
     }
@@ -160,28 +165,9 @@ public class MainMenu : MonoBehaviour
 
     public void Jugar()
     {
-        if (NetworkManager.Singleton != null)
-        {
-            if (NetworkManager.Singleton.IsListening)
-            {
-                // Si ya está activo, no intentamos iniciarlo de nuevo para evitar el error
-                Debug.Log("[MainMenu] Network already active, skipping StartHost.");
-                CargarEscena(escenaJuego);
-                return;
-            }
-            NetworkManager.Singleton.OnServerStarted += OnHostIniciado;
-            NetworkManager.Singleton.StartHost();
-        }
-        else CargarEscena(escenaJuego);
-    }
-
-    private void OnHostIniciado()
-    {
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
-        {
-            NetworkManager.Singleton.OnServerStarted -= OnHostIniciado;
-            NetworkManager.Singleton.SceneManager.LoadScene(escenaJuego, LoadSceneMode.Single);
-        }
+        // El botón JUGAR ahora solo carga la escena de red de forma offline
+        // La red se iniciará realmente dentro de NetworkScene tras configurar el nombre/host
+        CargarEscena(escenaJuego);
     }
 
     public void AbrirNiveles() => CargarEscena(escenaNiveles);

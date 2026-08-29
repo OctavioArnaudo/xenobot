@@ -17,6 +17,13 @@ namespace NGO.Networking
         {
             if (NetworkManager.Singleton == null) return false;
 
+            // Limpieza agresiva: si ya está escuchando, cerramos y reiniciamos
+            if (NetworkManager.Singleton.IsListening)
+            {
+                Debug.Log("[NetworkingService] NetworkManager busy. Forcing Shutdown before StartHost.");
+                NetworkManager.Singleton.Shutdown();
+            }
+
             if (!isRelay)
             {
                 var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();

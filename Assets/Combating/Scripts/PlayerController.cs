@@ -148,7 +148,15 @@ namespace Xenobot.Movement
 
             if (CanExecuteLocalLogic)
             {
-                SetCursorState(cursorLocked);
+                // Solo bloquear el cursor en la escena de acción real
+                if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "BiomaScene")
+                {
+                    SetCursorState(cursorLocked);
+                }
+                else
+                {
+                    SetCursorState(false); // Forzar mouse libre en Lobby/Menus
+                }
             }
         }
 

@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using NGO.Networking;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
 
 namespace Menus.Scripts
 {
@@ -127,7 +128,7 @@ namespace Menus.Scripts
             btn.transform.SetParent(panel.transform, false);
             btn.AddComponent<Image>().color = new Color(0.1f, 0.1f, 0.1f);
             var bBtn = btn.AddComponent<Button>();
-            bBtn.onClick.AddListener(() => SceneManager.LoadScene(levelsMenuScene));
+            bBtn.onClick.AddListener(ReturnToLevels);
             var bRt = btn.GetComponent<RectTransform>();
             bRt.anchoredPosition = new Vector2(0, -200);
             bRt.sizeDelta = new Vector2(400, 80);
@@ -147,6 +148,12 @@ namespace Menus.Scripts
 
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
+        }
+
+        private void ReturnToLevels()
+        {
+            // Mantenemos la red activa para que LevelsMenu pueda sincronizar datos
+            SceneManager.LoadScene(levelsMenuScene);
         }
 
         private void CreateDecoration(string sym, Transform parent, Vector2 pos, float size)
