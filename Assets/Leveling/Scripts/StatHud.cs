@@ -95,7 +95,10 @@ public class StatsHUD : MonoBehaviour
 
         // --- TIMER ---
         float time = Time.timeSinceLevelLoad;
-        string timerStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(time / 60), Mathf.FloorToInt(time % 60));
+        LevelsMenu.ultimoTiempoSession = time;
+        LevelsMenu.ultimoNivelSession = SceneManager.GetActiveScene().name;
+
+        string timerStr = LevelsMenu.FormatTime(time);
         GUI.Label(new Rect(innerX, curY, innerW, fontSize + 4), $"TIME {timerStr}", _timerStyle);
         curY += fontSize + 6;
 

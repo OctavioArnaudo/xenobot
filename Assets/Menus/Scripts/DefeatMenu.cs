@@ -126,7 +126,7 @@ namespace Menus.Scripts
             sRt.sizeDelta = new Vector2(700, 50);
 
             // Stats
-            float timeTaken = Time.timeSinceLevelLoad;
+            float timeTaken = LevelsMenu.ultimoTiempoSession;
             string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
 
             GameObject stats = new GameObject("Stats");
@@ -183,21 +183,32 @@ namespace Menus.Scripts
 
         private void UpdateLevelsData()
         {
-            string currentScene = SceneManager.GetActiveScene().name;
-            float timeTaken = Time.timeSinceLevelLoad;
-            string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
+            string currentScene = LevelsMenu.ultimoNivelSession;
+            float timeTaken = LevelsMenu.ultimoTiempoSession;
 
-            // Try to find the level in the static list
-            var level = LevelsMenu.listaNiveles.Find(n => n.nombreNivel.ToLower() == currentScene.ToLower());
+            if (string.IsNullOrEmpty(currentScene)) currentScene = SceneManager.GetActiveScene().name;
+
+            Debug.Log($"[Defeat] Intentando registrar tiempo: {timeTaken} en escena: {currentScene}");
+
+            // Buscar el nivel en la lista estática (insensible a mayúsculas y espacios)
+            var level = LevelsMenu.listaNiveles.Find(n =>
+                n.nombreNivel.Replace(" ", "").ToLower() == currentScene.Replace(" ", "").ToLower());
+
             if (level != null)
             {
-                // Update timer even if failed
-                level.mejorTiempo = timeStr;
+                level.mejorTiempo = LevelsMenu.FormatTime(timeTaken);
+                Debug.Log($"[Defeat] Tiempo registrado para {level.nombreNivel}: {level.mejorTiempo}");
             }
-            else if (LevelsMenu.listaNiveles.Count > 0)
+            else
             {
-                var first = LevelsMenu.listaNiveles[0];
-                first.mejorTiempo = timeStr;
+                // Si el nivel no existe (ej: empezamos desde esta escena), lo creamos
+                LevelData newLevel = new LevelData {
+                    nombreNivel = currentScene,
+                    mejorTiempo = LevelsMenu.FormatTime(timeTaken),
+                    jugadoresCompletados = new System.Collections.Generic.List<string>()
+                };
+                LevelsMenu.listaNiveles.Add(newLevel);
+                Debug.Log($"[Defeat] Nivel '{currentScene}' no existía. Creado y registrado.");
             }
         }
     }

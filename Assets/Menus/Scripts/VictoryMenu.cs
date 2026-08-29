@@ -108,7 +108,7 @@ namespace Menus.Scripts
 
             // Stats
             string playerName = LocalUserConfig.UserName;
-            float timeTaken = Time.timeSinceLevelLoad;
+            float timeTaken = LevelsMenu.ultimoTiempoSession;
             string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
 
             GameObject stats = new GameObject("Stats");
@@ -165,30 +165,36 @@ namespace Menus.Scripts
 
         private void UpdateLevelsData()
         {
-            string currentScene = SceneManager.GetActiveScene().name;
-            float timeTaken = Time.timeSinceLevelLoad;
-            string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
+            string currentScene = LevelsMenu.ultimoNivelSession;
+            float timeTaken = LevelsMenu.ultimoTiempoSession;
             string playerName = LocalUserConfig.UserName;
 
-            // Try to find the level in the static list
-            var level = LevelsMenu.listaNiveles.Find(n => n.nombreNivel.ToLower() == currentScene.ToLower());
+            if (string.IsNullOrEmpty(currentScene)) currentScene = SceneManager.GetActiveScene().name;
+
+            Debug.Log($"[Victory] Registrando éxito: {playerName} | Tiempo: {timeTaken} | Escena: {currentScene}");
+
+            var level = LevelsMenu.listaNiveles.Find(n =>
+                n.nombreNivel.Replace(" ", "").ToLower() == currentScene.Replace(" ", "").ToLower());
+
             if (level != null)
             {
-                level.mejorTiempo = timeStr;
+                level.mejorTiempo = LevelsMenu.FormatTime(timeTaken);
                 if (!level.jugadoresCompletados.Contains(playerName))
                 {
                     level.jugadoresCompletados.Add(playerName);
                 }
+                Debug.Log($"[Victory] Nivel {level.nombreNivel} actualizado correctamente.");
             }
-            else if (LevelsMenu.listaNiveles.Count > 0)
+            else
             {
-                // If not found by scene name, update the first one for testing
-                var first = LevelsMenu.listaNiveles[0];
-                first.mejorTiempo = timeStr;
-                if (!first.jugadoresCompletados.Contains(playerName))
-                {
-                    first.jugadoresCompletados.Add(playerName);
-                }
+                // Crear nivel dinámicamente si no existe
+                LevelData newLevel = new LevelData {
+                    nombreNivel = currentScene,
+                    mejorTiempo = LevelsMenu.FormatTime(timeTaken),
+                    jugadoresCompletados = new System.Collections.Generic.List<string> { playerName }
+                };
+                LevelsMenu.listaNiveles.Add(newLevel);
+                Debug.Log($"[Victory] Nivel '{currentScene}' creado dinámicamente con éxito de {playerName}.");
             }
         }
     }

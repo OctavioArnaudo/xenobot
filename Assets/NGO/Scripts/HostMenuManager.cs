@@ -42,7 +42,7 @@ namespace NGO.Networking
             if (customIdInputField != null) customIdInputField.text = "1";
 
             if (maxPlayersInput != null && string.IsNullOrEmpty(maxPlayersInput.text))
-                maxPlayersInput.text = "4";
+                maxPlayersInput.text = "1";
 
             if (portInput != null && string.IsNullOrEmpty(portInput.text))
                 portInput.text = "7777";

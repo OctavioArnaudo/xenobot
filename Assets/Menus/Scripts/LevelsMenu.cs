@@ -22,6 +22,11 @@ public class LevelsMenu : MonoBehaviour
     public static List<LevelData> listaNiveles = new List<LevelData>();
     public List<LevelData> nivelesConfig = new List<LevelData>();
 
+    public static float ultimoTiempoSession = 0f;
+    public static string ultimoNivelSession = "";
+
+    public static string FormatTime(float t) => string.Format("{0:00}:{1:00}", Mathf.FloorToInt(t / 60), Mathf.FloorToInt(t % 60));
+
     [Header("Estilo Visual Xenobot")]
     public Color colorFondo = new Color(0.01f, 0.02f, 0.05f, 1f);
     public Color colorCard = new Color(0.05f, 0.1f, 0.2f, 0.8f);

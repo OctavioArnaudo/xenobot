@@ -1319,6 +1319,7 @@ GameObject:
   - component: {fileID: 171713652}
   - component: {fileID: 171713651}
   - component: {fileID: 171713650}
+  - component: {fileID: 171713654}
   m_Layer: 0
   m_Name: MainCamera
   m_TagString: MainCamera
@@ -1468,6 +1469,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+--- !u!114 &171713654
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 171713649}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86c6556701af9e04380698b89f691b6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioListener
+  nonRigidbodyVelocity: 0
+  attenuationObject: {fileID: 0}
 --- !u!1 &175296301
 GameObject:
   m_ObjectHideFlags: 0
@@ -6621,12 +6636,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1021467366}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 581.71, y: 84.46, z: -473.61}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.046900023, y: 1.446, z: -0.049099427}
+  m_LocalScale: {x: 0.01, y: 0.1, z: 0.01}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 4242669814982857641}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1034593385
 GameObject:
@@ -12508,6 +12523,7 @@ Transform:
   m_LocalScale: {x: 100, y: 10, z: 100}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1021467367}
   - {fileID: 1076799341}
   - {fileID: 331204284}
   - {fileID: 5534581320937897828}
@@ -13001,4 +13017,3 @@ SceneRoots:
   - {fileID: 870709959}
   - {fileID: 1297716427}
   - {fileID: 8334083203596417044}
-  - {fileID: 1021467367}
