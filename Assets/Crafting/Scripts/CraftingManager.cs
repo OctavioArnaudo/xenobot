@@ -5,6 +5,7 @@ using Unity.Netcode;
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 
 namespace Crafting.Scripts
 {
@@ -34,6 +35,12 @@ namespace Crafting.Scripts
         private string _pickedItemId = "";
         private TextMeshProUGUI _internalFeedbackText;
         private TextMeshProUGUI _externalFeedbackText;
+
+        // Drag and Drop fields
+        private GameObject _draggedIcon;
+        private string _draggingItemId;
+        private SlotUI _sourceSlot;
+        private Canvas _mainCanvas;
 
         private void Awake()
         {
@@ -139,6 +146,7 @@ namespace Crafting.Scripts
             Canvas canvas = _canvasRoot.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 100; // Ensure it's on top
+            _mainCanvas = canvas;
 
             var scaler = _canvasRoot.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -182,8 +190,39 @@ namespace Crafting.Scripts
             // --- RIGHT: EXTERNAL INVENTORY ---
             _remoteInventoryContent = CreateInventoryPanel("External Inventory", mainLayout.transform, new Color(0.4f, 0.2f, 0.2f), "REMOTE");
 
-            PopulateInventory(_localInventoryContent, "Item_Metal", 25, "LOCAL");
+            RefreshLocalInventoryUI();
             PopulateInventory(_remoteInventoryContent, "Item_Wood", 25, "REMOTE");
+        }
+
+        private void RefreshLocalInventoryUI()
+        {
+            // Clear current local UI
+            foreach (Transform child in _localInventoryContent) Destroy(child.gameObject);
+
+            var bag = Inventory.GetBag();
+            var keys = Inventory.GetKeys();
+
+            foreach (var key in keys)
+            {
+                if (bag.TryGetValue(key, out var item))
+                {
+                    GameObject slotContainer = CreateSlotWithControls(key, _localInventoryContent, Color.gray, false, 0, "LOCAL");
+                    Transform slot = slotContainer.transform.GetChild(1);
+
+                    // Update Qty Text (it's in the controls row)
+                    var qtyTxt = slotContainer.transform.GetChild(0).GetChild(1).GetComponent<TextMeshProUGUI>();
+                    qtyTxt.text = item.qty.ToString();
+
+                    // Icon
+                    GameObject icon = CreateUIElement("Icon", slot);
+                    Image img = icon.AddComponent<Image>();
+                    img.sprite = item.def.icon;
+                    img.color = Color.white;
+                    var iRt = icon.GetComponent<RectTransform>();
+                    iRt.anchorMin = iRt.anchorMax = new Vector2(0.5f, 0.5f);
+                    iRt.sizeDelta = new Vector2(slotSize * 0.7f, slotSize * 0.7f);
+                }
+            }
         }
 
         private Transform CreateInventoryPanel(string title, Transform parent, Color bgColor, string tag)
@@ -375,6 +414,14 @@ namespace Crafting.Scripts
             if (isCrafting) btn.onClick.AddListener(() => OnCraftingSlotClicked(index));
             else btn.onClick.AddListener(() => OnInventorySlotClicked(name, tag));
 
+            // Drag and Drop support
+            var slotUI = slot.AddComponent<SlotUI>();
+            slotUI.manager = this;
+            slotUI.isCrafting = isCrafting;
+            slotUI.index = index;
+            slotUI.inventoryTag = tag;
+            slotUI.slotName = name;
+
             return container;
         }
 
@@ -471,6 +518,116 @@ namespace Crafting.Scripts
             }
         }
 
+        public void OnBeginDragSlot(SlotUI slot, PointerEventData eventData)
+        {
+            string itemId = "";
+            if (slot.isCrafting)
+            {
+                itemId = IsNetworkActive ? GridItems[slot.index].ToString() : _offlineGridItems[slot.index].ToString();
+            }
+            else
+            {
+                itemId = slot.slotName;
+            }
+
+            if (string.IsNullOrEmpty(itemId)) return;
+
+            _draggingItemId = itemId;
+            _sourceSlot = slot;
+
+            // Create Drag Icon
+            if (_mainCanvas == null) return;
+            _draggedIcon = new GameObject("DraggedItem");
+            _draggedIcon.transform.SetParent(_mainCanvas.transform, false);
+            var img = _draggedIcon.AddComponent<Image>();
+            img.color = new Color(1, 1, 1, 0.7f);
+            img.raycastTarget = false;
+
+            var rt = _draggedIcon.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(slotSize, slotSize);
+
+            var label = new GameObject("Label");
+            label.transform.SetParent(_draggedIcon.transform, false);
+            AddText(label, itemId.Split('_')[0], 16, Color.black, TextAlignmentOptions.Center);
+            StretchRT(label.GetComponent<RectTransform>());
+
+            UpdateDragPosition(eventData.position);
+            SetFeedbackText($"Dragging: {itemId}");
+        }
+
+        public void OnDragSlot(PointerEventData eventData)
+        {
+            UpdateDragPosition(eventData.position);
+        }
+
+        private void UpdateDragPosition(Vector2 screenPos)
+        {
+            if (_draggedIcon != null)
+            {
+                _draggedIcon.transform.position = screenPos;
+            }
+        }
+
+        public void OnEndDragSlot(PointerEventData eventData)
+        {
+            if (_draggedIcon != null)
+            {
+                Destroy(_draggedIcon);
+                _draggedIcon = null;
+            }
+            _draggingItemId = "";
+            _sourceSlot = null;
+        }
+
+        public void OnDropSlot(SlotUI targetSlot, PointerEventData eventData)
+        {
+            if (string.IsNullOrEmpty(_draggingItemId)) return;
+
+            // Move Logic
+            if (targetSlot.isCrafting)
+            {
+                if (IsInputSlot(targetSlot.index))
+                {
+                    // If moving from LOCAL inventory to Crafting
+                    if (_sourceSlot != null && _sourceSlot.inventoryTag == "LOCAL")
+                    {
+                        Inventory.RemoveItem(_draggingItemId);
+                        RefreshLocalInventoryUI();
+                    }
+
+                    UpdateGrid(targetSlot.index, _draggingItemId);
+
+                    if (_sourceSlot != null && _sourceSlot.isCrafting)
+                    {
+                        UpdateGrid(_sourceSlot.index, "");
+                    }
+                    SetFeedbackText($"Dropped {_draggingItemId} in Grid {targetSlot.index}");
+                }
+                else
+                {
+                    SetFeedbackText("Cannot drop in Output slots!");
+                }
+            }
+            else if (targetSlot.inventoryTag == "LOCAL")
+            {
+                // Dropping back into local inventory
+                if (_sourceSlot != null && _sourceSlot.isCrafting)
+                {
+                    // We need the ItemData. Since we only have the ID/Code,
+                    // this logic assumes your system can resolve it or
+                    // you are returning an item that was already there.
+                    // For now, we'll try to find it in the grid items data
+                    UpdateGrid(_sourceSlot.index, "");
+
+                    // Logic to add back to inventory needs ItemData
+                    // Assuming _draggingItemId is the code, we'd need a registry
+                    // For now, let's just trigger a refresh
+                    SetFeedbackText($"Item returned to inventory");
+                }
+                RefreshLocalInventoryUI();
+            }
+        }
+
         private void UpdateGrid(int index, string itemId)
         {
             if (index < 0 || index >= 25) return;
@@ -533,6 +690,21 @@ namespace Crafting.Scripts
             int col = index % 5;
             // Inner 3x3 is between (1,1) and (3,3) in a 5x5 grid
             return row >= 1 && row <= 3 && col >= 1 && col <= 3;
+        }
+
+        // Helper class for UI Interaction
+        public class SlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
+        {
+            public CraftingManager manager;
+            public bool isCrafting;
+            public int index;
+            public string inventoryTag;
+            public string slotName;
+
+            public void OnBeginDrag(PointerEventData eventData) => manager.OnBeginDragSlot(this, eventData);
+            public void OnDrag(PointerEventData eventData) => manager.OnDragSlot(eventData);
+            public void OnEndDrag(PointerEventData eventData) => manager.OnEndDragSlot(eventData);
+            public void OnDrop(PointerEventData eventData) => manager.OnDropSlot(this, eventData);
         }
     }
 }

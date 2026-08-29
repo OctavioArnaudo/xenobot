@@ -61,6 +61,13 @@ public class Inventory : NetworkBehaviour
     public static void Add(ItemData def)
     {
         if (def == null) return;
+
+        if (string.IsNullOrEmpty(def.itemCode))
+        {
+            Debug.LogWarning($"Inventory: Intentando añadir ítem '{def.name}' sin itemCode configurado.");
+            return;
+        }
+
         string k = def.itemCode.ToLowerInvariant();
         if (def.isStackable)
         {
@@ -240,6 +247,23 @@ public class Inventory : NetworkBehaviour
         if (e.type == EventType.KeyDown)
         {
             if (e.keyCode == KeyCode.Escape) { if (_dragging) { _dragging = false; _dragIndex = -1; } else if (_dropdownIndex >= 0) { _dropdownIndex = -1; } else if (_selectedIndex >= 0) { _selectedIndex = -1; _dropdownIndex = -1; } else { SetOpen(false); } e.Use(); }
+        }
+    }
+
+    public static Dictionary<string, (ItemData def, int qty)> GetBag() => s_PersistentBag;
+    public static List<string> GetKeys() => s_PersistentKeys;
+
+    public static void RemoveItem(string key)
+    {
+        if (!s_PersistentBag.TryGetValue(key, out var slot)) return;
+
+        if (slot.qty > 1)
+            s_PersistentBag[key] = (slot.def, slot.qty - 1);
+        else
+        {
+            s_PersistentBag.Remove(key);
+            s_PersistentKeys.Remove(key);
+            s_PersistentEquipped.Remove(key);
         }
     }
 }

@@ -12,7 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
   m_Name: Item_Star
   m_EditorClassIdentifier: Assembly-CSharp::ItemDefinition
-  itemId: Estrella
+  itemId: 0
+  itemCode: star
   displayName: Estrella
   icon: {fileID: 21300000, guid: 757b084089b72d748859337ce33ea01e, type: 3}
   type: 0
@@ -20,3 +21,4 @@ MonoBehaviour:
   isStackable: 1
   maxStack: 99
   description: 
+  expValue: 0
