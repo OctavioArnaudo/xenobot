@@ -12,6 +12,7 @@ public class LevelsMenu : MonoBehaviour
     [Header("Datos de Niveles")]
     public static List<LevelData> listaNiveles = new List<LevelData>();
     public List<LevelData> nivelesConfig = new List<LevelData>();
+    public List<Sprite> fallbackIcons = new List<Sprite>();
 
     public static float ultimoTiempoSession = 0f;
     public static string ultimoNivelSession = "";
@@ -112,13 +113,13 @@ public class LevelsMenu : MonoBehaviour
             dummy.nombreNivel = "NIVEL ALPHA";
             dummy.mejorTiempo = "00:00";
             dummy.jugadoresCompletados = new List<string>{"NADIE"};
-            CreateLevelCard(contentObj.transform, dummy);
+            CreateLevelCard(contentObj.transform, dummy, 0);
         }
         else
         {
-            foreach (var nivel in listaNiveles)
+            for (int i = 0; i < listaNiveles.Count; i++)
             {
-                CreateLevelCard(contentObj.transform, nivel);
+                CreateLevelCard(contentObj.transform, listaNiveles[i], i);
             }
         }
 
@@ -134,7 +135,7 @@ public class LevelsMenu : MonoBehaviour
         }
     }
 
-    private void CreateLevelCard(Transform parent, LevelData data)
+    private void CreateLevelCard(Transform parent, LevelData data, int index)
     {
         GameObject card = new GameObject("Card_" + data.nombreNivel);
         card.transform.SetParent(parent);
@@ -151,12 +152,19 @@ public class LevelsMenu : MonoBehaviour
         vLayout.childAlignment = TextAnchor.UpperCenter;
         vLayout.childForceExpandHeight = false;
 
-        // 1. Miniatura (Placeholder si no hay sprite)
+        // 1. Miniatura (Fallback if no sprite)
         GameObject imgObj = new GameObject("Thumbnail");
         imgObj.transform.SetParent(card.transform);
         Image img = imgObj.AddComponent<Image>();
-        img.sprite = data.miniatura;
-        img.color = (data.miniatura == null) ? new Color(0.2f, 0.2f, 0.2f, 1f) : Color.white;
+
+        Sprite iconToShow = data.miniatura;
+        if (iconToShow == null && fallbackIcons.Count > 0)
+        {
+            iconToShow = fallbackIcons[index % fallbackIcons.Count];
+        }
+
+        img.sprite = iconToShow;
+        img.color = (iconToShow == null) ? new Color(0.2f, 0.2f, 0.2f, 1f) : Color.white;
         img.preserveAspect = true;
 
         LayoutElement le = imgObj.AddComponent<LayoutElement>();
@@ -257,5 +265,12 @@ public class LevelsMenu : MonoBehaviour
         r.anchoredPosition3D = Vector3.zero; r.localScale = Vector3.one;
     }
 
-    public void VolverAlMenu() => SceneManager.LoadScene(escenaMenuPrincipal);
+    public void VolverAlMenu()
+    {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        {
+            NetworkManager.Singleton.Shutdown();
+        }
+        SceneManager.LoadScene(escenaMenuPrincipal);
+    }
 }
