@@ -1,36 +1,55 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using Unity.FPS.Game; // Para acceder al script Health
 
 /// <summary>
-/// Panel HUD minimalista con nivel, ATK, DEF y barra de EXP.
-/// Mismo estilo visual que el inventario y el reloj.
-/// Attach a cualquier GameObject.
+/// Panel HUD responsivo con sliders para Vida, Ataque y Defensa.
 /// </summary>
 public class StatsHUD : MonoBehaviour
 {
-    [Header("Panel")]
-    public int width = 160;
-    public int height = 90;
-    public int margin = 16;
-    public int fontSize = 15;
+    [Header("Configuraci√≥n")]
+    public int margin = 0;
+    public int fontSize = 14;
+    public int barWidth = 180;
+    public int barHeight = 8;
 
-    Texture2D _bg, _barBg, _barFill;
-    GUIStyle _style;
+    [Header("Escalas M√°ximas (para sliders)")]
+    public float maxAttackScale = 100f;
+    public float maxDefenseScale = 100f;
+
+    Texture2D _bg, _barBg;
+    Texture2D _hpFill, _atkFill, _defFill, _expFill;
+    GUIStyle _labelStyle, _valueStyle;
     bool _ready;
 
     void EnsureAssets()
     {
         if (_ready) return;
 
-        _bg = MakeTex(new Color(0f, 0f, 0f, 0.78f));
-        _barBg = MakeTex(new Color(0.2f, 0.05f, 0.05f, 0.9f));
-        _barFill = MakeTex(new Color(1f, 0.75f, 0.1f, 1f));
+        _bg = MakeTex(new Color(0f, 0f, 0f, 0.7f));
+        _barBg = MakeTex(new Color(0.15f, 0.15f, 0.15f, 0.9f));
 
-        _style = new GUIStyle(GUI.skin.label)
+        _hpFill = MakeTex(new Color(0.8f, 0.2f, 0.2f, 1f));   // Rojo Vida
+        _atkFill = MakeTex(new Color(1f, 0.5f, 0.1f, 1f));   // Naranja Ataque
+        _defFill = MakeTex(new Color(0.2f, 0.5f, 1f, 1f));   // Azul Defensa
+        _expFill = MakeTex(new Color(1f, 0.8f, 0f, 1f));     // Amarillo EXP
+
+        _labelStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = fontSize,
             fontStyle = FontStyle.Bold,
+            alignment = TextAnchor.MiddleLeft,
+            padding = new RectOffset(0, 0, 0, 0)
         };
-        _style.normal.textColor = new Color(1f, 0.85f, 0.7f);
+        _labelStyle.normal.textColor = Color.white;
+
+        _valueStyle = new GUIStyle(_labelStyle)
+        {
+            alignment = TextAnchor.MiddleRight,
+            fontStyle = FontStyle.Normal
+        };
+        _valueStyle.normal.textColor = new Color(0.9f, 0.9f, 0.9f);
+
         _ready = true;
     }
 
@@ -44,28 +63,63 @@ public class StatsHUD : MonoBehaviour
 
     void OnGUI()
     {
-        var s = CharacterStats.Instance;
-        if (s == null) return;
+        if (SceneManager.GetActiveScene().name != "BiomaScene") return;
+
+        var stats = CharacterStats.Instance;
+        if (stats == null) return;
+
+        // Intentar obtener el componente Health del mismo objeto que CharacterStats
+        Health health = stats.GetComponent<Health>();
+
         EnsureAssets();
 
-        // PosiciÛn: esquina superior derecha debajo del reloj (BiomaHUD tiene ~42px + 16 margen)
-        float x = Screen.width - width - margin;
-        float y = margin + 42 + 8;
+        // 1. Calcular dimensiones del panel
+        int rows = (health != null ? 1 : 0) + 2 + 1; // Health + Atk + Def + Exp
+        int rowH = fontSize + barHeight + 2;
+        int totalWidth = barWidth;
+        int totalHeight = rowH * rows;
 
-        Rect panel = new Rect(x, y, width, height);
-        GUI.DrawTexture(panel, _bg);
+        float x = Screen.width - totalWidth;
+        float y = 0;
 
-        float pad = 8f;
-        GUI.Label(new Rect(x + pad, y + 4, width, 20), $"Nivel  {s.Level}", _style);
-        GUI.Label(new Rect(x + pad, y + 22, width, 20), $"ATK  {s.Attack:F1}", _style);
-        GUI.Label(new Rect(x + pad, y + 40, width, 20), $"DEF  {s.Defense:F1}", _style);
+        // Fondo
+        GUI.DrawTexture(new Rect(x, y, totalWidth, totalHeight), _bg);
 
-        // Barra EXP
-        float expMax = s.expToLevelUp > 0 ? s.expToLevelUp : 1f; // acceso p˙blico
-        // Necesitamos expToLevelUp p˙blico ó ver CharacterStats
-        Rect bgBar = new Rect(x + pad, y + 64, width - pad * 2, 12);
-        Rect fillBar = new Rect(bgBar.x, bgBar.y, bgBar.width * Mathf.Clamp01(s.Exp / expMax), 12);
-        GUI.DrawTexture(bgBar, _barBg);
-        GUI.DrawTexture(fillBar, _barFill);
+        float curY = y;
+        float innerX = x;
+        float innerW = barWidth;
+
+        // --- VIDA ---
+        if (health != null)
+        {
+            DrawStatRow(innerX, ref curY, innerW, " HP", health.CurrentHealth, health.MaxHealth, _hpFill);
+        }
+
+        // --- ATAQUE ---
+        DrawStatRow(innerX, ref curY, innerW, " ATK", stats.Attack, maxAttackScale, _atkFill);
+
+        // --- DEFENSA ---
+        DrawStatRow(innerX, ref curY, innerW, " DEF", stats.Defense, maxDefenseScale, _defFill);
+
+        // --- EXP ---
+        float expMax = stats.expToLevelUp > 0 ? stats.expToLevelUp : 1f;
+        DrawStatRow(innerX, ref curY, innerW, $" LVL {stats.Level}", stats.Exp, expMax, _expFill);
+    }
+
+    void DrawStatRow(float x, ref float y, float w, string label, float val, float max, Texture2D fill)
+    {
+        // Texto
+        GUI.Label(new Rect(x, y, w - 2, fontSize + 2), label, _labelStyle);
+        GUI.Label(new Rect(x, y, w - 2, fontSize + 2), val.ToString("F0"), _valueStyle);
+        y += fontSize + 2;
+
+        // Slider (Barra)
+        Rect bgRect = new Rect(x, y, w, barHeight);
+        GUI.DrawTexture(bgRect, _barBg);
+
+        float ratio = Mathf.Clamp01(val / max);
+        GUI.DrawTexture(new Rect(x, y, w * ratio, barHeight), fill);
+
+        y += barHeight;
     }
 }
