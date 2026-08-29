@@ -272,9 +272,11 @@ public class LevelsMenu : MonoBehaviour
 
     public void VolverAlMenu()
     {
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+        var allNMs = Object.FindObjectsByType<NetworkManager>(FindObjectsSortMode.None);
+        foreach (var nm in allNMs)
         {
-            NetworkManager.Singleton.Shutdown();
+            if (nm.IsListening) nm.Shutdown();
+            Destroy(nm.gameObject);
         }
         SceneManager.LoadScene(escenaMenuPrincipal);
     }

@@ -27,16 +27,14 @@ public class MainMenu : MonoBehaviour
         Cursor.visible = true;
         Cursor.lockState = CursorLockMode.None;
 
-        // Asegurar que estamos offline y limpiar rastro de red
-        if (NetworkManager.Singleton != null)
+        // Limpiar TODOS los NetworkManagers para evitar duplicados y errores de Singleton
+        var allNMs = Object.FindObjectsByType<NetworkManager>(FindObjectsSortMode.None);
+        foreach (var nm in allNMs)
         {
-            NetworkManager.Singleton.Shutdown();
-            // Si el objeto persiste, forzamos su destrucción para reiniciar el estado limpio
-            if (NetworkManager.Singleton.gameObject.name.Contains("NetworkManager"))
-            {
-                 // Opcional: solo si usas DontDestroyOnLoad en el manager
-            }
+            if (nm.IsListening) nm.Shutdown();
+            Destroy(nm.gameObject);
         }
+
         SetupUI();
     }
 
