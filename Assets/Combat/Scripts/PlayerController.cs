@@ -29,6 +29,13 @@ namespace Xenobot.Movement
         public float FallTimeout = 0.15f;
         #endregion
 
+        #region Variables: Jetpack
+        [Header("Jetpack")]
+        public float JetpackForce = 25f;
+        public float FuelConsumption = 30f; // fuel per second
+        public float FuelRegen = 15f;
+        #endregion
+
         #region Variables: Ground Check
         [Header("Ground Check")]
         public bool Grounded = true;
@@ -110,6 +117,8 @@ namespace Xenobot.Movement
         private Animator _animator;
         private CharacterController _controller;
         private GameObject _mainCamera;
+        private PlayerHealth _playerHealth;
+        private bool _isJumpHeld;
         private const float _threshold = 0.01f;
         private bool _hasAnimator;
 
@@ -133,6 +142,7 @@ namespace Xenobot.Movement
         private void Awake()
         {
             _controller = GetComponent<CharacterController>();
+            _playerHealth = GetComponent<PlayerHealth>();
             if (_mainCamera == null)
                 _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 
@@ -174,34 +184,21 @@ namespace Xenobot.Movement
         {
             if (IsOwner)
             {
-                // Buscamos el objeto raíz que tiene el NetworkObject
                 NetworkObject netObj = GetComponentInParent<NetworkObject>();
                 if (netObj == null) netObj = GetComponent<NetworkObject>();
-
-                if (netObj != null)
-                {
-                    netObj.transform.SetParent(null);
-                }
+                if (netObj != null) netObj.transform.SetParent(null);
 
                 SetupPlayerLocal();
-
-                // Teletransportamos al punto de spawn de la escena actual de inmediato
                 TeleportToSceneSpawn(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
-
                 UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
             }
             else
             {
                 DisableLocalComponents();
-                // IMPORTANTE: Desactivamos el CharacterController y la cámara en copias remotas
                 if (_controller != null) _controller.enabled = false;
-
-                // Desactivar cualquier cámara de Cinemachine que pudiera estar en este prefab
                 var vcam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
                 if (vcam != null) vcam.enabled = false;
             }
-
-            Debug.Log($"[PlayerController] Spawned: {gameObject.name} | NetID: {NetworkObjectId} | Owner: {IsOwner}");
         }
 
         public override void OnNetworkDespawn()
@@ -216,7 +213,6 @@ namespace Xenobot.Movement
             {
                 SetupCamera();
                 TeleportToSceneSpawn(scene.name);
-
 #if ENABLE_INPUT_SYSTEM
                 if (_playerInput != null) _playerInput.ActivateInput();
 #endif
@@ -225,36 +221,20 @@ namespace Xenobot.Movement
 
         private void TeleportToSceneSpawn(string sceneName)
         {
-            // Buscamos si hay una configuración específica para esta escena
             var config = SceneSpawns.Find(s => s.SceneName == sceneName);
             if (string.IsNullOrEmpty(config.SpawnPointTag)) return;
 
-            // Buscamos todos los objetos con ese Tag en la escena
             GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag(config.SpawnPointTag);
             if (spawnPoints.Length > 0)
             {
-                // Usamos el OwnerClientId para elegir un punto distinto para cada jugador
-                // (Si solo hay un punto, todos irán al mismo, si hay varios se repartirán)
                 int index = (int)(OwnerClientId % (ulong)spawnPoints.Length);
                 Transform targetSpawn = spawnPoints[index].transform;
-
-                // Desactivamos el CharacterController momentáneamente para permitir el teletransporte
                 if (_controller != null) _controller.enabled = false;
-
                 transform.position = targetSpawn.position;
                 transform.rotation = targetSpawn.rotation;
-
-                // Actualizamos las posiciones de inicio para el sistema de Respawn (caídas al vacío)
                 _startingPosition = transform.position;
                 _startingRotation = transform.rotation;
-
                 if (_controller != null) _controller.enabled = true;
-
-                Debug.Log($"[PlayerController] Teletransportado a punto de spawn: {targetSpawn.name} en escena: {sceneName}");
-            }
-            else
-            {
-                Debug.LogWarning($"[PlayerController] No se encontraron objetos con el Tag '{config.SpawnPointTag}' en la escena {sceneName}");
             }
         }
 
@@ -271,7 +251,6 @@ namespace Xenobot.Movement
         private void LateUpdate()
         {
             if (!CanExecuteLocalLogic) return;
-
             CameraRotation();
         }
         #endregion
@@ -304,8 +283,6 @@ namespace Xenobot.Movement
         private void SetupCamera()
         {
             _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
-
-            // Buscamos la cámara recorriendo la jerarquía desde la raíz del objeto instanciado
             GameObject root = transform.root.gameObject;
             CinemachineCamera vcam = null;
 
@@ -322,18 +299,8 @@ namespace Xenobot.Movement
             {
                 vcam.Follow = CinemachineCameraTarget.transform;
                 vcam.LookAt = CinemachineCameraTarget.transform;
-
-                // Solo activamos la cámara si somos el dueño
                 vcam.enabled = IsOwner;
-
-                // Prioridad absoluta para la cámara del dueño
                 vcam.Priority = IsOwner ? 100 : 0;
-
-                Debug.Log($"[PlayerController] CinemachineCamera ({vcam.gameObject.name}) configurada para {gameObject.name} (Owner: {IsOwner})");
-            }
-            else
-            {
-                Debug.LogError($"[PlayerController] ERROR FATAL: No se encontró CinemachineCamera en {root.name}");
             }
         }
         #endregion
@@ -355,6 +322,7 @@ namespace Xenobot.Movement
 
         public void OnJump(InputValue value)
         {
+            _isJumpHeld = value.isPressed;
             if (CanExecuteLocalLogic) JumpInput(value.isPressed);
         }
 
@@ -386,7 +354,6 @@ namespace Xenobot.Movement
         {
             Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
             Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
-
             if (_hasAnimator && _hasAnimIDGrounded)
                 _animator.SetBool(_animIDGrounded, Grounded);
         }
@@ -453,7 +420,6 @@ namespace Xenobot.Movement
                 {
                     _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + _mainCamera.transform.eulerAngles.y;
                 }
-
                 float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
                 transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
             }
@@ -470,6 +436,8 @@ namespace Xenobot.Movement
 
         private void JumpAndGravity()
         {
+            bool isUsingJetpack = false;
+
             if (Grounded)
             {
                 _fallTimeoutDelta = FallTimeout;
@@ -485,6 +453,7 @@ namespace Xenobot.Movement
                 {
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
                     if (_hasAnimator && _hasAnimIDJump) _animator.SetBool(_animIDJump, true);
+                    jump = false; // Consumir impulso inicial
                 }
 
                 if (_jumpTimeoutDelta >= 0.0f) _jumpTimeoutDelta -= Time.deltaTime;
@@ -494,7 +463,22 @@ namespace Xenobot.Movement
                 _jumpTimeoutDelta = JumpTimeout;
                 if (_fallTimeoutDelta >= 0.0f) _fallTimeoutDelta -= Time.deltaTime;
                 else if (_hasAnimator && _hasAnimIDFreeFall) _animator.SetBool(_animIDFreeFall, true);
-                jump = false;
+
+                // Jetpack Logic: active when holding jump in mid-air
+                if (_isJumpHeld && _playerHealth != null && _playerHealth.JetpackFuel > 0)
+                {
+                    isUsingJetpack = true;
+                    _verticalVelocity += JetpackForce * Time.deltaTime;
+                    _playerHealth.UseFuel(FuelConsumption * Time.deltaTime);
+                }
+
+                jump = false; // Asegurar que no se quede pegado el impulso
+            }
+
+            // Regen fuel when grounded or not using jetpack
+            if (!isUsingJetpack && _playerHealth != null)
+            {
+                _playerHealth.AddFuel(FuelRegen * Time.deltaTime);
             }
 
             if (_verticalVelocity < _terminalVelocity) _verticalVelocity += Gravity * Time.deltaTime;
@@ -511,18 +495,14 @@ namespace Xenobot.Movement
         public void Respawn()
         {
             if (_controller != null) _controller.enabled = false;
-
             transform.position = _startingPosition;
             transform.rotation = Quaternion.Euler(0f, 90f, 0f);
-
             if (_controller != null)
             {
                 _controller.enabled = true;
                 _verticalVelocity = 0f;
             }
-
             ResetCameraRotation(90f);
-
             if (respawnSound != null)
                 AudioSource.PlayClipAtPoint(respawnSound, transform.position);
         }

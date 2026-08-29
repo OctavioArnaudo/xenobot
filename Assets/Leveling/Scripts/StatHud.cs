@@ -1,9 +1,9 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Unity.FPS.Game; // Para acceder al script Health
 
 /// <summary>
-/// Panel HUD responsivo con sliders para Vida, Ataque y Defensa.
+/// Panel HUD responsivo con sliders para Ataque, Defensa y Nivel.
+/// Incluye un timer de nivel en la parte superior.
 /// </summary>
 public class StatsHUD : MonoBehaviour
 {
@@ -18,8 +18,8 @@ public class StatsHUD : MonoBehaviour
     public float maxDefenseScale = 100f;
 
     Texture2D _bg, _barBg;
-    Texture2D _hpFill, _atkFill, _defFill, _expFill;
-    GUIStyle _labelStyle, _valueStyle;
+    Texture2D _atkFill, _defFill, _expFill, _timerFill;
+    GUIStyle _labelStyle, _valueStyle, _timerStyle;
     bool _ready;
 
     void EnsureAssets()
@@ -29,10 +29,10 @@ public class StatsHUD : MonoBehaviour
         _bg = MakeTex(new Color(0f, 0f, 0f, 0.7f));
         _barBg = MakeTex(new Color(0.15f, 0.15f, 0.15f, 0.9f));
 
-        _hpFill = MakeTex(new Color(0.8f, 0.2f, 0.2f, 1f));   // Rojo Vida
         _atkFill = MakeTex(new Color(1f, 0.5f, 0.1f, 1f));   // Naranja Ataque
         _defFill = MakeTex(new Color(0.2f, 0.5f, 1f, 1f));   // Azul Defensa
         _expFill = MakeTex(new Color(1f, 0.8f, 0f, 1f));     // Amarillo EXP
+        _timerFill = MakeTex(new Color(0.5f, 0.5f, 0.5f, 1f)); // Gris Timer
 
         _labelStyle = new GUIStyle(GUI.skin.label)
         {
@@ -49,6 +49,13 @@ public class StatsHUD : MonoBehaviour
             fontStyle = FontStyle.Normal
         };
         _valueStyle.normal.textColor = new Color(0.9f, 0.9f, 0.9f);
+
+        _timerStyle = new GUIStyle(_labelStyle)
+        {
+            alignment = TextAnchor.MiddleCenter,
+            fontSize = fontSize + 2
+        };
+        _timerStyle.normal.textColor = Color.cyan;
 
         _ready = true;
     }
@@ -68,16 +75,13 @@ public class StatsHUD : MonoBehaviour
         var stats = CharacterStats.Instance;
         if (stats == null) return;
 
-        // Intentar obtener el componente Health del mismo objeto que CharacterStats
-        Health health = stats.GetComponent<Health>();
-
         EnsureAssets();
 
-        // 1. Calcular dimensiones del panel
-        int rows = (health != null ? 1 : 0) + 2 + 1; // Health + Atk + Def + Exp
+        // 1. Calcular dimensiones del panel (Timer + Atk + Def + Exp)
+        int rows = 1 + 2 + 1; // Timer + Atk + Def + Exp
         int rowH = fontSize + barHeight + 2;
         int totalWidth = barWidth;
-        int totalHeight = rowH * rows;
+        int totalHeight = rowH * rows + 4;
 
         float x = Screen.width - totalWidth;
         float y = 0;
@@ -85,15 +89,15 @@ public class StatsHUD : MonoBehaviour
         // Fondo
         GUI.DrawTexture(new Rect(x, y, totalWidth, totalHeight), _bg);
 
-        float curY = y;
+        float curY = y + 2;
         float innerX = x;
         float innerW = barWidth;
 
-        // --- VIDA ---
-        if (health != null)
-        {
-            DrawStatRow(innerX, ref curY, innerW, " HP", health.CurrentHealth, health.MaxHealth, _hpFill);
-        }
+        // --- TIMER ---
+        float time = Time.timeSinceLevelLoad;
+        string timerStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(time / 60), Mathf.FloorToInt(time % 60));
+        GUI.Label(new Rect(innerX, curY, innerW, fontSize + 4), $"TIME {timerStr}", _timerStyle);
+        curY += fontSize + 6;
 
         // --- ATAQUE ---
         DrawStatRow(innerX, ref curY, innerW, " ATK", stats.Attack, maxAttackScale, _atkFill);
