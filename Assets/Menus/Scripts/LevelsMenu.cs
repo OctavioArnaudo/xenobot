@@ -19,7 +19,8 @@ public class LevelsMenu : MonoBehaviour
     public string escenaMenuPrincipal = "MainMenuScene";
 
     [Header("Datos de Niveles")]
-    public List<LevelData> listaNiveles = new List<LevelData>();
+    public static List<LevelData> listaNiveles = new List<LevelData>();
+    public List<LevelData> nivelesConfig = new List<LevelData>();
 
     [Header("Estilo Visual Xenobot")]
     public Color colorFondo = new Color(0.01f, 0.02f, 0.05f, 1f);
@@ -30,7 +31,14 @@ public class LevelsMenu : MonoBehaviour
 
     private RectTransform contentTransform;
 
-    private void Start() => SetupUI();
+    private void Start()
+    {
+        if (listaNiveles.Count == 0 && nivelesConfig.Count > 0)
+        {
+            listaNiveles.AddRange(nivelesConfig);
+        }
+        SetupUI();
+    }
 
     private void SetupUI()
     {
