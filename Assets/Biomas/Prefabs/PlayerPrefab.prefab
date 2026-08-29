@@ -565,7 +565,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2797327281
+  GlobalObjectIdHash: 4210644766
   InScenePlacedSourceGlobalObjectIdHash: 2797327281
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -2198,6 +2198,7 @@ MonoBehaviour:
   JetpackForce: 25
   FuelConsumption: 30
   FuelRegen: 15
+  MaxUpwardVelocity: 10
   Grounded: 1
   GroundedOffset: -0.14
   GroundedRadius: 0.28

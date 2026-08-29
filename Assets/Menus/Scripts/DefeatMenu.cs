@@ -18,6 +18,7 @@ namespace Menus.Scripts
         private GameObject _canvasRoot;
         private bool _isDisplayed = false;
         private bool _hasDetectedPlayers = false;
+        private float _checkTimer = 0f;
 
         private void Start()
         {
@@ -33,19 +34,23 @@ namespace Menus.Scripts
                 return;
             }
 
-            // Automatic trigger: check for players
+            // Automatic trigger: check for players every 1 second (Optimized for FMOD)
             if (!_isDisplayed)
             {
-                GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+                _checkTimer -= Time.deltaTime;
+                if (_checkTimer <= 0f)
+                {
+                    _checkTimer = 1f;
+                    GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
 
-                if (players.Length > 0)
-                {
-                    _hasDetectedPlayers = true;
-                }
-                else if (_hasDetectedPlayers)
-                {
-                    // All players were present but now they are gone
-                    TriggerDefeat();
+                    if (players.Length > 0)
+                    {
+                        _hasDetectedPlayers = true;
+                    }
+                    else if (_hasDetectedPlayers)
+                    {
+                        TriggerDefeat();
+                    }
                 }
             }
         }

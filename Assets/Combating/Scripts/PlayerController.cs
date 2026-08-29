@@ -31,9 +31,10 @@ namespace Xenobot.Movement
 
         #region Variables: Jetpack
         [Header("Jetpack")]
-        public float JetpackForce = 25f;
-        public float FuelConsumption = 30f; // fuel per second
-        public float FuelRegen = 15f;
+        public float JetpackForce = 50f; // Fuerza potente para subir
+        public float FuelConsumption = 25f;
+        public float FuelRegen = 20f;
+        public float MaxUpwardVelocity = 10f; // Límite para el "sostén"
         #endregion
 
         #region Variables: Ground Check
@@ -143,49 +144,39 @@ namespace Xenobot.Movement
         {
             _controller = GetComponent<CharacterController>();
             _playerHealth = GetComponent<PlayerHealth>();
+
+            #if ENABLE_INPUT_SYSTEM
+            _playerInput = GetComponent<PlayerInput>();
+            #endif
+
             if (_mainCamera == null)
                 _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 
             if (CanExecuteLocalLogic)
             {
-                // Solo bloquear el cursor en la escena de acción real
                 if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "BiomaScene")
-                {
                     SetCursorState(cursorLocked);
-                }
                 else
-                {
-                    SetCursorState(false); // Forzar mouse libre en Lobby/Menus
-                }
+                    SetCursorState(false);
             }
         }
 
         private void Start()
         {
             _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
-
             _animator = GetComponentInChildren<Animator>();
             _hasAnimator = _animator != null;
-
-#if ENABLE_INPUT_SYSTEM
-            _playerInput = GetComponent<PlayerInput>();
-#endif
 
             AssignAnimationIDs();
 
             _cameraStartingPosition = CinemachineCameraTarget.transform.position;
             _cameraStartingRotation = CinemachineCameraTarget.transform.rotation;
-
             _startingPosition = transform.position;
             _startingRotation = transform.rotation;
-
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
 
-            if (!IsNetworkActive)
-            {
-                SetupPlayerLocal();
-            }
+            if (!IsNetworkActive) SetupPlayerLocal();
         }
 
         public override void OnNetworkSpawn()
@@ -199,7 +190,6 @@ namespace Xenobot.Movement
                 SetupPlayerLocal();
                 TeleportToSceneSpawn(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
 
-                // Forzar visibilidad y corregir posibles fallos de renderizado
                 var renderers = GetComponentsInChildren<Renderer>(true);
                 foreach (var r in renderers) r.enabled = true;
 
@@ -254,6 +244,21 @@ namespace Xenobot.Movement
         private void Update()
         {
             if (!CanExecuteLocalLogic) return;
+
+            // --- SISTEMA DE ENTRADA DIRECTA (RECORRER FALLO DE EVENTOS) ---
+            #if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null && IsOwner)
+            {
+                float moveX = (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed ? 1f : 0f) -
+                              (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed ? 1f : 0f);
+                float moveY = (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed ? 1f : 0f) -
+                              (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed ? 1f : 0f);
+
+                // Actualizamos el vector move según el estado actual de las teclas
+                move = new Vector2(moveX, moveY);
+                if (move.sqrMagnitude > 1f) move.Normalize();
+            }
+            #endif
 
             HandleRespawn();
             JumpAndGravity();
@@ -320,9 +325,10 @@ namespace Xenobot.Movement
 
         #region Input Handling
 #if ENABLE_INPUT_SYSTEM
-        public void OnMove(InputValue value)
+        public void OnJump(InputValue value)
         {
-            if (CanExecuteLocalLogic) MoveInput(value.Get<Vector2>());
+            _isJumpHeld = value.isPressed;
+            if (CanExecuteLocalLogic) JumpInput(value.isPressed);
         }
 
         public void OnLook(InputValue value)
@@ -331,12 +337,6 @@ namespace Xenobot.Movement
             {
                 LookInput(value.Get<Vector2>());
             }
-        }
-
-        public void OnJump(InputValue value)
-        {
-            _isJumpHeld = value.isPressed;
-            if (CanExecuteLocalLogic) JumpInput(value.isPressed);
         }
 
         public void OnSprint(InputValue value)
@@ -429,12 +429,13 @@ namespace Xenobot.Movement
             if (move != Vector2.zero)
             {
                 if (_mainCamera == null) _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+
                 if (_mainCamera != null)
                 {
                     _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + _mainCamera.transform.eulerAngles.y;
+                    float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
+                    transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
                 }
-                float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
-                transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
             }
 
             Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
@@ -451,6 +452,12 @@ namespace Xenobot.Movement
         {
             bool isUsingJetpack = false;
 
+            // Backup check for jump hold in case New Input events miss frames
+            bool currentlyHoldingJump = _isJumpHeld;
+            #if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null && Keyboard.current.spaceKey.isPressed) currentlyHoldingJump = true;
+            #endif
+
             if (Grounded)
             {
                 _fallTimeoutDelta = FallTimeout;
@@ -466,7 +473,7 @@ namespace Xenobot.Movement
                 {
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
                     if (_hasAnimator && _hasAnimIDJump) _animator.SetBool(_animIDJump, true);
-                    jump = false; // Consumir impulso inicial
+                    jump = false;
                 }
 
                 if (_jumpTimeoutDelta >= 0.0f) _jumpTimeoutDelta -= Time.deltaTime;
@@ -477,32 +484,43 @@ namespace Xenobot.Movement
                 if (_fallTimeoutDelta >= 0.0f) _fallTimeoutDelta -= Time.deltaTime;
                 else if (_hasAnimator && _hasAnimIDFreeFall) _animator.SetBool(_animIDFreeFall, true);
 
-                // Jetpack Logic: active when holding jump in mid-air
-                if (_isJumpHeld && _playerHealth != null && _playerHealth.JetpackFuel > 0)
+                // LOGICA DE JETPACK ACTIVA
+                if (currentlyHoldingJump && _playerHealth != null && _playerHealth.JetpackFuel > 0)
                 {
                     isUsingJetpack = true;
+
+                    // Aplicamos fuerza constante hacia arriba ignorando parte de la gravedad acumulada
+                    if (_verticalVelocity < 0) _verticalVelocity *= 0.5f; // Freno de caída
+
                     _verticalVelocity += JetpackForce * Time.deltaTime;
+
+                    // Cap de velocidad para el "Hover"
+                    if (_verticalVelocity > MaxUpwardVelocity) _verticalVelocity = MaxUpwardVelocity;
+
                     _playerHealth.UseFuel(FuelConsumption * Time.deltaTime);
                 }
 
-                jump = false; // Asegurar que no se quede pegado el impulso
+                jump = false;
             }
 
-            // Regen fuel when grounded or not using jetpack
+            // Regen fuel
             if (!isUsingJetpack && _playerHealth != null)
             {
                 _playerHealth.AddFuel(FuelRegen * Time.deltaTime);
             }
 
-            if (_verticalVelocity < _terminalVelocity) _verticalVelocity += Gravity * Time.deltaTime;
+            // Aplicar gravedad solo si no estamos subiendo con mucha fuerza
+            if (_verticalVelocity < _terminalVelocity)
+            {
+                 _verticalVelocity += Gravity * Time.deltaTime;
+            }
         }
         #endregion
 
         #region Respawn Logic
         private void HandleRespawn()
         {
-            if (transform.position.y < yThreshold)
-                Respawn();
+            if (transform.position.y < yThreshold) Respawn();
         }
 
         public void Respawn()
@@ -516,8 +534,7 @@ namespace Xenobot.Movement
                 _verticalVelocity = 0f;
             }
             ResetCameraRotation(90f);
-            if (respawnSound != null)
-                AudioSource.PlayClipAtPoint(respawnSound, transform.position);
+            if (respawnSound != null) AudioSource.PlayClipAtPoint(respawnSound, transform.position);
         }
 
         public void ResetCameraRotation(float targetYaw)
