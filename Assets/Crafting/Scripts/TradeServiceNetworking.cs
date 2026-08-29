@@ -14,7 +14,7 @@ namespace NGO.Gameplay.Networking
             if (recipeId < 0 || recipeId >= availableRecipes.Length) return;
 
             TradeRecipe recipe = availableRecipes[recipeId];
-            Debug.Log($"[Trade Logic] Procesando: {recipe.InputItem.ItemName} -> {recipe.OutputItem.ItemName} para el cliente {clientId}");
+            Debug.Log($"[Trade Logic] Procesando: {recipe.InputItem.displayName} -> {recipe.OutputItem.displayName} para el cliente {clientId}");
 
             // Aquí iría la lógica de quitar items del inventario local y añadir el nuevo
         }

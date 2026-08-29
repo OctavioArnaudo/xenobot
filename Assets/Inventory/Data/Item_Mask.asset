@@ -10,9 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
-  m_Name: Mascara
+  m_Name: Item_Mask
   m_EditorClassIdentifier: Assembly-CSharp::ItemDefinition
-  itemId: Mask
+  itemId: 0
+  itemCode: mask
   displayName: Mask
   icon: {fileID: 21300000, guid: 7009ec2cfc529b341a3e4a80a95b848e, type: 3}
   type: 3
@@ -20,3 +21,4 @@ MonoBehaviour:
   isStackable: 0
   maxStack: 99
   description: 
+  expValue: 0

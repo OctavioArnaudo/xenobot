@@ -214,10 +214,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5326428019601912383}
     m_Modifications:
-    - target: {fileID: 1314933330219915320, guid: 55e0910048315624a983adce9e33571a, type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: GoBack
-      objectReference: {fileID: 0}
     - target: {fileID: 4756374710766182979, guid: 55e0910048315624a983adce9e33571a, type: 3}
       propertyPath: m_Pivot.x
       value: 0.5
@@ -301,10 +297,6 @@ PrefabInstance:
     - target: {fileID: 5260795481532603257, guid: 55e0910048315624a983adce9e33571a, type: 3}
       propertyPath: m_Name
       value: NetworkPanelPrefab
-      objectReference: {fileID: 0}
-    - target: {fileID: 8251719097369824188, guid: 55e0910048315624a983adce9e33571a, type: 3}
-      propertyPath: m_text
-      value: "Men\xFA"
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

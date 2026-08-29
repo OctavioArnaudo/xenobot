@@ -87,7 +87,7 @@ namespace NGO.Networking
         /// Slot 0 = Padre (Autoubicación)
         /// Slots 1-9 = Cuadrantes específicos
         /// </summary>
-        public void OnItemDroppedInSlot(Data.ItemData item, int amount, int slotIndex)
+        public void OnItemDroppedInSlot(ItemData item, int amount, int slotIndex)
         {
             if (item == null) return;
 
@@ -123,14 +123,14 @@ namespace NGO.Networking
             }
         }
 
-        private void UpdateSlot(int index, Data.ItemData item)
+        private void UpdateSlot(int index, ItemData item)
         {
-            m_CurrentGridIds[index] = item.ItemID;
+            m_CurrentGridIds[index] = item.itemId;
 
             if (gridImages[index] != null)
             {
                 gridImages[index].color = Color.white;
-                gridImages[index].sprite = item.Icon;
+                gridImages[index].sprite = item.icon;
             }
 
             if (m_GridDraggables[index] != null)
@@ -138,7 +138,7 @@ namespace NGO.Networking
                 m_GridDraggables[index].itemData = item;
             }
 
-            Debug.Log($"[CraftingMenu] Cuadrante {index + 1} actualizado con {item.ItemName}");
+            Debug.Log($"[CraftingMenu] Cuadrante {index + 1} actualizado con {item.displayName}");
             CheckForValidRecipe();
         }
 
@@ -171,7 +171,7 @@ namespace NGO.Networking
             // 1. Ejecución Local (Predictiva / Offline)
             ulong myId = (NetworkManager.Singleton != null) ? NetworkManager.Singleton.LocalClientId : 0;
             tradeService.ExecuteTradeLocal(recipeIndex, myId);
-            Debug.Log($"[CraftingMenu] Ejecución local completada: {selectedRecipe.OutputItem.ItemName}");
+            Debug.Log($"[CraftingMenu] Ejecución local completada: {selectedRecipe.OutputItem.displayName}");
 
             // 2. Sincronización de Red (Paso final)
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient)

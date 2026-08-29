@@ -789,6 +789,63 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b1f6432d0f559d546ad0f12692ed2b50, type: 3}
   m_PrefabInstance: {fileID: 97193298}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &134545712
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3379178122257548612, guid: 375b02af0c8324c449e34d15f5288716, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 960
+      objectReference: {fileID: 0}
+    - target: {fileID: 3379178122257548612, guid: 375b02af0c8324c449e34d15f5288716, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 540
+      objectReference: {fileID: 0}
+    - target: {fileID: 3379178122257548612, guid: 375b02af0c8324c449e34d15f5288716, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3379178122257548612, guid: 375b02af0c8324c449e34d15f5288716, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3379178122257548612, guid: 375b02af0c8324c449e34d15f5288716, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3379178122257548612, guid: 375b02af0c8324c449e34d15f5288716, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3379178122257548612, guid: 375b02af0c8324c449e34d15f5288716, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3379178122257548612, guid: 375b02af0c8324c449e34d15f5288716, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3379178122257548612, guid: 375b02af0c8324c449e34d15f5288716, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3379178122257548612, guid: 375b02af0c8324c449e34d15f5288716, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7047451053835813635, guid: 375b02af0c8324c449e34d15f5288716, type: 3}
+      propertyPath: m_Name
+      value: V para Victory
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 375b02af0c8324c449e34d15f5288716, type: 3}
 --- !u!1 &162541638
 GameObject:
   m_ObjectHideFlags: 0
@@ -2889,6 +2946,79 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b1f6432d0f559d546ad0f12692ed2b50, type: 3}
   m_PrefabInstance: {fileID: 432705867}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &436590118
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 820484089996726226, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 296
+      objectReference: {fileID: 0}
+    - target: {fileID: 820484089996726226, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 16.65
+      objectReference: {fileID: 0}
+    - target: {fileID: 820484089996726226, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 820484089996726226, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 820484089996726226, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 820484089996726226, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 820484089996726226, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 820484089996726226, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 820484089996726226, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 820484089996726226, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2550345944320081171, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: m_Name
+      value: C para Craftear
+      objectReference: {fileID: 0}
+    - target: {fileID: 5642830633754150575, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: m_InScenePlaced
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5642830633754150575, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 279229449
+      objectReference: {fileID: 0}
+    - target: {fileID: 5642830633754150575, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5642830633754150575, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2930775493
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: cbc45bdb2b2a4d74c8379110c4b11c48, type: 3}
 --- !u!1001 &447759825
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4276,6 +4406,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  ShowTopMostFoldoutHeaderGroup: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 640948716}
   ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
@@ -5167,6 +5298,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  ShowTopMostFoldoutHeaderGroup: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 748117254}
   ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
@@ -5492,6 +5624,63 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2078279949}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &767178486
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 483704140112397404, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 960
+      objectReference: {fileID: 0}
+    - target: {fileID: 483704140112397404, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 540
+      objectReference: {fileID: 0}
+    - target: {fileID: 483704140112397404, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 483704140112397404, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 483704140112397404, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 483704140112397404, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 483704140112397404, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 483704140112397404, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 483704140112397404, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 483704140112397404, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2975583572009817475, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+      propertyPath: m_Name
+      value: L para Defeat
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
 --- !u!1 &779632225
 GameObject:
   m_ObjectHideFlags: 0
@@ -5697,6 +5886,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  ShowTopMostFoldoutHeaderGroup: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 802993128}
   ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
@@ -9575,6 +9765,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  ShowTopMostFoldoutHeaderGroup: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 1246279745}
   ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
@@ -9735,6 +9926,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  ShowTopMostFoldoutHeaderGroup: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 1253342411}
   ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
@@ -10046,6 +10238,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  ShowTopMostFoldoutHeaderGroup: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 1279295498}
   ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
@@ -10634,6 +10827,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  ShowTopMostFoldoutHeaderGroup: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 1109106574}
   ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
@@ -11703,6 +11897,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  ShowTopMostFoldoutHeaderGroup: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 1340805989}
   ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
@@ -12793,6 +12988,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  ShowTopMostFoldoutHeaderGroup: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 800645334}
   ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
@@ -13276,6 +13472,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  ShowTopMostFoldoutHeaderGroup: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 273662238}
   ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
@@ -15163,6 +15360,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  ShowTopMostFoldoutHeaderGroup: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 1945098328}
   ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
@@ -16976,3 +17174,6 @@ SceneRoots:
   - {fileID: 646955754}
   - {fileID: 69350183}
   - {fileID: 877571564}
+  - {fileID: 767178486}
+  - {fileID: 134545712}
+  - {fileID: 436590118}

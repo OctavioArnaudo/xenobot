@@ -36,7 +36,7 @@ namespace NGO.UI
             _canvas = GetComponentInParent<Canvas>();
 
             if (iconImage != null && itemData != null)
-                iconImage.sprite = itemData.Icon;
+                iconImage.sprite = itemData.icon;
         }
 
         public void OnBeginDrag(PointerEventData eventData)

@@ -3,7 +3,7 @@ using UnityEngine;
 public class Pickup : MonoBehaviour
 {
     [Header("Ítem")]
-    public ItemDefinition item;
+    public ItemData item;
 
     [Header("Effects")]
     public GameObject particleEffectPrefab;

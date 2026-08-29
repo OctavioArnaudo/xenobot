@@ -23,7 +23,7 @@ namespace NGO.UI
                 DraggableItem draggable = eventData.pointerDrag.GetComponent<DraggableItem>();
                 if (draggable != null && draggable.itemData != null)
                 {
-                    Debug.Log($"[DropZone] Objeto detectado: {draggable.itemData.ItemName} en slot {slotIndex}");
+                    Debug.Log($"[DropZone] Objeto detectado: {draggable.itemData.displayName} en slot {slotIndex}");
                     onItemDropped?.Invoke(draggable.itemData, draggable.amount, slotIndex);
                 }
             }

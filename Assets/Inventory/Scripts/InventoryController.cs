@@ -7,7 +7,7 @@ public class Inventory : NetworkBehaviour
 {
     public static Inventory Instance { get; private set; }
 
-    private static Dictionary<string, (ItemDefinition def, int qty)> s_PersistentBag = new();
+    private static Dictionary<string, (ItemData def, int qty)> s_PersistentBag = new();
     private static List<string> s_PersistentKeys = new();
     private static HashSet<string> s_PersistentEquipped = new();
 
@@ -25,7 +25,7 @@ public class Inventory : NetworkBehaviour
     public float dropDistance = 2.5f;
     public float droppedWorldSize = 0.4f;
 
-    private Dictionary<string, (ItemDefinition def, int qty)> _bag => s_PersistentBag;
+    private Dictionary<string, (ItemData def, int qty)> _bag => s_PersistentBag;
     private List<string> _keys => s_PersistentKeys;
     private HashSet<string> _equipped => s_PersistentEquipped;
 
@@ -58,10 +58,17 @@ public class Inventory : NetworkBehaviour
         if (Instance == this) Instance = null;
     }
 
-    public static void Add(ItemDefinition def)
+    public static void Add(ItemData def)
     {
         if (def == null) return;
-        string k = def.itemId.ToLowerInvariant();
+
+        if (string.IsNullOrEmpty(def.itemCode))
+        {
+            Debug.LogWarning($"Inventory: Intentando añadir ítem '{def.name}' sin itemCode configurado.");
+            return;
+        }
+
+        string k = def.itemCode.ToLowerInvariant();
         if (def.isStackable)
         {
             if (!s_PersistentBag.ContainsKey(k)) s_PersistentKeys.Add(k);
@@ -240,6 +247,23 @@ public class Inventory : NetworkBehaviour
         if (e.type == EventType.KeyDown)
         {
             if (e.keyCode == KeyCode.Escape) { if (_dragging) { _dragging = false; _dragIndex = -1; } else if (_dropdownIndex >= 0) { _dropdownIndex = -1; } else if (_selectedIndex >= 0) { _selectedIndex = -1; _dropdownIndex = -1; } else { SetOpen(false); } e.Use(); }
+        }
+    }
+
+    public static Dictionary<string, (ItemData def, int qty)> GetBag() => s_PersistentBag;
+    public static List<string> GetKeys() => s_PersistentKeys;
+
+    public static void RemoveItem(string key)
+    {
+        if (!s_PersistentBag.TryGetValue(key, out var slot)) return;
+
+        if (slot.qty > 1)
+            s_PersistentBag[key] = (slot.def, slot.qty - 1);
+        else
+        {
+            s_PersistentBag.Remove(key);
+            s_PersistentKeys.Remove(key);
+            s_PersistentEquipped.Remove(key);
         }
     }
 }
