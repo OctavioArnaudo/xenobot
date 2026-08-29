@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 
-namespace Xenobot.ModularCombat
+namespace Combating.Scripts
 {
     public class CombatDamageReceiver : MonoBehaviour
     {

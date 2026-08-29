@@ -46,7 +46,7 @@ public class melee : NetworkBehaviour
         foreach (Collider hit in hits)
         {
             // Buscamos el componente de vida en el enemigo
-            var health = hit.GetComponentInParent<enemyHealth>();
+            var health = hit.GetComponentInParent<Combating.Scripts.SpawnController>();
             if (health != null)
             {
                 // health.TakeDamage ya resuelve si es red o offline

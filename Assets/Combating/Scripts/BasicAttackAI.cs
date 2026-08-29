@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 
-namespace Xenobot.ModularCombat
+namespace Combating.Scripts
 {
     [RequireComponent(typeof(ClickToShoot))]
     public class BasicAttackAI : MonoBehaviour

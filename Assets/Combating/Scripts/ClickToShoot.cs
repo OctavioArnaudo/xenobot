@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 
-namespace Xenobot.ModularCombat
+namespace Combating.Scripts
 {
     public class ClickToShoot : NetworkBehaviour
     {

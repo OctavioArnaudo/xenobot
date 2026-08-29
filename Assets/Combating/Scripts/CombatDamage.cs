@@ -4,7 +4,7 @@ using Unity.FPS.Game;
 using Unity.Netcode;
 using UnityEngine;
 
-namespace Xenobot.ModularCombat
+namespace Combating.Scripts
 {
     public static class CombatDamage
     {
