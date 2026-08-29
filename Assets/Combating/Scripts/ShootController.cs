@@ -5,7 +5,7 @@ using Unity.Netcode;
 
 namespace Combating.Scripts
 {
-    public class ClickToShoot : NetworkBehaviour
+    public class ShootController : NetworkBehaviour
     {
         [Header("References")]
         public Camera AimCamera;

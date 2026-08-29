@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Xenobot.ModularCombat
+namespace Combating.Scripts
 {
     public class AutoParticleBurst : MonoBehaviour
     {

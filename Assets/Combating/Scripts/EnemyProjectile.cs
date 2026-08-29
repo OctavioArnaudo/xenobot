@@ -1,73 +1,76 @@
 using UnityEngine;
 using Unity.Netcode;
 
-// Proyectil simple: esfera roja luminosa que viaja en lnea recta.
-// Funciona en red (autoridad del servidor) y en offline.
-public class EnemyProjectile : NetworkBehaviour
+namespace Combating.Scripts
 {
-    public float lifeTime = 4f;
-    public float radius = 0.15f;
-
-    Vector3 m_Dir;
-    float m_Speed;
-    int m_Damage;
-
-    private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
-    private bool CanExecuteLogic => !IsNetworkActive || IsServer;
-
-    void Awake()
+    // Proyectil simple: esfera roja luminosa que viaja en lnea recta.
+    // Funciona en red (autoridad del servidor) y en offline.
+    public class EnemyProjectile : NetworkBehaviour
     {
-        // Esfera visual roja luminosa
-        var visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        visual.transform.SetParent(transform, false);
-        visual.transform.localScale = Vector3.one * radius * 2f;
-        Destroy(visual.GetComponent<Collider>());
+        public float lifeTime = 4f;
+        public float radius = 0.15f;
 
-        var mr = visual.GetComponent<MeshRenderer>();
-        var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
-        var mat = new Material(shader);
-        mat.SetColor("_BaseColor", Color.red);
-        mat.SetColor("_Color", Color.red);
-        mr.material = mat;
+        Vector3 m_Dir;
+        float m_Speed;
+        int m_Damage;
 
-        var light = gameObject.AddComponent<Light>();
-        light.type = LightType.Point;
-        light.color = Color.red;
-        light.intensity = 2f;
-        light.range = 2f;
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+        private bool CanExecuteLogic => !IsNetworkActive || IsServer;
 
-        var col = gameObject.AddComponent<SphereCollider>();
-        col.isTrigger = true;
-        col.radius = radius;
-    }
+        void Awake()
+        {
+            // Esfera visual roja luminosa
+            var visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            visual.transform.SetParent(transform, false);
+            visual.transform.localScale = Vector3.one * radius * 2f;
+            Destroy(visual.GetComponent<Collider>());
 
-    public void Launch(Vector3 direction, float speed, int damage)
-    {
-        m_Dir = direction.normalized;
-        m_Speed = speed;
-        m_Damage = damage;
+            var mr = visual.GetComponent<MeshRenderer>();
+            var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+            var mat = new Material(shader);
+            mat.SetColor("_BaseColor", Color.red);
+            mat.SetColor("_Color", Color.red);
+            mr.material = mat;
 
-        if (CanExecuteLogic)
-            Destroy(gameObject, lifeTime);
-    }
+            var light = gameObject.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = Color.red;
+            light.intensity = 2f;
+            light.range = 2f;
 
-    void Update()
-    {
-        // Solo el servidor o el entorno local mueven el proyectil
-        if (!CanExecuteLogic) return;
-        transform.position += m_Dir * m_Speed * Time.deltaTime;
-    }
+            var col = gameObject.AddComponent<SphereCollider>();
+            col.isTrigger = true;
+            col.radius = radius;
+        }
 
-    void OnTriggerEnter(Collider other)
-    {
-        if (!CanExecuteLogic) return;
-        if (!other.CompareTag("Player")) return;
+        public void Launch(Vector3 direction, float speed, int damage)
+        {
+            m_Dir = direction.normalized;
+            m_Speed = speed;
+            m_Damage = damage;
 
-        EnemyAI.DamagePlayer(other.transform, m_Damage);
+            if (CanExecuteLogic)
+                Destroy(gameObject, lifeTime);
+        }
 
-        if (IsNetworkActive && NetworkObject.IsSpawned)
-            NetworkObject.Despawn();
-        else
-            Destroy(gameObject);
+        void Update()
+        {
+            // Solo el servidor o el entorno local mueven el proyectil
+            if (!CanExecuteLogic) return;
+            transform.position += m_Dir * m_Speed * Time.deltaTime;
+        }
+
+        void OnTriggerEnter(Collider other)
+        {
+            if (!CanExecuteLogic) return;
+            if (!other.CompareTag("Player")) return;
+
+            CombatController.TryApply(other.gameObject, m_Damage, gameObject);
+
+            if (IsNetworkActive && NetworkObject.IsSpawned)
+                NetworkObject.Despawn();
+            else
+                Destroy(gameObject);
+        }
     }
 }

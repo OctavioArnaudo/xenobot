@@ -27,9 +27,9 @@ namespace Combating.Scripts
 
         [Header("Sibling Scripts (Auto-detected)")]
         [SerializeField] private CombatTeamMember teamMember;
-        [SerializeField] private ClickToShoot shooter;
-        [SerializeField] private BasicAttackAI attackAI;
-        [SerializeField] private CombatDamageReceiver damageReceiver;
+        [SerializeField] private ShootController shooter;
+        [SerializeField] private AttackController attackAI;
+        [SerializeField] private DamageController damageReceiver;
 
         private NetworkVariable<int> currentHealth = new NetworkVariable<int>(100);
         private int m_OfflineHealth;
@@ -42,9 +42,9 @@ namespace Combating.Scripts
 
             // Auto-detect sibling scripts if not assigned
             if (teamMember == null) teamMember = GetComponent<CombatTeamMember>();
-            if (shooter == null) shooter = GetComponent<ClickToShoot>();
-            if (attackAI == null) attackAI = GetComponent<BasicAttackAI>();
-            if (damageReceiver == null) damageReceiver = GetComponent<CombatDamageReceiver>();
+            if (shooter == null) shooter = GetComponent<ShootController>();
+            if (attackAI == null) attackAI = GetComponent<AttackController>();
+            if (damageReceiver == null) damageReceiver = GetComponent<DamageController>();
         }
 
         public override void OnNetworkSpawn()

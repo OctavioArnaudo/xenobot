@@ -68,12 +68,12 @@ namespace Combating.Scripts
                 }
             }
 
-            return !CombatDamage.AreFriendly(m_Owner, hitCollider.gameObject);
+            return !CombatController.AreFriendly(m_Owner, hitCollider.gameObject);
         }
 
         void Hit(RaycastHit hit)
         {
-            CombatDamage.TryApply(hit.collider.gameObject, Damage, m_Owner);
+            CombatController.TryApply(hit.collider.gameObject, Damage, m_Owner);
 
             if (ImpactVfxPrefab != null)
             {

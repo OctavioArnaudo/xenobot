@@ -3,7 +3,7 @@ using UnityEngine.Events;
 
 namespace Combating.Scripts
 {
-    public class CombatDamageReceiver : MonoBehaviour
+    public class DamageController : MonoBehaviour
     {
         public float MaxHealth = 100f;
         public bool DestroyOnDeath = true;
