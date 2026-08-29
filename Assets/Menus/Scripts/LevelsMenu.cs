@@ -4,15 +4,6 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 
-[System.Serializable]
-public class LevelData
-{
-    public string nombreNivel;
-    public Sprite miniatura;
-    public string mejorTiempo;
-    public List<string> jugadoresCompletados;
-}
-
 public class LevelsMenu : MonoBehaviour
 {
     [Header("Configuración de Escenas")]
@@ -116,8 +107,11 @@ public class LevelsMenu : MonoBehaviour
         // 5. Generar Tarjetas de Nivel dinámicamente
         if (listaNiveles.Count == 0)
         {
-            // Dummy data si no hay niveles configurados
-            LevelData dummy = new LevelData { nombreNivel = "NIVEL ALPHA", mejorTiempo = "00:00", jugadoresCompletados = new List<string>{"NADIE"} };
+            // Fallback si no hay niveles configurados
+            LevelData dummy = ScriptableObject.CreateInstance<LevelData>();
+            dummy.nombreNivel = "NIVEL ALPHA";
+            dummy.mejorTiempo = "00:00";
+            dummy.jugadoresCompletados = new List<string>{"NADIE"};
             CreateLevelCard(contentObj.transform, dummy);
         }
         else

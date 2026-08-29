@@ -190,23 +190,24 @@ namespace Menus.Scripts
 
             Debug.Log($"[Defeat] Intentando registrar tiempo: {timeTaken} en escena: {currentScene}");
 
-            // Buscar el nivel en la lista estática (insensible a mayúsculas y espacios)
+            // Buscar el nivel en la lista estática
             var level = LevelsMenu.listaNiveles.Find(n =>
-                n.nombreNivel.Replace(" ", "").ToLower() == currentScene.Replace(" ", "").ToLower());
+                (n.escenaNombre != null && n.escenaNombre.ToLower() == currentScene.ToLower()) ||
+                (n.nombreNivel != null && n.nombreNivel.Replace(" ", "").ToLower() == currentScene.Replace(" ", "").ToLower()));
 
             if (level != null)
             {
-                level.mejorTiempo = LevelsMenu.FormatTime(timeTaken);
+                level.ActualizarRecord(LevelsMenu.FormatTime(timeTaken));
                 Debug.Log($"[Defeat] Tiempo registrado para {level.nombreNivel}: {level.mejorTiempo}");
             }
             else
             {
                 // Si el nivel no existe (ej: empezamos desde esta escena), lo creamos
-                LevelData newLevel = new LevelData {
-                    nombreNivel = currentScene,
-                    mejorTiempo = LevelsMenu.FormatTime(timeTaken),
-                    jugadoresCompletados = new System.Collections.Generic.List<string>()
-                };
+                LevelData newLevel = ScriptableObject.CreateInstance<LevelData>();
+                newLevel.nombreNivel = currentScene;
+                newLevel.escenaNombre = currentScene;
+                newLevel.ActualizarRecord(LevelsMenu.FormatTime(timeTaken));
+
                 LevelsMenu.listaNiveles.Add(newLevel);
                 Debug.Log($"[Defeat] Nivel '{currentScene}' no existía. Creado y registrado.");
             }

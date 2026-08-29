@@ -174,25 +174,22 @@ namespace Menus.Scripts
             Debug.Log($"[Victory] Registrando éxito: {playerName} | Tiempo: {timeTaken} | Escena: {currentScene}");
 
             var level = LevelsMenu.listaNiveles.Find(n =>
-                n.nombreNivel.Replace(" ", "").ToLower() == currentScene.Replace(" ", "").ToLower());
+                (n.escenaNombre != null && n.escenaNombre.ToLower() == currentScene.ToLower()) ||
+                (n.nombreNivel != null && n.nombreNivel.Replace(" ", "").ToLower() == currentScene.Replace(" ", "").ToLower()));
 
             if (level != null)
             {
-                level.mejorTiempo = LevelsMenu.FormatTime(timeTaken);
-                if (!level.jugadoresCompletados.Contains(playerName))
-                {
-                    level.jugadoresCompletados.Add(playerName);
-                }
+                level.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), playerName);
                 Debug.Log($"[Victory] Nivel {level.nombreNivel} actualizado correctamente.");
             }
             else
             {
                 // Crear nivel dinámicamente si no existe
-                LevelData newLevel = new LevelData {
-                    nombreNivel = currentScene,
-                    mejorTiempo = LevelsMenu.FormatTime(timeTaken),
-                    jugadoresCompletados = new System.Collections.Generic.List<string> { playerName }
-                };
+                LevelData newLevel = ScriptableObject.CreateInstance<LevelData>();
+                newLevel.nombreNivel = currentScene;
+                newLevel.escenaNombre = currentScene;
+                newLevel.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), playerName);
+
                 LevelsMenu.listaNiveles.Add(newLevel);
                 Debug.Log($"[Victory] Nivel '{currentScene}' creado dinámicamente con éxito de {playerName}.");
             }

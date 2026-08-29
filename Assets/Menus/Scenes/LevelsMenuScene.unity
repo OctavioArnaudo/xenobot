@@ -150,10 +150,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LevelsMenu
   escenaMenuPrincipal: MainMenuScene
   nivelesConfig:
-  - nombreNivel: BiomaScene
-    miniatura: {fileID: 205981716, guid: 7d053bc3d8d80274eaf487acfbdecbc1, type: 3}
-    mejorTiempo: 00:00
-    jugadoresCompletados: []
+  - {fileID: 11400000, guid: 52f011d874c49994285858b2683332b0, type: 2}
   colorFondo: {r: 0.01, g: 0.02, b: 0.05, a: 1}
   colorCard: {r: 0.05, g: 0.1, b: 0.2, a: 0.8}
   colorAccent: {r: 0, g: 1, b: 1, a: 1}
