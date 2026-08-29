@@ -73,7 +73,7 @@ public class ExpOrb : MonoBehaviour
     {
         if (_taken || !other.CompareTag("Player")) return;
         _taken = true;
-        CharacterStats.Instance?.AddExp(expAmount);
+        StatsController.Instance?.AddExp(expAmount);
         Destroy(gameObject);
     }
 }

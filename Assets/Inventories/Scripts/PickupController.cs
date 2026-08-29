@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class Pickup : MonoBehaviour
 {
-    [Header("Ítem")]
+    [Header("ï¿½tem")]
     public ItemData item;
 
     [Header("Effects")]
@@ -31,10 +31,10 @@ public class Pickup : MonoBehaviour
         if (_taken || !other.CompareTag("Player")) return;
         _taken = true;
 
-        // EXP — no va al inventario, va directo al sistema de stats
+        // EXP ï¿½ no va al inventario, va directo al sistema de stats
         if (item != null && item.expValue > 0f)
         {
-            CharacterStats.Instance?.AddExp(item.expValue);
+            StatsController.Instance?.AddExp(item.expValue);
         }
         else
         {
