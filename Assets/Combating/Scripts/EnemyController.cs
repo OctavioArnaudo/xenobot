@@ -13,6 +13,7 @@ namespace Combating.Scripts
         [SerializeField] private string playerTag = "Player"; // Cambiado para coincidir con la escena
 
         [Header("Movement")]
+        public float hoverHeight = 3.5f; // Altura para sobrevolar el piso
         public float wanderSpeed = 2f;
         public float chaseSpeed = 4f;
         public float turnSpeed = 10f;
@@ -38,11 +39,25 @@ namespace Combating.Scripts
         void Awake()
         {
             m_Agent = GetComponent<NavMeshAgent>();
+
+            // Zero-Dependency Bootstrapping: Agregar NavMeshAgent si falta
+            if (m_Agent == null)
+            {
+                m_Agent = gameObject.AddComponent<NavMeshAgent>();
+                Debug.Log($"[EnemyController] {gameObject.name}: NavMeshAgent agregado automáticamente.");
+            }
+
+            // Aplicar altura de sobrevuelo
+            if (m_Agent != null)
+            {
+                m_Agent.baseOffset = hoverHeight;
+                m_Agent.updateRotation = false; // Deshabilitar rotacion automatica para manejar Pitch/Yaw manualmente
+            }
+
             m_Shooter = GetComponent<ShootController>();
             m_Melee = GetComponent<MeleeController>();
             m_Health = GetComponent<HealthController>();
 
-            if (m_Agent == null) Debug.LogError($"[EnemyController] {gameObject.name} necesita un NavMeshAgent para moverse.");
             if (m_Shooter == null && attackType == AttackType.Ranged) Debug.LogWarning($"[EnemyController] {gameObject.name} no tiene ShootController para atacar a distancia.");
             if (m_Melee == null && attackType == AttackType.Melee) Debug.LogWarning($"[EnemyController] {gameObject.name} no tiene MeleeController para ataque cuerpo a cuerpo.");
 
@@ -119,7 +134,15 @@ namespace Combating.Scripts
 
             Vector3 randomPos = transform.position + Random.insideUnitSphere * wanderRadius;
             if (NavMesh.SamplePosition(randomPos, out NavMeshHit hit, wanderRadius, 1))
+            {
                 MoveTo(hit.position, wanderSpeed);
+            }
+
+            // Rotar hacia donde se mueve el agente
+            if (m_Agent.velocity.sqrMagnitude > 0.1f)
+            {
+                RotateTowards(transform.position + m_Agent.velocity);
+            }
         }
 
         private void PerformAttack()
@@ -152,10 +175,11 @@ namespace Combating.Scripts
 
         void RotateTowards(Vector3 position)
         {
-            Vector3 direction = Vector3.ProjectOnPlane(position - transform.position, Vector3.up);
+            Vector3 direction = (position - transform.position).normalized;
             if (direction.sqrMagnitude > 0.001f)
             {
-                Quaternion rot = Quaternion.LookRotation(direction.normalized);
+                // Permitir rotacion en 3D (Yaw y Pitch) para atacar desde cualquier angulo
+                Quaternion rot = Quaternion.LookRotation(direction);
                 transform.rotation = Quaternion.Slerp(transform.rotation, rot, turnSpeed * Time.deltaTime);
             }
         }
