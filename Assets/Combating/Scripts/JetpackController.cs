@@ -11,12 +11,12 @@ namespace Combating.Scripts
     public class JetpackController : NetworkBehaviour
     {
         [Header("Flight Settings")]
-        public float jetpackForce = 45f;      // Fuerza de impulso inicial
-        public float hoverForce = 15f;        // Fuerza para mantener altura (compensar gravedad)
-        public float fuelConsumption = 25f;   // Consumo por segundo
-        public float fuelRegen = 20f;         // Regeneracion por segundo
-        public float maxUpwardVelocity = 8f;  // Tope de velocidad de ascenso
-        public float hoverThreshold = 0.5f;   // Umbral de velocidad para entrar en modo sobrevuelo
+        public float jetpackForce = 60f;      // Fuerza aumentada
+        public float hoverForce = 25f;        // Mantener altura
+        public float fuelConsumption = 30f;   // Consumo mas visible
+        public float fuelRegen = 15f;         // Regeneracion equilibrada
+        public float maxUpwardVelocity = 12f; // Limite de ascenso
+        public float hoverThreshold = 0.5f;
 
         private HealthController m_Health;
         private CharacterController m_CharController;

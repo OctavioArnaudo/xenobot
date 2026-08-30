@@ -25,9 +25,10 @@ namespace Menus.Scripts
 
         private void Update()
         {
-            if (!_isDisplayed && Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
+            if (Keyboard.current != null && Keyboard.current.vKey.wasPressedThisFrame)
             {
-                TriggerVictory();
+                if (!_isDisplayed) TriggerVictory();
+                else HideVictory();
             }
         }
 
@@ -41,6 +42,18 @@ namespace Menus.Scripts
             _isDisplayed = true;
             BuildUI();
             UpdateLevelsData();
+        }
+
+        public void HideVictory()
+        {
+            if (!_isDisplayed) return;
+
+            _isDisplayed = false;
+            if (_canvasRoot != null) Destroy(_canvasRoot);
+
+            // Devolvemos el control si no hay otro menu activo
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
         }
 
         private void BuildUI()
