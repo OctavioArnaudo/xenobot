@@ -23,6 +23,9 @@ public class ItemData : ScriptableObject
     [Header("EXP")]
     [Tooltip("Si > 0 este ítem otorga EXP al recogerse (Exp A, Exp B, etc.)")]
     public float expValue = 0f;
+
+    [Header("World Representation")]
+    public GameObject worldPrefab;
 }
 
 public enum ItemType

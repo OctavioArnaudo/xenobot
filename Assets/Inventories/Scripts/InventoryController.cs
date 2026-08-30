@@ -3,9 +3,9 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 
-public class Inventory : NetworkBehaviour
+public class InventoryController : NetworkBehaviour
 {
-    public static Inventory Instance { get; private set; }
+    public static InventoryController Instance { get; private set; }
 
     private static Dictionary<string, (ItemData def, int qty)> s_PersistentBag = new();
     private static List<string> s_PersistentKeys = new();
@@ -28,6 +28,10 @@ public class Inventory : NetworkBehaviour
     private Dictionary<string, (ItemData def, int qty)> _bag => s_PersistentBag;
     private List<string> _keys => s_PersistentKeys;
     private HashSet<string> _equipped => s_PersistentEquipped;
+
+    private static int s_CollectiblesRemaining = 0;
+    private static bool s_CountDirty = true;
+    private float _countUpdateTimer = 0f;
 
     int _selectedIndex = -1;
     int _dropdownIndex = -1;
@@ -64,7 +68,7 @@ public class Inventory : NetworkBehaviour
 
         if (string.IsNullOrEmpty(def.itemCode))
         {
-            Debug.LogWarning($"Inventory: Intentando añadir ítem '{def.name}' sin itemCode configurado.");
+            Debug.LogWarning($"InventoryController: Intentando añadir ítem '{def.name}' sin itemCode configurado.");
             return;
         }
 
@@ -83,6 +87,20 @@ public class Inventory : NetworkBehaviour
             string sk = k + "_" + idx;
             s_PersistentBag[sk] = (def, 1);
             s_PersistentKeys.Add(sk);
+        }
+    }
+
+    public static void RemoveItem(string key)
+    {
+        if (!s_PersistentBag.TryGetValue(key, out var slot)) return;
+
+        if (slot.qty > 1)
+            s_PersistentBag[key] = (slot.def, slot.qty - 1);
+        else
+        {
+            s_PersistentBag.Remove(key);
+            s_PersistentKeys.Remove(key);
+            s_PersistentEquipped.Remove(key);
         }
     }
 
@@ -120,6 +138,14 @@ public class Inventory : NetworkBehaviour
 
         if (keyboard.iKey.wasPressedThisFrame || keyboard.tabKey.wasPressedThisFrame)
             SetOpen(!_open);
+
+        // Optimización: Actualizar conteo de coleccionables cada 1 segundo o si está sucio
+        if (s_CountDirty || Time.time > _countUpdateTimer)
+        {
+            RefreshCollectibleCount();
+            _countUpdateTimer = Time.time + 1.0f;
+            s_CountDirty = false;
+        }
     }
 
     float PanelX() => (Screen.width - panelWidth) / 2f;
@@ -187,11 +213,12 @@ public class Inventory : NetworkBehaviour
         Rect panel = PanelRect();
         float x0 = PanelX(), y0 = PanelY();
         Vector2 mp = e.mousePosition;
-        if (_dragging) _dragPos = mp;
-        _dragOutside = _dragging && !panel.Contains(mp);
+
+        // ... (rest of drawing logic)
         GUI.color = Color.white;
         GUI.DrawTexture(panel, _texPanel);
         GUI.Label(new Rect(x0, y0 + 8, panelWidth, titleH), "INVENTARIO", _titleSty);
+
         for (int i = 0; i < _keys.Count; i++) { if (i == _selectedIndex && !_dragging) continue; DrawCell(i, false, _dragging && i == _dragIndex); }
         if (_bag.Count == 0) GUI.Label(new Rect(x0, y0 + titleH, panelWidth, panelHeight - titleH), "Inventario vacio", _emptySty);
         if (!_dragging && _selectedIndex >= 0 && _selectedIndex < _keys.Count) DrawCell(_selectedIndex, true, false);
@@ -212,7 +239,7 @@ public class Inventory : NetworkBehaviour
             Rect dz = new Rect(x0, y0 + panelHeight + 10, panelWidth, 60);
             GUI.color = Color.white;
             GUI.DrawTexture(dz, _texDropZone);
-            GUI.Label(dz, "Soltar aqui para tirar al suelo", _dropHintSty);
+            GUI.Label(dz, "Suelta aqui para arrojar al mundo", _dropHintSty);
         }
         if (_dragging && _dragIndex >= 0 && _dragIndex < _keys.Count)
         {
@@ -240,7 +267,16 @@ public class Inventory : NetworkBehaviour
         }
         if (e.type == EventType.MouseUp && e.button == 0 && _dragging)
         {
-            if (_dragOutside) { string key = _keys[_dragIndex]; if (_bag.TryGetValue(key, out var slot)) { _selectedIndex = -1; } }
+            if (_dragOutside)
+            {
+                string key = _keys[_dragIndex];
+                if (_bag.TryGetValue(key, out var slot))
+                {
+                    DropItemInWorld(slot.def);
+                    RemoveItem(key);
+                    _selectedIndex = -1;
+                }
+            }
             else { _selectedIndex = _dragIndex; string key = _keys[_dragIndex]; if (_bag.TryGetValue(key, out var slot) && slot.def.type == ItemType.Equipment) _dropdownIndex = _dragIndex; }
             _dragging = false; _dragIndex = -1; e.Use();
         }
@@ -250,20 +286,55 @@ public class Inventory : NetworkBehaviour
         }
     }
 
+    private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+
+    public static int GetCollectiblesRemaining() => s_CollectiblesRemaining;
+
     public static Dictionary<string, (ItemData def, int qty)> GetBag() => s_PersistentBag;
     public static List<string> GetKeys() => s_PersistentKeys;
 
-    public static void RemoveItem(string key)
+    // Facade for CraftingManager to get item data by code
+    public static ItemData GetItemDataByCode(string code)
     {
-        if (!s_PersistentBag.TryGetValue(key, out var slot)) return;
-
-        if (slot.qty > 1)
-            s_PersistentBag[key] = (slot.def, slot.qty - 1);
-        else
+        foreach(var item in s_PersistentBag.Values)
         {
-            s_PersistentBag.Remove(key);
-            s_PersistentKeys.Remove(key);
-            s_PersistentEquipped.Remove(key);
+            if (item.def.itemCode.ToLowerInvariant() == code.ToLowerInvariant()) return item.def;
         }
+        return null;
+    }
+
+    public static void RefreshCollectibleCount()
+    {
+        // Optimización: FindObjects es lento, lo hacemos solo cuando sea necesario
+        var activos = FindObjectsByType<PickupController>(FindObjectsSortMode.None);
+        s_CollectiblesRemaining = activos.Length;
+    }
+
+    public static void MarkCountDirty() => s_CountDirty = true;
+
+    private void DropItemInWorld(ItemData item)
+    {
+        if (item == null || item.worldPrefab == null)
+        {
+            Debug.LogWarning($"[Inventory] No se puede soltar {item?.displayName}: Prefab no asignado.");
+            return;
+        }
+
+        Vector3 dropPos = transform.position + transform.forward * dropDistance + Vector3.up * 0.5f;
+        GameObject spawned = Instantiate(item.worldPrefab, dropPos, Quaternion.identity);
+
+        // Añadir mensaje visual usando la lógica de SpawnController si existe
+        if (spawned.TryGetComponent<Rigidbody>(out var rb))
+        {
+            rb.AddForce(transform.forward * 2f, ForceMode.Impulse);
+        }
+
+        // Registrar en red si es necesario
+        if (IsNetworkActive && IsServer)
+        {
+            if (spawned.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
+        }
+
+        MarkCountDirty();
     }
 }

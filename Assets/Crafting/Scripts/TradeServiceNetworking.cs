@@ -7,13 +7,13 @@ namespace NGO.Gameplay.Networking
 {
     public class TradeServiceNetworking : TradeBase
     {
-        [SerializeField] private TradeRecipe[] availableRecipes;
+        [SerializeField] private TradeData[] availableRecipes;
 
         public override void ExecuteTradeLocal(int recipeId, ulong clientId)
         {
             if (recipeId < 0 || recipeId >= availableRecipes.Length) return;
 
-            TradeRecipe recipe = availableRecipes[recipeId];
+            TradeData recipe = availableRecipes[recipeId];
             Debug.Log($"[Trade Logic] Procesando: {recipe.InputItem.displayName} -> {recipe.OutputItem.displayName} para el cliente {clientId}");
 
             // Aquí iría la lógica de quitar items del inventario local y añadir el nuevo

@@ -2,8 +2,8 @@ using UnityEngine;
 
 namespace NGO.Data
 {
-    [CreateAssetMenu(fileName = "NewTradeRecipe", menuName = "NGO/Inventory/Trade Recipe")]
-    public class TradeRecipe : ScriptableObject
+    [CreateAssetMenu(fileName = "NewTradeData", menuName = "NGO/Inventory/Trade Data")]
+    public class TradeData : ScriptableObject
     {
         public ItemData InputItem;
         public int InputAmount;

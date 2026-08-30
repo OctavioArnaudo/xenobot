@@ -11,8 +11,9 @@ GameObject:
   - component: {fileID: 9150328824247256307}
   - component: {fileID: 7065998702308759382}
   - component: {fileID: 8602400146317098584}
-  - component: {fileID: 6205120107142159341}
+  - component: {fileID: 2622957064927783180}
   - component: {fileID: 8288464985010329645}
+  - component: {fileID: 5929711777885082974}
   m_Layer: 3
   m_Name: ExperiencePrefab
   m_TagString: Collectible
@@ -92,7 +93,7 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &6205120107142159341
+--- !u!114 &2622957064927783180
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -101,17 +102,24 @@ MonoBehaviour:
   m_GameObject: {fileID: 6201454485445601518}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f0d275e54214164285c9f98907e3576, type: 3}
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ExpOrb
-  expAmount: 45
-  sphereRadius: 0.5
-  glowColor: {r: 1, g: 0.85, b: 0.1, a: 1}
-  lightIntensity: 4
-  lightRange: 3
-  bobSpeed: 2
-  bobAmount: 0.15
-  rotateSpeed: 90
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 3513795764
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!135 &8288464985010329645
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -133,3 +141,23 @@ SphereCollider:
   serializedVersion: 3
   m_Radius: 10
   m_Center: {x: 0, y: 0, z: -6.255951}
+--- !u!114 &5929711777885082974
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6201454485445601518}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55fcea8a4058c4d1aa6ca8fea4168f51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PickupController
+  ShowTopMostFoldoutHeaderGroup: 1
+  item: {fileID: 0}
+  expAmount: 25
+  particleEffectPrefab: {fileID: 0}
+  useAutoExperienceVisuals: 1
+  rotationSpeed: 100
+  bobbingAmount: 0.15
+  bobbingSpeed: 2
