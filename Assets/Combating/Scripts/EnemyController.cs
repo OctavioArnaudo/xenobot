@@ -40,13 +40,12 @@ namespace Combating.Scripts
             m_Shooter = GetComponent<ShootController>();
             m_Melee = GetComponent<MeleeController>();
             m_Health = GetComponent<HealthController>();
-
             if (m_Shooter != null) m_Shooter.UsePlayerInput = false;
         }
 
         public override void OnNetworkSpawn()
         {
-            if (!IsServer) enabled = false; // Solo el servidor procesa IA
+            if (!IsServer) enabled = false;
         }
 
         void Update()
@@ -66,8 +65,8 @@ namespace Combating.Scripts
         {
             if (m_Target != null)
             {
-                float d = Vector3.Distance(transform.position, m_Target.position);
-                if (d > detectionRange) m_Target = null;
+                if (Vector3.Distance(transform.position, m_Target.position) > detectionRange)
+                    m_Target = null;
                 else return;
             }
 
@@ -120,7 +119,6 @@ namespace Combating.Scripts
         private void PerformAttack()
         {
             if (m_Target == null) return;
-
             if (attackType == AttackType.Melee)
             {
                 if (m_Melee != null) m_Melee.PerformMeleeAction();

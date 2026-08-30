@@ -61,8 +61,8 @@ namespace Combating.Scripts
 
             Vector3 direction = GetAimDirection();
 
-            // Offset para evitar colisión con el propio cuerpo del player
-            Vector3 spawnPos = Muzzle.position + direction * 0.5f;
+            // Mayor distancia para que nazca fuera del robot
+            Vector3 spawnPos = Muzzle.position + direction * 0.8f;
 
             if (IsNetworkActive) RequestFireServerRpc(direction, spawnPos, spawnPos + direction * AimDistance);
             else SpawnProjectileLocally(direction, spawnPos, spawnPos + direction * AimDistance);
