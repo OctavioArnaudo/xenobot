@@ -59,6 +59,12 @@ namespace Combating.Scripts
 
         private void ExecuteMelee()
         {
+            float finalDamage = attackDamage;
+            if (TryGetComponent<StatsController>(out var stats))
+            {
+                finalDamage = attackDamage * (stats.Attack / 10f);
+            }
+
             // 1. Physical Detection
             Vector3 attackCenter = transform.position + transform.forward * (attackRange * 0.5f);
             Collider[] hits = Physics.OverlapSphere(attackCenter, attackRange, targetLayers);
@@ -71,7 +77,7 @@ namespace Combating.Scripts
                     // Team check (Friendly fire off)
                     if (m_Health != null && targetHealth.team == m_Health.team) continue;
 
-                    targetHealth.TakeDamage((int)attackDamage);
+                    targetHealth.TakeDamage((int)finalDamage);
                 }
             }
 

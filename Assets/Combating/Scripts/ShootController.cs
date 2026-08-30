@@ -59,13 +59,20 @@ namespace Combating.Scripts
             if (Time.time < m_NextFireTime || ProjectilePrefab == null) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
 
+            float finalDamage = Damage;
+            // Escalado de dano por Stats
+            if (TryGetComponent<StatsController>(out var stats))
+            {
+                finalDamage = Damage * (stats.Attack / 10f);
+            }
+
             Vector3 direction = GetAimDirection();
 
             // Mayor distancia para que nazca fuera del robot
             Vector3 spawnPos = Muzzle.position + direction * 0.8f;
 
-            if (IsNetworkActive) RequestFireServerRpc(direction, spawnPos, spawnPos + direction * AimDistance);
-            else SpawnProjectileLocally(direction, spawnPos, spawnPos + direction * AimDistance);
+            if (IsNetworkActive) RequestFireServerRpc(direction, spawnPos, spawnPos + direction * AimDistance, finalDamage);
+            else SpawnProjectileLocally(direction, spawnPos, spawnPos + direction * AimDistance, finalDamage);
 
             return true;
         }
@@ -75,27 +82,33 @@ namespace Combating.Scripts
             if (Time.time < m_NextFireTime || ProjectilePrefab == null) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
 
+            float finalDamage = Damage;
+            if (TryGetComponent<StatsController>(out var stats))
+            {
+                finalDamage = Damage * (stats.Attack / 10f);
+            }
+
             Vector3 direction = (targetPosition - Muzzle.position).normalized;
             Vector3 spawnPos = Muzzle.position + direction * 0.5f;
 
-            if (IsNetworkActive) RequestFireServerRpc(direction, spawnPos, targetPosition);
-            else SpawnProjectileLocally(direction, spawnPos, targetPosition);
+            if (IsNetworkActive) RequestFireServerRpc(direction, spawnPos, targetPosition, finalDamage);
+            else SpawnProjectileLocally(direction, spawnPos, targetPosition, finalDamage);
 
             return true;
         }
 
         [ServerRpc]
-        private void RequestFireServerRpc(Vector3 direction, Vector3 spawnPos, Vector3 impactPos)
+        private void RequestFireServerRpc(Vector3 direction, Vector3 spawnPos, Vector3 impactPos, float damage)
         {
-            SpawnProjectileLocally(direction, spawnPos, impactPos, true);
+            SpawnProjectileLocally(direction, spawnPos, impactPos, damage, true);
         }
 
-        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, Vector3 impactPos, bool isNetworked = false)
+        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, Vector3 impactPos, float damage, bool isNetworked = false)
         {
             ProjectileController projectile = Instantiate(ProjectilePrefab, spawnPos, Quaternion.LookRotation(direction));
             if (projectile != null)
             {
-                projectile.Launch(gameObject, direction, Damage, m_Health != null ? m_Health.team : Team.Neutral);
+                projectile.Launch(gameObject, direction, damage, m_Health != null ? m_Health.team : Team.Neutral);
                 if (isNetworked && projectile.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
             }
 
