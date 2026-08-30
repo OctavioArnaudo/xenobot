@@ -6,8 +6,8 @@ using Unity.Collections;
 using NGO.Networking;
 
 /// <summary>
-/// Unified controller for character progression, HUD and Identity (Name/Color).
-/// Handles Level, Attack, Defense, EXP and per-player visual tags.
+/// Unified controller for character progression, HUD and Identity.
+/// Optimized to reduce CPU overhead and audio starvation.
 /// </summary>
 public class StatsController : NetworkBehaviour
 {
@@ -20,41 +20,35 @@ public class StatsController : NetworkBehaviour
     [SerializeField] private TMPro.TMP_Text nameTagText;
     [SerializeField] private Renderer colorRenderer;
 
-    [Header("Initial Ranges (Random at Start)")]
+    [Header("Initial Ranges")]
     public Vector2 attackRange = new Vector2(5f, 15f);
     public Vector2 defenseRange = new Vector2(3f, 10f);
 
-    [Header("Base Growth per Level")]
+    [Header("Base Growth")]
     public float attackPerLevel = 2f;
     public float defensePerLevel = 1.5f;
-
-    [Header("EXP for Level Up")]
     public float expToLevelUp = 100f;
 
-    [Header("HUD Configuration")]
+    [Header("HUD Config")]
     public int fontSize = 14;
-    public int barWidth = 180;
-    public int barHeight = 8;
-    public float maxAttackScale = 100f;
-    public float maxDefenseScale = 100f;
+    public int barWidth = 160;
+    public int barHeight = 6;
 
-    // Current Values
     public float Attack { get; private set; }
     public float Defense { get; private set; }
     public int Level { get; private set; } = 1;
     public float Exp { get; private set; }
 
-    // HUD Assets
     private Texture2D _bg, _barBg, _atkFill, _defFill, _expFill, _hpFill, _jetFill;
     private GUIStyle _labelStyle, _valueStyle, _timerStyle;
     private bool _stylesReady;
 
-    // Player Reference
     private HealthController m_PlayerHealth;
+    private float _lastTimeUpdate;
+    private string _cachedTimeStr = "00:00";
 
     void Awake()
     {
-        // For local testing/offline
         if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
         {
             if (Instance != null && Instance != this) { Destroy(this); return; }
@@ -66,21 +60,15 @@ public class StatsController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         m_PlayerHealth = GetComponent<HealthController>();
-
         if (IsOwner)
         {
             Instance = this;
             InitializeStats();
-
-            // Set networked identity
             playerName.Value = LocalUserConfig.UserName;
             playerColor.Value = LocalUserConfig.UserColor;
         }
-
-        // Subscriptions for everyone (Remote and Local)
         playerName.OnValueChanged += (oldVal, newVal) => UpdateVisuals();
         playerColor.OnValueChanged += (oldVal, newVal) => UpdateVisuals();
-
         UpdateVisuals();
     }
 
@@ -99,11 +87,7 @@ public class StatsController : NetworkBehaviour
     public void AddExp(float amount)
     {
         Exp += amount;
-        while (Exp >= expToLevelUp)
-        {
-            Exp -= expToLevelUp;
-            LevelUp();
-        }
+        while (Exp >= expToLevelUp) { Exp -= expToLevelUp; LevelUp(); }
     }
 
     void LevelUp()
@@ -114,28 +98,21 @@ public class StatsController : NetworkBehaviour
         expToLevelUp *= 1.2f;
     }
 
-    // --- HUD LOGIC (OnGUI) ---
-
     void EnsureAssets()
     {
         if (_stylesReady) return;
-
-        _bg = MakeTex(new Color(0f, 0f, 0f, 0.7f));
-        _barBg = MakeTex(new Color(0.15f, 0.15f, 0.15f, 0.9f));
-
-        _atkFill = MakeTex(new Color(1f, 0.5f, 0.1f, 1f));
-        _defFill = MakeTex(new Color(0.2f, 0.5f, 1f, 1f));
-        _expFill = MakeTex(new Color(1f, 0.8f, 0f, 1f));
-        _hpFill = MakeTex(new Color(0.85f, 0.1f, 0.1f, 1f));
-        _jetFill = MakeTex(new Color(0.1f, 0.85f, 0.85f, 1f));
+        _bg = MakeTex(new Color(0f, 0f, 0f, 0.6f));
+        _barBg = MakeTex(new Color(0.1f, 0.1f, 0.1f, 0.8f));
+        _atkFill = MakeTex(new Color(1f, 0.4f, 0f, 1f));
+        _defFill = MakeTex(new Color(0f, 0.6f, 1f, 1f));
+        _expFill = MakeTex(new Color(1f, 0.9f, 0f, 1f));
+        _hpFill = MakeTex(new Color(0.9f, 0.1f, 0.1f, 1f));
+        _jetFill = MakeTex(new Color(0f, 0.9f, 0.9f, 1f));
 
         _labelStyle = new GUIStyle(GUI.skin.label) { fontSize = fontSize, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
-        _labelStyle.normal.textColor = Color.white;
         _valueStyle = new GUIStyle(_labelStyle) { alignment = TextAnchor.MiddleRight, fontStyle = FontStyle.Normal };
-        _valueStyle.normal.textColor = new Color(0.9f, 0.9f, 0.9f);
         _timerStyle = new GUIStyle(_labelStyle) { alignment = TextAnchor.MiddleCenter, fontSize = fontSize + 2 };
         _timerStyle.normal.textColor = Color.cyan;
-
         _stylesReady = true;
     }
 
@@ -143,58 +120,59 @@ public class StatsController : NetworkBehaviour
 
     void OnGUI()
     {
+        if (Event.current.type != EventType.Repaint) return; // Optimization: only run on repaint
         if (SceneManager.GetActiveScene().name != "BiomaScene") return;
-        if (!IsOwner) return; // Only draw HUD for local player
+        if (!IsOwner) return;
 
         EnsureAssets();
+
+        // Timer Cache (once per 0.5s)
+        if (Time.time - _lastTimeUpdate > 0.5f)
+        {
+            float t = Time.timeSinceLevelLoad;
+            LevelsMenu.ultimoTiempoSession = t;
+            LevelsMenu.ultimoNivelSession = SceneManager.GetActiveScene().name;
+            _cachedTimeStr = LevelsMenu.FormatTime(t);
+            _lastTimeUpdate = Time.time;
+        }
+
         DrawTopRightHUD();
         if (m_PlayerHealth != null) DrawBottomLeftHUD();
     }
 
     private void DrawTopRightHUD()
     {
-        int rows = 1 + 2 + 1;
-        int totalHeight = (fontSize + barHeight + 2) * rows + 4;
+        int rowH = fontSize + barHeight + 2;
+        int totalH = rowH * 4 + 6;
         float x = Screen.width - barWidth;
-        float y = 0;
-
-        GUI.DrawTexture(new Rect(x, y, barWidth, totalHeight), _bg);
-        float curY = y + 2;
-
-        float time = Time.timeSinceLevelLoad;
-        LevelsMenu.ultimoTiempoSession = time;
-        LevelsMenu.ultimoNivelSession = SceneManager.GetActiveScene().name;
-        GUI.Label(new Rect(x, curY, barWidth, fontSize + 4), $"TIME {LevelsMenu.FormatTime(time)}", _timerStyle);
+        GUI.DrawTexture(new Rect(x, 0, barWidth, totalH), _bg);
+        float curY = 2;
+        GUI.Label(new Rect(x, curY, barWidth, fontSize + 4), $"TIME {_cachedTimeStr}", _timerStyle);
         curY += fontSize + 6;
-
-        DrawStatRow(x, ref curY, barWidth, " ATK", Attack, maxAttackScale, _atkFill);
-        DrawStatRow(x, ref curY, barWidth, " DEF", Defense, maxDefenseScale, _defFill);
-        DrawStatRow(x, ref curY, barWidth, $" LVL {Level}", Exp, expToLevelUp, _expFill);
+        DrawRow(x, ref curY, " ATK", Attack, 100f, _atkFill);
+        DrawRow(x, ref curY, " DEF", Defense, 100f, _defFill);
+        DrawRow(x, ref curY, $" LVL {Level}", Exp, expToLevelUp, _expFill);
     }
 
     private void DrawBottomLeftHUD()
     {
-        bool hasJetpack = m_PlayerHealth.maxJetpack > 0;
-        int rows = (hasJetpack ? 1 : 0) + 1;
-        int totalHeight = (fontSize + barHeight + 2) * rows + 4;
-        float x = 0; float y = Screen.height - totalHeight;
-
-        GUI.DrawTexture(new Rect(x, y, barWidth, totalHeight), _bg);
+        bool hasJet = m_PlayerHealth.maxJetpack > 0;
+        int rowH = fontSize + barHeight + 2;
+        int totalH = rowH * (hasJet ? 2 : 1) + 4;
+        float y = Screen.height - totalH;
+        GUI.DrawTexture(new Rect(0, y, barWidth, totalH), _bg);
         float curY = y + 2;
-
-        if (hasJetpack)
-            DrawStatRow(x, ref curY, barWidth, " JET", m_PlayerHealth.JetpackFuel, m_PlayerHealth.maxJetpack, _jetFill);
-
-        DrawStatRow(x, ref curY, barWidth, " HP", m_PlayerHealth.CurrentHP, m_PlayerHealth.maxHealth, _hpFill);
+        if (hasJet) DrawRow(0, ref curY, " JET", m_PlayerHealth.JetpackFuel, m_PlayerHealth.maxJetpack, _jetFill);
+        DrawRow(0, ref curY, " HP", m_PlayerHealth.CurrentHP, m_PlayerHealth.maxHealth, _hpFill);
     }
 
-    void DrawStatRow(float x, ref float y, float w, string label, float val, float max, Texture2D fill)
+    void DrawRow(float x, ref float y, string label, float val, float max, Texture2D fill)
     {
-        GUI.Label(new Rect(x, y, w - 2, fontSize + 2), label, _labelStyle);
-        GUI.Label(new Rect(x, y, w - 2, fontSize + 2), val.ToString("F0"), _valueStyle);
+        GUI.Label(new Rect(x, y, barWidth - 2, fontSize + 2), label, _labelStyle);
+        GUI.Label(new Rect(x, y, barWidth - 2, fontSize + 2), val.ToString("F0"), _valueStyle);
         y += fontSize + 2;
-        GUI.DrawTexture(new Rect(x, y, w, barHeight), _barBg);
-        GUI.DrawTexture(new Rect(x, y, w * Mathf.Clamp01(val / (max > 0 ? max : 1f)), barHeight), fill);
+        GUI.DrawTexture(new Rect(x, y, barWidth, barHeight), _barBg);
+        GUI.DrawTexture(new Rect(x, y, barWidth * Mathf.Clamp01(val / (max > 0 ? max : 1f)), barHeight), fill);
         y += barHeight;
     }
 }
