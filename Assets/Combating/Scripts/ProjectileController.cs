@@ -16,7 +16,9 @@ namespace Combating.Scripts
         private GameObject m_Owner;
         private Team m_OwnerTeam;
         private bool m_HasHit = false;
+
         private static Material _sharedMaterial;
+        private static Mesh _sphereMesh;
 
         void Awake()
         {
@@ -34,7 +36,7 @@ namespace Combating.Scripts
             SphereCollider col = GetComponent<SphereCollider>();
             if (col == null) col = gameObject.AddComponent<SphereCollider>();
             col.isTrigger = true;
-            col.radius = 0.2f;
+            col.radius = 0.15f;
         }
 
         public void Launch(GameObject owner, Vector3 direction, float dmg, Team team)
@@ -52,7 +54,6 @@ namespace Combating.Scripts
             }
 
             SetupVisuals();
-
             if (IsServer || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
                 Destroy(gameObject, lifeTime);
         }
@@ -60,26 +61,30 @@ namespace Combating.Scripts
         private void SetupVisuals()
         {
             foreach (Transform child in transform) {
-                if (child.name == "ProjectileVisualCore") Destroy(child.gameObject);
+                if (child.name == "Core") Destroy(child.gameObject);
             }
 
-            if (_sharedMaterial == null || _sharedMaterial.color != color)
-            {
-                var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
-                _sharedMaterial = new Material(shader);
-                _sharedMaterial.color = color;
+            if (_sharedMaterial == null) {
+                _sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color"));
+            }
+            if (_sphereMesh == null) {
+                GameObject temp = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                _sphereMesh = temp.GetComponent<MeshFilter>().sharedMesh;
+                Destroy(temp);
             }
 
-            GameObject core = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            core.name = "ProjectileVisualCore";
+            GameObject core = new GameObject("Core");
             core.transform.SetParent(transform, false);
             core.transform.localScale = Vector3.one * 0.25f;
-            if (core.TryGetComponent<Collider>(out var c)) Destroy(c);
-            core.GetComponent<MeshRenderer>().material = _sharedMaterial;
+
+            var mf = core.AddComponent<MeshFilter>();
+            mf.mesh = _sphereMesh;
+            var mr = core.AddComponent<MeshRenderer>();
+            mr.material = _sharedMaterial;
+            mr.material.color = color;
 
             TrailRenderer trail = GetComponent<TrailRenderer>();
             if (trail == null) trail = gameObject.AddComponent<TrailRenderer>();
-
             if (trail != null)
             {
                 trail.time = 0.1f;
@@ -119,25 +124,20 @@ namespace Combating.Scripts
         private void FinalizeImpact()
         {
             CreateImpactEffect();
-            if (IsServer && IsSpawned)
-            {
-                NetworkObject.Despawn(true); // Los proyectiles siempre son prefabs, aquí sí es seguro el true
-            }
-            else
-            {
-                Destroy(gameObject);
-            }
+            if (IsServer && IsSpawned) NetworkObject.Despawn();
+            else Destroy(gameObject);
         }
 
         private void CreateImpactEffect()
         {
-            GameObject burst = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            burst.name = "VFX_Impact";
+            GameObject burst = new GameObject("VFX");
             burst.transform.position = transform.position;
             burst.transform.localScale = Vector3.one * 0.3f;
-            var mr = burst.GetComponent<MeshRenderer>();
-            mr.material = _sharedMaterial; // Reuse material
-            Destroy(burst, 0.1f);
+            var mf = burst.AddComponent<MeshFilter>();
+            mf.mesh = _sphereMesh;
+            var mr = burst.AddComponent<MeshRenderer>();
+            mr.material = _sharedMaterial;
+            Destroy(burst, 0.05f);
         }
     }
 }

@@ -26,6 +26,7 @@ namespace Combating.Scripts
         private NetworkVariable<int> currentHealth = new NetworkVariable<int>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         private int m_OfflineHealth;
         private float m_Jetpack;
+        private float m_DamageFlashTimer;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
         public int CurrentHP => IsNetworkActive ? currentHealth.Value : m_OfflineHealth;
@@ -43,11 +44,18 @@ namespace Combating.Scripts
             m_Jetpack = maxJetpack;
         }
 
+        void Update()
+        {
+            if (m_DamageFlashTimer > 0) m_DamageFlashTimer -= Time.deltaTime;
+        }
+
         public void TakeDamage(int damage)
         {
             if (damage <= 0) return;
             if (IsNetworkActive) { if (IsServer) currentHealth.Value = Mathf.Max(0, currentHealth.Value - damage); }
             else m_OfflineHealth = Mathf.Max(0, m_OfflineHealth - damage);
+
+            if (IsOwner && team == Team.Player) m_DamageFlashTimer = 0.6f;
 
             OnTakeDamage?.Invoke(damage);
             if (CurrentHP <= 0) Die();
@@ -73,5 +81,39 @@ namespace Combating.Scripts
                 }
             }
         }
+
+        #region UI Effects
+        private void OnGUI()
+        {
+            if (Event.current.type != EventType.Repaint) return; // Optimizacion: Solo procesar en el dibujo
+            if (!IsOwner || team != Team.Player) return;
+
+            float sw = Screen.width;
+            float sh = Screen.height;
+
+            // Flash de Daño
+            if (m_DamageFlashTimer > 0)
+            {
+                GUI.color = new Color(1, 0, 0, m_DamageFlashTimer * 0.7f);
+                GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
+                GUI.color = Color.white;
+            }
+
+            // Integridad Crítica
+            if (CurrentHP < maxHealth * 0.25f && CurrentHP > 0)
+            {
+                GUI.color = new Color(1, 0, 0, Mathf.PingPong(Time.time * 4f, 0.4f));
+                GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
+                GUI.color = Color.white;
+
+                GUIStyle style = new GUIStyle();
+                style.alignment = TextAnchor.MiddleCenter;
+                style.fontSize = 26;
+                style.fontStyle = FontStyle.Bold;
+                style.normal.textColor = Color.white;
+                GUI.Label(new Rect(0, sh / 2 + 100, sw, 50), "!!! ADVERTENCIA: INTEGRIDAD CRÍTICA !!!", style);
+            }
+        }
+        #endregion
     }
 }

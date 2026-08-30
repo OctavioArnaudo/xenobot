@@ -10,9 +10,10 @@ namespace Combating.Scripts
 
         [Header("AI Config")]
         public AttackType attackType = AttackType.Ranged;
-        public string targetTag = "Player";
+        [SerializeField] private string playerTag = "Player"; // Cambiado para coincidir con la escena
 
         [Header("Movement")]
+        public float hoverHeight = 3.5f; // Altura para sobrevolar el piso
         public float wanderSpeed = 2f;
         public float chaseSpeed = 4f;
         public float turnSpeed = 10f;
@@ -20,7 +21,8 @@ namespace Combating.Scripts
 
         [Header("Combat Ranges")]
         public float detectionRange = 18f;
-        public float attackRange = 12f;
+        public float chaseRange = 10f; // Añadido para coincidir con la escena
+        public float attackRange = 2f;  // Ajustado al valor común de la escena
         public float meleeRange = 2.5f;
         public float attackCooldown = 1.5f;
 
@@ -37,16 +39,33 @@ namespace Combating.Scripts
         void Awake()
         {
             m_Agent = GetComponent<NavMeshAgent>();
+
+            // Zero-Dependency Bootstrapping: Agregar NavMeshAgent si falta
+            if (m_Agent == null)
+            {
+                m_Agent = gameObject.AddComponent<NavMeshAgent>();
+            }
+
+            // Aplicar altura de sobrevuelo
+            if (m_Agent != null)
+            {
+                m_Agent.baseOffset = hoverHeight;
+                m_Agent.updateRotation = false; // Deshabilitar rotacion automatica para manejar Pitch/Yaw manualmente
+            }
+
             m_Shooter = GetComponent<ShootController>();
             m_Melee = GetComponent<MeleeController>();
             m_Health = GetComponent<HealthController>();
+
+            if (m_Shooter == null && attackType == AttackType.Ranged) Debug.LogWarning($"[EnemyController] {gameObject.name} no tiene ShootController para atacar a distancia.");
+            if (m_Melee == null && attackType == AttackType.Melee) Debug.LogWarning($"[EnemyController] {gameObject.name} no tiene MeleeController para ataque cuerpo a cuerpo.");
 
             if (m_Shooter != null) m_Shooter.UsePlayerInput = false;
         }
 
         public override void OnNetworkSpawn()
         {
-            if (!IsServer) enabled = false; // Solo el servidor procesa IA
+            if (!IsServer) enabled = false;
         }
 
         void Update()
@@ -66,12 +85,12 @@ namespace Combating.Scripts
         {
             if (m_Target != null)
             {
-                float d = Vector3.Distance(transform.position, m_Target.position);
-                if (d > detectionRange) m_Target = null;
+                if (Vector3.Distance(transform.position, m_Target.position) > detectionRange)
+                    m_Target = null;
                 else return;
             }
 
-            var players = GameObject.FindGameObjectsWithTag(targetTag);
+            var players = GameObject.FindGameObjectsWithTag(playerTag);
             float closest = detectionRange;
             foreach (var p in players)
             {
@@ -114,13 +133,20 @@ namespace Combating.Scripts
 
             Vector3 randomPos = transform.position + Random.insideUnitSphere * wanderRadius;
             if (NavMesh.SamplePosition(randomPos, out NavMeshHit hit, wanderRadius, 1))
+            {
                 MoveTo(hit.position, wanderSpeed);
+            }
+
+            // Rotar hacia donde se mueve el agente
+            if (m_Agent.velocity.sqrMagnitude > 0.1f)
+            {
+                RotateTowards(transform.position + m_Agent.velocity);
+            }
         }
 
         private void PerformAttack()
         {
             if (m_Target == null) return;
-
             if (attackType == AttackType.Melee)
             {
                 if (m_Melee != null) m_Melee.PerformMeleeAction();
@@ -148,10 +174,11 @@ namespace Combating.Scripts
 
         void RotateTowards(Vector3 position)
         {
-            Vector3 direction = Vector3.ProjectOnPlane(position - transform.position, Vector3.up);
+            Vector3 direction = (position - transform.position).normalized;
             if (direction.sqrMagnitude > 0.001f)
             {
-                Quaternion rot = Quaternion.LookRotation(direction.normalized);
+                // Permitir rotacion en 3D (Yaw y Pitch) para atacar desde cualquier angulo
+                Quaternion rot = Quaternion.LookRotation(direction);
                 transform.rotation = Quaternion.Slerp(transform.rotation, rot, turnSpeed * Time.deltaTime);
             }
         }
