@@ -5,10 +5,6 @@ using Unity.Netcode;
 
 namespace Combating.Scripts
 {
-    /// <summary>
-    /// Component that handles ranged attacks by spawning projectiles.
-    /// Works for both players (input) and enemies (automated).
-    /// </summary>
     public class ShootController : NetworkBehaviour
     {
         [Header("References")]
@@ -39,15 +35,14 @@ namespace Combating.Scripts
         {
             m_Input = GetComponent<PlayerInputHandler>();
             m_Health = GetComponent<HealthController>();
-
             if (AimCamera == null) AimCamera = GetComponentInChildren<Camera>() ?? Camera.main;
             if (Muzzle == null) Muzzle = transform;
         }
 
         void Update()
         {
-            if (!IsOwner || !UsePlayerInput || !WantsToFire()) return;
-            TryFire();
+            if (!IsOwner || !UsePlayerInput) return;
+            if (WantsToFire()) TryFire();
         }
 
         bool WantsToFire()
@@ -62,55 +57,57 @@ namespace Combating.Scripts
         public bool TryFire()
         {
             if (Time.time < m_NextFireTime || ProjectilePrefab == null) return false;
-
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
+
             Vector3 direction = GetAimDirection();
 
-            SpawnProjectile(direction, Muzzle.position + direction * AimDistance);
+            // Offset para evitar colisión con el propio cuerpo del player
+            Vector3 spawnPos = Muzzle.position + direction * 0.5f;
 
-            if (MuzzleFlash != null) MuzzleFlash.Play();
+            if (IsNetworkActive) RequestFireServerRpc(direction, spawnPos, spawnPos + direction * AimDistance);
+            else SpawnProjectileLocally(direction, spawnPos, spawnPos + direction * AimDistance);
+
             return true;
         }
 
         public bool FireAt(Vector3 targetPosition)
         {
             if (Time.time < m_NextFireTime || ProjectilePrefab == null) return false;
-
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
+
             Vector3 direction = (targetPosition - Muzzle.position).normalized;
+            Vector3 spawnPos = Muzzle.position + direction * 0.5f;
 
-            SpawnProjectile(direction, targetPosition);
+            if (IsNetworkActive) RequestFireServerRpc(direction, spawnPos, targetPosition);
+            else SpawnProjectileLocally(direction, spawnPos, targetPosition);
 
-            if (MuzzleFlash != null) MuzzleFlash.Play();
             return true;
         }
 
-        private void SpawnProjectile(Vector3 direction, Vector3 targetImpact)
+        [ServerRpc]
+        private void RequestFireServerRpc(Vector3 direction, Vector3 spawnPos, Vector3 impactPos)
         {
-            ProjectileController projectile = Instantiate(ProjectilePrefab, Muzzle.position, Quaternion.LookRotation(direction));
+            SpawnProjectileLocally(direction, spawnPos, impactPos, true);
+        }
 
+        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, Vector3 impactPos, bool isNetworked = false)
+        {
+            ProjectileController projectile = Instantiate(ProjectilePrefab, spawnPos, Quaternion.LookRotation(direction));
             if (projectile != null)
             {
                 projectile.Launch(gameObject, direction, Damage, m_Health != null ? m_Health.team : Team.Neutral);
-
-                if (IsNetworkActive && IsServer)
-                {
-                    if (projectile.TryGetComponent<NetworkObject>(out var netObj))
-                        netObj.Spawn();
-                }
+                if (isNetworked && projectile.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
             }
 
-            SpawnTracer(Muzzle.position, targetImpact);
+            if (MuzzleFlash != null && !MuzzleFlash.isPlaying) MuzzleFlash.Play();
+            SpawnTracer(spawnPos, impactPos);
         }
 
         Vector3 GetAimDirection()
         {
-            if (AimCamera == null) return Muzzle.forward;
-
             Ray ray = new Ray(AimCamera.transform.position, AimCamera.transform.forward);
             if (Physics.Raycast(ray, out RaycastHit hit, AimDistance, AimLayers, QueryTriggerInteraction.Ignore))
                 return (hit.point - Muzzle.position).normalized;
-
             return (ray.GetPoint(AimDistance) - Muzzle.position).normalized;
         }
 

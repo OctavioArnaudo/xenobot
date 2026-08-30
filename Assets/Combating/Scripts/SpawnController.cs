@@ -41,24 +41,27 @@ namespace Combating.Scripts
         /// </summary>
         public void TriggerDeath()
         {
+            // Solo el servidor o modo offline procesan la muerte real y el loot
             if (IsNetworkActive && !IsServer) return;
 
-            Debug.Log($"[SpawnController] {gameObject.name} death triggered. Cleaning up and spawning loot...");
+            Debug.Log($"[SpawnController] {gameObject.name} death triggered.");
 
-            // 1. Disable logic components
+            // 1. Desactivar componentes de lógica para que no sigan atacando mientras mueren
             if (enemyAI != null) enemyAI.enabled = false;
             if (shooter != null) shooter.enabled = false;
 
-            // 2. Visual Effects
+            // 2. Efectos Visuales
             CreateDeathVisuals();
 
-            // 3. Spawn Items
+            // 3. Spawneo de Items
             SpawnItems();
 
-            // 4. Cleanup
+            // 4. Limpieza de red o local
             if (IsNetworkActive && NetworkObject.IsSpawned)
             {
-                NetworkObject.Despawn();
+                // Para objetos colocados en escena, Despawn(false) evita el warning y luego destruimos localmente
+                NetworkObject.Despawn(false);
+                Destroy(gameObject);
             }
             else
             {
@@ -68,28 +71,33 @@ namespace Combating.Scripts
 
         private void CreateDeathVisuals()
         {
-            // Flash sphere (hardcoded)
+            // Flash de muerte (esfera blanca temporal)
             GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.transform.position = transform.position;
             sphere.transform.localScale = Vector3.one * 0.5f;
-            var renderer = sphere.GetComponent<Renderer>();
-            renderer.material.color = Color.white;
+            if (sphere.TryGetComponent<Collider>(out var c)) Destroy(c);
+
+            var mr = sphere.GetComponent<MeshRenderer>();
+            var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+            var mat = new Material(shader);
+            mat.color = Color.white;
+            mr.material = mat;
             Destroy(sphere, 0.15f);
 
-            // Debris burst (hardcoded)
-            for (int i = 0; i < 10; i++)
+            // Explosión de escombros (cubos)
+            for (int i = 0; i < 8; i++)
             {
                 GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                cube.transform.position = transform.position + (Random.insideUnitSphere * 0.2f);
+                cube.transform.position = transform.position + (Random.insideUnitSphere * 0.3f);
                 cube.transform.localScale = Vector3.one * Random.Range(0.1f, 0.25f);
 
                 var rb = cube.AddComponent<Rigidbody>();
-                rb.AddExplosionForce(explosionForce * 1.2f, transform.position, spreadRadius);
+                rb.AddExplosionForce(explosionForce, transform.position, spreadRadius);
 
                 var r = cube.GetComponent<Renderer>();
                 r.material.color = Color.Lerp(Color.red, Color.black, Random.value);
 
-                Destroy(cube, 1.2f);
+                Destroy(cube, 1.0f);
             }
         }
 
@@ -100,31 +108,39 @@ namespace Combating.Scripts
                 if (item.prefab == null) continue;
 
                 Vector3 offset = Random.onUnitSphere * spreadRadius;
-                offset.y = Mathf.Abs(offset.y) + 0.5f;
+                offset.y = Mathf.Max(0.5f, Mathf.Abs(offset.y)); // Siempre sobre el suelo
                 Vector3 spawnPos = transform.position + offset;
 
                 GameObject spawned = Instantiate(item.prefab, spawnPos, Quaternion.identity);
 
-                // Add text message floating above
-                GameObject msgGo = new GameObject("LootMsg");
-                msgGo.transform.SetParent(spawned.transform);
-                msgGo.transform.localPosition = Vector3.up * 1.2f;
+                // Mensaje flotante de loot
+                if (!string.IsNullOrEmpty(item.message))
+                {
+                    GameObject msgGo = new GameObject("LootMsg");
+                    msgGo.transform.SetParent(spawned.transform);
+                    msgGo.transform.localPosition = Vector3.up * 1.0f;
 
-                var tmp = msgGo.AddComponent<TextMeshPro>();
-                tmp.text = item.message;
-                tmp.fontSize = 4;
-                tmp.alignment = TextAlignmentOptions.Center;
-                tmp.color = Color.yellow;
-                msgGo.AddComponent<SimpleBillboard>();
+                    var tmp = msgGo.AddComponent<TextMeshPro>();
+                    tmp.text = item.message;
+                    tmp.fontSize = 3;
+                    tmp.alignment = TextAlignmentOptions.Center;
+                    tmp.color = Color.yellow;
+                    msgGo.AddComponent<SimpleBillboard>();
+                }
 
-                if (spawned.TryGetComponent<Rigidbody>(out Rigidbody rb))
+                // Física para el item spawneado (Configuración segura)
+                Rigidbody rb = spawned.GetComponent<Rigidbody>();
+                if (rb == null) rb = spawned.AddComponent<Rigidbody>();
+
+                if (rb != null)
                 {
                     rb.AddExplosionForce(explosionForce, transform.position, spreadRadius);
                 }
 
+                // Sincronización en red del item si es necesario
                 if (IsNetworkActive && IsServer)
                 {
-                    if (spawned.TryGetComponent<NetworkObject>(out NetworkObject netObj))
+                    if (spawned.TryGetComponent<NetworkObject>(out var netObj))
                     {
                         netObj.Spawn();
                     }

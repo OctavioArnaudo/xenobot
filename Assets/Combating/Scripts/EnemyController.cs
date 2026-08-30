@@ -6,24 +6,35 @@ namespace Combating.Scripts
 {
     public class EnemyController : NetworkBehaviour
     {
-        [Header("Detection")]
-        public float detectionRange = 18f;
-        public float chaseRange = 14f;
-        public float attackRange = 12f;
-        public string playerTag = "Player";
+        public enum AttackType { Melee, Ranged }
+
+        [Header("AI Config")]
+        public AttackType attackType = AttackType.Ranged;
+        public string targetTag = "Player";
 
         [Header("Movement")]
         public float wanderSpeed = 2f;
-        public float chaseSpeed = 5f;
+        public float chaseSpeed = 4f;
+        public float turnSpeed = 10f;
         public float wanderRadius = 10f;
+
+        [Header("Combat Ranges")]
+        public float detectionRange = 18f;
+        public float attackRange = 12f;
+        public float meleeRange = 2.5f;
+        public float attackCooldown = 1.5f;
 
         private NavMeshAgent m_Agent;
         private Transform m_Target;
         private ShootController m_Shooter;
         private MeleeController m_Melee;
         private HealthController m_Health;
+        private float m_AttackTimer;
 
-        private void Awake()
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        private bool CanExecuteLogic => !IsNetworkActive || IsServer;
+
+        void Awake()
         {
             m_Agent = GetComponent<NavMeshAgent>();
             m_Shooter = GetComponent<ShootController>();
@@ -33,37 +44,25 @@ namespace Combating.Scripts
             if (m_Shooter != null) m_Shooter.UsePlayerInput = false;
         }
 
-        private void Update()
+        public override void OnNetworkSpawn()
         {
-            if (IsNetworkActive && !IsServer) return;
+            if (!IsServer) enabled = false; // Solo el servidor procesa IA
+        }
+
+        void Update()
+        {
+            if (!CanExecuteLogic) return;
             if (m_Health != null && m_Health.CurrentHP <= 0) return;
 
             FindTarget();
 
             if (m_Target != null)
-            {
-                float dist = Vector3.Distance(transform.position, m_Target.position);
-                RotateTowards(m_Target.position);
-
-                if (dist <= attackRange)
-                {
-                    StopMoving();
-                    PerformAttack();
-                }
-                else
-                {
-                    ChaseTarget();
-                }
-            }
+                ChaseAndAttack();
             else
-            {
                 Wander();
-            }
         }
 
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-
-        private void FindTarget()
+        void FindTarget()
         {
             if (m_Target != null)
             {
@@ -72,64 +71,88 @@ namespace Combating.Scripts
                 else return;
             }
 
-            var players = GameObject.FindGameObjectsWithTag(playerTag);
-            float closestDist = detectionRange;
-
+            var players = GameObject.FindGameObjectsWithTag(targetTag);
+            float closest = detectionRange;
             foreach (var p in players)
             {
                 float d = Vector3.Distance(transform.position, p.transform.position);
-                if (d < closestDist)
+                if (d <= closest)
                 {
-                    closestDist = d;
+                    closest = d;
                     m_Target = p.transform;
-                    Debug.Log($"[EnemyController] {gameObject.name} targeting: {p.name}");
                 }
             }
         }
 
-        private void ChaseTarget()
+        void ChaseAndAttack()
         {
-            if (m_Agent == null || m_Target == null || !m_Agent.isOnNavMesh) return;
-            m_Agent.isStopped = false;
-            m_Agent.speed = chaseSpeed;
-            m_Agent.SetDestination(m_Target.position);
+            float distance = Vector3.Distance(transform.position, m_Target.position);
+            m_AttackTimer -= Time.deltaTime;
+
+            RotateTowards(m_Target.position);
+
+            float currentRange = (attackType == AttackType.Melee) ? meleeRange : attackRange;
+
+            if (distance > currentRange)
+            {
+                MoveTo(m_Target.position, chaseSpeed);
+            }
+            else
+            {
+                StopMoving();
+                if (m_AttackTimer <= 0f)
+                {
+                    PerformAttack();
+                    m_AttackTimer = attackCooldown;
+                }
+            }
         }
 
-        private void Wander()
+        void Wander()
         {
             if (m_Agent == null || !m_Agent.isOnNavMesh || m_Agent.pathPending || m_Agent.remainingDistance > 0.5f) return;
 
-            m_Agent.isStopped = false;
-            m_Agent.speed = wanderSpeed;
             Vector3 randomPos = transform.position + Random.insideUnitSphere * wanderRadius;
             if (NavMesh.SamplePosition(randomPos, out NavMeshHit hit, wanderRadius, 1))
-                m_Agent.SetDestination(hit.position);
+                MoveTo(hit.position, wanderSpeed);
         }
 
-        private void StopMoving()
+        private void PerformAttack()
+        {
+            if (m_Target == null) return;
+
+            if (attackType == AttackType.Melee)
+            {
+                if (m_Melee != null) m_Melee.PerformMeleeAction();
+            }
+            else
+            {
+                if (m_Shooter != null) m_Shooter.FireAt(m_Target.position + Vector3.up);
+            }
+        }
+
+        void MoveTo(Vector3 position, float speed)
+        {
+            if (m_Agent != null && m_Agent.isOnNavMesh)
+            {
+                m_Agent.speed = speed;
+                m_Agent.isStopped = false;
+                m_Agent.SetDestination(position);
+            }
+        }
+
+        void StopMoving()
         {
             if (m_Agent != null && m_Agent.isOnNavMesh) m_Agent.isStopped = true;
         }
 
-        private void RotateTowards(Vector3 position)
+        void RotateTowards(Vector3 position)
         {
             Vector3 direction = Vector3.ProjectOnPlane(position - transform.position, Vector3.up);
             if (direction.sqrMagnitude > 0.001f)
             {
                 Quaternion rot = Quaternion.LookRotation(direction.normalized);
-                transform.rotation = Quaternion.Slerp(transform.rotation, rot, Time.deltaTime * 8f);
-            }
-        }
-
-        private void PerformAttack()
-        {
-            if (m_Shooter != null)
-            {
-                m_Shooter.FireAt(m_Target.position + Vector3.up);
-            }
-            else if (m_Melee != null)
-            {
-                m_Melee.PerformMeleeAction();
+                transform.rotation = Quaternion.Slerp(transform.rotation, rot, turnSpeed * Time.deltaTime);
             }
         }
     }

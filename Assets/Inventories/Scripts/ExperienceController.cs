@@ -21,41 +21,53 @@ public class ExpOrb : MonoBehaviour
 
     void Awake()
     {
-        foreach (var c in GetComponents<Collider>()) Destroy(c);
+        // Cleanup existing colliders
+        foreach (var c in GetComponents<Collider>())
+        {
+            if (!c.isTrigger) Destroy(c);
+        }
 
-        // Esfera visual en hijo
-        var visual = new GameObject("Visual");
+        // Crear Esfera Visual usando Primitivas de Unity para evitar fallos de Resources
+        GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        visual.name = "Visual";
         visual.transform.SetParent(transform, false);
         visual.transform.localScale = Vector3.one * sphereRadius * 2f;
 
-        var mf = visual.AddComponent<MeshFilter>();
-        mf.mesh = Resources.GetBuiltinResource<Mesh>("Sphere.fbx");
+        // Quitar el collider de la primitiva visual para que no estorbe
+        if (visual.TryGetComponent<Collider>(out var cVis)) Destroy(cVis);
 
-        var mr = visual.AddComponent<MeshRenderer>();
-
-        // Unlit: siempre visible, ignora iluminación completamente
+        var mr = visual.GetComponent<MeshRenderer>();
         var shader = Shader.Find("Universal Render Pipeline/Unlit")
                   ?? Shader.Find("Unlit/Color")
                   ?? Shader.Find("Standard");
 
         var mat = new Material(shader);
-        // URP Unlit usa _BaseColor, Unlit/Color usa _Color
         mat.SetColor("_BaseColor", glowColor);
         mat.SetColor("_Color", glowColor);
         mr.material = mat;
 
-        // Luz puntual
-        var lt = gameObject.AddComponent<Light>();
-        lt.type = LightType.Point;
-        lt.color = glowColor;
-        lt.intensity = lightIntensity;
-        lt.range = lightRange;
+        // Luz puntual (Configuración segura)
+        Light lt = GetComponent<Light>();
+        if (lt == null) lt = gameObject.AddComponent<Light>();
 
-        // Collider
-        var col = gameObject.AddComponent<SphereCollider>();
-        col.isTrigger = true;
-        col.center = Vector3.zero;
-        col.radius = sphereRadius * 1.5f;
+        if (lt != null)
+        {
+            lt.type = LightType.Point;
+            lt.color = glowColor;
+            lt.intensity = lightIntensity;
+            lt.range = lightRange;
+        }
+
+        // Garantizar Collider Trigger
+        SphereCollider col = GetComponent<SphereCollider>();
+        if (col == null) col = gameObject.AddComponent<SphereCollider>();
+
+        if (col != null)
+        {
+            col.isTrigger = true;
+            col.center = Vector3.zero;
+            col.radius = sphereRadius * 1.5f;
+        }
     }
 
     void Start() => _startPos = transform.position;
@@ -71,9 +83,17 @@ public class ExpOrb : MonoBehaviour
 
     void OnTriggerEnter(Collider other)
     {
-        if (_taken || !other.CompareTag("Player")) return;
-        _taken = true;
-        StatsController.Instance?.AddExp(expAmount);
-        Destroy(gameObject);
+        if (_taken) return;
+
+        // Buscamos si el objeto que entró tiene el Tag Player
+        if (other.CompareTag("Player"))
+        {
+            _taken = true;
+            StatsController.Instance?.AddExp(expAmount);
+
+            // Si estamos en red, el servidor debería manejar la destrucción,
+            // pero como los orbes suelen ser locales o simples, Destroy es suficiente.
+            Destroy(gameObject);
+        }
     }
 }

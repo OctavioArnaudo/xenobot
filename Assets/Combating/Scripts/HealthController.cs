@@ -62,8 +62,15 @@ namespace Combating.Scripts
             if (TryGetComponent<SpawnController>(out var sc)) sc.TriggerDeath();
             else
             {
-                if (IsNetworkActive && IsServer) GetComponent<NetworkObject>().Despawn();
-                else Destroy(gameObject);
+                if (IsNetworkActive && IsServer && IsSpawned)
+                {
+                    GetComponent<NetworkObject>().Despawn(false);
+                    Destroy(gameObject);
+                }
+                else
+                {
+                    Destroy(gameObject);
+                }
             }
         }
     }
