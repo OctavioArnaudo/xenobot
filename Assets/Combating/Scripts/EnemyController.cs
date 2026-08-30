@@ -10,7 +10,7 @@ namespace Combating.Scripts
 
         [Header("AI Config")]
         public AttackType attackType = AttackType.Ranged;
-        public string targetTag = "Player";
+        [SerializeField] private string playerTag = "Player"; // Cambiado para coincidir con la escena
 
         [Header("Movement")]
         public float wanderSpeed = 2f;
@@ -20,7 +20,8 @@ namespace Combating.Scripts
 
         [Header("Combat Ranges")]
         public float detectionRange = 18f;
-        public float attackRange = 12f;
+        public float chaseRange = 10f; // Añadido para coincidir con la escena
+        public float attackRange = 2f;  // Ajustado al valor común de la escena
         public float meleeRange = 2.5f;
         public float attackCooldown = 1.5f;
 
@@ -40,6 +41,11 @@ namespace Combating.Scripts
             m_Shooter = GetComponent<ShootController>();
             m_Melee = GetComponent<MeleeController>();
             m_Health = GetComponent<HealthController>();
+
+            if (m_Agent == null) Debug.LogError($"[EnemyController] {gameObject.name} necesita un NavMeshAgent para moverse.");
+            if (m_Shooter == null && attackType == AttackType.Ranged) Debug.LogWarning($"[EnemyController] {gameObject.name} no tiene ShootController para atacar a distancia.");
+            if (m_Melee == null && attackType == AttackType.Melee) Debug.LogWarning($"[EnemyController] {gameObject.name} no tiene MeleeController para ataque cuerpo a cuerpo.");
+
             if (m_Shooter != null) m_Shooter.UsePlayerInput = false;
         }
 
@@ -70,7 +76,7 @@ namespace Combating.Scripts
                 else return;
             }
 
-            var players = GameObject.FindGameObjectsWithTag(targetTag);
+            var players = GameObject.FindGameObjectsWithTag(playerTag);
             float closest = detectionRange;
             foreach (var p in players)
             {
