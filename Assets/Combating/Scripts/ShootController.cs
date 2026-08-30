@@ -5,16 +5,19 @@ using Unity.Netcode;
 
 namespace Combating.Scripts
 {
+    /// <summary>
+    /// Component that handles ranged attacks by spawning projectiles.
+    /// Works for both players (input) and enemies (automated).
+    /// </summary>
     public class ShootController : NetworkBehaviour
     {
         [Header("References")]
         public Camera AimCamera;
         public Transform Muzzle;
-        public CombatProjectile ProjectilePrefab;
+        public ProjectileController ProjectilePrefab;
 
         [Header("Shooting")]
         public float Damage = 25f;
-        public float ProjectileSpeed = 40f;
         public float FireRate = 6f;
         public float AimDistance = 100f;
         public LayerMask AimLayers = ~0;
@@ -26,33 +29,24 @@ namespace Combating.Scripts
         public LineRenderer TracerPrefab;
         public float TracerLifetime = 0.05f;
 
-        PlayerInputHandler m_Input;
-        float m_NextFireTime;
+        private PlayerInputHandler m_Input;
+        private HealthController m_Health;
+        private float m_NextFireTime;
+
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
         void Awake()
         {
             m_Input = GetComponent<PlayerInputHandler>();
+            m_Health = GetComponent<HealthController>();
 
-            if (AimCamera == null)
-                AimCamera = GetComponentInChildren<Camera>();
-
-            if (AimCamera == null)
-                AimCamera = Camera.main;
-
-            if (Muzzle == null)
-                Muzzle = transform;
+            if (AimCamera == null) AimCamera = GetComponentInChildren<Camera>() ?? Camera.main;
+            if (Muzzle == null) Muzzle = transform;
         }
 
         void Update()
         {
-            if (!IsOwner) return; // Solo el dueño dispara localmente
-
-            if (!UsePlayerInput)
-                return;
-
-            if (!WantsToFire())
-                return;
-
+            if (!IsOwner || !UsePlayerInput || !WantsToFire()) return;
             TryFire();
         }
 
@@ -61,52 +55,57 @@ namespace Combating.Scripts
             if (m_Input != null && m_Input.CanProcessInput())
                 return HoldToFire ? m_Input.GetFireInputHeld() : m_Input.GetFireInputDown();
 
-            if (Mouse.current == null)
-                return false;
-
+            if (Mouse.current == null) return false;
             return HoldToFire ? Mouse.current.leftButton.isPressed : Mouse.current.leftButton.wasPressedThisFrame;
         }
 
         public bool TryFire()
         {
-            if (Time.time < m_NextFireTime || ProjectilePrefab == null)
-                return false;
+            if (Time.time < m_NextFireTime || ProjectilePrefab == null) return false;
 
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
             Vector3 direction = GetAimDirection();
 
-            // Spawn del proyectil (Idealmente esto debería ser un RPC, pero por ahora bloqueamos el input remoto)
-            CombatProjectile projectile = Instantiate(ProjectilePrefab, Muzzle.position, Quaternion.LookRotation(direction));
-            projectile.Launch(gameObject, direction, Damage, ProjectileSpeed);
+            SpawnProjectile(direction, Muzzle.position + direction * AimDistance);
 
-            if (MuzzleFlash != null)
-                MuzzleFlash.Play();
-
-            SpawnTracer(Muzzle.position, Muzzle.position + direction * AimDistance);
+            if (MuzzleFlash != null) MuzzleFlash.Play();
             return true;
         }
 
         public bool FireAt(Vector3 targetPosition)
         {
-            if (Time.time < m_NextFireTime || ProjectilePrefab == null)
-                return false;
+            if (Time.time < m_NextFireTime || ProjectilePrefab == null) return false;
 
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
             Vector3 direction = (targetPosition - Muzzle.position).normalized;
-            CombatProjectile projectile = Instantiate(ProjectilePrefab, Muzzle.position, Quaternion.LookRotation(direction));
-            projectile.Launch(gameObject, direction, Damage, ProjectileSpeed);
 
-            if (MuzzleFlash != null)
-                MuzzleFlash.Play();
+            SpawnProjectile(direction, targetPosition);
 
-            SpawnTracer(Muzzle.position, targetPosition);
+            if (MuzzleFlash != null) MuzzleFlash.Play();
             return true;
+        }
+
+        private void SpawnProjectile(Vector3 direction, Vector3 targetImpact)
+        {
+            ProjectileController projectile = Instantiate(ProjectilePrefab, Muzzle.position, Quaternion.LookRotation(direction));
+
+            if (projectile != null)
+            {
+                projectile.Launch(gameObject, direction, Damage, m_Health != null ? m_Health.team : Team.Neutral);
+
+                if (IsNetworkActive && IsServer)
+                {
+                    if (projectile.TryGetComponent<NetworkObject>(out var netObj))
+                        netObj.Spawn();
+                }
+            }
+
+            SpawnTracer(Muzzle.position, targetImpact);
         }
 
         Vector3 GetAimDirection()
         {
-            if (AimCamera == null)
-                return Muzzle.forward;
+            if (AimCamera == null) return Muzzle.forward;
 
             Ray ray = new Ray(AimCamera.transform.position, AimCamera.transform.forward);
             if (Physics.Raycast(ray, out RaycastHit hit, AimDistance, AimLayers, QueryTriggerInteraction.Ignore))
@@ -117,9 +116,7 @@ namespace Combating.Scripts
 
         void SpawnTracer(Vector3 start, Vector3 end)
         {
-            if (TracerPrefab == null)
-                return;
-
+            if (TracerPrefab == null) return;
             LineRenderer tracer = Instantiate(TracerPrefab, start, Quaternion.identity);
             tracer.positionCount = 2;
             tracer.SetPosition(0, start);

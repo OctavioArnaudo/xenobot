@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 #endif
 using Unity.Netcode;
 using Unity.Cinemachine;
+using Combating.Scripts;
 
 namespace Xenobot.Movement
 {
@@ -27,14 +28,6 @@ namespace Xenobot.Movement
         public float Gravity = -15.0f;
         public float JumpTimeout = 0.50f;
         public float FallTimeout = 0.15f;
-        #endregion
-
-        #region Variables: Jetpack
-        [Header("Jetpack")]
-        public float JetpackForce = 50f; // Fuerza potente para subir
-        public float FuelConsumption = 25f;
-        public float FuelRegen = 20f;
-        public float MaxUpwardVelocity = 10f; // Límite para el "sostén"
         #endregion
 
         #region Variables: Ground Check
@@ -118,7 +111,10 @@ namespace Xenobot.Movement
         private Animator _animator;
         private CharacterController _controller;
         private GameObject _mainCamera;
-        private PlayerHealth _playerHealth;
+
+        private HealthController _health;
+        private JetpackController _jetpack;
+
         private bool _isJumpHeld;
         private const float _threshold = 0.01f;
         private bool _hasAnimator;
@@ -143,7 +139,8 @@ namespace Xenobot.Movement
         private void Awake()
         {
             _controller = GetComponent<CharacterController>();
-            _playerHealth = GetComponent<PlayerHealth>();
+            _health = GetComponent<HealthController>();
+            _jetpack = GetComponent<JetpackController>();
 
             #if ENABLE_INPUT_SYSTEM
             _playerInput = GetComponent<PlayerInput>();
@@ -190,6 +187,9 @@ namespace Xenobot.Movement
                 SetupPlayerLocal();
                 TeleportToSceneSpawn(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
 
+                var listener = GetComponentInChildren<AudioListener>();
+                if (listener != null) listener.enabled = true;
+
                 var renderers = GetComponentsInChildren<Renderer>(true);
                 foreach (var r in renderers) r.enabled = true;
 
@@ -201,6 +201,8 @@ namespace Xenobot.Movement
                 if (_controller != null) _controller.enabled = false;
                 var vcam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
                 if (vcam != null) vcam.enabled = false;
+                var listener = GetComponentInChildren<AudioListener>();
+                if (listener != null) listener.enabled = false;
             }
         }
 
@@ -245,7 +247,6 @@ namespace Xenobot.Movement
         {
             if (!CanExecuteLocalLogic) return;
 
-            // --- SISTEMA DE ENTRADA DIRECTA (RECORRER FALLO DE EVENTOS) ---
             #if ENABLE_INPUT_SYSTEM
             if (Keyboard.current != null && IsOwner)
             {
@@ -254,7 +255,6 @@ namespace Xenobot.Movement
                 float moveY = (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed ? 1f : 0f) -
                               (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed ? 1f : 0f);
 
-                // Actualizamos el vector move según el estado actual de las teclas
                 move = new Vector2(moveX, moveY);
                 if (move.sqrMagnitude > 1f) move.Normalize();
             }
@@ -456,28 +456,15 @@ namespace Xenobot.Movement
             #endif
 
             // --- 1. LÓGICA PRIORITARIA: JETPACK ---
-            // Se activa si NO estamos en el suelo, tenemos fuel y mantenemos espacio
-            bool isUsingJetpack = !Grounded && currentlyHoldingJump && _playerHealth != null && _playerHealth.JetpackFuel > 0;
-
-            if (isUsingJetpack)
+            bool isUsingJetpack = false;
+            if (_jetpack != null)
             {
-                // Si estábamos cayendo, frenamos en seco para empezar a subir
-                if (_verticalVelocity < 0) _verticalVelocity = 0;
-
-                // Aplicamos fuerza de ascenso (sin gravedad que nos tire abajo)
-                _verticalVelocity += JetpackForce * Time.deltaTime;
-
-                // Límite de velocidad de vuelo para control total
-                if (_verticalVelocity > MaxUpwardVelocity) _verticalVelocity = MaxUpwardVelocity;
-
-                // Consumir combustible
-                _playerHealth.UseFuel(FuelConsumption * Time.deltaTime);
-
-                // Cancelar cualquier flag de salto pendiente
-                jump = false;
+                isUsingJetpack = _jetpack.ProcessFlight(currentlyHoldingJump, Grounded, ref _verticalVelocity);
+                if (isUsingJetpack) jump = false; // Cancel normal jump if flying
             }
+
             // --- 2. LÓGICA DE TIERRA: SALTO NORMAL ---
-            else if (Grounded)
+            if (!isUsingJetpack && Grounded)
             {
                 _fallTimeoutDelta = FallTimeout;
                 if (_hasAnimator)
@@ -490,25 +477,20 @@ namespace Xenobot.Movement
 
                 if (jump && _jumpTimeoutDelta <= 0.0f)
                 {
-                    // Impulso de salto inicial
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
                     if (_hasAnimator && _hasAnimIDJump) _animator.SetBool(_animIDJump, true);
                     jump = false;
                 }
 
                 if (_jumpTimeoutDelta >= 0.0f) _jumpTimeoutDelta -= Time.deltaTime;
-
-                // Recargar combustible solo cuando estamos tocando el suelo
-                if (_playerHealth != null) _playerHealth.AddFuel(FuelRegen * Time.deltaTime);
             }
-            // --- 3. LÓGICA DE AIRE: CAÍDA LIBRE (SIN JETPACK) ---
-            else
+            // --- 3. LÓGICA DE AIRE: CAÍDA LIBRE ---
+            else if (!isUsingJetpack)
             {
                 _jumpTimeoutDelta = JumpTimeout;
                 if (_fallTimeoutDelta >= 0.0f) _fallTimeoutDelta -= Time.deltaTime;
                 else if (_hasAnimator && _hasAnimIDFreeFall) _animator.SetBool(_animIDFreeFall, true);
 
-                // Aplicar gravedad normal de caída
                 if (_verticalVelocity > -_terminalVelocity)
                     _verticalVelocity += Gravity * Time.deltaTime;
 

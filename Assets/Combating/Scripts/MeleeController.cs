@@ -6,63 +6,87 @@ namespace Combating.Scripts
 {
     /// <summary>
     /// Melee attack system.
-    /// Works in Network (via ServerRpc) and Offline (locally).
+    /// Can apply direct damage or spawn short-range effects.
+    /// Works for both Players and Enemies.
     /// </summary>
     public class MeleeController : NetworkBehaviour
     {
-        [Header("Attack Settings")]
-        public float attackRange = 2f;
-        public int attackDamage = 25;
-        public LayerMask enemyLayer;
+        [Header("Settings")]
+        public float attackRange = 2.5f;
+        public float attackDamage = 35f;
+        public float attackCooldown = 1f;
+        public LayerMask targetLayers;
+
+        [Header("Visuals (Optional)")]
+        public ProjectileController swingVfxPrefab;
+
+        private HealthController m_Health;
+        private float m_NextAttackTime;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
-        // Called automatically by the New Input System
+        void Awake()
+        {
+            m_Health = GetComponent<HealthController>();
+        }
+
         public void OnAttack(InputValue value)
         {
-            if (!value.isPressed) return;
+            if (!value.isPressed || Time.time < m_NextAttackTime) return;
+            PerformMeleeAction();
+        }
+
+        public void PerformMeleeAction()
+        {
+            if (Time.time < m_NextAttackTime) return;
+            m_NextAttackTime = Time.time + attackCooldown;
 
             if (IsNetworkActive)
             {
-                // Only the owner of this character can initiate the attack request
-                if (!IsOwner) return;
-                RequestAttackServerRpc();
+                if (IsOwner) RequestMeleeServerRpc();
             }
             else
             {
-                // Offline: Process attack locally
-                PerformAttack();
+                ExecuteMelee();
             }
         }
 
         [ServerRpc]
-        private void RequestAttackServerRpc()
+        private void RequestMeleeServerRpc()
         {
-            // [SERVER] Physics and impact calculation occur here
-            PerformAttack();
+            ExecuteMelee();
         }
 
-        private void PerformAttack()
+        private void ExecuteMelee()
         {
-            Vector3 attackCenter = transform.position + transform.forward * attackRange;
-            Collider[] hits = Physics.OverlapSphere(attackCenter, attackRange, enemyLayer);
+            // 1. Physical Detection
+            Vector3 attackCenter = transform.position + transform.forward * (attackRange * 0.5f);
+            Collider[] hits = Physics.OverlapSphere(attackCenter, attackRange, targetLayers);
 
             foreach (Collider hit in hits)
             {
-                // Look for the spawn controller in the hit object
-                var health = hit.GetComponentInParent<SpawnController>();
-                if (health != null)
+                var targetHealth = hit.GetComponentInParent<HealthController>();
+                if (targetHealth != null)
                 {
-                    // TakeDamage handles both network and offline contexts
-                    health.TakeDamage(attackDamage);
+                    // Team check (Friendly fire off)
+                    if (m_Health != null && targetHealth.team == m_Health.team) continue;
+
+                    targetHealth.TakeDamage((int)attackDamage);
                 }
+            }
+
+            // 2. Projectile-based Visual (as requested: "melee con proyectiles")
+            if (swingVfxPrefab != null)
+            {
+                ProjectileController vfx = Instantiate(swingVfxPrefab, transform.position + transform.forward, transform.rotation);
+                vfx.Launch(gameObject, transform.forward, 0f, m_Health != null ? m_Health.team : Team.Neutral);
             }
         }
 
         private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.red;
-            Vector3 attackCenter = transform.position + transform.forward * attackRange;
+            Vector3 attackCenter = transform.position + transform.forward * (attackRange * 0.5f);
             Gizmos.DrawWireSphere(attackCenter, attackRange);
         }
     }
