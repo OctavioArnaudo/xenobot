@@ -44,7 +44,6 @@ namespace Combating.Scripts
             if (m_Agent == null)
             {
                 m_Agent = gameObject.AddComponent<NavMeshAgent>();
-                Debug.Log($"[EnemyController] {gameObject.name}: NavMeshAgent agregado automáticamente.");
             }
 
             // Aplicar altura de sobrevuelo

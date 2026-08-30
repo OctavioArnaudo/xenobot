@@ -85,6 +85,7 @@ namespace Combating.Scripts
         #region UI Effects
         private void OnGUI()
         {
+            if (Event.current.type != EventType.Repaint) return; // Optimizacion: Solo procesar en el dibujo
             if (!IsOwner || team != Team.Player) return;
 
             float sw = Screen.width;

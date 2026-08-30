@@ -17,8 +17,8 @@ public class StatsController : NetworkBehaviour
     public NetworkVariable<FixedString32Bytes> playerName = new NetworkVariable<FixedString32Bytes>(new FixedString32Bytes(""), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
     public NetworkVariable<Color> playerColor = new NetworkVariable<Color>(Color.white, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
-    [SerializeField] private TMPro.TMP_Text nameTagText;
-    [SerializeField] private Renderer colorRenderer;
+    public TMPro.TMP_Text nameTagText;
+    public Renderer colorRenderer;
 
     [Header("Initial Ranges")]
     public Vector2 attackRange = new Vector2(5f, 15f);
@@ -46,6 +46,20 @@ public class StatsController : NetworkBehaviour
     private HealthController m_PlayerHealth;
     private float _lastTimeUpdate;
     private string _cachedTimeStr = "00:00";
+    private Camera _mainCamCache;
+
+    void Update()
+    {
+        // Billboard effect para el NameTag en red (Cacheando la camara para evitar Starvation)
+        if (nameTagText != null)
+        {
+            if (_mainCamCache == null) _mainCamCache = Camera.main;
+            if (_mainCamCache != null)
+            {
+                nameTagText.transform.rotation = Quaternion.LookRotation(nameTagText.transform.position - _mainCamCache.transform.position);
+            }
+        }
+    }
 
     void Awake()
     {
@@ -80,8 +94,45 @@ public class StatsController : NetworkBehaviour
 
     public void UpdateVisuals()
     {
+        ValidateVisualComponents();
         if (nameTagText != null) nameTagText.text = playerName.Value.ToString();
         if (colorRenderer != null) colorRenderer.material.color = playerColor.Value;
+    }
+
+    private void ValidateVisualComponents()
+    {
+        // Zero-Dependency Bootstrapping: Fallback para el Renderer
+        if (colorRenderer == null)
+        {
+            colorRenderer = GetComponentInChildren<Renderer>();
+            if (colorRenderer == null)
+            {
+                var marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                marker.name = "Xenobot_IdentityMarker";
+                marker.transform.SetParent(transform);
+                marker.transform.localPosition = new Vector3(0, 2.2f, 0);
+                marker.transform.localScale = Vector3.one * 0.2f;
+                if (marker.TryGetComponent<Collider>(out var col)) DestroyImmediate(col);
+                colorRenderer = marker.GetComponent<Renderer>();
+            }
+        }
+
+        // Zero-Dependency Bootstrapping: Fallback para el TMP_Text
+        if (nameTagText == null)
+        {
+            nameTagText = GetComponentInChildren<TMPro.TMP_Text>();
+            if (nameTagText == null)
+            {
+                GameObject tagGO = new GameObject("Xenobot_NameTag");
+                tagGO.transform.SetParent(transform);
+                tagGO.transform.localPosition = new Vector3(0, 2.6f, 0);
+                var tmp = tagGO.AddComponent<TMPro.TextMeshPro>();
+                tmp.alignment = TMPro.TextAlignmentOptions.Center;
+                tmp.fontSize = 4;
+                tmp.rectTransform.sizeDelta = new Vector2(5, 1);
+                nameTagText = tmp;
+            }
+        }
     }
 
     public void AddExp(float amount)
