@@ -4,6 +4,7 @@ using Unity.Netcode;
 /// <summary>
 /// Universal Pickup Controller for Xenobot.
 /// Handles Inventory Items, Experience Orbs, and Network Synchronization.
+/// Logic is on the Root, Visuals are on Children.
 /// </summary>
 [RequireComponent(typeof(NetworkObject))]
 public class PickupController : NetworkBehaviour
@@ -16,7 +17,6 @@ public class PickupController : NetworkBehaviour
 
     [Header("Visuals & Effects")]
     public GameObject particleEffectPrefab;
-    public bool useAutoExperienceVisuals = true;
 
     [Header("Motion")]
     public float rotationSpeed = 100f;
@@ -30,16 +30,39 @@ public class PickupController : NetworkBehaviour
 
     void Awake()
     {
-        // 1. Zero-Dependency Visuals for Experience Orbs
-        if (item == null && useAutoExperienceVisuals)
+        // 1. Fallback Visuals: Si el raiz no tiene hijos configurados por el usuario, generar uno.
+        if (transform.childCount == 0 && (item == null || item.worldPrefab == null))
         {
-            SetupExperienceVisuals();
+            GenerateFallbackVisuals();
         }
 
-        // 2. Garantizar que tenga un Trigger
+        // 2. Garantizar que el objeto Raiz tenga un Trigger bien posicionado para la recoleccion
         var col = GetComponent<Collider>();
-        if (col == null) col = gameObject.AddComponent<SphereCollider>();
-        col.isTrigger = true;
+        if (col == null)
+        {
+            var sc = gameObject.AddComponent<SphereCollider>();
+            sc.isTrigger = true;
+            sc.radius = 0.8f;
+            sc.center = Vector3.up * 0.4f; // Centrar ligeramente arriba del pivote
+        }
+        else
+        {
+            col.isTrigger = true;
+
+            // CORRECCION CRITICA: Resetear el centro si el collider viene de un prefab con offsets exagerados
+            if (col is BoxCollider bc) bc.center = Vector3.up * 0.4f;
+            else if (col is SphereCollider sc) sc.center = Vector3.up * 0.4f;
+            else if (col is CapsuleCollider cc) cc.center = Vector3.up * 0.4f;
+        }
+
+        // 3. Garantizar Rigidbody (Kinematic) para que OnTriggerEnter funcione con CharacterController
+        var rb = GetComponent<Rigidbody>();
+        if (rb == null)
+        {
+            rb = gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
     }
 
     void Start()
@@ -50,7 +73,7 @@ public class PickupController : NetworkBehaviour
 
     void Update()
     {
-        // Movimiento de flotacion y rotacion
+        // Movimiento de flotacion y rotacion (afecta a toda la jerarquia)
         transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.World);
         _timer += Time.deltaTime * bobbingSpeed;
         transform.position = _startPos + new Vector3(0, Mathf.Sin(_timer) * bobbingAmount, 0);
@@ -61,20 +84,25 @@ public class PickupController : NetworkBehaviour
         if (_taken) return;
 
         // Deteccion robusta de cualquier tipo de Player
-        bool isPlayer = other.GetComponentInParent<Xenobot.Movement.PlayerController>() != null ||
-                        other.GetComponentInParent<Xenobot.Combat.Modular.PlayerController>() != null ||
-                        other.CompareTag("Player");
+        // Buscamos componentes en el objeto que colisiona, en sus padres o por Tag
+        var playerMovement = other.GetComponentInParent<Xenobot.Movement.PlayerController>();
+        var playerModular = other.GetComponentInParent<Xenobot.Combat.Modular.PlayerController>();
+        bool hasPlayerTag = other.CompareTag("Player") || (other.transform.parent != null && other.transform.parent.CompareTag("Player"));
 
-        if (isPlayer)
+        if (playerMovement != null || playerModular != null || hasPlayerTag)
         {
             _taken = true;
             ProcessPickup();
+        }
+        else
+        {
+            // Debug opcional para ver que esta tocando el trigger
+            // Debug.Log($"[Pickup] Tocado por objeto no-jugador: {other.name} (Tag: {other.tag})");
         }
     }
 
     private void ProcessPickup()
     {
-        // 1. Logica de Recompensa
         if (item != null)
         {
             if (item.expValue > 0f)
@@ -90,25 +118,21 @@ public class PickupController : NetworkBehaviour
         }
         else
         {
-            // Orbe de experiencia pura
             StatsController.Instance?.AddExp(expAmount);
             Debug.Log($"[Pickup] Orbe de Experiencia (+{expAmount})");
         }
 
-        // 2. Efecto visual
         if (particleEffectPrefab != null)
             Instantiate(particleEffectPrefab, transform.position, Quaternion.identity);
 
-        // 3. Sincronizacion de Red y Destruccion
         if (IsNetworkActive)
         {
             if (IsServer)
             {
-                // Despawn(false) para objetos en escena evita warnings, luego destruimos manualmente
                 NetworkObject.Despawn(false);
                 Destroy(gameObject);
             }
-            else gameObject.SetActive(false); // Ocultar localmente mientras el server procesa
+            else gameObject.SetActive(false);
         }
         else
         {
@@ -116,27 +140,39 @@ public class PickupController : NetworkBehaviour
         }
     }
 
-    private void SetupExperienceVisuals()
+    private void GenerateFallbackVisuals()
     {
-        // Crear visual de orbe si no tiene nada
-        if (transform.childCount > 0) return;
+        // Crear un objeto hijo para el renderizado de respaldo
+        GameObject renderRoot = new GameObject("Xenobot_FallbackRender");
+        renderRoot.transform.SetParent(transform, false);
 
-        GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        visual.name = "Exp_Visual";
-        visual.transform.SetParent(transform, false);
-        visual.transform.localScale = Vector3.one * 0.5f;
+        PrimitiveType[] shapes = { PrimitiveType.Sphere, PrimitiveType.Cube, PrimitiveType.Capsule, PrimitiveType.Cylinder };
+        PrimitiveType randomShape = shapes[Random.Range(0, shapes.Length)];
+
+        GameObject visual = GameObject.CreatePrimitive(randomShape);
+        visual.name = "Fallback_Mesh";
+        visual.transform.SetParent(renderRoot.transform, false);
+
+        float s = Random.Range(0.4f, 0.7f);
+        visual.transform.localScale = new Vector3(s, s, s);
+        visual.transform.localRotation = Random.rotation;
+
         if (visual.TryGetComponent<Collider>(out var c)) Destroy(c);
 
         var mr = visual.GetComponent<MeshRenderer>();
-        var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color") ?? Shader.Find("Standard");
+        var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
         var mat = new Material(shader);
-        mat.color = new Color(1f, 0.85f, 0f); // Dorado/Amarillo
-        mr.material = mat;
 
-        Light lt = gameObject.AddComponent<Light>();
+        Color randomColor = new Color(Random.value, Random.value, Random.value);
+        mat.color = randomColor;
+        mat.EnableKeyword("_EMISSION");
+        mat.SetColor("_EmissionColor", randomColor * 1.8f);
+        mr.sharedMaterial = mat;
+
+        Light lt = renderRoot.AddComponent<Light>();
         lt.type = LightType.Point;
-        lt.color = mat.color;
-        lt.intensity = 2f;
+        lt.color = randomColor;
+        lt.intensity = 1.5f;
         lt.range = 3f;
     }
 
