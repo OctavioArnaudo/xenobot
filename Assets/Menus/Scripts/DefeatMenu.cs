@@ -27,10 +27,11 @@ namespace Menus.Scripts
 
         private void Update()
         {
-            // Manual trigger
-            if (!_isDisplayed && Keyboard.current != null && Keyboard.current.lKey.wasPressedThisFrame)
+            // Manual toggle
+            if (Keyboard.current != null && Keyboard.current.lKey.wasPressedThisFrame)
             {
-                TriggerDefeat();
+                if (!_isDisplayed) TriggerDefeat();
+                else HideDefeat();
                 return;
             }
 
@@ -65,6 +66,17 @@ namespace Menus.Scripts
             _isDisplayed = true;
             BuildUI();
             UpdateLevelsData();
+        }
+
+        public void HideDefeat()
+        {
+            if (!_isDisplayed) return;
+
+            _isDisplayed = false;
+            if (_canvasRoot != null) Destroy(_canvasRoot);
+
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
         }
 
         private void BuildUI()

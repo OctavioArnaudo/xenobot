@@ -248,8 +248,11 @@ namespace Xenobot.Movement
             if (!CanExecuteLocalLogic) return;
 
             #if ENABLE_INPUT_SYSTEM
+            // Asegurar deteccion de salto mantenido para el Jetpack
             if (Keyboard.current != null && IsOwner)
             {
+                _isJumpHeld = Keyboard.current.spaceKey.isPressed;
+
                 float moveX = (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed ? 1f : 0f) -
                               (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed ? 1f : 0f);
                 float moveY = (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed ? 1f : 0f) -
