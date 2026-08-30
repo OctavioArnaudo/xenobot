@@ -38,11 +38,11 @@ namespace NGO.Networking
 
         private void Start()
         {
-            if (nameInputField != null) nameInputField.text = "Host_" + Random.Range(10, 99);
+            if (nameInputField != null) nameInputField.text = "Player_" + Random.Range(10, 99);
             if (customIdInputField != null) customIdInputField.text = "1";
 
             if (maxPlayersInput != null && string.IsNullOrEmpty(maxPlayersInput.text))
-                maxPlayersInput.text = "4";
+                maxPlayersInput.text = "1";
 
             if (portInput != null && string.IsNullOrEmpty(portInput.text))
                 portInput.text = "7777";

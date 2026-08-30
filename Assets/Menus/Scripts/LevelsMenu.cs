@@ -3,15 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
-
-[System.Serializable]
-public class LevelData
-{
-    public string nombreNivel;
-    public Sprite miniatura;
-    public string mejorTiempo;
-    public List<string> jugadoresCompletados;
-}
+using Unity.Netcode;
 
 public class LevelsMenu : MonoBehaviour
 {
@@ -21,6 +13,12 @@ public class LevelsMenu : MonoBehaviour
     [Header("Datos de Niveles")]
     public static List<LevelData> listaNiveles = new List<LevelData>();
     public List<LevelData> nivelesConfig = new List<LevelData>();
+    public List<Sprite> fallbackIcons = new List<Sprite>();
+
+    public static float ultimoTiempoSession = 0f;
+    public static string ultimoNivelSession = "";
+
+    public static string FormatTime(float t) => string.Format("{0:00}:{1:00}", Mathf.FloorToInt(t / 60), Mathf.FloorToInt(t % 60));
 
     [Header("Estilo Visual Xenobot")]
     public Color colorFondo = new Color(0.01f, 0.02f, 0.05f, 1f);
@@ -33,6 +31,10 @@ public class LevelsMenu : MonoBehaviour
 
     private void Start()
     {
+        // Forzar visibilidad del mouse
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+
         if (listaNiveles.Count == 0 && nivelesConfig.Count > 0)
         {
             listaNiveles.AddRange(nivelesConfig);
@@ -111,15 +113,18 @@ public class LevelsMenu : MonoBehaviour
         // 5. Generar Tarjetas de Nivel dinámicamente
         if (listaNiveles.Count == 0)
         {
-            // Dummy data si no hay niveles configurados
-            LevelData dummy = new LevelData { nombreNivel = "NIVEL ALPHA", mejorTiempo = "00:00", jugadoresCompletados = new List<string>{"NADIE"} };
-            CreateLevelCard(contentObj.transform, dummy);
+            // Fallback si no hay niveles configurados
+            LevelData dummy = ScriptableObject.CreateInstance<LevelData>();
+            dummy.nombreNivel = "NIVEL ALPHA";
+            dummy.mejorTiempo = "00:00";
+            dummy.jugadoresCompletados = new List<string>{"NADIE"};
+            CreateLevelCard(contentObj.transform, dummy, 0);
         }
         else
         {
-            foreach (var nivel in listaNiveles)
+            for (int i = 0; i < listaNiveles.Count; i++)
             {
-                CreateLevelCard(contentObj.transform, nivel);
+                CreateLevelCard(contentObj.transform, listaNiveles[i], i);
             }
         }
 
@@ -135,7 +140,7 @@ public class LevelsMenu : MonoBehaviour
         }
     }
 
-    private void CreateLevelCard(Transform parent, LevelData data)
+    private void CreateLevelCard(Transform parent, LevelData data, int index)
     {
         GameObject card = new GameObject("Card_" + data.nombreNivel);
         card.transform.SetParent(parent);
@@ -152,12 +157,19 @@ public class LevelsMenu : MonoBehaviour
         vLayout.childAlignment = TextAnchor.UpperCenter;
         vLayout.childForceExpandHeight = false;
 
-        // 1. Miniatura (Placeholder si no hay sprite)
+        // 1. Miniatura (Fallback if no sprite)
         GameObject imgObj = new GameObject("Thumbnail");
         imgObj.transform.SetParent(card.transform);
         Image img = imgObj.AddComponent<Image>();
-        img.sprite = data.miniatura;
-        img.color = (data.miniatura == null) ? new Color(0.2f, 0.2f, 0.2f, 1f) : Color.white;
+
+        Sprite iconToShow = data.miniatura;
+        if (iconToShow == null && fallbackIcons.Count > 0)
+        {
+            iconToShow = fallbackIcons[index % fallbackIcons.Count];
+        }
+
+        img.sprite = iconToShow;
+        img.color = (iconToShow == null) ? new Color(0.2f, 0.2f, 0.2f, 1f) : Color.white;
         img.preserveAspect = true;
 
         LayoutElement le = imgObj.AddComponent<LayoutElement>();
@@ -258,5 +270,14 @@ public class LevelsMenu : MonoBehaviour
         r.anchoredPosition3D = Vector3.zero; r.localScale = Vector3.one;
     }
 
-    public void VolverAlMenu() => SceneManager.LoadScene(escenaMenuPrincipal);
+    public void VolverAlMenu()
+    {
+        var allNMs = Object.FindObjectsByType<NetworkManager>(FindObjectsSortMode.None);
+        foreach (var nm in allNMs)
+        {
+            if (nm.IsListening) nm.Shutdown();
+            Destroy(nm.gameObject);
+        }
+        SceneManager.LoadScene(escenaMenuPrincipal);
+    }
 }

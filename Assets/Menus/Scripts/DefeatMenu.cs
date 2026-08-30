@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using NGO.Networking;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
 
 namespace Menus.Scripts
 {
@@ -17,6 +18,7 @@ namespace Menus.Scripts
         private GameObject _canvasRoot;
         private bool _isDisplayed = false;
         private bool _hasDetectedPlayers = false;
+        private float _checkTimer = 0f;
 
         private void Start()
         {
@@ -32,19 +34,23 @@ namespace Menus.Scripts
                 return;
             }
 
-            // Automatic trigger: check for players
+            // Automatic trigger: check for players every 1 second (Optimized for FMOD)
             if (!_isDisplayed)
             {
-                GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+                _checkTimer -= Time.deltaTime;
+                if (_checkTimer <= 0f)
+                {
+                    _checkTimer = 1f;
+                    GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
 
-                if (players.Length > 0)
-                {
-                    _hasDetectedPlayers = true;
-                }
-                else if (_hasDetectedPlayers)
-                {
-                    // All players were present but now they are gone
-                    TriggerDefeat();
+                    if (players.Length > 0)
+                    {
+                        _hasDetectedPlayers = true;
+                    }
+                    else if (_hasDetectedPlayers)
+                    {
+                        TriggerDefeat();
+                    }
                 }
             }
         }
@@ -126,7 +132,7 @@ namespace Menus.Scripts
             sRt.sizeDelta = new Vector2(700, 50);
 
             // Stats
-            float timeTaken = Time.timeSinceLevelLoad;
+            float timeTaken = LevelsMenu.ultimoTiempoSession;
             string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
 
             GameObject stats = new GameObject("Stats");
@@ -145,7 +151,7 @@ namespace Menus.Scripts
             btn.transform.SetParent(panel.transform, false);
             btn.AddComponent<Image>().color = new Color(0.1f, 0.1f, 0.1f);
             var bBtn = btn.AddComponent<Button>();
-            bBtn.onClick.AddListener(() => SceneManager.LoadScene(levelsMenuScene));
+            bBtn.onClick.AddListener(ReturnToLevels);
             var bRt = btn.GetComponent<RectTransform>();
             bRt.anchoredPosition = new Vector2(0, -250);
             bRt.sizeDelta = new Vector2(400, 80);
@@ -167,6 +173,12 @@ namespace Menus.Scripts
             Cursor.lockState = CursorLockMode.None;
         }
 
+        private void ReturnToLevels()
+        {
+            // Mantenemos la red activa para que LevelsMenu pueda sincronizar datos
+            SceneManager.LoadScene(levelsMenuScene);
+        }
+
         private void CreateDecoration(string sym, Transform parent, Vector2 pos, float size)
         {
             GameObject dec = new GameObject("Deco");
@@ -183,21 +195,33 @@ namespace Menus.Scripts
 
         private void UpdateLevelsData()
         {
-            string currentScene = SceneManager.GetActiveScene().name;
-            float timeTaken = Time.timeSinceLevelLoad;
-            string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
+            string currentScene = LevelsMenu.ultimoNivelSession;
+            float timeTaken = LevelsMenu.ultimoTiempoSession;
 
-            // Try to find the level in the static list
-            var level = LevelsMenu.listaNiveles.Find(n => n.nombreNivel.ToLower() == currentScene.ToLower());
+            if (string.IsNullOrEmpty(currentScene)) currentScene = SceneManager.GetActiveScene().name;
+
+            Debug.Log($"[Defeat] Intentando registrar tiempo: {timeTaken} en escena: {currentScene}");
+
+            // Buscar el nivel en la lista estática
+            var level = LevelsMenu.listaNiveles.Find(n =>
+                (n.escenaNombre != null && n.escenaNombre.ToLower() == currentScene.ToLower()) ||
+                (n.nombreNivel != null && n.nombreNivel.Replace(" ", "").ToLower() == currentScene.Replace(" ", "").ToLower()));
+
             if (level != null)
             {
-                // Update timer even if failed
-                level.mejorTiempo = timeStr;
+                level.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), timeTaken, false);
+                Debug.Log($"[Defeat] Tiempo registrado para {level.nombreNivel}: {level.mejorTiempo}");
             }
-            else if (LevelsMenu.listaNiveles.Count > 0)
+            else
             {
-                var first = LevelsMenu.listaNiveles[0];
-                first.mejorTiempo = timeStr;
+                // Si el nivel no existe (ej: empezamos desde esta escena), lo creamos
+                LevelData newLevel = ScriptableObject.CreateInstance<LevelData>();
+                newLevel.nombreNivel = currentScene;
+                newLevel.escenaNombre = currentScene;
+                newLevel.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), timeTaken, false);
+
+                LevelsMenu.listaNiveles.Add(newLevel);
+                Debug.Log($"[Defeat] Nivel '{currentScene}' no existía. Creado y registrado.");
             }
         }
     }

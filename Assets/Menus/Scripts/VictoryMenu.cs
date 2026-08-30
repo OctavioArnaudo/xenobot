@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using NGO.Networking;
 using UnityEngine.InputSystem;
+using Unity.Netcode;
 
 namespace Menus.Scripts
 {
@@ -108,7 +109,7 @@ namespace Menus.Scripts
 
             // Stats
             string playerName = LocalUserConfig.UserName;
-            float timeTaken = Time.timeSinceLevelLoad;
+            float timeTaken = LevelsMenu.ultimoTiempoSession;
             string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
 
             GameObject stats = new GameObject("Stats");
@@ -127,7 +128,7 @@ namespace Menus.Scripts
             btn.transform.SetParent(panel.transform, false);
             btn.AddComponent<Image>().color = new Color(0.1f, 0.1f, 0.1f);
             var bBtn = btn.AddComponent<Button>();
-            bBtn.onClick.AddListener(() => SceneManager.LoadScene(levelsMenuScene));
+            bBtn.onClick.AddListener(ReturnToLevels);
             var bRt = btn.GetComponent<RectTransform>();
             bRt.anchoredPosition = new Vector2(0, -200);
             bRt.sizeDelta = new Vector2(400, 80);
@@ -149,6 +150,12 @@ namespace Menus.Scripts
             Cursor.lockState = CursorLockMode.None;
         }
 
+        private void ReturnToLevels()
+        {
+            // Mantenemos la red activa para que LevelsMenu pueda sincronizar datos
+            SceneManager.LoadScene(levelsMenuScene);
+        }
+
         private void CreateDecoration(string sym, Transform parent, Vector2 pos, float size)
         {
             GameObject dec = new GameObject("Deco");
@@ -165,30 +172,33 @@ namespace Menus.Scripts
 
         private void UpdateLevelsData()
         {
-            string currentScene = SceneManager.GetActiveScene().name;
-            float timeTaken = Time.timeSinceLevelLoad;
-            string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
+            string currentScene = LevelsMenu.ultimoNivelSession;
+            float timeTaken = LevelsMenu.ultimoTiempoSession;
             string playerName = LocalUserConfig.UserName;
 
-            // Try to find the level in the static list
-            var level = LevelsMenu.listaNiveles.Find(n => n.nombreNivel.ToLower() == currentScene.ToLower());
+            if (string.IsNullOrEmpty(currentScene)) currentScene = SceneManager.GetActiveScene().name;
+
+            Debug.Log($"[Victory] Registrando éxito: {playerName} | Tiempo: {timeTaken} | Escena: {currentScene}");
+
+            var level = LevelsMenu.listaNiveles.Find(n =>
+                (n.escenaNombre != null && n.escenaNombre.ToLower() == currentScene.ToLower()) ||
+                (n.nombreNivel != null && n.nombreNivel.Replace(" ", "").ToLower() == currentScene.Replace(" ", "").ToLower()));
+
             if (level != null)
             {
-                level.mejorTiempo = timeStr;
-                if (!level.jugadoresCompletados.Contains(playerName))
-                {
-                    level.jugadoresCompletados.Add(playerName);
-                }
+                level.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), timeTaken, true, playerName);
+                Debug.Log($"[Victory] Nivel {level.nombreNivel} actualizado correctamente.");
             }
-            else if (LevelsMenu.listaNiveles.Count > 0)
+            else
             {
-                // If not found by scene name, update the first one for testing
-                var first = LevelsMenu.listaNiveles[0];
-                first.mejorTiempo = timeStr;
-                if (!first.jugadoresCompletados.Contains(playerName))
-                {
-                    first.jugadoresCompletados.Add(playerName);
-                }
+                // Crear nivel dinámicamente si no existe
+                LevelData newLevel = ScriptableObject.CreateInstance<LevelData>();
+                newLevel.nombreNivel = currentScene;
+                newLevel.escenaNombre = currentScene;
+                newLevel.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), timeTaken, true, playerName);
+
+                LevelsMenu.listaNiveles.Add(newLevel);
+                Debug.Log($"[Victory] Nivel '{currentScene}' creado dinámicamente con éxito de {playerName}.");
             }
         }
     }

@@ -23,6 +23,18 @@ public class MainMenu : MonoBehaviour
 
     private void Start()
     {
+        // Limpieza absoluta de cursor
+        Cursor.visible = true;
+        Cursor.lockState = CursorLockMode.None;
+
+        // Limpiar TODOS los NetworkManagers para evitar duplicados y errores de Singleton
+        var allNMs = Object.FindObjectsByType<NetworkManager>(FindObjectsSortMode.None);
+        foreach (var nm in allNMs)
+        {
+            if (nm.IsListening) nm.Shutdown();
+            Destroy(nm.gameObject);
+        }
+
         SetupUI();
     }
 
@@ -151,21 +163,9 @@ public class MainMenu : MonoBehaviour
 
     public void Jugar()
     {
-        if (NetworkManager.Singleton != null)
-        {
-            NetworkManager.Singleton.OnServerStarted += OnHostIniciado;
-            NetworkManager.Singleton.StartHost();
-        }
-        else CargarEscena(escenaJuego);
-    }
-
-    private void OnHostIniciado()
-    {
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
-        {
-            NetworkManager.Singleton.OnServerStarted -= OnHostIniciado;
-            NetworkManager.Singleton.SceneManager.LoadScene(escenaJuego, LoadSceneMode.Single);
-        }
+        // El botón JUGAR ahora solo carga la escena de red de forma offline
+        // La red se iniciará realmente dentro de NetworkScene tras configurar el nombre/host
+        CargarEscena(escenaJuego);
     }
 
     public void AbrirNiveles() => CargarEscena(escenaNiveles);

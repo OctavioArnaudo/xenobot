@@ -290,10 +290,12 @@ namespace NGO.Networking
         {
             Debug.Log("[Lobby] Saliendo de la sesión y regresando al menú...");
 
-            if (NetworkManager.Singleton != null)
+            // Detener y destruir TODOS los NetworkManagers para una limpieza total
+            var allNMs = Object.FindObjectsByType<NetworkManager>(FindObjectsSortMode.None);
+            foreach (var nm in allNMs)
             {
-                // 1. Detenemos la red (Host o Cliente)
-                NetworkManager.Singleton.Shutdown();
+                if (nm.IsListening) nm.Shutdown();
+                Destroy(nm.gameObject);
             }
 
             // 2. Aseguramos que el cursor sea visible y libre para interactuar con el menú principal

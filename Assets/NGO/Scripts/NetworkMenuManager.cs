@@ -15,6 +15,10 @@ namespace NGO.Networking
 
         private void Start()
         {
+            // Forzar visibilidad del mouse en los paneles de red
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+
             Application.runInBackground = true;
             Debug.Log("[NetworkMenu] Manager inicializado correctamente.");
             ShowMainMenu();

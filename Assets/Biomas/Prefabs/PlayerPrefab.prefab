@@ -521,14 +521,10 @@ GameObject:
   - component: {fileID: 582523834337148413}
   - component: {fileID: -6156563700359369647}
   - component: {fileID: 7450631966458783124}
-  - component: {fileID: -1159158973847089039}
   - component: {fileID: -701033391835306716}
-  - component: {fileID: 2424458384992384426}
   - component: {fileID: 5714182025742897013}
-  - component: {fileID: 629433202887019505}
-  - component: {fileID: 7211680774310309808}
-  - component: {fileID: -2484650744894446823}
-  - component: {fileID: 9106002437961793845}
+  - component: {fileID: 5512223289139937047}
+  - component: {fileID: 6433554270011581158}
   m_Layer: 3
   m_Name: PlayerPrefab
   m_TagString: Player
@@ -593,6 +589,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 51c8784d31e4e104f84c06fdcde69941, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Inventory
+  ShowTopMostFoldoutHeaderGroup: 1
   panelWidth: 1500
   panelHeight: 1000
   columns: 6
@@ -618,26 +615,11 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   attackRange: 2
   attackDamage: 25
-  enemyLayer:
+  attackCooldown: 1
+  targetLayers:
     serializedVersion: 2
-    m_Bits: 128
---- !u!114 &-1159158973847089039
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804703078109025515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4c0c0fd88a6952b4a9b9c08cd93b2c3d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CharacterStats
-  attackRange: {x: 5, y: 15}
-  defenseRange: {x: 3, y: 10}
-  attackPerLevel: 2
-  defensePerLevel: 1.5
-  expToLevelUp: 100
+    m_Bits: 0
+  swingVfxPrefab: {fileID: 0}
 --- !u!114 &-701033391835306716
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -651,26 +633,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerHealth
   ShowTopMostFoldoutHeaderGroup: 1
+  team: 1
   maxHealth: 100
   maxJetpack: 100
-  healthColor: {r: 0.85, g: 0.1, b: 0.1, a: 1}
-  jetpackColor: {r: 0.1, g: 0.85, b: 0.85, a: 1}
-  backgroundColor: {r: 0, g: 0, b: 0, a: 0.6}
-  flashFullColor: {r: 1, g: 1, b: 1, a: 1}
-  flashEmptyColor: {r: 1, g: 0.3, b: 0.3, a: 1}
---- !u!114 &2424458384992384426
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804703078109025515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d101, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatTeamMember
-  Team: 1
+  OnDeath:
+    m_PersistentCalls:
+      m_Calls: []
+  OnTakeDamage:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &5714182025742897013
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -682,12 +653,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.ClickToShoot
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
+  ShowTopMostFoldoutHeaderGroup: 1
   AimCamera: {fileID: 9017485172064717998}
   Muzzle: {fileID: 7891991899054359580}
   ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   Damage: 25
-  ProjectileSpeed: 40
   FireRate: 20
   AimDistance: 100
   AimLayers:
@@ -698,7 +669,7 @@ MonoBehaviour:
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
---- !u!114 &629433202887019505
+--- !u!114 &5512223289139937047
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -707,77 +678,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1804703078109025515}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d103, type: 3}
+  m_Script: {fileID: 11500000, guid: 2904cffc65ad3284a9a3788c7bb28f29, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.ModularCombat.CombatDamageReceiver
-  MaxHealth: 100
-  DestroyOnDeath: 1
-  DestroyDelay: 0
-  DeathVfxPrefab: {fileID: 0}
-  DeathVfxSpawnPoint: {fileID: 0}
-  DeathVfxLifetime: 4
-  OnDamaged:
-    m_PersistentCalls:
-      m_Calls: []
-  OnDied:
-    m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: 
-        m_MethodName: 
-        m_Mode: 0
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: 
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
---- !u!114 &7211680774310309808
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804703078109025515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a55dd99f1c0b46b1a0f9c15c2fbf0410, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NetworkPlayerLocalSetup
-  ShowTopMostFoldoutHeaderGroup: 1
-  localCameras: []
-  localAudioListeners: []
-  localPlayerInputs: []
---- !u!114 &-2484650744894446823
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804703078109025515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d21427ab2a0fc9445902788d1794b519, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::StatsHUD
-  width: 450
-  height: 200
-  margin: 100
-  fontSize: 15
---- !u!114 &9106002437961793845
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804703078109025515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b49ef68f170450a46a7d831fe5d1158e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NGO.Networking.NetworkPlayerIdentity
+  m_EditorClassIdentifier: Assembly-CSharp::StatsController
   ShowTopMostFoldoutHeaderGroup: 1
   playerName:
     UpdateTraits:
@@ -822,13 +725,35 @@ MonoBehaviour:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: {r: 1, g: 1, b: 1, a: 1}
-  playerCustomID:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 0
-  outlineRenderer: {fileID: 0}
   nameTagText: {fileID: 0}
+  colorRenderer: {fileID: 0}
+  attackRange: {x: 5, y: 15}
+  defenseRange: {x: 3, y: 10}
+  attackPerLevel: 2
+  defensePerLevel: 1.5
+  expToLevelUp: 100
+  fontSize: 14
+  barWidth: 180
+  barHeight: 8
+  maxAttackScale: 100
+  maxDefenseScale: 100
+--- !u!114 &6433554270011581158
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1804703078109025515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a1f0ccf9aa977047af3b55cf76893f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.JetpackController
+  ShowTopMostFoldoutHeaderGroup: 1
+  jetpackForce: 60
+  fuelConsumption: 20
+  fuelRegen: 25
+  maxUpwardVelocity: 15
 --- !u!1 &1833995220940253086
 GameObject:
   m_ObjectHideFlags: 0
