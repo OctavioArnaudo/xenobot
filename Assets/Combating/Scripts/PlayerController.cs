@@ -450,17 +450,13 @@ namespace Xenobot.Movement
 
         private void JumpAndGravity()
         {
-            bool currentlyHoldingJump = false;
-            #if ENABLE_INPUT_SYSTEM
-            if (Keyboard.current != null) currentlyHoldingJump = Keyboard.current.spaceKey.isPressed;
-            #endif
-
             // --- 1. LÓGICA PRIORITARIA: JETPACK ---
             bool isUsingJetpack = false;
             if (_jetpack != null)
             {
-                isUsingJetpack = _jetpack.ProcessFlight(currentlyHoldingJump, Grounded, ref _verticalVelocity);
-                if (isUsingJetpack) jump = false; // Cancel normal jump if flying
+                // Usar _isJumpHeld que es actualizado por OnJump del InputSystem
+                isUsingJetpack = _jetpack.ProcessFlight(_isJumpHeld, Grounded, ref _verticalVelocity);
+                if (isUsingJetpack) jump = false; // Cancelar salto normal si estamos volando
             }
 
             // --- 2. LÓGICA DE TIERRA: SALTO NORMAL ---
