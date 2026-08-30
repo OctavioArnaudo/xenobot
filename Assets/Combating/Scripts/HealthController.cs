@@ -32,6 +32,25 @@ namespace Combating.Scripts
         public int CurrentHP => IsNetworkActive ? currentHealth.Value : m_OfflineHealth;
         public float JetpackFuel => m_Jetpack;
 
+        // Metodo para expandir limites y curar al subir de nivel
+        public void UpgradeMaxStats(int healthBonus, float jetpackBonus)
+        {
+            maxHealth += healthBonus;
+            maxJetpack += jetpackBonus;
+
+            // Curar/Recargar bono
+            if (IsNetworkActive)
+            {
+                if (IsServer) currentHealth.Value = Mathf.Min(maxHealth, currentHealth.Value + healthBonus);
+            }
+            else
+            {
+                m_OfflineHealth = Mathf.Min(maxHealth, m_OfflineHealth + healthBonus);
+            }
+
+            AddFuel(jetpackBonus);
+        }
+
         void Awake()
         {
             m_OfflineHealth = maxHealth;
@@ -52,12 +71,24 @@ namespace Combating.Scripts
         public void TakeDamage(int damage)
         {
             if (damage <= 0) return;
-            if (IsNetworkActive) { if (IsServer) currentHealth.Value = Mathf.Max(0, currentHealth.Value - damage); }
-            else m_OfflineHealth = Mathf.Max(0, m_OfflineHealth - damage);
+
+            int finalDamage = damage;
+
+            // Integracion con StatsController: Defensa
+            if (TryGetComponent<StatsController>(out var stats))
+            {
+                // Formula de mitigacion: Dano = DanoBase * (10 / (10 + Defensa))
+                // Si la defensa es 10, recibes 50% de dano.
+                finalDamage = Mathf.RoundToInt(damage * (10f / (10f + stats.Defense)));
+                if (finalDamage < 1) finalDamage = 1; // Minimo 1 de dano
+            }
+
+            if (IsNetworkActive) { if (IsServer) currentHealth.Value = Mathf.Max(0, currentHealth.Value - finalDamage); }
+            else m_OfflineHealth = Mathf.Max(0, m_OfflineHealth - finalDamage);
 
             if (IsOwner && team == Team.Player) m_DamageFlashTimer = 0.6f;
 
-            OnTakeDamage?.Invoke(damage);
+            OnTakeDamage?.Invoke(finalDamage);
             if (CurrentHP <= 0) Die();
         }
 

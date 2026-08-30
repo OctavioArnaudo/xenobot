@@ -147,6 +147,13 @@ public class StatsController : NetworkBehaviour
         Attack += attackPerLevel;
         Defense += defensePerLevel;
         expToLevelUp *= 1.2f;
+
+        // Bono de Vida y Jetpack al subir de nivel
+        if (m_PlayerHealth != null)
+        {
+            // Expandir maximos y curar un poco (ej: 15 HP y 20 Fuel extra por nivel)
+            m_PlayerHealth.UpgradeMaxStats(15, 20f);
+        }
     }
 
     void EnsureAssets()
