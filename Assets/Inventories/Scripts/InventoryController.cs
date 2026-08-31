@@ -219,6 +219,10 @@ public class InventoryController : NetworkBehaviour
         GUI.DrawTexture(panel, _texPanel);
         GUI.Label(new Rect(x0, y0 + 8, panelWidth, titleH), "INVENTARIO", _titleSty);
 
+        // Mensaje Centralizado de Coleccionables (dentro del menu)
+        string collText = $"COLECTABLES EN BIOMA: {s_CollectiblesRemaining}";
+        GUI.Label(new Rect(x0 + padding, y0 + panelHeight - 35, panelWidth - padding * 2, 25), collText, _ddNorm);
+
         for (int i = 0; i < _keys.Count; i++) { if (i == _selectedIndex && !_dragging) continue; DrawCell(i, false, _dragging && i == _dragIndex); }
         if (_bag.Count == 0) GUI.Label(new Rect(x0, y0 + titleH, panelWidth, panelHeight - titleH), "Inventario vacio", _emptySty);
         if (!_dragging && _selectedIndex >= 0 && _selectedIndex < _keys.Count) DrawCell(_selectedIndex, true, false);

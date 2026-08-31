@@ -11,6 +11,7 @@ namespace Combating.Scripts
         public Camera AimCamera;
         public Transform Muzzle;
         public ProjectileController ProjectilePrefab;
+        public Renderer[] visualsToRotate; // Renders or parts that should tilt (Pitch)
 
         [Header("Shooting")]
         public float Damage = 25f;
@@ -24,6 +25,7 @@ namespace Combating.Scripts
         public ParticleSystem MuzzleFlash;
         public LineRenderer TracerPrefab;
         public float TracerLifetime = 0.05f;
+        public float rotationSpeed = 10f;
 
         private PlayerInputHandler m_Input;
         private HealthController m_Health;
@@ -37,6 +39,10 @@ namespace Combating.Scripts
             m_Health = GetComponent<HealthController>();
             if (AimCamera == null) AimCamera = GetComponentInChildren<Camera>() ?? Camera.main;
             if (Muzzle == null) Muzzle = transform;
+
+            // Auto-detect visuals if not assigned (compatibility with previous setup)
+            if (visualsToRotate == null || visualsToRotate.Length == 0)
+                visualsToRotate = GetComponentsInChildren<Renderer>();
         }
 
         void Update()
@@ -60,15 +66,12 @@ namespace Combating.Scripts
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
 
             float finalDamage = Damage;
-            // Escalado de dano por Stats
             if (TryGetComponent<StatsController>(out var stats))
             {
                 finalDamage = Damage * (stats.Attack / 10f);
             }
 
             Vector3 direction = GetAimDirection();
-
-            // Mayor distancia para que nazca fuera del robot
             Vector3 spawnPos = Muzzle.position + direction * 0.8f;
 
             if (IsNetworkActive) RequestFireServerRpc(direction, spawnPos, spawnPos + direction * AimDistance, finalDamage);
@@ -77,8 +80,15 @@ namespace Combating.Scripts
             return true;
         }
 
+        /// <summary>
+        /// Logic for AI or remote triggers.
+        /// Handles visual rotation towards target internally.
+        /// </summary>
         public bool FireAt(Vector3 targetPosition)
         {
+            // Internal logic: How to shoot (Rotation + Firing)
+            RotateVisualsTowards(targetPosition);
+
             if (Time.time < m_NextFireTime || ProjectilePrefab == null) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
 
@@ -95,6 +105,22 @@ namespace Combating.Scripts
             else SpawnProjectileLocally(direction, spawnPos, targetPosition, finalDamage);
 
             return true;
+        }
+
+        private void RotateVisualsTowards(Vector3 targetPosition)
+        {
+            if (visualsToRotate == null) return;
+
+            Vector3 direction = (targetPosition - transform.position).normalized;
+            if (direction.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetFullRotation = Quaternion.LookRotation(direction);
+                foreach (var r in visualsToRotate)
+                {
+                    if (r != null)
+                        r.transform.rotation = Quaternion.Slerp(r.transform.rotation, targetFullRotation, rotationSpeed * Time.deltaTime);
+                }
+            }
         }
 
         [ServerRpc]

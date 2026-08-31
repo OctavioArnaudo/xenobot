@@ -6,8 +6,8 @@ namespace Combating.Scripts
 {
     /// <summary>
     /// Melee attack system.
-    /// Can apply direct damage or spawn short-range effects.
-    /// Works for both Players and Enemies.
+    /// Manages its own rotation and execution logic.
+    /// Works for both Players and AI Enemies.
     /// </summary>
     public class MeleeController : NetworkBehaviour
     {
@@ -17,8 +17,10 @@ namespace Combating.Scripts
         public float attackCooldown = 1f;
         public LayerMask targetLayers;
 
-        [Header("Visuals (Optional)")]
+        [Header("Visuals")]
         public ProjectileController swingVfxPrefab;
+        public Renderer[] visualsToRotate;
+        public float rotationSpeed = 10f;
 
         private HealthController m_Health;
         private float m_NextAttackTime;
@@ -28,6 +30,8 @@ namespace Combating.Scripts
         void Awake()
         {
             m_Health = GetComponent<HealthController>();
+            if (visualsToRotate == null || visualsToRotate.Length == 0)
+                visualsToRotate = GetComponentsInChildren<Renderer>();
         }
 
         public void OnAttack(InputValue value)
@@ -36,9 +40,20 @@ namespace Combating.Scripts
             PerformMeleeAction();
         }
 
-        public void PerformMeleeAction()
+        /// <summary>
+        /// Main method to perform the melee action.
+        /// Can optionally look at a target position.
+        /// </summary>
+        public void PerformMeleeAction(Vector3? targetPosition = null)
         {
             if (Time.time < m_NextAttackTime) return;
+
+            // How to attack: Rotate + Execute
+            if (targetPosition.HasValue)
+            {
+                RotateVisualsTowards(targetPosition.Value);
+            }
+
             m_NextAttackTime = Time.time + attackCooldown;
 
             if (IsNetworkActive)
@@ -48,6 +63,21 @@ namespace Combating.Scripts
             else
             {
                 ExecuteMelee();
+            }
+        }
+
+        private void RotateVisualsTowards(Vector3 targetPosition)
+        {
+            if (visualsToRotate == null) return;
+            Vector3 direction = (targetPosition - transform.position).normalized;
+            if (direction.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetFullRotation = Quaternion.LookRotation(direction);
+                foreach (var r in visualsToRotate)
+                {
+                    if (r != null)
+                        r.transform.rotation = Quaternion.Slerp(r.transform.rotation, targetFullRotation, rotationSpeed * Time.deltaTime);
+                }
             }
         }
 
@@ -74,14 +104,12 @@ namespace Combating.Scripts
                 var targetHealth = hit.GetComponentInParent<HealthController>();
                 if (targetHealth != null)
                 {
-                    // Team check (Friendly fire off)
                     if (m_Health != null && targetHealth.team == m_Health.team) continue;
-
                     targetHealth.TakeDamage((int)finalDamage);
                 }
             }
 
-            // 2. Projectile-based Visual (as requested: "melee con proyectiles")
+            // 2. Visual Effects
             if (swingVfxPrefab != null)
             {
                 ProjectileController vfx = Instantiate(swingVfxPrefab, transform.position + transform.forward, transform.rotation);

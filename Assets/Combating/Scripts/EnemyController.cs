@@ -4,106 +4,62 @@ using Unity.Netcode;
 
 namespace Combating.Scripts
 {
+    /// <summary>
+    /// AI Logic Controller.
+    /// Manages Patrol, Pursuit, and Decision Making.
+    /// Delegates Combat to ShootController and/or MeleeController if they exist.
+    /// </summary>
     public class EnemyController : NetworkBehaviour
     {
-        public enum AttackType { Melee, Ranged }
+        public enum AIState { Patrol, Chase, Attack }
 
         [Header("AI Config")]
-        public AttackType attackType = AttackType.Ranged;
-        [SerializeField] private string playerTag = "Player"; // Cambiado para coincidir con la escena
+        public AIState currentState = AIState.Patrol;
+        [SerializeField] private string playerTag = "Player";
 
         [Header("Movement")]
-        public float hoverHeight = 3.5f; // Altura para sobrevolar el piso
+        public float hoverHeight = 3.5f;
         public float wanderSpeed = 2f;
-        public float chaseSpeed = 4f;
+        public float chaseSpeed = 5f;
         public float turnSpeed = 10f;
-        public float wanderRadius = 10f;
+        public float wanderRadius = 15f;
 
-        [Header("Combat Ranges")]
-        public float detectionRange = 18f;
-        public float chaseRange = 10f; // Añadido para coincidir con la escena
-        public float attackRange = 2f;  // Ajustado al valor común de la escena
+        [Header("AI Perception & Ranges")]
+        public float detectionRange = 20f;
+        public float shootRange = 12f;
         public float meleeRange = 2.5f;
-        public float attackCooldown = 1.5f;
 
-        [Header("Visual Feedback")]
-        public Renderer[] bodyRenderers; // Lista de renderers para efectos
-        public Color flashColor = Color.white;
-        public float flashDuration = 0.15f;
+        [Header("Combat (Optional Controllers)")]
+        public ShootController m_Shooter;
+        public MeleeController m_Melee;
+        public HealthController m_Health;
+        public SpawnController m_Spawn;
 
         private NavMeshAgent m_Agent;
         private Transform m_Target;
-        private ShootController m_Shooter;
-        private MeleeController m_Melee;
-        private HealthController m_Health;
-        private float m_AttackTimer;
+        private Vector3 _startPosition;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
         private bool CanExecuteLogic => !IsNetworkActive || IsServer;
 
         void Awake()
         {
-            // Buscar el agente en la raiz o en los hijos (reorganizado)
-            m_Agent = GetComponentInChildren<NavMeshAgent>();
+            _startPosition = transform.position;
+            m_Agent = GetComponentInChildren<NavMeshAgent>() ?? gameObject.AddComponent<NavMeshAgent>();
 
-            // Zero-Dependency Bootstrapping: Agregar NavMeshAgent si falta totalmente
-            if (m_Agent == null)
-            {
-                m_Agent = gameObject.AddComponent<NavMeshAgent>();
-            }
-
-            // Aplicar altura de sobrevuelo
             if (m_Agent != null)
             {
                 m_Agent.baseOffset = hoverHeight;
-                m_Agent.updateRotation = false; // Manejamos la rotacion nosotros para evitar tirones
+                m_Agent.updateRotation = false;
             }
 
-            m_Shooter = GetComponent<ShootController>();
-            m_Melee = GetComponent<MeleeController>();
-            m_Health = GetComponent<HealthController>();
-
-            if (m_Shooter == null && attackType == AttackType.Ranged) Debug.LogWarning($"[EnemyController] {gameObject.name} no tiene ShootController para atacar a distancia.");
-            if (m_Melee == null && attackType == AttackType.Melee) Debug.LogWarning($"[EnemyController] {gameObject.name} no tiene MeleeController para ataque cuerpo a cuerpo.");
+            // Auto-detección opcional de módulos
+            if (m_Shooter == null) m_Shooter = GetComponent<ShootController>();
+            if (m_Melee == null) m_Melee = GetComponent<MeleeController>();
+            if (m_Health == null) m_Health = GetComponent<HealthController>();
+            if (m_Spawn == null) m_Spawn = GetComponent<SpawnController>();
 
             if (m_Shooter != null) m_Shooter.UsePlayerInput = false;
-
-            // Zero-Dependency: Intentar encontrar todos los renderers en los hijos (especialmente si esta en EnemyRender)
-            if (bodyRenderers == null || bodyRenderers.Length == 0)
-            {
-                bodyRenderers = GetComponentsInChildren<Renderer>();
-            }
-
-            if (m_Health != null)
-            {
-                m_Health.OnTakeDamage.AddListener((dmg) => PlayHitFlash());
-            }
-        }
-
-        private void PlayHitFlash()
-        {
-            if (bodyRenderers != null && bodyRenderers.Length > 0)
-            {
-                foreach (var renderer in bodyRenderers)
-                {
-                    if (renderer == null) continue;
-                    var mpb = new MaterialPropertyBlock();
-                    mpb.SetColor("_EmissionColor", flashColor * 2f);
-                    renderer.SetPropertyBlock(mpb);
-                }
-                Invoke(nameof(ResetFlash), flashDuration);
-            }
-        }
-
-        private void ResetFlash()
-        {
-            if (bodyRenderers != null)
-            {
-                foreach (var renderer in bodyRenderers)
-                {
-                    if (renderer != null) renderer.SetPropertyBlock(null);
-                }
-            }
         }
 
         public override void OnNetworkSpawn()
@@ -114,14 +70,15 @@ namespace Combating.Scripts
         void Update()
         {
             if (!CanExecuteLogic) return;
-            if (m_Health != null && m_Health.CurrentHP <= 0) return;
+
+            if (m_Health != null && m_Health.CurrentHP <= 0)
+            {
+                StopMoving();
+                return;
+            }
 
             FindTarget();
-
-            if (m_Target != null)
-                ChaseAndAttack();
-            else
-                Wander();
+            UpdateAIState();
         }
 
         void FindTarget()
@@ -130,73 +87,89 @@ namespace Combating.Scripts
             {
                 if (Vector3.Distance(transform.position, m_Target.position) > detectionRange)
                     m_Target = null;
-                else return;
             }
 
-            var players = GameObject.FindGameObjectsWithTag(playerTag);
-            float closest = detectionRange;
-            foreach (var p in players)
+            if (m_Target == null)
             {
-                float d = Vector3.Distance(transform.position, p.transform.position);
-                if (d <= closest)
+                var players = GameObject.FindGameObjectsWithTag(playerTag);
+                float closest = detectionRange;
+                foreach (var p in players)
                 {
-                    closest = d;
-                    m_Target = p.transform;
+                    float d = Vector3.Distance(transform.position, p.transform.position);
+                    if (d <= closest)
+                    {
+                        closest = d;
+                        m_Target = p.transform;
+                    }
                 }
             }
         }
 
-        void ChaseAndAttack()
+        void UpdateAIState()
         {
-            float distance = Vector3.Distance(transform.position, m_Target.position);
-            m_AttackTimer -= Time.deltaTime;
-
-            RotateTowards(m_Target.position);
-
-            float currentRange = (attackType == AttackType.Melee) ? meleeRange : attackRange;
-
-            if (distance > currentRange)
+            if (m_Target != null)
             {
-                MoveTo(m_Target.position, chaseSpeed);
+                float distance = Vector3.Distance(transform.position, m_Target.position);
+
+                // Determinamos si el enemigo puede atacar basándonos en los controladores presentes
+                bool canShoot = m_Shooter != null && distance <= shootRange;
+                bool canMelee = m_Melee != null && distance <= meleeRange;
+
+                if (canShoot || canMelee)
+                {
+                    currentState = AIState.Attack;
+                    ExecuteCombat(canShoot, canMelee);
+
+                    // Si solo puede disparar pero está lejos de melee, seguimos moviéndonos si es necesario
+                    // o nos detenemos según la lógica de ataque.
+                    // Por ahora, el ataque detiene el movimiento de navegación para precisión.
+                    StopMoving();
+                }
+                else
+                {
+                    currentState = AIState.Chase;
+                    MoveTo(m_Target.position, chaseSpeed);
+                    RotateBaseTowards(m_Target.position);
+                }
             }
             else
             {
-                StopMoving();
-                if (m_AttackTimer <= 0f)
-                {
-                    PerformAttack();
-                    m_AttackTimer = attackCooldown;
-                }
+                currentState = AIState.Patrol;
+                Wander();
             }
         }
 
         void Wander()
         {
-            if (m_Agent == null || !m_Agent.isOnNavMesh || m_Agent.pathPending || m_Agent.remainingDistance > 0.5f) return;
+            if (m_Agent == null || !m_Agent.isOnNavMesh || m_Agent.pathPending || m_Agent.remainingDistance > 1f) return;
 
-            Vector3 randomPos = transform.position + Random.insideUnitSphere * wanderRadius;
+            Vector3 randomPos = _startPosition + Random.insideUnitSphere * wanderRadius;
             if (NavMesh.SamplePosition(randomPos, out NavMeshHit hit, wanderRadius, 1))
             {
                 MoveTo(hit.position, wanderSpeed);
             }
 
-            // Rotar hacia donde se mueve el agente
             if (m_Agent.velocity.sqrMagnitude > 0.1f)
             {
-                RotateTowards(transform.position + m_Agent.velocity);
+                RotateBaseTowards(transform.position + m_Agent.velocity);
             }
         }
 
-        private void PerformAttack()
+        void ExecuteCombat(bool canShoot, bool canMelee)
         {
             if (m_Target == null) return;
-            if (attackType == AttackType.Melee)
+
+            RotateBaseTowards(m_Target.position);
+
+            // Delegación directa: Cada controlador sabe qué hacer
+            if (canMelee)
             {
-                if (m_Melee != null) m_Melee.PerformMeleeAction();
+                m_Melee.PerformMeleeAction(m_Target.position);
             }
-            else
+
+            if (canShoot)
             {
-                if (m_Shooter != null) m_Shooter.FireAt(m_Target.position + Vector3.up);
+                m_Shooter.FireAt(m_Target.position + Vector3.up);
             }
         }
 
@@ -215,34 +188,15 @@ namespace Combating.Scripts
             if (m_Agent != null && m_Agent.isOnNavMesh) m_Agent.isStopped = true;
         }
 
-        void RotateTowards(Vector3 position)
+        void RotateBaseTowards(Vector3 position)
         {
-            Vector3 direction = (position - transform.position).normalized;
+            Vector3 direction = (position - transform.position);
+            direction.y = 0;
+
             if (direction.sqrMagnitude > 0.001f)
             {
-                // 1. Rotacion de la RAIZ (Solo Yaw/Giro horizontal)
-                // Esto mantiene al NavMeshAgent estable y vertical
-                Vector3 yawDirection = new Vector3(direction.x, 0, direction.z).normalized;
-                if (yawDirection.sqrMagnitude > 0.001f)
-                {
-                    Quaternion targetYaw = Quaternion.LookRotation(yawDirection);
-                    transform.rotation = Quaternion.Slerp(transform.rotation, targetYaw, turnSpeed * Time.deltaTime);
-                }
-
-                // 2. Rotacion de los VISUALES (Pitch/Inclinacion vertical)
-                // Inclinamos los renderers hijos para que miren al player arriba/abajo
-                if (bodyRenderers != null && bodyRenderers.Length > 0)
-                {
-                    Quaternion targetFullRotation = Quaternion.LookRotation(direction);
-                    foreach (var r in bodyRenderers)
-                    {
-                        if (r != null)
-                        {
-                            // Aplicamos la rotacion local relativa al padre para el Pitch
-                            r.transform.rotation = Quaternion.Slerp(r.transform.rotation, targetFullRotation, turnSpeed * Time.deltaTime);
-                        }
-                    }
-                }
+                Quaternion targetYaw = Quaternion.LookRotation(direction.normalized);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetYaw, turnSpeed * Time.deltaTime);
             }
         }
     }
