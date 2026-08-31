@@ -6,7 +6,7 @@ using Unity.Cinemachine;
 /// Zoom con rueda del mouse via FOV de la CinemachineCamera activa.
 /// Attach a cualquier GameObject en la escena.
 /// </summary>
-public class CameraZoom : MonoBehaviour
+public class ZoomController : MonoBehaviour
 {
     [Header("FOV")]
     public float minFov = 20f;

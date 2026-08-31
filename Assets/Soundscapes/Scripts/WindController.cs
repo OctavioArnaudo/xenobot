@@ -2,7 +2,7 @@ using UnityEngine;
 using FMODUnity;
 using FMOD.Studio;
 
-public class TriggerViento : MonoBehaviour
+public class WindController : MonoBehaviour
 {
     [SerializeField] EventReference sfxViento;
     EventInstance _viento;
