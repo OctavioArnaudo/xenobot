@@ -21,6 +21,7 @@ namespace Combating.Scripts
         private HealthController m_Health;
         private CharacterController m_CharController;
         private bool m_IsUsingJetpack = false;
+        private bool m_JetpackDepleted = false; // Flag to prevent stuttering when fuel hits zero
 
         void Awake()
         {
@@ -45,13 +46,28 @@ namespace Combating.Scripts
 
             if (isGrounded)
             {
-                // Regenerar fuel rapidamente en el suelo
+                // Reseteamos el estado de agotamiento y regeneramos fuel rápidamente en el suelo
+                m_JetpackDepleted = false;
                 m_Health.AddFuel(fuelRegen * Time.deltaTime);
                 return false;
             }
 
-            // Lógica de Vuelo
-            if (isJumpHeld && m_Health.JetpackFuel > 0)
+            // Si soltamos el botón de salto, el jetpack deja de estar en estado "agotado"
+            // permitiendo que se use de nuevo en cuanto tenga algo de fuel.
+            if (!isJumpHeld)
+            {
+                m_JetpackDepleted = false;
+            }
+
+            // Si el fuel llega a cero, marcamos el jetpack como agotado.
+            // Esto evita que el pequeño fuel regenerado en el aire lo active por micro-segundos (stuttering).
+            if (m_Health.JetpackFuel <= 0)
+            {
+                m_JetpackDepleted = true;
+            }
+
+            // Lógica de Vuelo: Solo se activa si hay fuel, se mantiene el salto Y no está agotado
+            if (isJumpHeld && !m_JetpackDepleted && m_Health.JetpackFuel > 0)
             {
                 m_IsUsingJetpack = true;
 
@@ -62,7 +78,6 @@ namespace Combating.Scripts
                 }
 
                 // Determinar si estamos impulsando o sobrevolando
-                // Si ya alcanzamos una velocidad vertical positiva, aplicamos menos fuerza para "sobrevolar"
                 float currentForce = (verticalVelocity > hoverThreshold) ? hoverForce : jetpackForce;
 
                 verticalVelocity += currentForce * Time.deltaTime;
@@ -76,7 +91,7 @@ namespace Combating.Scripts
             }
             else
             {
-                // Regenerar fuel muy lentamente en el aire si no se usa
+                // Si no se está usando, se recarga automáticamente (muy lento en el aire)
                 m_Health.AddFuel((fuelRegen * 0.2f) * Time.deltaTime);
             }
 
