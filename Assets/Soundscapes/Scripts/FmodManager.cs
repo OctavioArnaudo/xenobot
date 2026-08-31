@@ -1,7 +1,7 @@
 using UnityEngine;
 using FMODUnity;
 
-public class ControladorMusicaZonas : MonoBehaviour {
+public class FmodManager : MonoBehaviour {
     [Header("Componente de FMOD")]
     [SerializeField] private StudioEventEmitter musicaEmitter;
 

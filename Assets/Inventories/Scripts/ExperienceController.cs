@@ -1,99 +1,70 @@
-﻿using UnityEngine;
+using UnityEngine;
 
-public class ExpOrb : MonoBehaviour
+/// <summary>
+/// Specialized script to generate experience orb visuals procedurally.
+/// Designed to be added to a child GameObject of a Pickup to handle its rendering.
+/// </summary>
+[ExecuteAlways]
+public class ExperienceController : MonoBehaviour
 {
-    [Header("EXP")]
-    public float expAmount = 25f;
-
-    [Header("Visual")]
-    public float sphereRadius = 0.3f;
-    public Color glowColor = new Color(1f, 0.85f, 0.1f, 1f);
-    public float lightIntensity = 3f;
+    [Header("Orb Settings")]
+    public float sphereRadius = 0.5f;
+    public Color orbColor = new Color(1f, 0.85f, 0f); // Golden yellow
+    public float lightIntensity = 2.5f;
     public float lightRange = 4f;
-
-    [Header("Movimiento")]
-    public float bobSpeed = 2f;
-    public float bobAmount = 0.15f;
-    public float rotateSpeed = 90f;
-
-    Vector3 _startPos;
-    bool _taken;
 
     void Awake()
     {
-        // Cleanup existing colliders
-        foreach (var c in GetComponents<Collider>())
+        GenerateOrbVisuals();
+    }
+
+    public void GenerateOrbVisuals()
+    {
+        // 1. Limpiar visuales previos para evitar duplicados en el hijo
+        foreach (Transform child in transform)
         {
-            if (!c.isTrigger) Destroy(c);
+            if (child.name.StartsWith("Xenobot_"))
+            {
+                if (Application.isPlaying) Destroy(child.gameObject);
+                else DestroyImmediate(child.gameObject);
+            }
         }
 
-        // Crear Esfera Visual usando Primitivas de Unity para evitar fallos de Resources
+        // 2. Crear Esfera Visual como hijo de este objeto (que ya es un hijo del raiz)
         GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        visual.name = "Visual";
+        visual.name = "Xenobot_ExpVisual_Mesh";
         visual.transform.SetParent(transform, false);
-        visual.transform.localScale = Vector3.one * sphereRadius * 2f;
+        visual.transform.localScale = Vector3.one * sphereRadius;
 
-        // Quitar el collider de la primitiva visual para que no estorbe
-        if (visual.TryGetComponent<Collider>(out var cVis)) Destroy(cVis);
+        // Eliminar el collider de la esfera visual (el collider debe estar en el objeto Raiz con el PickupController)
+        if (visual.TryGetComponent<Collider>(out var c))
+        {
+            if (Application.isPlaying) Destroy(c);
+            else DestroyImmediate(c);
+        }
 
+        // 3. Material con Emision
         var mr = visual.GetComponent<MeshRenderer>();
         var shader = Shader.Find("Universal Render Pipeline/Unlit")
                   ?? Shader.Find("Unlit/Color")
                   ?? Shader.Find("Standard");
 
         var mat = new Material(shader);
-        mat.SetColor("_BaseColor", glowColor);
-        mat.SetColor("_Color", glowColor);
-        mr.material = mat;
+        mat.color = orbColor;
+        if (shader.name.Contains("Lit") || shader.name.Contains("Standard"))
+        {
+            mat.EnableKeyword("_EMISSION");
+            mat.SetColor("_EmissionColor", orbColor * 2.5f);
+        }
+        mr.sharedMaterial = mat;
 
-        // Luz puntual (Configuración segura)
+        // 4. Luz de apoyo (Configuracion segura)
         Light lt = GetComponent<Light>();
         if (lt == null) lt = gameObject.AddComponent<Light>();
 
-        if (lt != null)
-        {
-            lt.type = LightType.Point;
-            lt.color = glowColor;
-            lt.intensity = lightIntensity;
-            lt.range = lightRange;
-        }
-
-        // Garantizar Collider Trigger
-        SphereCollider col = GetComponent<SphereCollider>();
-        if (col == null) col = gameObject.AddComponent<SphereCollider>();
-
-        if (col != null)
-        {
-            col.isTrigger = true;
-            col.center = Vector3.zero;
-            col.radius = sphereRadius * 1.5f;
-        }
-    }
-
-    void Start() => _startPos = transform.position;
-
-    void Update()
-    {
-        transform.position = new Vector3(
-            _startPos.x,
-            _startPos.y + Mathf.Sin(Time.time * bobSpeed) * bobAmount,
-            _startPos.z);
-        transform.Rotate(Vector3.up, rotateSpeed * Time.deltaTime, Space.World);
-    }
-
-    void OnTriggerEnter(Collider other)
-    {
-        if (_taken) return;
-
-        // Buscamos si el objeto que entró tiene el Tag Player
-        if (other.CompareTag("Player"))
-        {
-            _taken = true;
-            StatsController.Instance?.AddExp(expAmount);
-
-            // Si estamos en red, el servidor debería manejar la destrucción,
-            // pero como los orbes suelen ser locales o simples, Destroy es suficiente.
-            Destroy(gameObject);
-        }
+        lt.type = LightType.Point;
+        lt.color = orbColor;
+        lt.intensity = lightIntensity;
+        lt.range = lightRange;
     }
 }

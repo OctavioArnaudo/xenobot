@@ -8,7 +8,7 @@ namespace Combating.Scripts
 
     /// <summary>
     /// Universal controller for Health and Team.
-    /// Handles life, damage and status.
+    /// Handles life, damage, status and visual feedback.
     /// </summary>
     public class HealthController : NetworkBehaviour
     {
@@ -18,6 +18,11 @@ namespace Combating.Scripts
 
         [Header("Jetpack Settings")]
         public float maxJetpack = 0f;
+
+        [Header("Visual Feedback (Optional)")]
+        public Renderer[] visualsToFlash;
+        public Color flashColor = Color.white;
+        public float flashDuration = 0.15f;
 
         [Header("Events")]
         public UnityEvent OnDeath;
@@ -32,29 +37,14 @@ namespace Combating.Scripts
         public int CurrentHP => IsNetworkActive ? currentHealth.Value : m_OfflineHealth;
         public float JetpackFuel => m_Jetpack;
 
-        // Metodo para expandir limites y curar al subir de nivel
-        public void UpgradeMaxStats(int healthBonus, float jetpackBonus)
-        {
-            maxHealth += healthBonus;
-            maxJetpack += jetpackBonus;
-
-            // Curar/Recargar bono
-            if (IsNetworkActive)
-            {
-                if (IsServer) currentHealth.Value = Mathf.Min(maxHealth, currentHealth.Value + healthBonus);
-            }
-            else
-            {
-                m_OfflineHealth = Mathf.Min(maxHealth, m_OfflineHealth + healthBonus);
-            }
-
-            AddFuel(jetpackBonus);
-        }
-
         void Awake()
         {
             m_OfflineHealth = maxHealth;
             m_Jetpack = maxJetpack;
+
+            // Auto-detect visuals if not assigned
+            if (visualsToFlash == null || visualsToFlash.Length == 0)
+                visualsToFlash = GetComponentsInChildren<Renderer>();
         }
 
         public override void OnNetworkSpawn()
@@ -77,19 +67,62 @@ namespace Combating.Scripts
             // Integracion con StatsController: Defensa
             if (TryGetComponent<StatsController>(out var stats))
             {
-                // Formula de mitigacion: Dano = DanoBase * (10 / (10 + Defensa))
-                // Si la defensa es 10, recibes 50% de dano.
                 finalDamage = Mathf.RoundToInt(damage * (10f / (10f + stats.Defense)));
-                if (finalDamage < 1) finalDamage = 1; // Minimo 1 de dano
+                if (finalDamage < 1) finalDamage = 1;
             }
 
             if (IsNetworkActive) { if (IsServer) currentHealth.Value = Mathf.Max(0, currentHealth.Value - finalDamage); }
             else m_OfflineHealth = Mathf.Max(0, m_OfflineHealth - finalDamage);
 
+            // Flash de dano (HUD si es player, Body si es enemigo/objeto)
             if (IsOwner && team == Team.Player) m_DamageFlashTimer = 0.6f;
+            PlayHitFlash();
 
             OnTakeDamage?.Invoke(finalDamage);
             if (CurrentHP <= 0) Die();
+        }
+
+        private void PlayHitFlash()
+        {
+            if (visualsToFlash != null && visualsToFlash.Length > 0)
+            {
+                foreach (var r in visualsToFlash)
+                {
+                    if (r == null) continue;
+                    var mpb = new MaterialPropertyBlock();
+                    mpb.SetColor("_EmissionColor", flashColor * 2f);
+                    r.SetPropertyBlock(mpb);
+                }
+                Invoke(nameof(ResetFlash), flashDuration);
+            }
+        }
+
+        private void ResetFlash()
+        {
+            if (visualsToFlash != null)
+            {
+                foreach (var r in visualsToFlash)
+                {
+                    if (r != null) r.SetPropertyBlock(null);
+                }
+            }
+        }
+
+        public void UpgradeMaxStats(int healthBonus, float jetpackBonus)
+        {
+            maxHealth += healthBonus;
+            maxJetpack += jetpackBonus;
+
+            if (IsNetworkActive)
+            {
+                if (IsServer) currentHealth.Value = Mathf.Min(maxHealth, currentHealth.Value + healthBonus);
+            }
+            else
+            {
+                m_OfflineHealth = Mathf.Min(maxHealth, m_OfflineHealth + healthBonus);
+            }
+
+            AddFuel(jetpackBonus);
         }
 
         public void UseFuel(float amount) => m_Jetpack = Mathf.Max(0f, m_Jetpack - amount);
@@ -122,7 +155,6 @@ namespace Combating.Scripts
             float sw = Screen.width;
             float sh = Screen.height;
 
-            // 1. Flash de Daño instantaneo
             if (m_DamageFlashTimer > 0)
             {
                 GUI.color = new Color(1, 0, 0, m_DamageFlashTimer * 0.8f);
@@ -130,10 +162,8 @@ namespace Combating.Scripts
                 GUI.color = Color.white;
             }
 
-            // 2. Integridad Crítica (Pulso suave y apto para fotosensibilidad)
             if (CurrentHP < maxHealth * 0.25f && CurrentHP > 0)
             {
-                // Pulso mucho más lento (2.5f) y sutil (0.25f max alpha)
                 float pulse = Mathf.PingPong(Time.time * 2.5f, 0.25f);
                 GUI.color = new Color(1, 0, 0, pulse);
                 GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);

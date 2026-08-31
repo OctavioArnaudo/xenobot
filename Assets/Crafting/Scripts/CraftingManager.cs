@@ -20,8 +20,8 @@ namespace Crafting.Scripts
         [Header("Settings")]
         public float slotSize = 80f;
         public float spacing = 8f;
-
-        // The 5x5 Crafting Grid (25 slots). Synced across all clients.
+        public List<NGO.Data.TradeData> availableTrades; // Linked TradeData
+        public List<ItemData> itemDatabase; // For resolving codes
         public NetworkList<FixedString32Bytes> GridItems;
         private FixedString32Bytes[] _offlineGridItems = new FixedString32Bytes[25];
 
@@ -191,7 +191,37 @@ namespace Crafting.Scripts
             _remoteInventoryContent = CreateInventoryPanel("External Inventory", mainLayout.transform, new Color(0.4f, 0.2f, 0.2f), "REMOTE");
 
             RefreshLocalInventoryUI();
-            PopulateInventory(_remoteInventoryContent, "Item_Wood", 25, "REMOTE");
+            RefreshExternalInventoryUI();
+        }
+
+        private void RefreshExternalInventoryUI()
+        {
+            // Clear current remote UI
+            foreach (Transform child in _remoteInventoryContent) Destroy(child.gameObject);
+
+            if (availableTrades == null) return;
+
+            foreach (var trade in availableTrades)
+            {
+                if (trade == null || trade.OutputItem == null) continue;
+
+                string key = trade.OutputItem.itemCode;
+                GameObject slotContainer = CreateSlotWithControls(key, _remoteInventoryContent, new Color(0.4f, 0.1f, 0.1f), false, 0, "REMOTE");
+                Transform slot = slotContainer.transform.GetChild(1);
+
+                // Update Qty Text
+                var qtyTxt = slotContainer.transform.GetChild(0).GetChild(1).GetComponent<TextMeshProUGUI>();
+                qtyTxt.text = trade.OutputAmount.ToString();
+
+                // Icon
+                GameObject icon = CreateUIElement("Icon", slot);
+                Image img = icon.AddComponent<Image>();
+                img.sprite = trade.OutputItem.icon;
+                img.color = Color.white;
+                var iRt = icon.GetComponent<RectTransform>();
+                iRt.anchorMin = iRt.anchorMax = new Vector2(0.5f, 0.5f);
+                iRt.sizeDelta = new Vector2(slotSize * 0.7f, slotSize * 0.7f);
+            }
         }
 
         private void RefreshLocalInventoryUI()
@@ -199,8 +229,8 @@ namespace Crafting.Scripts
             // Clear current local UI
             foreach (Transform child in _localInventoryContent) Destroy(child.gameObject);
 
-            var bag = Inventory.GetBag();
-            var keys = Inventory.GetKeys();
+            var bag = InventoryController.GetBag();
+            var keys = InventoryController.GetKeys();
 
             foreach (var key in keys)
             {
@@ -459,27 +489,37 @@ namespace Crafting.Scripts
 
         private void TryCraft()
         {
-            // Simple Test logic: if there is something in the center, put something in output
-            bool found = false;
-            for (int i = 0; i < 25; i++)
+            // Check grid against TradeData recipes
+            foreach (var trade in availableTrades)
             {
-                if (IsInputSlot(i) && !string.IsNullOrEmpty(IsNetworkActive ? GridItems[i].ToString() : _offlineGridItems[i].ToString()))
+                if (trade == null || trade.InputItem == null) continue;
+
+                // Simple check: is the input item in any input slot?
+                int inputSlot = -1;
+                for (int i = 0; i < 25; i++)
                 {
-                    found = true;
-                    break;
+                    if (IsInputSlot(i))
+                    {
+                        string itemId = IsNetworkActive ? GridItems[i].ToString() : _offlineGridItems[i].ToString();
+                        if (itemId.ToLowerInvariant() == trade.InputItem.itemCode.ToLowerInvariant())
+                        {
+                            inputSlot = i;
+                            break;
+                        }
+                    }
+                }
+
+                if (inputSlot != -1)
+                {
+                    // Craft! Remove input, add output to slot 0 (example output slot)
+                    UpdateGrid(inputSlot, "");
+                    UpdateGrid(0, trade.OutputItem.itemCode);
+                    SetFeedbackText($"Crafted: {trade.OutputItem.displayName}");
+                    return;
                 }
             }
 
-            if (found)
-            {
-                // Put result in slot 0 (an output slot) for testing
-                UpdateGrid(0, "Result_Item");
-                SetFeedbackText("Crafted! Check outer slots.");
-            }
-            else
-            {
-                SetFeedbackText("Nothing to craft.");
-            }
+            SetFeedbackText("No matching recipe found.");
         }
 
         private void OnInventorySlotClicked(string itemId, string tag)
@@ -591,7 +631,7 @@ namespace Crafting.Scripts
                     // If moving from LOCAL inventory to Crafting
                     if (_sourceSlot != null && _sourceSlot.inventoryTag == "LOCAL")
                     {
-                        Inventory.RemoveItem(_draggingItemId);
+                        InventoryController.RemoveItem(_draggingItemId);
                         RefreshLocalInventoryUI();
                     }
 
@@ -613,16 +653,25 @@ namespace Crafting.Scripts
                 // Dropping back into local inventory
                 if (_sourceSlot != null && _sourceSlot.isCrafting)
                 {
-                    // We need the ItemData. Since we only have the ID/Code,
-                    // this logic assumes your system can resolve it or
-                    // you are returning an item that was already there.
-                    // For now, we'll try to find it in the grid items data
-                    UpdateGrid(_sourceSlot.index, "");
+                    string code = _draggingItemId;
+                    ItemData data = null;
 
-                    // Logic to add back to inventory needs ItemData
-                    // Assuming _draggingItemId is the code, we'd need a registry
-                    // For now, let's just trigger a refresh
-                    SetFeedbackText($"Item returned to inventory");
+                    // Try database first
+                    if (itemDatabase != null)
+                    {
+                        data = itemDatabase.Find(x => x.itemCode.ToLowerInvariant() == code.ToLowerInvariant());
+                    }
+
+                    if (data != null)
+                    {
+                        InventoryController.Add(data);
+                        UpdateGrid(_sourceSlot.index, "");
+                        SetFeedbackText($"Item {data.displayName} returned to inventory");
+                    }
+                    else
+                    {
+                        SetFeedbackText("Could not resolve item data to return to inventory.");
+                    }
                 }
                 RefreshLocalInventoryUI();
             }
@@ -680,6 +729,20 @@ namespace Crafting.Scripts
                     GameObject label = CreateUIElement("ItemLabel", slot);
                     AddText(label, itemId.Split('_')[0], 14, Color.black, TextAlignmentOptions.Center);
                     StretchRT(label.GetComponent<RectTransform>());
+
+                    // Show icon if in database
+                    if (itemDatabase != null)
+                    {
+                        var data = itemDatabase.Find(x => x.itemCode.ToLowerInvariant() == itemId.ToLowerInvariant());
+                        if (data != null && data.icon != null)
+                        {
+                            GameObject icon = CreateUIElement("Icon", slot);
+                            Image iconImg = icon.AddComponent<Image>();
+                            iconImg.sprite = data.icon;
+                            var iRt = icon.GetComponent<RectTransform>();
+                            StretchRT(iRt);
+                        }
+                    }
                 }
             }
         }

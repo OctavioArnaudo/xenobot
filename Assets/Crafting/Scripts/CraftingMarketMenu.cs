@@ -16,7 +16,7 @@ namespace NGO.Networking
         [SerializeField] private TradeBase tradeService;
 
         [Header("Configuración de Trades")]
-        [SerializeField] private TradeRecipe[] possibleTrades;
+        [SerializeField] private TradeData[] possibleTrades;
 
         [Header("UI - Grid 3x3")]
         [Tooltip("Asigna las 9 imágenes de los slots. Estas imágenes actuarán como fondo y como icono a la vez.")]
@@ -161,7 +161,7 @@ namespace NGO.Networking
                 return;
             }
 
-            TradeRecipe selectedRecipe = possibleTrades[recipeIndex];
+            TradeData selectedRecipe = possibleTrades[recipeIndex];
             if (selectedRecipe == null)
             {
                 Debug.LogError($"[CraftingMenu] La receta en el índice {recipeIndex} es NULL.");
