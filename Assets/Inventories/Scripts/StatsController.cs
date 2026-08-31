@@ -48,6 +48,9 @@ public class StatsController : NetworkBehaviour
     private string _cachedTimeStr = "00:00";
     private Camera _mainCamCache;
 
+    private Transform _aureoleRoot;
+    private Vector3 _aureoleBaseOffset = new Vector3(0, 2.4f, 0);
+
     void Update()
     {
         // Billboard effect para el NameTag en red (Cacheando la camara para evitar Starvation)
@@ -57,6 +60,18 @@ public class StatsController : NetworkBehaviour
             if (_mainCamCache != null)
             {
                 nameTagText.transform.rotation = Quaternion.LookRotation(nameTagText.transform.position - _mainCamCache.transform.position);
+            }
+        }
+
+        // Aureole Animations: Floating & Rotation
+        if (_aureoleRoot != null)
+        {
+            float bob = Mathf.Sin(Time.time * 2f) * 0.1f;
+            _aureoleRoot.localPosition = _aureoleBaseOffset + Vector3.up * bob;
+
+            if (colorRenderer != null)
+            {
+                colorRenderer.transform.Rotate(Vector3.up, 60f * Time.deltaTime, Space.Self);
             }
         }
     }
@@ -101,31 +116,65 @@ public class StatsController : NetworkBehaviour
 
     private void ValidateVisualComponents()
     {
-        // Zero-Dependency Bootstrapping: Fallback para el Renderer
+        // Zero-Dependency Bootstrapping: Root de la Aureola
+        if (_aureoleRoot == null)
+        {
+            var existingRoot = transform.Find("Xenobot_AureoleRoot") ?? transform.GetComponentInChildren<Animator>()?.transform.Find("Xenobot_AureoleRoot");
+
+            if (existingRoot != null)
+            {
+                _aureoleRoot = existingRoot;
+            }
+            else
+            {
+                _aureoleRoot = new GameObject("Xenobot_AureoleRoot").transform;
+
+                // Intentar encontrar el hueso de la cabeza para que la siga fielmente
+                Animator anim = GetComponentInChildren<Animator>();
+                Transform headBone = null;
+                if (anim != null && anim.isHuman) headBone = anim.GetBoneTransform(HumanBodyBones.Head);
+                if (headBone == null)
+                {
+                    foreach (Transform child in GetComponentsInChildren<Transform>())
+                    {
+                        if (child.name.ToLower().Contains("head"))
+                        {
+                            headBone = child;
+                            break;
+                        }
+                    }
+                }
+
+                _aureoleRoot.SetParent(headBone != null ? headBone : transform);
+                _aureoleRoot.localPosition = headBone != null ? new Vector3(0, 0.4f, 0) : _aureoleBaseOffset;
+            }
+        }
+
+        // Zero-Dependency Bootstrapping: Fallback para el Halo (Disc)
         if (colorRenderer == null)
         {
-            colorRenderer = GetComponentInChildren<Renderer>();
+            colorRenderer = _aureoleRoot.GetComponentInChildren<Renderer>();
             if (colorRenderer == null)
             {
                 var marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                marker.name = "Xenobot_IdentityMarker";
-                marker.transform.SetParent(transform);
-                marker.transform.localPosition = new Vector3(0, 2.2f, 0);
-                marker.transform.localScale = Vector3.one * 0.2f;
+                marker.name = "Xenobot_IdentityHalo";
+                marker.transform.SetParent(_aureoleRoot);
+                marker.transform.localPosition = Vector3.zero;
+                marker.transform.localScale = new Vector3(0.6f, 0.05f, 0.6f); // Flattened to disc
                 if (marker.TryGetComponent<Collider>(out var col)) DestroyImmediate(col);
                 colorRenderer = marker.GetComponent<Renderer>();
             }
         }
 
-        // Zero-Dependency Bootstrapping: Fallback para el TMP_Text
+        // Zero-Dependency Bootstrapping: Fallback para el NameTag
         if (nameTagText == null)
         {
-            nameTagText = GetComponentInChildren<TMPro.TMP_Text>();
+            nameTagText = _aureoleRoot.GetComponentInChildren<TMPro.TMP_Text>();
             if (nameTagText == null)
             {
                 GameObject tagGO = new GameObject("Xenobot_NameTag");
-                tagGO.transform.SetParent(transform);
-                tagGO.transform.localPosition = new Vector3(0, 2.6f, 0);
+                tagGO.transform.SetParent(_aureoleRoot);
+                tagGO.transform.localPosition = new Vector3(0, 0.4f, 0); // Above the halo
                 var tmp = tagGO.AddComponent<TMPro.TextMeshPro>();
                 tmp.alignment = TMPro.TextAlignmentOptions.Center;
                 tmp.fontSize = 4;
