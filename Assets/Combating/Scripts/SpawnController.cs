@@ -113,6 +113,10 @@ namespace Combating.Scripts
 
             if (rb != null)
             {
+                // Asegurar que no sea kinematico para que el impulso y la gravedad funcionen
+                rb.isKinematic = false;
+                rb.useGravity = true;
+
                 Vector3 force = impulse ?? (transform.forward * 2f + Random.insideUnitSphere * 0.5f);
                 rb.AddForce(force, ForceMode.Impulse);
             }

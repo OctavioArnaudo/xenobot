@@ -730,9 +730,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Inventory
   ShowTopMostFoldoutHeaderGroup: 1
   panelWidth: 1500
-  panelHeight: 1000
+  panelHeight: 900
   columns: 6
-  cellSize: 250
+  cellSize: 200
   padding: 250
   titleH: 250
   qtyFontSize: 22
@@ -1660,7 +1660,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7891991899054359580}
   m_Layer: 0
-  m_Name: PlayerCameraRoot
+  m_Name: PlayerRoot
   m_TagString: CinemachineTarget
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1675,7 +1675,7 @@ Transform:
   m_GameObject: {fileID: 3634781621623708926}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.34, y: 4.85, z: 0}
+  m_LocalPosition: {x: 0, y: 5.6, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1992,7 +1992,7 @@ GameObject:
   - component: {fileID: 6518318217412876499}
   - component: {fileID: 8936964559952981815}
   m_Layer: 0
-  m_Name: PlayerFollowCamera
+  m_Name: PlayerTarget
   m_TagString: CinemachineTarget
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2007,7 +2007,7 @@ Transform:
   m_GameObject: {fileID: 4635943162753486610}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.076253355, y: 3.940625, z: -8}
+  m_LocalPosition: {x: 0.20000005, y: 4.5499997, z: -8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2363,7 +2363,7 @@ GameObject:
   - component: {fileID: 2483219246021380318}
   - component: {fileID: 4300547424136906431}
   m_Layer: 0
-  m_Name: RobotCamera
+  m_Name: PlayerCamera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2378,7 +2378,7 @@ Transform:
   m_GameObject: {fileID: 5744773588333972899}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.076253355, y: 3.940625, z: -8}
+  m_LocalPosition: {x: 0.20000005, y: 4.5499997, z: -8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
