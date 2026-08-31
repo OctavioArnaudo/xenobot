@@ -13,6 +13,8 @@ public class PickupController : NetworkBehaviour
     public ItemData item;
     public float expAmount = 25f;
 
+    public static int ActiveCount { get; private set; }
+
     [Header("Visuals & Effects")]
     public GameObject particleEffectPrefab;
 
@@ -91,6 +93,7 @@ public class PickupController : NetworkBehaviour
     void Start()
     {
         _startPos = transform.position;
+        ActiveCount++;
         InventoryController.MarkCountDirty();
     }
 
@@ -202,6 +205,7 @@ public class PickupController : NetworkBehaviour
     public override void OnDestroy()
     {
         base.OnDestroy();
+        ActiveCount--;
         InventoryController.MarkCountDirty();
     }
 }

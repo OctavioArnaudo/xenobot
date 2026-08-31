@@ -41,6 +41,8 @@ namespace Xenobot.Movement
         #region Variables: Camera & Look
         [Header("Cinemachine")]
         public GameObject CinemachineCameraTarget;
+        public GameObject Visuals;
+        public float VisualRotationOffset = 0f; // Para corregir desfases del modelo (90, -90, etc)
         public string PlayerVCamTag = "PlayerVCam";
         public float TopClamp = 70.0f;
         public float BottomClamp = -30.0f;
@@ -170,6 +172,7 @@ namespace Xenobot.Movement
             _cameraStartingRotation = CinemachineCameraTarget.transform.rotation;
             _startingPosition = transform.position;
             _startingRotation = transform.rotation;
+            _targetRotation = transform.eulerAngles.y; // Inicializar con la rotación actual
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
 
@@ -437,7 +440,15 @@ namespace Xenobot.Movement
                 {
                     _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + _mainCamera.transform.eulerAngles.y;
                     float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
+
+                    // Rotamos el transform raíz (esto es lo que se sincroniza en red)
                     transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
+
+                    // Aplicar el offset al modelo visual para corregir la orientación del robot
+                    if (Visuals != null)
+                    {
+                        Visuals.transform.localRotation = Quaternion.Euler(0, VisualRotationOffset, 0);
+                    }
                 }
             }
 
