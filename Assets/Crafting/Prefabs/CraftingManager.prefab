@@ -45,7 +45,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2823047860
+  GlobalObjectIdHash: 2930775493
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -73,9 +73,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  slotSize: 60
-  spacing: 4
-  GridItems:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
+  availableTrades:
+  - {fileID: 11400000, guid: bfde781f12e749369c22641020b9df41, type: 2}
+  panelWidth: 700
+  panelHeight: 550
+  titleH: 60
+  padding: 20
+  cornerRadius: 15
+  panelColor: {r: 0.1, g: 0.1, b: 0.12, a: 0.95}
+  accentColor: {r: 1, g: 0.85, b: 0, a: 1}

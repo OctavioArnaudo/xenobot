@@ -72,11 +72,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 55fcea8a4058c4d1aa6ca8fea4168f51, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: Assembly-CSharp::PickupController
   ShowTopMostFoldoutHeaderGroup: 1
   item: {fileID: 11400000, guid: 75b6b99d3e052724095a1f53dea46401, type: 2}
-  expAmount: 25
-  particleEffectPrefab: {fileID: 9163842254569548763, guid: 0e62c4d669c52425fa7ad6a0a297dd84, type: 3}
   rotationSpeed: 100
   bobbingAmount: 0.1
   bobbingSpeed: 1
@@ -91,7 +89,6 @@ GameObject:
   - component: {fileID: 7818054574772246105}
   - component: {fileID: 5849530485779891019}
   - component: {fileID: 372242913157393943}
-  - component: {fileID: 1413100431087873138}
   m_Layer: 3
   m_Name: StarRender
   m_TagString: Untagged

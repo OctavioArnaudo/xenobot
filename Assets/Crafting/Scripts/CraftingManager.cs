@@ -1,773 +1,300 @@
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
+using UnityEngine.InputSystem;
 using Unity.Netcode;
 using System.Collections.Generic;
-using Unity.Collections;
-using UnityEngine.InputSystem;
-using UnityEngine.EventSystems;
+using NGO.Data;
 
 namespace Crafting.Scripts
 {
-    /// <summary>
-    /// Master Crafting Manager: Minecraft-style collaborative UI & Logic.
-    /// Hardcoded, no-sprite, centralized in a single hierarchy.
-    /// </summary>
     public class CraftingManager : NetworkBehaviour
     {
         public static CraftingManager Instance { get; private set; }
 
         [Header("Settings")]
-        public float slotSize = 80f;
-        public float spacing = 8f;
-        public List<NGO.Data.TradeData> availableTrades; // Linked TradeData
-        public List<ItemData> itemDatabase; // For resolving codes
-        public NetworkList<FixedString32Bytes> GridItems;
-        private FixedString32Bytes[] _offlineGridItems = new FixedString32Bytes[25];
+        public List<TradeData> availableTrades;
 
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+        [Header("UI Aesthetics")]
+        public int panelWidth = 700;
+        public int panelHeight = 550;
+        public int titleH = 65;
+        public int padding = 20;
+        public int cornerRadius = 15;
+        public Color panelColor = new Color(0.05f, 0.05f, 0.05f, 0.95f);
+        public Color accentColor = new Color(1f, 0.85f, 0f, 1f);
 
-        private GameObject _canvasRoot;
-        private Transform _localInventoryContent;
-        private Transform _remoteInventoryContent;
-        private Transform _craftingGridRoot;
+        private bool _open;
+        private Vector2 _scrollPos;
+        private int _selectedRecipeIndex = -1;
 
-        private string _pickedItemId = "";
-        private TextMeshProUGUI _internalFeedbackText;
-        private TextMeshProUGUI _externalFeedbackText;
-
-        // Drag and Drop fields
-        private GameObject _draggedIcon;
-        private string _draggingItemId;
-        private SlotUI _sourceSlot;
-        private Canvas _mainCanvas;
+        // Styles & Textures (matching InventoryController style)
+        private Texture2D _texPanel, _texSlot, _texSelected, _texBtnNormal, _texBtnHover;
+        private GUIStyle _titleSty, _recipeSty, _btnSty, _infoSty, _qtySty;
+        private bool _stylesReady;
 
         private void Awake()
         {
             if (Instance == null) Instance = this;
             else Destroy(gameObject);
-
-            GridItems = new NetworkList<FixedString32Bytes>();
-        }
-
-        private void Start()
-        {
-            // Ensure there is an EventSystem for inputs to work
-            EnsureEventSystem();
-
-            // Build the UI immediately so it's available
-            BuildUI();
-
-            // Initially hide the UI
-            if (_canvasRoot != null) _canvasRoot.SetActive(false);
-        }
-
-        private void EnsureEventSystem()
-        {
-            if (FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
-            {
-                var esGo = new GameObject("EventSystem");
-                esGo.AddComponent<UnityEngine.EventSystems.EventSystem>();
-                esGo.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
-            }
         }
 
         public override void OnNetworkSpawn()
         {
-            if (IsServer && GridItems.Count == 0)
-            {
-                for (int i = 0; i < 25; i++) GridItems.Add("");
-            }
-
-            GridItems.OnListChanged += (changeEvent) => RefreshCraftingVisuals();
-            RefreshCraftingVisuals();
+            // Opcional: sincronizar estado global del mercado si fuera necesario
         }
 
         private void Update()
         {
-            // Toggle UI with 'C' only using New Input System
-            if (Keyboard.current != null)
+            if (Keyboard.current != null && Keyboard.current.cKey.wasPressedThisFrame)
             {
-                if (Keyboard.current.cKey.wasPressedThisFrame)
+                SetOpen(!_open);
+            }
+        }
+
+        private void SetOpen(bool open)
+        {
+            _open = open;
+            // Bloquear/Desbloquear cursor similar al inventario
+            Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = open;
+
+            if (!open) _selectedRecipeIndex = -1;
+        }
+
+        private void EnsureStyles()
+        {
+            if (_stylesReady) return;
+
+            // Textures
+            _texPanel = MakeRoundedTex(64, cornerRadius, panelColor, Color.clear, 0);
+            _texSlot = MakeRoundedTex(64, 8, new Color(1f, 1f, 1f, 0.08f), Color.clear, 0);
+            _texSelected = MakeRoundedTex(64, 8, new Color(1f, 1f, 1f, 0.15f), accentColor, 2);
+            _texBtnNormal = MakeRoundedTex(64, 10, new Color(0.2f, 0.2f, 0.25f, 1f), Color.white, 1);
+            _texBtnHover = MakeRoundedTex(64, 10, new Color(0.3f, 0.3f, 0.4f, 1f), accentColor, 2);
+
+            // Styles
+            _titleSty = Sty(32, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
+            _recipeSty = Sty(18, FontStyle.Normal, TextAnchor.MiddleLeft, Color.white);
+            _btnSty = Sty(20, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
+            _infoSty = Sty(16, FontStyle.Italic, TextAnchor.MiddleLeft, new Color(0.8f, 0.8f, 0.8f));
+            _qtySty = Sty(14, FontStyle.Bold, TextAnchor.LowerRight, accentColor);
+
+            _stylesReady = true;
+        }
+
+        private Texture2D MakeRoundedTex(int s, int r, Color fill, Color border, int bw)
+        {
+            var tex = new Texture2D(s, s, TextureFormat.RGBA32, false);
+            Color clear = new Color(0, 0, 0, 0);
+            Color[] px = new Color[s * s];
+            for (int y = 0; y < s; y++)
+            {
+                for (int x = 0; x < s; x++)
                 {
-                    ToggleUI();
+                    float cx = Mathf.Clamp(x, r, s - 1 - r), cy = Mathf.Clamp(y, r, s - 1 - r);
+                    float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                    if (d > r + 1f) px[y * s + x] = clear;
+                    else if (d > r - 0.5f) px[y * s + x] = Color.Lerp(fill, clear, d - (r - 0.5f));
+                    else if (bw > 0 && d > r - bw) px[y * s + x] = border;
+                    else px[y * s + x] = fill;
                 }
             }
+            tex.SetPixels(px); tex.Apply(); return tex;
         }
 
-        private void SetFeedbackText(string text)
+        private static GUIStyle Sty(int sz, FontStyle fs, TextAnchor a, Color c)
         {
-            if (_internalFeedbackText != null) _internalFeedbackText.text = text;
-            if (_externalFeedbackText != null) _externalFeedbackText.text = text;
+            var s = new GUIStyle(GUI.skin.label) { fontSize = sz, fontStyle = fs, alignment = a };
+            s.normal.textColor = c;
+            return s;
         }
 
-        private TextMeshProUGUI AddText(GameObject go, string content, int size, Color color, TextAlignmentOptions align)
+        private void OnGUI()
         {
-            var txt = go.AddComponent<TextMeshProUGUI>();
-            txt.text = content;
-            txt.fontSize = size;
-            txt.color = color;
-            txt.alignment = align;
-            txt.raycastTarget = false; // Critical: prevent text from blocking clicks
-            return txt;
+            if (!_open) return;
+
+            EnsureStyles();
+
+            float x0 = (Screen.width - panelWidth) / 2f;
+            float y0 = (Screen.height - panelHeight) / 2f;
+            Rect panelRect = new Rect(x0, y0, panelWidth, panelHeight);
+
+            GUI.DrawTexture(panelRect, _texPanel);
+            GUI.Label(new Rect(x0, y0 + 10, panelWidth, titleH), "CENTRO DE CRAFTEO & TRADE", _titleSty);
+
+            // Close button
+            if (GUI.Button(new Rect(x0 + panelWidth - 50, y0 + 15, 35, 35), "X", _btnSty)) SetOpen(false);
+
+            // Recipe List Area
+            Rect listRect = new Rect(x0 + padding, y0 + titleH + padding, panelWidth * 0.4f, panelHeight - titleH - padding * 2);
+            DrawRecipeList(listRect);
+
+            // Selection Detail Area
+            Rect detailRect = new Rect(x0 + panelWidth * 0.45f + padding, y0 + titleH + padding, panelWidth * 0.5f - padding * 2, panelHeight - titleH - padding * 2);
+            DrawRecipeDetail(detailRect);
         }
 
-        private void StretchRT(RectTransform rt)
+        private void DrawRecipeList(Rect rect)
         {
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.sizeDelta = Vector2.zero;
-        }
+            GUI.BeginGroup(rect);
+            _scrollPos = GUI.BeginScrollView(new Rect(0, 0, rect.width, rect.height), _scrollPos, new Rect(0, 0, rect.width - 20, availableTrades.Count * 60));
 
-        public void ToggleUI()
-        {
-            if (_canvasRoot != null)
+            for (int i = 0; i < availableTrades.Count; i++)
             {
-                bool isActive = !_canvasRoot.activeSelf;
-                _canvasRoot.SetActive(isActive);
+                Rect r = new Rect(0, i * 60, rect.width - 20, 55);
+                bool isSelected = (_selectedRecipeIndex == i);
 
-                // Show/Hide cursor
-                Cursor.visible = isActive;
-                Cursor.lockState = isActive ? CursorLockMode.None : CursorLockMode.Locked;
+                GUI.DrawTexture(r, isSelected ? _texSelected : _texSlot);
 
-                SetFeedbackText(isActive ? "Crafting Menu Open" : "");
-            }
-        }
-
-        private void BuildUI()
-        {
-            // 1. Create Canvas
-            if (_canvasRoot != null) Destroy(_canvasRoot);
-
-            _canvasRoot = new GameObject("MinecraftCrafting_Canvas");
-            // Important: Do NOT set parent to 'transform' to avoid coordinate offsets
-            _canvasRoot.transform.SetParent(null);
-
-            Canvas canvas = _canvasRoot.AddComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 100; // Ensure it's on top
-            _mainCanvas = canvas;
-
-            var scaler = _canvasRoot.AddComponent<CanvasScaler>();
-            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1920, 1080);
-            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
-
-            _canvasRoot.AddComponent<GraphicRaycaster>();
-
-            // Background Fade
-            GameObject bg = CreateUIElement("Background", _canvasRoot.transform);
-            Image bgImg = bg.AddComponent<Image>();
-            bgImg.color = new Color(0, 0, 0, 0.6f);
-            var bgRt = bg.GetComponent<RectTransform>();
-            bgRt.anchorMin = Vector2.zero;
-            bgRt.anchorMax = Vector2.one;
-            bgRt.sizeDelta = Vector2.zero;
-
-            // 2. Main Layout Container (Responsive Area)
-            GameObject mainLayout = CreateUIElement("MainLayout", _canvasRoot.transform);
-            var mainRt = mainLayout.GetComponent<RectTransform>();
-            // Centered vertically but expanded horizontally as requested
-            mainRt.anchorMin = new Vector2(0.1f, 0.1f);
-            mainRt.anchorMax = new Vector2(0.9f, 0.9f);
-            mainRt.sizeDelta = Vector2.zero;
-
-            var hlg = mainLayout.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 20;
-            hlg.childAlignment = TextAnchor.MiddleCenter;
-            hlg.childControlWidth = true;
-            hlg.childControlHeight = true;
-            hlg.childForceExpandWidth = false; // Don't force stretch, let preferredWidth handle it
-            hlg.childForceExpandHeight = true;
-
-            // --- LEFT: INTERNAL INVENTORY ---
-            _localInventoryContent = CreateInventoryPanel("Internal Inventory", mainLayout.transform, Color.gray, "LOCAL");
-
-            // --- MIDDLE: CRAFTING 5X5 ---
-            _craftingGridRoot = CreateCraftingSection("Crafting Pool", mainLayout.transform);
-
-            // --- RIGHT: EXTERNAL INVENTORY ---
-            _remoteInventoryContent = CreateInventoryPanel("External Inventory", mainLayout.transform, new Color(0.4f, 0.2f, 0.2f), "REMOTE");
-
-            RefreshLocalInventoryUI();
-            RefreshExternalInventoryUI();
-        }
-
-        private void RefreshExternalInventoryUI()
-        {
-            // Clear current remote UI
-            foreach (Transform child in _remoteInventoryContent) Destroy(child.gameObject);
-
-            if (availableTrades == null) return;
-
-            foreach (var trade in availableTrades)
-            {
-                if (trade == null || trade.OutputItem == null) continue;
-
-                string key = trade.OutputItem.itemCode;
-                GameObject slotContainer = CreateSlotWithControls(key, _remoteInventoryContent, new Color(0.4f, 0.1f, 0.1f), false, 0, "REMOTE");
-                Transform slot = slotContainer.transform.GetChild(1);
-
-                // Update Qty Text
-                var qtyTxt = slotContainer.transform.GetChild(0).GetChild(1).GetComponent<TextMeshProUGUI>();
-                qtyTxt.text = trade.OutputAmount.ToString();
-
-                // Icon
-                GameObject icon = CreateUIElement("Icon", slot);
-                Image img = icon.AddComponent<Image>();
-                img.sprite = trade.OutputItem.icon;
-                img.color = Color.white;
-                var iRt = icon.GetComponent<RectTransform>();
-                iRt.anchorMin = iRt.anchorMax = new Vector2(0.5f, 0.5f);
-                iRt.sizeDelta = new Vector2(slotSize * 0.7f, slotSize * 0.7f);
-            }
-        }
-
-        private void RefreshLocalInventoryUI()
-        {
-            // Clear current local UI
-            foreach (Transform child in _localInventoryContent) Destroy(child.gameObject);
-
-            var bag = InventoryController.GetBag();
-            var keys = InventoryController.GetKeys();
-
-            foreach (var key in keys)
-            {
-                if (bag.TryGetValue(key, out var item))
+                if (availableTrades[i].OutputItem != null)
                 {
-                    GameObject slotContainer = CreateSlotWithControls(key, _localInventoryContent, Color.gray, false, 0, "LOCAL");
-                    Transform slot = slotContainer.transform.GetChild(1);
+                    if (availableTrades[i].OutputItem.icon != null)
+                        GUI.DrawTexture(new Rect(5, i * 60 + 7, 40, 40), availableTrades[i].OutputItem.icon.texture);
 
-                    // Update Qty Text (it's in the controls row)
-                    var qtyTxt = slotContainer.transform.GetChild(0).GetChild(1).GetComponent<TextMeshProUGUI>();
-                    qtyTxt.text = item.qty.ToString();
-
-                    // Icon
-                    GameObject icon = CreateUIElement("Icon", slot);
-                    Image img = icon.AddComponent<Image>();
-                    img.sprite = item.def.icon;
-                    img.color = Color.white;
-                    var iRt = icon.GetComponent<RectTransform>();
-                    iRt.anchorMin = iRt.anchorMax = new Vector2(0.5f, 0.5f);
-                    iRt.sizeDelta = new Vector2(slotSize * 0.7f, slotSize * 0.7f);
-                }
-            }
-        }
-
-        private Transform CreateInventoryPanel(string title, Transform parent, Color bgColor, string tag)
-        {
-            GameObject panel = CreateUIElement(title, parent);
-            panel.AddComponent<LayoutElement>().preferredWidth = 450; // Reduced from 500
-
-            Image img = panel.AddComponent<Image>();
-            img.color = new Color(0.1f, 0.1f, 0.1f, 0.9f);
-            panel.AddComponent<Outline>().effectColor = Color.white;
-
-            // Vertical layout for title and scroll
-            var vlg = panel.AddComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(15, 15, 15, 15);
-            vlg.spacing = 20;
-            vlg.childAlignment = TextAnchor.UpperCenter;
-            vlg.childControlWidth = vlg.childControlHeight = true;
-
-            // Title
-            GameObject label = CreateUIElement("Title", panel.transform);
-            label.AddComponent<LayoutElement>().preferredHeight = 50;
-            var lTxt = label.AddComponent<TextMeshProUGUI>();
-            lTxt.text = title;
-            lTxt.fontSize = 28;
-            lTxt.alignment = TextAlignmentOptions.Center;
-            lTxt.color = Color.white;
-
-            // Scroll View Area
-            GameObject scrollGo = CreateUIElement("ScrollView", panel.transform);
-            scrollGo.AddComponent<LayoutElement>().flexibleHeight = 1;
-
-            ScrollRect sr = scrollGo.AddComponent<ScrollRect>();
-            sr.horizontal = false;
-            sr.vertical = true;
-
-            GameObject maskGo = CreateUIElement("Mask", scrollGo.transform);
-            maskGo.AddComponent<RectMask2D>();
-            var maskRt = maskGo.GetComponent<RectTransform>();
-            maskRt.anchorMin = Vector2.zero;
-            maskRt.anchorMax = Vector2.one;
-            maskRt.sizeDelta = Vector2.zero;
-
-            GameObject content = CreateUIElement("Content", maskGo.transform);
-            sr.content = content.GetComponent<RectTransform>();
-            content.GetComponent<RectTransform>().anchorMin = new Vector2(0, 1);
-            content.GetComponent<RectTransform>().anchorMax = new Vector2(1, 1);
-            content.GetComponent<RectTransform>().pivot = new Vector2(0.5f, 1);
-
-            var grid = content.AddComponent<GridLayoutGroup>();
-            // Increased cell height to accommodate buttons above each square
-            grid.cellSize = new Vector2(slotSize + 20, slotSize + 45);
-            grid.spacing = new Vector2(spacing, spacing * 2);
-            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            grid.constraintCount = 5; // Changed to 5 to match the central grid's 5x5 structure
-            grid.childAlignment = TextAnchor.UpperCenter;
-
-            content.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-            // Footer Feedback (New position)
-            GameObject footer = CreateUIElement("FooterFeedback", panel.transform);
-            footer.AddComponent<LayoutElement>().preferredHeight = 40;
-            var fTxt = footer.AddComponent<TextMeshProUGUI>();
-            fTxt.text = "";
-            fTxt.fontSize = 20;
-            fTxt.alignment = TextAlignmentOptions.Center;
-            fTxt.color = Color.yellow;
-
-            if (tag == "LOCAL") _internalFeedbackText = fTxt;
-            else _externalFeedbackText = fTxt;
-
-            return content.transform;
-        }
-
-        private Transform CreateCraftingSection(string title, Transform parent)
-        {
-            GameObject section = CreateUIElement(title, parent);
-            section.AddComponent<LayoutElement>().preferredWidth = 600; // Reduced from 650
-
-            Image img = section.AddComponent<Image>();
-            img.color = new Color(0.2f, 0.2f, 0.2f, 0.7f);
-            section.AddComponent<Outline>().effectColor = Color.yellow;
-
-            var vlg = section.AddComponent<VerticalLayoutGroup>();
-            vlg.padding = new RectOffset(20, 20, 20, 20);
-            vlg.spacing = 25;
-            vlg.childAlignment = TextAnchor.MiddleCenter;
-            vlg.childControlWidth = vlg.childControlHeight = true;
-
-            // Title Middle
-            GameObject label = CreateUIElement("CraftTitle", section.transform);
-            label.AddComponent<LayoutElement>().preferredHeight = 40;
-            var lTxt = label.AddComponent<TextMeshProUGUI>();
-            lTxt.text = title;
-            lTxt.fontSize = 32;
-            lTxt.color = Color.yellow;
-            lTxt.alignment = TextAlignmentOptions.Center;
-
-            GameObject gridHolder = CreateUIElement("GridHolder", section.transform);
-            gridHolder.AddComponent<LayoutElement>().preferredHeight = 650;
-
-            var grid = gridHolder.AddComponent<GridLayoutGroup>();
-            grid.cellSize = new Vector2(slotSize * 1.2f, slotSize * 1.2f + 45); // Scale for 5x5
-            grid.spacing = new Vector2(spacing, spacing * 2);
-            grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-            grid.constraintCount = 5;
-            grid.childAlignment = TextAnchor.MiddleCenter;
-
-            for (int i = 0; i < 25; i++)
-            {
-                int index = i;
-                bool isInput = IsInputSlot(i);
-                Color slotColor = isInput ? new Color(0.3f, 0.3f, 0.3f) : new Color(0.15f, 0.15f, 0.2f);
-                CreateSlotWithControls($"CraftSlot_{index}", gridHolder.transform, slotColor, true, index);
-            }
-
-            // --- GENERAL CRAFTING BUTTONS ---
-            GameObject btnArea = CreateUIElement("CraftButtons", section.transform);
-            btnArea.AddComponent<LayoutElement>().preferredHeight = 70;
-            var hlg = btnArea.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 30;
-            hlg.childAlignment = TextAnchor.MiddleCenter;
-            hlg.childControlWidth = hlg.childControlHeight = true;
-
-            CreateTextButton("CLEAR GRID", btnArea.transform, new Color(0.6f, 0.1f, 0.1f), () => ClearGrid());
-            CreateTextButton("CRAFT ITEM", btnArea.transform, new Color(0.1f, 0.5f, 0.1f), () => TryCraft());
-
-            return gridHolder.transform;
-        }
-
-        private void CreateTextButton(string label, Transform parent, Color color, System.Action onClick)
-        {
-            GameObject btnGo = CreateUIElement(label, parent);
-            btnGo.AddComponent<Image>().color = color;
-            btnGo.AddComponent<Button>().onClick.AddListener(() => onClick());
-            btnGo.AddComponent<Outline>().effectColor = Color.white;
-
-            GameObject txtGo = CreateUIElement("Text", btnGo.transform);
-            AddText(txtGo, label, 20, Color.white, TextAlignmentOptions.Center);
-            StretchRT(txtGo.GetComponent<RectTransform>());
-        }
-
-        private GameObject CreateSlotWithControls(string name, Transform parent, Color color, bool isCrafting, int index, string tag = "")
-        {
-            GameObject container = CreateUIElement(name + "_Container", parent);
-            var vlg = container.AddComponent<VerticalLayoutGroup>();
-            vlg.childAlignment = TextAnchor.UpperCenter;
-            vlg.childControlWidth = vlg.childControlHeight = true;
-            vlg.spacing = 5;
-
-            // 1. Controls Row (Above each slot)
-            GameObject controls = CreateUIElement("Controls", container.transform);
-            controls.AddComponent<LayoutElement>().preferredHeight = 35;
-            var hlg = controls.AddComponent<HorizontalLayoutGroup>();
-            hlg.spacing = 4; // Increased spacing
-            hlg.childAlignment = TextAnchor.MiddleCenter;
-            hlg.childControlWidth = hlg.childControlHeight = true;
-
-            // Determine if this is an Output slot in the crafting grid
-            bool isOutputSlot = isCrafting && !IsInputSlot(index);
-
-            // Minus Button: Red for Input/Inv, Green for Output (Extract)
-            GameObject minusBtn = CreateUIElement("-", controls.transform);
-            minusBtn.AddComponent<Image>().color = isOutputSlot ? new Color(0.2f, 0.5f, 0.2f) : new Color(0.5f, 0.2f, 0.2f);
-            minusBtn.AddComponent<Button>();
-            var mTxtGo = CreateUIElement("T", minusBtn.transform);
-            AddText(mTxtGo, "-", 18, Color.white, TextAlignmentOptions.Center);
-            StretchRT(mTxtGo.GetComponent<RectTransform>());
-
-            // Qty Text
-            GameObject qtyTxt = CreateUIElement("Qty", controls.transform);
-            AddText(qtyTxt, "1", 18, Color.white, TextAlignmentOptions.Center);
-
-            // Plus Button: Green for Input/Inv, Red for Output (Re-invest)
-            GameObject plusBtn = CreateUIElement("+", controls.transform);
-            plusBtn.AddComponent<Image>().color = isOutputSlot ? new Color(0.5f, 0.2f, 0.2f) : new Color(0.2f, 0.5f, 0.2f);
-            plusBtn.AddComponent<Button>();
-            var pTxtGo = CreateUIElement("T", plusBtn.transform);
-            AddText(pTxtGo, "+", 18, Color.white, TextAlignmentOptions.Center);
-            StretchRT(pTxtGo.GetComponent<RectTransform>());
-
-            // 2. The Actual Slot
-            GameObject slot = CreateUIElement(name, container.transform);
-            slot.AddComponent<LayoutElement>().preferredHeight = isCrafting ? slotSize * 1.2f : slotSize;
-            Image img = slot.AddComponent<Image>();
-            img.color = color;
-            slot.AddComponent<Outline>().effectColor = Color.black;
-
-            Button btn = slot.AddComponent<Button>();
-            if (isCrafting) btn.onClick.AddListener(() => OnCraftingSlotClicked(index));
-            else btn.onClick.AddListener(() => OnInventorySlotClicked(name, tag));
-
-            // Drag and Drop support
-            var slotUI = slot.AddComponent<SlotUI>();
-            slotUI.manager = this;
-            slotUI.isCrafting = isCrafting;
-            slotUI.index = index;
-            slotUI.inventoryTag = tag;
-            slotUI.slotName = name;
-
-            return container;
-        }
-
-        private GameObject CreateUIElement(string name, Transform parent)
-        {
-            GameObject go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.AddComponent<RectTransform>();
-            return go;
-        }
-
-        private void PopulateInventory(Transform content, string itemId, int count, string tag)
-        {
-            for (int i = 0; i < count; i++)
-            {
-                string id = itemId + "_" + i;
-                GameObject slotContainer = CreateSlotWithControls(id, content, Color.gray, false, i, tag);
-
-                // Icon (child 1 of container)
-                Transform slot = slotContainer.transform.GetChild(1);
-                GameObject icon = CreateUIElement("Icon", slot);
-                Image img = icon.AddComponent<Image>();
-                img.color = (tag == "LOCAL") ? Color.cyan : Color.red;
-                var iRt = icon.GetComponent<RectTransform>();
-                iRt.anchorMin = iRt.anchorMax = new Vector2(0.5f, 0.5f);
-                iRt.sizeDelta = new Vector2(slotSize * 0.7f, slotSize * 0.7f);
-            }
-        }
-
-        private void ClearGrid()
-        {
-            for (int i = 0; i < 25; i++) UpdateGrid(i, "");
-            SetFeedbackText("Grid Cleared");
-        }
-
-        private void TryCraft()
-        {
-            // Check grid against TradeData recipes
-            foreach (var trade in availableTrades)
-            {
-                if (trade == null || trade.InputItem == null) continue;
-
-                // Simple check: is the input item in any input slot?
-                int inputSlot = -1;
-                for (int i = 0; i < 25; i++)
-                {
-                    if (IsInputSlot(i))
-                    {
-                        string itemId = IsNetworkActive ? GridItems[i].ToString() : _offlineGridItems[i].ToString();
-                        if (itemId.ToLowerInvariant() == trade.InputItem.itemCode.ToLowerInvariant())
-                        {
-                            inputSlot = i;
-                            break;
-                        }
-                    }
+                    GUI.Label(new Rect(55, i * 60, rect.width - 70, 55), availableTrades[i].OutputItem.displayName, _recipeSty);
                 }
 
-                if (inputSlot != -1)
+                if (Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition))
                 {
-                    // Craft! Remove input, add output to slot 0 (example output slot)
-                    UpdateGrid(inputSlot, "");
-                    UpdateGrid(0, trade.OutputItem.itemCode);
-                    SetFeedbackText($"Crafted: {trade.OutputItem.displayName}");
-                    return;
+                    _selectedRecipeIndex = i;
+                    Event.current.Use();
                 }
             }
 
-            SetFeedbackText("No matching recipe found.");
+            GUI.EndScrollView();
+            GUI.EndGroup();
         }
 
-        private void OnInventorySlotClicked(string itemId, string tag)
+        private void DrawRecipeDetail(Rect rect)
         {
-            _pickedItemId = itemId;
-            SetFeedbackText($"Picked: {itemId}");
-        }
-
-        private void OnCraftingSlotClicked(int index)
-        {
-            bool isInput = IsInputSlot(index);
-
-            if (string.IsNullOrEmpty(_pickedItemId))
+            if (_selectedRecipeIndex < 0 || _selectedRecipeIndex >= availableTrades.Count)
             {
-                // Pick item from slot to cursor
-                string itemId = IsNetworkActive ? GridItems[index].ToString() : _offlineGridItems[index].ToString();
-                if (!string.IsNullOrEmpty(itemId))
-                {
-                    _pickedItemId = itemId;
-                    UpdateGrid(index, "");
-                    SetFeedbackText($"Picked: {itemId}");
-                }
+                GUI.Label(rect, "Selecciona una receta para comenzar", _infoSty);
                 return;
             }
 
-            // If we have an item in hand, only allow placing in Input slots
-            if (isInput)
+            TradeData recipe = availableTrades[_selectedRecipeIndex];
+            GUI.BeginGroup(rect);
+
+            float y = 0;
+            GUI.Label(new Rect(0, y, rect.width, 30), "REQUERIMIENTO:", _infoSty);
+            y += 35;
+
+            // Input Item Box
+            Rect inputRect = new Rect(0, y, 80, 80);
+            GUI.DrawTexture(inputRect, _texSlot);
+            if (recipe.InputItem != null && recipe.InputItem.icon != null)
             {
-                UpdateGrid(index, _pickedItemId);
-                _pickedItemId = "";
-                SetFeedbackText("Item placed. Pick another.");
+                GUI.DrawTexture(new Rect(10, y + 10, 60, 60), recipe.InputItem.icon.texture);
+                GUI.Label(inputRect, "x" + recipe.InputAmount, _qtySty);
+                GUI.Label(new Rect(90, y + 25, rect.width - 90, 30), recipe.InputItem.displayName, _recipeSty);
             }
-            else
+
+            y += 100;
+            GUI.Label(new Rect(rect.width / 2 - 20, y - 10, 40, 40), "↓", _titleSty);
+            y += 40;
+
+            GUI.Label(new Rect(0, y, rect.width, 30), "RESULTADO:", _infoSty);
+            y += 35;
+
+            // Output Item Box
+            Rect outputRect = new Rect(0, y, 80, 80);
+            GUI.DrawTexture(outputRect, _texSlot);
+            if (recipe.OutputItem != null && recipe.OutputItem.icon != null)
             {
-                SetFeedbackText("Cannot place items in Output slots!");
+                GUI.DrawTexture(new Rect(10, y + 10, 60, 60), recipe.OutputItem.icon.texture);
+                GUI.Label(outputRect, "x" + recipe.OutputAmount, _qtySty);
+                GUI.Label(new Rect(90, y + 25, rect.width - 90, 30), recipe.OutputItem.displayName, _recipeSty);
             }
+
+            y += 110;
+
+            // Craft Button
+            Rect btnRect = new Rect(rect.width * 0.1f, y, rect.width * 0.8f, 60);
+            bool hover = btnRect.Contains(Event.current.mousePosition);
+            GUI.DrawTexture(btnRect, hover ? _texBtnHover : _texBtnNormal);
+            if (GUI.Button(btnRect, "CRAFTEAR AHORA", _btnSty))
+            {
+                TryExecuteTrade(_selectedRecipeIndex);
+            }
+
+            GUI.EndGroup();
         }
 
-        public void OnBeginDragSlot(SlotUI slot, PointerEventData eventData)
+        private void TryExecuteTrade(int index)
         {
-            string itemId = "";
-            if (slot.isCrafting)
+            if (index < 0 || index >= availableTrades.Count) return;
+
+            TradeData recipe = availableTrades[index];
+            ulong myId = (NetworkManager.Singleton != null) ? NetworkManager.Singleton.LocalClientId : 0;
+
+            // Validación rápida antes de enviar al servidor (opcional, pero buena práctica)
+            if (CanCraft(recipe))
             {
-                itemId = IsNetworkActive ? GridItems[slot.index].ToString() : _offlineGridItems[slot.index].ToString();
-            }
-            else
-            {
-                itemId = slot.slotName;
-            }
-
-            if (string.IsNullOrEmpty(itemId)) return;
-
-            _draggingItemId = itemId;
-            _sourceSlot = slot;
-
-            // Create Drag Icon
-            if (_mainCanvas == null) return;
-            _draggedIcon = new GameObject("DraggedItem");
-            _draggedIcon.transform.SetParent(_mainCanvas.transform, false);
-            var img = _draggedIcon.AddComponent<Image>();
-            img.color = new Color(1, 1, 1, 0.7f);
-            img.raycastTarget = false;
-
-            var rt = _draggedIcon.GetComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(slotSize, slotSize);
-
-            var label = new GameObject("Label");
-            label.transform.SetParent(_draggedIcon.transform, false);
-            AddText(label, itemId.Split('_')[0], 16, Color.black, TextAlignmentOptions.Center);
-            StretchRT(label.GetComponent<RectTransform>());
-
-            UpdateDragPosition(eventData.position);
-            SetFeedbackText($"Dragging: {itemId}");
-        }
-
-        public void OnDragSlot(PointerEventData eventData)
-        {
-            UpdateDragPosition(eventData.position);
-        }
-
-        private void UpdateDragPosition(Vector2 screenPos)
-        {
-            if (_draggedIcon != null)
-            {
-                _draggedIcon.transform.position = screenPos;
-            }
-        }
-
-        public void OnEndDragSlot(PointerEventData eventData)
-        {
-            if (_draggedIcon != null)
-            {
-                Destroy(_draggedIcon);
-                _draggedIcon = null;
-            }
-            _draggingItemId = "";
-            _sourceSlot = null;
-        }
-
-        public void OnDropSlot(SlotUI targetSlot, PointerEventData eventData)
-        {
-            if (string.IsNullOrEmpty(_draggingItemId)) return;
-
-            // Move Logic
-            if (targetSlot.isCrafting)
-            {
-                if (IsInputSlot(targetSlot.index))
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient)
                 {
-                    // If moving from LOCAL inventory to Crafting
-                    if (_sourceSlot != null && _sourceSlot.inventoryTag == "LOCAL")
-                    {
-                        InventoryController.RemoveItem(_draggingItemId);
-                        RefreshLocalInventoryUI();
-                    }
-
-                    UpdateGrid(targetSlot.index, _draggingItemId);
-
-                    if (_sourceSlot != null && _sourceSlot.isCrafting)
-                    {
-                        UpdateGrid(_sourceSlot.index, "");
-                    }
-                    SetFeedbackText($"Dropped {_draggingItemId} in Grid {targetSlot.index}");
+                    RequestTradeServerRpc(index, myId);
                 }
                 else
                 {
-                    SetFeedbackText("Cannot drop in Output slots!");
+                    // Fallback Offline
+                    ExecuteTradeLocal(index, myId);
                 }
-            }
-            else if (targetSlot.inventoryTag == "LOCAL")
-            {
-                // Dropping back into local inventory
-                if (_sourceSlot != null && _sourceSlot.isCrafting)
-                {
-                    string code = _draggingItemId;
-                    ItemData data = null;
-
-                    // Try database first
-                    if (itemDatabase != null)
-                    {
-                        data = itemDatabase.Find(x => x.itemCode.ToLowerInvariant() == code.ToLowerInvariant());
-                    }
-
-                    if (data != null)
-                    {
-                        InventoryController.Add(data);
-                        UpdateGrid(_sourceSlot.index, "");
-                        SetFeedbackText($"Item {data.displayName} returned to inventory");
-                    }
-                    else
-                    {
-                        SetFeedbackText("Could not resolve item data to return to inventory.");
-                    }
-                }
-                RefreshLocalInventoryUI();
-            }
-        }
-
-        private void UpdateGrid(int index, string itemId)
-        {
-            if (index < 0 || index >= 25) return;
-
-            if (IsNetworkActive)
-            {
-                UpdateGridServerRpc(index, itemId, NetworkManager.Singleton.LocalClientId);
             }
             else
             {
-                _offlineGridItems[index] = itemId;
-                RefreshCraftingVisuals();
+                Debug.LogWarning("[Crafting] Materiales insuficientes para " + recipe.OutputItem.displayName);
             }
+        }
+
+        private bool CanCraft(TradeData recipe)
+        {
+            var bag = InventoryController.GetBag();
+            string key = recipe.InputItem.itemCode.ToLowerInvariant();
+
+            // Buscar en el inventario persistente
+            if (bag.TryGetValue(key, out var slot))
+            {
+                return slot.qty >= recipe.InputAmount;
+            }
+            return false;
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void UpdateGridServerRpc(int index, string itemId, ulong clientId)
+        public void RequestTradeServerRpc(int recipeId, ulong clientId)
         {
-            GridItems[index] = itemId;
+            // El servidor procesa la lógica
+            ExecuteTradeLocal(recipeId, clientId);
         }
 
-        private void RefreshCraftingVisuals()
+        public void ExecuteTradeLocal(int recipeId, ulong clientId)
         {
-            if (_craftingGridRoot == null) return;
+            if (recipeId < 0 || recipeId >= availableTrades.Count) return;
 
-            for (int i = 0; i < 25; i++)
+            TradeData recipe = availableTrades[recipeId];
+            Debug.Log($"[Server/Local] Procesando tradeo {recipe.name} para cliente {clientId}");
+
+            // 1. Quitar ingredientes
+            string inputKey = recipe.InputItem.itemCode.ToLowerInvariant();
+            for (int i = 0; i < recipe.InputAmount; i++)
             {
-                // Slot is now the second child of the container
-                Transform container = _craftingGridRoot.GetChild(i);
-                Transform slot = container.GetChild(1);
-                string itemId = IsNetworkActive ? GridItems[i].ToString() : _offlineGridItems[i].ToString();
-                bool isInput = IsInputSlot(i);
-
-                // Visual refresh
-                Image img = slot.GetComponent<Image>();
-                if (string.IsNullOrEmpty(itemId))
-                {
-                    img.color = isInput ? new Color(0.3f, 0.3f, 0.3f) : new Color(0.15f, 0.15f, 0.2f);
-                }
-                else
-                {
-                    img.color = isInput ? Color.yellow : new Color(0.2f, 0.8f, 0.2f); // Input yellow, Output Green
-                }
-
-                // Clear old icons if any
-                foreach (Transform child in slot) if(child.name == "ItemLabel") Destroy(child.gameObject);
-
-                if (!string.IsNullOrEmpty(itemId))
-                {
-                    GameObject label = CreateUIElement("ItemLabel", slot);
-                    AddText(label, itemId.Split('_')[0], 14, Color.black, TextAlignmentOptions.Center);
-                    StretchRT(label.GetComponent<RectTransform>());
-
-                    // Show icon if in database
-                    if (itemDatabase != null)
-                    {
-                        var data = itemDatabase.Find(x => x.itemCode.ToLowerInvariant() == itemId.ToLowerInvariant());
-                        if (data != null && data.icon != null)
-                        {
-                            GameObject icon = CreateUIElement("Icon", slot);
-                            Image iconImg = icon.AddComponent<Image>();
-                            iconImg.sprite = data.icon;
-                            var iRt = icon.GetComponent<RectTransform>();
-                            StretchRT(iRt);
-                        }
-                    }
-                }
+                InventoryController.RemoveItem(inputKey);
             }
+
+            // 2. Añadir resultado
+            for (int i = 0; i < recipe.OutputAmount; i++)
+            {
+                InventoryController.Add(recipe.OutputItem);
+            }
+
+            // Si estamos en el cliente, forzar refresco de UI si fuera necesario
+            InventoryController.MarkCountDirty();
         }
 
-        private bool IsInputSlot(int index)
+        // --- Market Logic (Placeholder centralizado) ---
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void OfferItemMarketServerRpc(string itemCode, int quantity, ulong senderId)
         {
-            int row = index / 5;
-            int col = index % 5;
-            // Inner 3x3 is between (1,1) and (3,3) in a 5x5 grid
-            return row >= 1 && row <= 3 && col >= 1 && col <= 3;
-        }
-
-        // Helper class for UI Interaction
-        public class SlotUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler, IDropHandler
-        {
-            public CraftingManager manager;
-            public bool isCrafting;
-            public int index;
-            public string inventoryTag;
-            public string slotName;
-
-            public void OnBeginDrag(PointerEventData eventData) => manager.OnBeginDragSlot(this, eventData);
-            public void OnDrag(PointerEventData eventData) => manager.OnDragSlot(eventData);
-            public void OnEndDrag(PointerEventData eventData) => manager.OnEndDragSlot(eventData);
-            public void OnDrop(PointerEventData eventData) => manager.OnDropSlot(this, eventData);
+            Debug.Log($"[Market] Jugador {senderId} ofrece {quantity}x {itemCode}");
         }
     }
 }

@@ -11,12 +11,8 @@ public class PickupController : NetworkBehaviour
 {
     [Header("Data Configuration")]
     public ItemData item;
-    public float expAmount = 25f;
 
     public static int ActiveCount { get; private set; }
-
-    [Header("Visuals & Effects")]
-    public GameObject particleEffectPrefab;
 
     [Header("Motion")]
     public float rotationSpeed = 100f;
@@ -27,17 +23,41 @@ public class PickupController : NetworkBehaviour
     private float _timer;
     private bool _taken;
     private float _spawnTime;
-    private const float PICKUP_DELAY = 0.8f; // Delay para evitar auto-recogida al dropear
+    private const float PICKUP_DELAY = 0.3f; // Reducido el delay
 
     private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
     void Awake()
     {
-        // ... (resto de Awake igual)
         _spawnTime = Time.time;
+        CreateMasterTrigger();
     }
 
-    // ... (resto de CreateMasterTrigger igual)
+    private void CreateMasterTrigger()
+    {
+        // Asegurar que haya un trigger para detectar al jugador
+        Collider[] colliders = GetComponents<Collider>();
+        bool hasTrigger = false;
+        foreach (var c in colliders)
+        {
+            if (c.isTrigger) { hasTrigger = true; break; }
+        }
+
+        if (!hasTrigger)
+        {
+            SphereCollider sc = gameObject.AddComponent<SphereCollider>();
+            sc.isTrigger = true;
+            sc.radius = 0.7f; // Aumentado un poco el radio
+        }
+
+        // Asegurar Rigidbody para detección confiable con CharacterControllers
+        if (GetComponent<Rigidbody>() == null)
+        {
+            Rigidbody rb = gameObject.AddComponent<Rigidbody>();
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
+    }
 
     void Start()
     {
@@ -64,43 +84,52 @@ public class PickupController : NetworkBehaviour
         }
     }
 
+    void OnTriggerStay(Collider other)
+    {
+        // Redirigir a OnTriggerEnter para manejar el caso de que el jugador ya esté encima al spawnear
+        OnTriggerEnter(other);
+    }
+
     void OnTriggerEnter(Collider other)
     {
         if (_taken || Time.time < _spawnTime + PICKUP_DELAY) return;
 
-        // Deteccion robusta de cualquier tipo de Player
-        // ... (resto de OnTriggerEnter igual)
+        // Deteccion robusta: busca StatsController o PlayerController en la jerarquia
+        bool isPlayer = other.CompareTag("Player") ||
+                       other.GetComponentInParent<StatsController>() != null ||
+                       other.GetComponentInParent<Combating.Scripts.PlayerController>() != null;
+
+        if (isPlayer)
+        {
+            Debug.Log($"[Pickup] Detección de jugador confirmada en {gameObject.name}");
+
+            if (item == null)
+            {
+                Debug.LogWarning($"[Pickup] {gameObject.name} detectó al jugador pero no tiene ItemData.");
+                return;
+            }
+
+            _taken = true;
+            ProcessPickup();
+        }
     }
 
     private void ProcessPickup()
     {
         // 1. Logica de Recompensa
-        if (item != null)
+        if (item.expValue > 0f)
         {
-            if (item.expValue > 0f)
-            {
-                StatsController.Instance?.AddExp(item.expValue);
-                Debug.Log($"[Pickup] {item.displayName} (EXP: {item.expValue})");
-            }
-            else
-            {
-                InventoryController.Add(item);
-                Debug.Log($"[Pickup] {item.displayName} añadido al inventario.");
-            }
+            StatsController.Instance?.AddExp(item.expValue);
+            Debug.Log($"[Pickup] {item.displayName} (EXP: {item.expValue})");
         }
         else
         {
-            // Orbe de experiencia pura
-            if (StatsController.Instance != null)
-            {
-                StatsController.Instance.AddExp(expAmount);
-                Debug.Log($"[Pickup] Orbe de Experiencia (+{expAmount})");
-            }
+            InventoryController.Add(item);
+            Debug.Log($"[Pickup] {item.displayName} añadido al inventario.");
         }
 
         // 2. Efecto visual
-        if (particleEffectPrefab != null)
-            Instantiate(particleEffectPrefab, transform.position, Quaternion.identity);
+        SpawnHardcodedEffect();
 
         // 3. Sincronizacion de Red y Destruccion
         if (IsNetworkActive)
@@ -117,6 +146,32 @@ public class PickupController : NetworkBehaviour
         {
             Destroy(gameObject);
         }
+    }
+
+    private void SpawnHardcodedEffect()
+    {
+        // Crear un efecto de partículas simple sin necesidad de prefab
+        GameObject go = new GameObject("PickupEffect");
+        go.transform.position = transform.position;
+
+        ParticleSystem ps = go.AddComponent<ParticleSystem>();
+
+        var main = ps.main;
+        main.startLifetime = 0.5f;
+        main.startSpeed = 5f;
+        main.startSize = 0.2f;
+        main.startColor = item.expValue > 0 ? Color.yellow : Color.cyan;
+        main.stopAction = ParticleSystemStopAction.Destroy;
+
+        var emission = ps.emission;
+        emission.rateOverTime = 0;
+        emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0, 20) });
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = 0.1f;
+
+        ps.Play();
     }
 
     private void GenerateFallbackVisuals()

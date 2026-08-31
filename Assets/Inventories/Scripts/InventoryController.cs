@@ -14,14 +14,16 @@ public class InventoryController : NetworkBehaviour
     private static HashSet<string> s_PersistentEquipped = new();
 
     [Header("Panel Settings")]
-    public int panelWidth = 620;
-    public int panelHeight = 520;
+    public int panelWidth = 700;
+    public int panelHeight = 550;
     public int columns = 6;
-    public int cellSize = 85;
-    public int padding = 12;
-    public int titleH = 55;
-    public int qtyFontSize = 18;
-    public int cornerRadius = 10;
+    public int cellSize = 90;
+    public int padding = 20;
+    public int titleH = 65;
+    public int qtyFontSize = 14;
+    public int cornerRadius = 15;
+    public Color panelColor = new Color(0.05f, 0.05f, 0.05f, 0.95f);
+    public Color accentColor = new Color(1f, 0.85f, 0f, 1f);
 
     [Header("Drop Settings")]
     public float dropDistance = 2.5f;
@@ -170,8 +172,8 @@ public class InventoryController : NetworkBehaviour
     GUIStyle _titleSty, _qtySty, _emptySty, _badgeSty, _ddNorm, _ddHov, _dropHintSty, _btnSty;
     bool _stylesReady;
 
-    void EnsureStyles() { if (_stylesReady) return; _titleSty = Sty(28, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white); _qtySty = Sty(qtyFontSize, FontStyle.Bold, TextAnchor.LowerRight, Color.white); _emptySty = Sty(18, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0.5f)); _badgeSty = Sty(20, FontStyle.Bold, TextAnchor.UpperRight, Color.yellow); _ddNorm = Sty(15, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white); _ddHov = Sty(15, FontStyle.Bold, TextAnchor.MiddleCenter, Color.yellow); _dropHintSty = Sty(17, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.9f, 0.8f, 1f)); _btnSty = Sty(11, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white); _stylesReady = true; }
-    void EnsureTextures() { if (_texNormal != null) return; int s = 64; _texNormal = MakeRoundedTex(s, cornerRadius, new Color(1f, 1f, 1f, 0.10f), Color.clear, 0); _texSelected = MakeRoundedTex(s, cornerRadius, new Color(0.08f, 0.08f, 0.08f, 0.97f), new Color(1f, 0.85f, 0f, 1f), 3); _texPanel = MakeRoundedTex(s, 20, new Color(0f, 0f, 0f, 0.93f), Color.clear, 0); _texDropZone = MakeRoundedTex(s, 16, new Color(0.8f, 0.2f, 0.1f, 0.55f), new Color(1f, 0.4f, 0.1f, 0.9f), 3); _texGhost = MakeRoundedTex(s, cornerRadius, new Color(1f, 1f, 1f, 0.30f), Color.clear, 0); _texBtnClose = MakeRoundedTex(s, 8, new Color(0.8f, 0.1f, 0.1f, 0.9f), Color.white, 2); _texBtnPlus = MakeRoundedTex(s, 4, new Color(0.1f, 0.6f, 0.1f, 0.9f), Color.white, 1); _texBtnMinus = MakeRoundedTex(s, 4, new Color(0.6f, 0.1f, 0.1f, 0.9f), Color.white, 1); }
+    void EnsureStyles() { if (_stylesReady) return; _titleSty = Sty(32, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white); _qtySty = Sty(qtyFontSize, FontStyle.Bold, TextAnchor.LowerRight, accentColor); _emptySty = Sty(18, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0.5f)); _badgeSty = Sty(20, FontStyle.Bold, TextAnchor.UpperRight, accentColor); _ddNorm = Sty(15, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white); _ddHov = Sty(15, FontStyle.Bold, TextAnchor.MiddleCenter, accentColor); _dropHintSty = Sty(17, FontStyle.Bold, TextAnchor.MiddleCenter, new Color(1f, 0.9f, 0.8f, 1f)); _btnSty = Sty(20, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white); _stylesReady = true; }
+    void EnsureTextures() { if (_texNormal != null) return; int s = 64; _texNormal = MakeRoundedTex(s, 8, new Color(1f, 1f, 1f, 0.08f), Color.clear, 0); _texSelected = MakeRoundedTex(s, 8, new Color(1f, 1f, 1f, 0.15f), accentColor, 2); _texPanel = MakeRoundedTex(s, cornerRadius, panelColor, Color.clear, 0); _texDropZone = MakeRoundedTex(s, 16, new Color(0.8f, 0.2f, 0.1f, 0.55f), new Color(1f, 0.4f, 0.1f, 0.9f), 3); _texGhost = MakeRoundedTex(s, 8, new Color(1f, 1f, 1f, 0.30f), Color.clear, 0); _texBtnClose = MakeRoundedTex(s, 8, new Color(0.8f, 0.1f, 0.1f, 0.9f), Color.white, 2); _texBtnPlus = MakeRoundedTex(s, 4, new Color(0.1f, 0.6f, 0.1f, 0.9f), Color.white, 1); _texBtnMinus = MakeRoundedTex(s, 4, new Color(0.6f, 0.1f, 0.1f, 0.9f), Color.white, 1); }
     Texture2D MakeRoundedTex(int s, int r, Color fill, Color border, int bw) { var tex = new Texture2D(s, s, TextureFormat.RGBA32, false); tex.filterMode = FilterMode.Bilinear; Color clear = new Color(0, 0, 0, 0); Color[] px = new Color[s * s]; for (int y = 0; y < s; y++) for (int x = 0; x < s; x++) { float cx = Mathf.Clamp(x, r, s - 1 - r), cy = Mathf.Clamp(y, r, s - 1 - r); float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)); if (d > r + 1f) px[y * s + x] = clear; else if (d > r - 0.5f) px[y * s + x] = Color.Lerp(fill, clear, d - (r - 0.5f)); else if (bw > 0 && d > r - bw) px[y * s + x] = border; else px[y * s + x] = fill; } tex.SetPixels(px); tex.Apply(); return tex; }
     static GUIStyle Sty(int sz, FontStyle fs, TextAnchor a, Color c) { var s = new GUIStyle(GUI.skin.label) { fontSize = sz, fontStyle = fs, alignment = a }; s.normal.textColor = c; return s; }
 
@@ -250,9 +252,7 @@ public class InventoryController : NetworkBehaviour
         _selectedIndex = (hoverIndex != -1) ? hoverIndex : _stickyIndex;
 
         // Botón cerrar X
-        Rect rClose = new Rect(x0 + panelWidth - 45, y0 + 10, 35, 35);
-        GUI.DrawTexture(rClose, _texBtnClose);
-        GUI.Label(rClose, "X", _btnSty);
+        if (GUI.Button(new Rect(x0 + panelWidth - 50, y0 + 15, 35, 35), "X", _btnSty)) SetOpen(false);
 
         // Mensaje Centralizado de Coleccionables
         string collText = $"COLECTABLES EN BIOMA: {s_CollectiblesRemaining}";
@@ -296,11 +296,9 @@ public class InventoryController : NetworkBehaviour
             GUI.color = Color.white;
         }
 
-        // Lógica de Click (MouseDown)
         if (e.type == EventType.MouseDown && e.button == 0)
         {
             bool handled = false;
-            if (rClose.Contains(mp)) { SetOpen(false); handled = true; e.Use(); }
 
             // Primero chequear si el click fue en un botón del item seleccionado (hover o sticky)
             if (!handled && _selectedIndex >= 0 && _selectedIndex < _keys.Count)
