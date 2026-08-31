@@ -23,18 +23,7 @@ namespace Combating.Scripts
         public float explosionForce = 10f;
         public float spreadRadius = 2.5f;
 
-        [Header("Sibling Scripts (Auto-detected)")]
-        [SerializeField] private ShootController shooter;
-        [SerializeField] private EnemyController enemyAI;
-
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
-
-        void Awake()
-        {
-            // Auto-detect sibling action controllers if not assigned
-            if (shooter == null) shooter = GetComponent<ShootController>();
-            if (enemyAI == null) enemyAI = GetComponent<EnemyController>();
-        }
 
         /// <summary>
         /// Called by HealthController when HP reaches zero.
@@ -46,17 +35,13 @@ namespace Combating.Scripts
 
             Debug.Log($"[SpawnController] {gameObject.name} death triggered.");
 
-            // 1. Desactivar componentes de lógica para que no sigan atacando mientras mueren
-            if (enemyAI != null) enemyAI.enabled = false;
-            if (shooter != null) shooter.enabled = false;
-
-            // 2. Efectos Visuales
+            // 1. Efectos Visuales
             CreateDeathVisuals();
 
-            // 3. Spawneo de Items
+            // 2. Spawneo de Items
             SpawnItems();
 
-            // 4. Limpieza de red o local
+            // 3. Limpieza de red o local
             if (IsNetworkActive && NetworkObject.IsSpawned)
             {
                 // Para objetos colocados en escena, Despawn(false) evita el warning y luego destruimos localmente
@@ -101,50 +86,56 @@ namespace Combating.Scripts
             }
         }
 
+        public void SpawnSingleItem(GameObject prefab, Vector3 position, string message = "", Vector3? impulse = null)
+        {
+            if (prefab == null) return;
+
+            GameObject spawned = Instantiate(prefab, position, Quaternion.identity);
+
+            // Mensaje flotante de loot
+            if (!string.IsNullOrEmpty(message))
+            {
+                GameObject msgGo = new GameObject("LootMsg");
+                msgGo.transform.SetParent(spawned.transform);
+                msgGo.transform.localPosition = Vector3.up * 1.0f;
+
+                var tmp = msgGo.AddComponent<TextMeshPro>();
+                tmp.text = message;
+                tmp.fontSize = 3;
+                tmp.alignment = TextAlignmentOptions.Center;
+                tmp.color = Color.yellow;
+                msgGo.AddComponent<SimpleBillboard>();
+            }
+
+            // Física para el item spawneado
+            Rigidbody rb = spawned.GetComponent<Rigidbody>();
+            if (rb == null) rb = spawned.AddComponent<Rigidbody>();
+
+            if (rb != null)
+            {
+                // Asegurar que no sea kinematico para que el impulso y la gravedad funcionen
+                rb.isKinematic = false;
+                rb.useGravity = true;
+
+                Vector3 force = impulse ?? (transform.forward * 2f + Random.insideUnitSphere * 0.5f);
+                rb.AddForce(force, ForceMode.Impulse);
+            }
+
+            // Sincronización en red
+            if (IsNetworkActive && IsServer)
+            {
+                if (spawned.TryGetComponent<NetworkObject>(out var netObj))
+                {
+                    netObj.Spawn();
+                }
+            }
+        }
+
         private void SpawnItems()
         {
             foreach (var item in itemsToSpawn)
             {
-                if (item.prefab == null) continue;
-
-                Vector3 offset = Random.onUnitSphere * spreadRadius;
-                offset.y = Mathf.Max(0.5f, Mathf.Abs(offset.y)); // Siempre sobre el suelo
-                Vector3 spawnPos = transform.position + offset;
-
-                GameObject spawned = Instantiate(item.prefab, spawnPos, Quaternion.identity);
-
-                // Mensaje flotante de loot
-                if (!string.IsNullOrEmpty(item.message))
-                {
-                    GameObject msgGo = new GameObject("LootMsg");
-                    msgGo.transform.SetParent(spawned.transform);
-                    msgGo.transform.localPosition = Vector3.up * 1.0f;
-
-                    var tmp = msgGo.AddComponent<TextMeshPro>();
-                    tmp.text = item.message;
-                    tmp.fontSize = 3;
-                    tmp.alignment = TextAlignmentOptions.Center;
-                    tmp.color = Color.yellow;
-                    msgGo.AddComponent<SimpleBillboard>();
-                }
-
-                // Física para el item spawneado (Configuración segura)
-                Rigidbody rb = spawned.GetComponent<Rigidbody>();
-                if (rb == null) rb = spawned.AddComponent<Rigidbody>();
-
-                if (rb != null)
-                {
-                    rb.AddExplosionForce(explosionForce, transform.position, spreadRadius);
-                }
-
-                // Sincronización en red del item si es necesario
-                if (IsNetworkActive && IsServer)
-                {
-                    if (spawned.TryGetComponent<NetworkObject>(out var netObj))
-                    {
-                        netObj.Spawn();
-                    }
-                }
+                SpawnSingleItem(item.prefab, transform.position + (Random.onUnitSphere * spreadRadius), item.message);
             }
         }
     }
