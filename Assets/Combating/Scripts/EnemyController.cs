@@ -26,6 +26,11 @@ namespace Combating.Scripts
         public float meleeRange = 2.5f;
         public float attackCooldown = 1.5f;
 
+        [Header("Visual Feedback")]
+        public Renderer[] bodyRenderers; // Lista de renderers para efectos
+        public Color flashColor = Color.white;
+        public float flashDuration = 0.15f;
+
         private NavMeshAgent m_Agent;
         private Transform m_Target;
         private ShootController m_Shooter;
@@ -38,9 +43,10 @@ namespace Combating.Scripts
 
         void Awake()
         {
-            m_Agent = GetComponent<NavMeshAgent>();
+            // Buscar el agente en la raiz o en los hijos (reorganizado)
+            m_Agent = GetComponentInChildren<NavMeshAgent>();
 
-            // Zero-Dependency Bootstrapping: Agregar NavMeshAgent si falta
+            // Zero-Dependency Bootstrapping: Agregar NavMeshAgent si falta totalmente
             if (m_Agent == null)
             {
                 m_Agent = gameObject.AddComponent<NavMeshAgent>();
@@ -50,7 +56,7 @@ namespace Combating.Scripts
             if (m_Agent != null)
             {
                 m_Agent.baseOffset = hoverHeight;
-                m_Agent.updateRotation = false; // Deshabilitar rotacion automatica para manejar Pitch/Yaw manualmente
+                m_Agent.updateRotation = false; // Manejamos la rotacion nosotros para evitar tirones
             }
 
             m_Shooter = GetComponent<ShootController>();
@@ -61,6 +67,43 @@ namespace Combating.Scripts
             if (m_Melee == null && attackType == AttackType.Melee) Debug.LogWarning($"[EnemyController] {gameObject.name} no tiene MeleeController para ataque cuerpo a cuerpo.");
 
             if (m_Shooter != null) m_Shooter.UsePlayerInput = false;
+
+            // Zero-Dependency: Intentar encontrar todos los renderers en los hijos (especialmente si esta en EnemyRender)
+            if (bodyRenderers == null || bodyRenderers.Length == 0)
+            {
+                bodyRenderers = GetComponentsInChildren<Renderer>();
+            }
+
+            if (m_Health != null)
+            {
+                m_Health.OnTakeDamage.AddListener((dmg) => PlayHitFlash());
+            }
+        }
+
+        private void PlayHitFlash()
+        {
+            if (bodyRenderers != null && bodyRenderers.Length > 0)
+            {
+                foreach (var renderer in bodyRenderers)
+                {
+                    if (renderer == null) continue;
+                    var mpb = new MaterialPropertyBlock();
+                    mpb.SetColor("_EmissionColor", flashColor * 2f);
+                    renderer.SetPropertyBlock(mpb);
+                }
+                Invoke(nameof(ResetFlash), flashDuration);
+            }
+        }
+
+        private void ResetFlash()
+        {
+            if (bodyRenderers != null)
+            {
+                foreach (var renderer in bodyRenderers)
+                {
+                    if (renderer != null) renderer.SetPropertyBlock(null);
+                }
+            }
         }
 
         public override void OnNetworkSpawn()
@@ -177,9 +220,29 @@ namespace Combating.Scripts
             Vector3 direction = (position - transform.position).normalized;
             if (direction.sqrMagnitude > 0.001f)
             {
-                // Permitir rotacion en 3D (Yaw y Pitch) para atacar desde cualquier angulo
-                Quaternion rot = Quaternion.LookRotation(direction);
-                transform.rotation = Quaternion.Slerp(transform.rotation, rot, turnSpeed * Time.deltaTime);
+                // 1. Rotacion de la RAIZ (Solo Yaw/Giro horizontal)
+                // Esto mantiene al NavMeshAgent estable y vertical
+                Vector3 yawDirection = new Vector3(direction.x, 0, direction.z).normalized;
+                if (yawDirection.sqrMagnitude > 0.001f)
+                {
+                    Quaternion targetYaw = Quaternion.LookRotation(yawDirection);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetYaw, turnSpeed * Time.deltaTime);
+                }
+
+                // 2. Rotacion de los VISUALES (Pitch/Inclinacion vertical)
+                // Inclinamos los renderers hijos para que miren al player arriba/abajo
+                if (bodyRenderers != null && bodyRenderers.Length > 0)
+                {
+                    Quaternion targetFullRotation = Quaternion.LookRotation(direction);
+                    foreach (var r in bodyRenderers)
+                    {
+                        if (r != null)
+                        {
+                            // Aplicamos la rotacion local relativa al padre para el Pitch
+                            r.transform.rotation = Quaternion.Slerp(r.transform.rotation, targetFullRotation, turnSpeed * Time.deltaTime);
+                        }
+                    }
+                }
             }
         }
     }
