@@ -751,7 +751,7 @@ GameObject:
   m_Component:
   - component: {fileID: 162541639}
   - component: {fileID: 162541641}
-  - component: {fileID: 162541640}
+  - component: {fileID: 162541642}
   m_Layer: 0
   m_Name: TensionTrigger
   m_TagString: Untagged
@@ -774,20 +774,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1210580262}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &162541640
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 162541638}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f22577bf31e592f4c85237d6737562cc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
-  controlador: {fileID: 1210580260}
-  alerta: 50
 --- !u!65 &162541641
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -809,6 +795,29 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &162541642
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 162541638}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5a98bd3164c5bd47a00ad6b3b321381, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FmodController
+  esControladorPrincipal: 0
+  esTrigger: 1
+  referenciaEvento:
+    Guid:
+      Data1: -1668576281
+      Data2: 1116585039
+      Data3: -1811222100
+      Data4: 347304069
+    Path: event:/RemezVertical
+  nombreParametroAlerta: Alerta
+  nivelAlerta: 50
 --- !u!1001 &166117508
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6613,6 +6622,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5a98bd3164c5bd47a00ad6b3b321381, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
+  esControladorPrincipal: 1
+  esTrigger: 0
   referenciaEvento:
     Guid:
       Data1: -1668576281
@@ -6620,7 +6631,8 @@ MonoBehaviour:
       Data3: -1811222100
       Data4: 347304069
     Path: event:/RemezVertical
-  alertaActual: 0
+  nombreParametroAlerta: Alerta
+  nivelAlerta: 50
 --- !u!114 &1210580261
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6681,7 +6693,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1219623328}
   - component: {fileID: 1219623330}
-  - component: {fileID: 1219623329}
+  - component: {fileID: 1219623331}
   m_Layer: 0
   m_Name: CombateTrigger
   m_TagString: Untagged
@@ -6704,20 +6716,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1210580262}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1219623329
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1219623327}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f22577bf31e592f4c85237d6737562cc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
-  controlador: {fileID: 1210580260}
-  alerta: 100
 --- !u!65 &1219623330
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -6739,6 +6737,29 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 0.65318364}
   m_Center: {x: 0, y: 0, z: 0.17340809}
+--- !u!114 &1219623331
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1219623327}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5a98bd3164c5bd47a00ad6b3b321381, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FmodController
+  esControladorPrincipal: 1
+  esTrigger: 0
+  referenciaEvento:
+    Guid:
+      Data1: -1668576281
+      Data2: 1116585039
+      Data3: -1811222100
+      Data4: 347304069
+    Path: event:/RemezVertical
+  nombreParametroAlerta: Alerta
+  nivelAlerta: 80
 --- !u!1 &1223081795
 GameObject:
   m_ObjectHideFlags: 0

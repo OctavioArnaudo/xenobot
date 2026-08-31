@@ -1,58 +1,136 @@
 using UnityEngine;
 using FMODUnity;
 using FMOD.Studio;
+using System.Collections.Generic;
+using System.Linq;
+using Xenobot.Movement;
 
 public class FmodController : MonoBehaviour
 {
-    // Permite seleccionar el evento de los bancos de FMOD desde el Inspector
+    public static FmodController Instance { get; private set; }
+
+    [Header("Configuración de Rol")]
+    [Tooltip("Si se marca, este objeto gestiona la instancia de audio de FMOD (Solo debe haber uno en la escena).")]
+    [SerializeField] private bool esControladorPrincipal = true;
+
+    [Tooltip("Si se marca, este objeto detecta colisiones para cambiar el nivel de alerta.")]
+    [SerializeField] private bool esTrigger = false;
+
+    [Header("Ajustes de Sonido (Solo Principal)")]
     [SerializeField] private EventReference referenciaEvento;
+    [SerializeField] private string nombreParametroAlerta = "Alerta";
 
-    // Valor actual de alerta, visible en el Inspector
-    [SerializeField] private float alertaActual = 0f;
+    [Header("Ajustes de Alerta (Solo Trigger)")]
+    [SerializeField] private float nivelAlerta = 50.0f;
 
-    // Instancia interna que se guarda en la memoria de la escena
     private EventInstance instanciaAmbiente;
+    private Dictionary<int, float> alertasActivas = new Dictionary<int, float>();
+
+    private void Awake()
+    {
+        // Sistema de Singleton para el controlador principal
+        if (esControladorPrincipal)
+        {
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+            else if (Instance != this)
+            {
+                Debug.LogWarning("[FMOD] Se encontró más de un FmodController principal. Eliminando duplicado.");
+                Destroy(gameObject);
+                return;
+            }
+        }
+    }
 
     private void Start()
     {
-        // Verifica si se asignó un evento válido en el Inspector
-        if (!referenciaEvento.IsNull)
+        if (esControladorPrincipal && !referenciaEvento.IsNull)
         {
-            // Instancia el evento a partir de la referencia de los bancos
             instanciaAmbiente = RuntimeManager.CreateInstance(referenciaEvento);
-
-            // Inicia la reproducción en loop del ambiente
             instanciaAmbiente.start();
-
-            // Sincroniza el valor inicial
-            CambiarNivelAlerta(alertaActual);
-
-            Debug.Log("FMOD Ambient Event successfully instantiated and started.");
-        }
-        else
-        {
-            Debug.LogWarning("FMOD Event Reference is missing in FmodController!");
+            ActualizarFMOD();
+            Debug.Log("[FMOD] Evento de ambiente iniciado.");
         }
     }
 
-    // Método para cambiar la mezcla vertical desde otros scripts o triggers
-    public void CambiarNivelAlerta(float nuevoValor)
+    #region Lógica de Trigger
+    private void OnTriggerEnter(Collider other)
     {
-        alertaActual = nuevoValor;
-
-        // Verifica que la instancia en memoria sea válida antes de operar
-        if (instanciaAmbiente.isValid())
+        if (esTrigger && EsJugadorLocal(other))
         {
-            // Modifica el parámetro directamente en la instancia activa
-            instanciaAmbiente.setParameterByName("Alerta", alertaActual);
-            Debug.Log("FMOD Instance Parameter 'Alerta' updated to: " + alertaActual);
+            // Reportar la alerta al controlador principal
+            if (Instance != null)
+                Instance.RegistrarAlerta(gameObject.GetInstanceID(), nivelAlerta);
+            else
+                Debug.LogWarning("[FMOD] Trigger detectado pero no hay FmodController principal activo.");
         }
     }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (esTrigger && EsJugadorLocal(other))
+        {
+            if (Instance != null)
+                Instance.EliminarAlerta(gameObject.GetInstanceID());
+        }
+    }
+
+    private bool EsJugadorLocal(Collider other)
+    {
+        if (!other.CompareTag("Player")) return false;
+        var pc = other.GetComponent<PlayerController>();
+        return pc != null ? pc.IsOwner : true;
+    }
+    #endregion
+
+    #region Gestión de Alertas (Solo Procesado en el Principal)
+    public void RegistrarAlerta(int idFuente, float valor)
+    {
+        // Si este componente no es el principal, redirigir a la instancia estática
+        if (!esControladorPrincipal)
+        {
+            if (Instance != null) Instance.RegistrarAlerta(idFuente, valor);
+            return;
+        }
+
+        if (!alertasActivas.ContainsKey(idFuente))
+            alertasActivas.Add(idFuente, valor);
+        else
+            alertasActivas[idFuente] = valor;
+
+        ActualizarFMOD();
+    }
+
+    public void EliminarAlerta(int idFuente)
+    {
+        if (!esControladorPrincipal)
+        {
+            if (Instance != null) Instance.EliminarAlerta(idFuente);
+            return;
+        }
+
+        if (alertasActivas.ContainsKey(idFuente))
+        {
+            alertasActivas.Remove(idFuente);
+            ActualizarFMOD();
+        }
+    }
+
+    private void ActualizarFMOD()
+    {
+        if (!esControladorPrincipal || !instanciaAmbiente.isValid()) return;
+
+        // Tomamos el valor máximo de todas las zonas activas
+        float valorFinal = alertasActivas.Count > 0 ? alertasActivas.Values.Max() : 0f;
+        instanciaAmbiente.setParameterByName(nombreParametroAlerta, valorFinal);
+    }
+    #endregion
 
     private void OnDestroy()
     {
-        // Limpieza de memoria: detiene y libera el evento al cerrar la escena
-        if (instanciaAmbiente.isValid())
+        if (esControladorPrincipal && instanciaAmbiente.isValid())
         {
             instanciaAmbiente.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
             instanciaAmbiente.release();
