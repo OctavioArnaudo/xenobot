@@ -727,18 +727,27 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 51c8784d31e4e104f84c06fdcde69941, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Inventory
+  m_EditorClassIdentifier: Assembly-CSharp::InventoryController
   ShowTopMostFoldoutHeaderGroup: 1
-  panelWidth: 1500
-  panelHeight: 900
+  panelWidth: 700
+  panelHeight: 550
   columns: 6
-  cellSize: 200
-  padding: 250
-  titleH: 250
-  qtyFontSize: 22
-  cornerRadius: 12
+  cellSize: 90
+  padding: 20
+  titleH: 65
+  qtyFontSize: 14
+  cornerRadius: 15
+  panelColor: {r: 0.05, g: 0.05, b: 0.05, a: 0.95}
+  accentColor: {r: 1, g: 0.85, b: 0, a: 1}
+  itemDatabase:
+  - {fileID: 11400000, guid: 4c2b8eac15bd2304fb1eadd96fcae45d, type: 2}
+  - {fileID: 11400000, guid: 523ec6ef5e03b5a4b957d73e8eddf33f, type: 2}
+  - {fileID: 11400000, guid: 82f936139cf00f24fbb2382cd48dd828, type: 2}
+  - {fileID: 11400000, guid: 75b6b99d3e052724095a1f53dea46401, type: 2}
+  - {fileID: 11400000, guid: d9ea5b9e700da844c9c2a3f7dd94e4a1, type: 2}
+  - {fileID: 11400000, guid: c2611baf898373f4ba4bfca62eff5d6a, type: 2}
   dropDistance: 2.5
-  droppedWorldSize: 1
+
 --- !u!114 &7450631966458783124
 MonoBehaviour:
   m_ObjectHideFlags: 0
