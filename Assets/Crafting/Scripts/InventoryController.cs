@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Combating.Scripts;
+using Crafting.Scripts;
 
 // Estructura para sincronización de red
 public struct NetworkInventorySlot : INetworkSerializable, IEquatable<NetworkInventorySlot>
@@ -244,6 +245,14 @@ public class InventoryController : NetworkBehaviour
                 GUI.DrawTexture(new Rect(cell.x + 10, cell.y + 10, cell.width - 20, cell.height - 20), slot.def.icon.texture);
 
             GUI.Label(cell, "x" + slot.qty, _qtySty);
+
+            // Acción de uso al hacer clic
+            if (isSelected && Event.current.type == EventType.MouseDown && Event.current.button == 0)
+            {
+                UseItem(slot.def);
+                Event.current.Use();
+            }
+
             i++;
         }
 
@@ -290,6 +299,27 @@ public class InventoryController : NetworkBehaviour
     public static List<string> GetKeys() => LocalInstance?._localKeys ?? new();
     public static void MarkCountDirty() => s_CountDirty = true;
     public static ItemData GetItemDataByCodeStatic(string code) => LocalInstance?.GetItemDataByCode(code);
+
+    public void UseItem(ItemData item)
+    {
+        if (item == null) return;
+        Debug.Log($"[Inventory] Usando ítem: {item.displayName}");
+
+        if (item.type == ItemType.Costume)
+        {
+            var costumeCtrl = GetComponent<CostumeController>();
+            if (costumeCtrl == null)
+            {
+                costumeCtrl = gameObject.AddComponent<CostumeController>();
+            }
+            costumeCtrl.ApplyCostume(item.worldPrefab);
+        }
+        else if (item.isUsable)
+        {
+            // Lógica para otros consumibles si fuera necesario
+            RemoveItemServerRpc(item.itemId, 1);
+        }
+    }
 
     public override void OnDestroy() {
         base.OnDestroy();
