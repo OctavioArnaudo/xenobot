@@ -5592,11 +5592,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1804703078109025515, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: m_Name
-      value: PlayerPrefab (SAVE OFF)
+      value: PlayerPrefab (DESACTIVAR)
       objectReference: {fileID: 0}
     - target: {fileID: 1804703078109025515, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3795091336040275115, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5694,7 +5694,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
   GlobalObjectIdHash: 294403103
   InScenePlacedSourceGlobalObjectIdHash: 0
-  m_InScenePlacedDisabledByDefault: 0
+  m_InScenePlacedDisabledByDefault: 1
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0

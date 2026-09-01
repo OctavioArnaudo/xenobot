@@ -94,10 +94,11 @@ public class PickupController : NetworkBehaviour
     {
         if (_taken || Time.time < _spawnTime + PICKUP_DELAY) return;
 
-        // Deteccion robusta: busca StatsController o PlayerController en la jerarquia
-        bool isPlayer = other.CompareTag("Player") ||
-                       other.GetComponentInParent<StatsController>() != null ||
-                       other.GetComponentInParent<Combating.Scripts.PlayerController>() != null;
+        // Solo el servidor tiene autoridad sobre la recoleccion real
+        if (IsNetworkActive && !IsServer) return;
+
+        InventoryController inv = other.GetComponentInParent<InventoryController>();
+        bool isPlayer = other.CompareTag("Player") || inv != null;
 
         if (isPlayer)
         {
@@ -110,42 +111,57 @@ public class PickupController : NetworkBehaviour
             }
 
             _taken = true;
-            ProcessPickup();
+            if (IsNetworkActive) ProcessPickupAuthoritative(inv);
+            else ProcessPickupLocal(inv);
         }
     }
 
-    private void ProcessPickup()
+    private void ProcessPickupAuthoritative(InventoryController inv)
     {
         // 1. Logica de Recompensa
-        if (item.expValue > 0f)
-        {
-            StatsController.Instance?.AddExp(item.expValue);
-            Debug.Log($"[Pickup] {item.displayName} (EXP: {item.expValue})");
-        }
-        else
-        {
-            InventoryController.Add(item);
-            Debug.Log($"[Pickup] {item.displayName} añadido al inventario.");
-        }
+        ApplyReward(inv);
 
         // 2. Efecto visual
         SpawnHardcodedEffect();
+        SpawnPickupEffectClientRpc();
 
-        // 3. Sincronizacion de Red y Destruccion
-        if (IsNetworkActive)
+        // 3. Despawn
+        GetComponent<NetworkObject>().Despawn(true);
+    }
+
+    private void ProcessPickupLocal(InventoryController inv)
+    {
+        ApplyReward(inv);
+        SpawnHardcodedEffect();
+        Destroy(gameObject);
+    }
+
+    private void ApplyReward(InventoryController inv)
+    {
+        if (item.expValue > 0f)
         {
-            if (IsServer)
-            {
-                // Despawn(false) para objetos en escena evita warnings, luego destruimos manualmente
-                NetworkObject.Despawn(false);
-                Destroy(gameObject);
-            }
-            else gameObject.SetActive(false); // Ocultar localmente mientras el server procesa
+            StatsController stats = inv != null ? inv.GetComponent<StatsController>() : null;
+            if (stats != null) stats.AddExp(item.expValue);
+            else if (StatsController.Instance != null) StatsController.Instance.AddExp(item.expValue);
         }
         else
         {
-            Destroy(gameObject);
+            if (inv != null)
+            {
+                inv.AddItemServerRpc(item.itemId, 1);
+            }
+            else
+            {
+                InventoryController.Add(item);
+            }
         }
+    }
+
+    [ClientRpc]
+    private void SpawnPickupEffectClientRpc()
+    {
+        if (IsOwner || IsServer) return; // Ya se ejecutó localmente o es el server
+        SpawnHardcodedEffect();
     }
 
     private void SpawnHardcodedEffect()
@@ -160,7 +176,7 @@ public class PickupController : NetworkBehaviour
         main.startLifetime = 0.5f;
         main.startSpeed = 5f;
         main.startSize = 0.2f;
-        main.startColor = item.expValue > 0 ? Color.yellow : Color.cyan;
+        main.startColor = (item != null && item.expValue > 0) ? Color.yellow : Color.cyan;
         main.stopAction = ParticleSystemStopAction.Destroy;
 
         var emission = ps.emission;
@@ -172,38 +188,6 @@ public class PickupController : NetworkBehaviour
         shape.radius = 0.1f;
 
         ps.Play();
-    }
-
-    private void GenerateFallbackVisuals()
-    {
-        // Crear un objeto hijo para el renderizado de respaldo
-        GameObject renderRoot = new GameObject("Xenobot_FallbackRender");
-        renderRoot.transform.SetParent(transform, false);
-
-        PrimitiveType[] shapes = { PrimitiveType.Sphere, PrimitiveType.Cube, PrimitiveType.Capsule };
-        GameObject visual = GameObject.CreatePrimitive(shapes[Random.Range(0, shapes.Length)]);
-        visual.name = "Fallback_Mesh";
-        visual.transform.SetParent(renderRoot.transform, false);
-
-        float s = Random.Range(0.4f, 0.7f);
-        visual.transform.localScale = new Vector3(s, s, s);
-        if (visual.TryGetComponent<Collider>(out var c)) Destroy(c);
-
-        var mr = visual.GetComponent<MeshRenderer>();
-        var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-        var mat = new Material(shader);
-
-        Color randomColor = new Color(Random.value, Random.value, Random.value);
-        mat.color = randomColor;
-        mat.EnableKeyword("_EMISSION");
-        mat.SetColor("_EmissionColor", randomColor * 1.8f);
-        mr.sharedMaterial = mat;
-
-        Light lt = renderRoot.AddComponent<Light>();
-        lt.type = LightType.Point;
-        lt.color = randomColor;
-        lt.intensity = 1.5f;
-        lt.range = 3f;
     }
 
     public override void OnDestroy()

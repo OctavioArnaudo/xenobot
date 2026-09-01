@@ -3,6 +3,7 @@ using UnityEngine.InputSystem;
 using Unity.Netcode;
 using System.Collections.Generic;
 using NGO.Data;
+using System.Linq;
 
 namespace Crafting.Scripts
 {
@@ -10,11 +11,13 @@ namespace Crafting.Scripts
     {
         public static CraftingManager Instance { get; private set; }
 
+        public bool IsUIOpen => _open;
+
         [Header("Settings")]
         public List<TradeData> availableTrades;
 
         [Header("UI Aesthetics")]
-        public int panelWidth = 700;
+        public int panelWidth = 500;
         public int panelHeight = 550;
         public int titleH = 65;
         public int padding = 20;
@@ -26,7 +29,7 @@ namespace Crafting.Scripts
         private Vector2 _scrollPos;
         private int _selectedRecipeIndex = -1;
 
-        // Styles & Textures (matching InventoryController style)
+        // Styles & Textures
         private Texture2D _texPanel, _texSlot, _texSelected, _texBtnNormal, _texBtnHover;
         private GUIStyle _titleSty, _recipeSty, _btnSty, _infoSty, _qtySty;
         private bool _stylesReady;
@@ -35,11 +38,6 @@ namespace Crafting.Scripts
         {
             if (Instance == null) Instance = this;
             else Destroy(gameObject);
-        }
-
-        public override void OnNetworkSpawn()
-        {
-            // Opcional: sincronizar estado global del mercado si fuera necesario
         }
 
         private void Update()
@@ -53,31 +51,25 @@ namespace Crafting.Scripts
         private void SetOpen(bool open)
         {
             _open = open;
-            // Bloquear/Desbloquear cursor similar al inventario
             Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = open;
-
             if (!open) _selectedRecipeIndex = -1;
         }
 
         private void EnsureStyles()
         {
             if (_stylesReady) return;
-
-            // Textures
             _texPanel = MakeRoundedTex(64, cornerRadius, panelColor, Color.clear, 0);
             _texSlot = MakeRoundedTex(64, 8, new Color(1f, 1f, 1f, 0.08f), Color.clear, 0);
             _texSelected = MakeRoundedTex(64, 8, new Color(1f, 1f, 1f, 0.15f), accentColor, 2);
             _texBtnNormal = MakeRoundedTex(64, 10, new Color(0.2f, 0.2f, 0.25f, 1f), Color.white, 1);
             _texBtnHover = MakeRoundedTex(64, 10, new Color(0.3f, 0.3f, 0.4f, 1f), accentColor, 2);
 
-            // Styles
             _titleSty = Sty(32, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
             _recipeSty = Sty(18, FontStyle.Normal, TextAnchor.MiddleLeft, Color.white);
             _btnSty = Sty(20, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
             _infoSty = Sty(16, FontStyle.Italic, TextAnchor.MiddleLeft, new Color(0.8f, 0.8f, 0.8f));
             _qtySty = Sty(14, FontStyle.Bold, TextAnchor.LowerRight, accentColor);
-
             _stylesReady = true;
         }
 
@@ -111,113 +103,104 @@ namespace Crafting.Scripts
         private void OnGUI()
         {
             if (!_open) return;
-
             EnsureStyles();
 
-            float x0 = (Screen.width - panelWidth) / 2f;
-            float y0 = (Screen.height - panelHeight) / 2f;
-            Rect panelRect = new Rect(x0, y0, panelWidth, panelHeight);
+            float screenW = Screen.width;
+            float screenH = Screen.height;
 
-            GUI.DrawTexture(panelRect, _texPanel);
-            GUI.Label(new Rect(x0, y0 + 10, panelWidth, titleH), "CENTRO DE CRAFTEO & TRADE", _titleSty);
+            // Encontrar todos los inventories en la escena
+            var allInventories = Object.FindObjectsByType<InventoryController>(FindObjectsSortMode.None);
+            var myInv = InventoryController.LocalInstance;
+            var otherInvs = allInventories.Where(x => x != myInv).ToList();
 
-            // Close button
-            if (GUI.Button(new Rect(x0 + panelWidth - 50, y0 + 15, 35, 35), "X", _btnSty)) SetOpen(false);
+            // Layout de 3 columnas
+            float panelW = 450; // Ancho por panel
+            float totalW = panelW * 3 + 40; // 3 paneles + gaps
+            float xStart = (screenW - totalW) / 2f;
+            float y0 = (screenH - panelHeight) / 2f;
 
-            // Recipe List Area
-            Rect listRect = new Rect(x0 + padding, y0 + titleH + padding, panelWidth * 0.4f, panelHeight - titleH - padding * 2);
-            DrawRecipeList(listRect);
+            // 1. Panel Izquierda: Mi Inventario
+            if (myInv != null)
+            {
+                myInv.DrawInventoryUI(new Rect(xStart, y0, panelW, panelHeight), "MI INVENTARIO");
+            }
 
-            // Selection Detail Area
-            Rect detailRect = new Rect(x0 + panelWidth * 0.45f + padding, y0 + titleH + padding, panelWidth * 0.5f - padding * 2, panelHeight - titleH - padding * 2);
-            DrawRecipeDetail(detailRect);
+            // 2. Panel Centro: Crafting
+            Rect centerRect = new Rect(xStart + panelW + 20, y0, panelW, panelHeight);
+            DrawCraftingPanel(centerRect);
+
+            // 3. Panel Derecha: Inventario de otro player (si hay)
+            if (otherInvs.Count > 0)
+            {
+                otherInvs[0].DrawInventoryUI(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), "INVENTARIO REMOTO");
+            }
+            else
+            {
+                // Placeholder si no hay nadie más crafteando
+                GUI.DrawTexture(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), _texPanel);
+                GUI.Label(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), "ESPERANDO A OTRO JUGADOR...", _infoSty);
+            }
+
+            // Botón cerrar global
+            if (GUI.Button(new Rect(screenW / 2 + totalW / 2 - 50, y0 + 15, 35, 35), "X", _btnSty)) SetOpen(false);
         }
 
-        private void DrawRecipeList(Rect rect)
+        private void DrawCraftingPanel(Rect rect)
         {
-            GUI.BeginGroup(rect);
-            _scrollPos = GUI.BeginScrollView(new Rect(0, 0, rect.width, rect.height), _scrollPos, new Rect(0, 0, rect.width - 20, availableTrades.Count * 60));
+            GUI.DrawTexture(rect, _texPanel);
+            GUI.Label(new Rect(rect.x, rect.y + 10, rect.width, titleH), "ESTACIÓN DE TRABAJO", _titleSty);
 
+            float paddingInner = 20;
+            Rect listRect = new Rect(rect.x + paddingInner, rect.y + titleH + 10, rect.width * 0.45f, rect.height - titleH - 30);
+            Rect detailRect = new Rect(rect.x + rect.width * 0.5f, rect.y + titleH + 10, rect.width * 0.45f, rect.height - titleH - 30);
+
+            // Lista de recetas (scrollable)
+            GUI.BeginGroup(listRect);
+            _scrollPos = GUI.BeginScrollView(new Rect(0, 0, listRect.width, listRect.height), _scrollPos, new Rect(0, 0, listRect.width - 20, availableTrades.Count * 55));
             for (int i = 0; i < availableTrades.Count; i++)
             {
-                Rect r = new Rect(0, i * 60, rect.width - 20, 55);
+                Rect r = new Rect(0, i * 55, listRect.width - 20, 50);
                 bool isSelected = (_selectedRecipeIndex == i);
-
                 GUI.DrawTexture(r, isSelected ? _texSelected : _texSlot);
-
                 if (availableTrades[i].OutputItem != null)
                 {
                     if (availableTrades[i].OutputItem.icon != null)
-                        GUI.DrawTexture(new Rect(5, i * 60 + 7, 40, 40), availableTrades[i].OutputItem.icon.texture);
-
-                    GUI.Label(new Rect(55, i * 60, rect.width - 70, 55), availableTrades[i].OutputItem.displayName, _recipeSty);
+                        GUI.DrawTexture(new Rect(5, i * 55 + 5, 40, 40), availableTrades[i].OutputItem.icon.texture);
+                    GUI.Label(new Rect(50, i * 55, listRect.width - 60, 50), availableTrades[i].OutputItem.displayName, _recipeSty);
                 }
-
                 if (Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition))
                 {
                     _selectedRecipeIndex = i;
                     Event.current.Use();
                 }
             }
-
             GUI.EndScrollView();
             GUI.EndGroup();
-        }
 
-        private void DrawRecipeDetail(Rect rect)
-        {
-            if (_selectedRecipeIndex < 0 || _selectedRecipeIndex >= availableTrades.Count)
+            // Detalle de receta
+            if (_selectedRecipeIndex >= 0)
             {
-                GUI.Label(rect, "Selecciona una receta para comenzar", _infoSty);
-                return;
+                TradeData recipe = availableTrades[_selectedRecipeIndex];
+                GUI.BeginGroup(detailRect);
+                float y = 0;
+                GUI.Label(new Rect(0, y, detailRect.width, 25), "REQUIERE:", _infoSty); y += 30;
+                GUI.DrawTexture(new Rect(0, y, 60, 60), _texSlot);
+                if (recipe.InputItem.icon != null) GUI.DrawTexture(new Rect(5, y + 5, 50, 50), recipe.InputItem.icon.texture);
+                GUI.Label(new Rect(0, y, 60, 60), "x" + recipe.InputAmount, _qtySty);
+                GUI.Label(new Rect(70, y + 15, detailRect.width - 70, 30), recipe.InputItem.displayName, _recipeSty);
+                y += 75;
+                GUI.Label(new Rect(detailRect.width / 2 - 15, y - 5, 30, 30), "↓", _titleSty); y += 30;
+                GUI.Label(new Rect(0, y, detailRect.width, 25), "OBTIENES:", _infoSty); y += 30;
+                GUI.DrawTexture(new Rect(0, y, 60, 60), _texSlot);
+                if (recipe.OutputItem.icon != null) GUI.DrawTexture(new Rect(5, y + 5, 50, 50), recipe.OutputItem.icon.texture);
+                GUI.Label(new Rect(0, y, 60, 60), "x" + recipe.OutputAmount, _qtySty);
+                GUI.Label(new Rect(70, y + 15, detailRect.width - 70, 30), recipe.OutputItem.displayName, _recipeSty);
+                y += 85;
+                Rect btnR = new Rect(0, y, detailRect.width, 50);
+                GUI.DrawTexture(btnR, btnR.Contains(Event.current.mousePosition) ? _texBtnHover : _texBtnNormal);
+                if (GUI.Button(btnR, "CRAFTEAR", _btnSty)) TryExecuteTrade(_selectedRecipeIndex);
+                GUI.EndGroup();
             }
-
-            TradeData recipe = availableTrades[_selectedRecipeIndex];
-            GUI.BeginGroup(rect);
-
-            float y = 0;
-            GUI.Label(new Rect(0, y, rect.width, 30), "REQUERIMIENTO:", _infoSty);
-            y += 35;
-
-            // Input Item Box
-            Rect inputRect = new Rect(0, y, 80, 80);
-            GUI.DrawTexture(inputRect, _texSlot);
-            if (recipe.InputItem != null && recipe.InputItem.icon != null)
-            {
-                GUI.DrawTexture(new Rect(10, y + 10, 60, 60), recipe.InputItem.icon.texture);
-                GUI.Label(inputRect, "x" + recipe.InputAmount, _qtySty);
-                GUI.Label(new Rect(90, y + 25, rect.width - 90, 30), recipe.InputItem.displayName, _recipeSty);
-            }
-
-            y += 100;
-            GUI.Label(new Rect(rect.width / 2 - 20, y - 10, 40, 40), "↓", _titleSty);
-            y += 40;
-
-            GUI.Label(new Rect(0, y, rect.width, 30), "RESULTADO:", _infoSty);
-            y += 35;
-
-            // Output Item Box
-            Rect outputRect = new Rect(0, y, 80, 80);
-            GUI.DrawTexture(outputRect, _texSlot);
-            if (recipe.OutputItem != null && recipe.OutputItem.icon != null)
-            {
-                GUI.DrawTexture(new Rect(10, y + 10, 60, 60), recipe.OutputItem.icon.texture);
-                GUI.Label(outputRect, "x" + recipe.OutputAmount, _qtySty);
-                GUI.Label(new Rect(90, y + 25, rect.width - 90, 30), recipe.OutputItem.displayName, _recipeSty);
-            }
-
-            y += 110;
-
-            // Craft Button
-            Rect btnRect = new Rect(rect.width * 0.1f, y, rect.width * 0.8f, 60);
-            bool hover = btnRect.Contains(Event.current.mousePosition);
-            GUI.DrawTexture(btnRect, hover ? _texBtnHover : _texBtnNormal);
-            if (GUI.Button(btnRect, "CRAFTEAR AHORA", _btnSty))
-            {
-                TryExecuteTrade(_selectedRecipeIndex);
-            }
-
-            GUI.EndGroup();
         }
 
         private void TryExecuteTrade(int index)
