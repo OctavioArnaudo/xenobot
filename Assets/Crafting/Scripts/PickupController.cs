@@ -125,8 +125,20 @@ public class PickupController : NetworkBehaviour
         SpawnHardcodedEffect();
         SpawnPickupEffectClientRpc();
 
-        // 3. Despawn
-        GetComponent<NetworkObject>().Despawn(true);
+        // 3. Despawn: Manejo especial para objetos colocados manualmente en la escena
+        NetworkObject netObj = GetComponent<NetworkObject>();
+        if (netObj != null && netObj.IsSpawned)
+        {
+            if (netObj.InScenePlaced)
+            {
+                netObj.Despawn(false);
+                Destroy(gameObject);
+            }
+            else
+            {
+                netObj.Despawn(true);
+            }
+        }
     }
 
     private void ProcessPickupLocal(InventoryController inv)
