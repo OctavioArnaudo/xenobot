@@ -113,6 +113,13 @@ namespace Combating.Scripts
 
             if (rb != null)
             {
+                // Fix: Concave Mesh Colliders are not supported with non-kinematic Rigidbodies
+                var meshColliders = spawned.GetComponentsInChildren<MeshCollider>();
+                foreach (var mc in meshColliders)
+                {
+                    mc.convex = true;
+                }
+
                 // Asegurar que no sea kinematico para que el impulso y la gravedad funcionen
                 rb.isKinematic = false;
                 rb.useGravity = true;

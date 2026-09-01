@@ -260,6 +260,7 @@ public class InventoryController : NetworkBehaviour
 
     public void DrawInventoryUI(Rect panel, string title)
     {
+        EnsureStyles();
         GUI.DrawTexture(panel, _texPanel);
         GUI.Label(new Rect(panel.x, panel.y + 10, panel.width, titleH), title, _titleSty);
 
@@ -279,7 +280,7 @@ public class InventoryController : NetworkBehaviour
             bool isOver = cell.Contains(Event.current.mousePosition);
             GUI.DrawTexture(cell, isOver ? _texSelected : _texNormal);
 
-            if (slot.def.icon != null)
+            if (slot.def.icon != null && slot.def.icon.texture != null)
                 GUI.DrawTexture(new Rect(cell.x + 10, cell.y + 10, cell.width - 20, cell.height - 20), slot.def.icon.texture);
 
             GUI.Label(cell, "x" + slot.qty, _qtySty);
