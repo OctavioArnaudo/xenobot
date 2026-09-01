@@ -83,6 +83,8 @@ public class InventoryController : NetworkBehaviour
     PlayerInput _playerInput;
     SpawnController _spawnController;
 
+    private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+
     private void Awake()
     {
         NetworkBag = new NetworkList<NetworkInventorySlot>();
@@ -124,8 +126,23 @@ public class InventoryController : NetworkBehaviour
 
     public ItemData GetItemDataById(int id)
     {
-        if (itemDatabase == null) return null;
-        return itemDatabase.FirstOrDefault(x => x.itemId == id);
+        if (itemDatabase == null || itemDatabase.Count == 0)
+        {
+            // Cargar dinámicamente si la base de datos está vacía
+            itemDatabase = Resources.LoadAll<ItemData>("").ToList();
+        }
+
+        var found = itemDatabase.FirstOrDefault(x => x.itemId == id);
+
+        // Segundo intento: buscar en Resources directamente si no está en la lista
+        if (found == null)
+        {
+            var allItems = Resources.LoadAll<ItemData>("");
+            found = allItems.FirstOrDefault(x => x.itemId == id);
+            if (found != null && !itemDatabase.Contains(found)) itemDatabase.Add(found);
+        }
+
+        return found;
     }
 
     public ItemData GetItemDataByCode(string code)
@@ -303,7 +320,7 @@ public class InventoryController : NetworkBehaviour
     public void UseItem(ItemData item)
     {
         if (item == null) return;
-        Debug.Log($"[Inventory] Usando ítem: {item.displayName}");
+        Debug.Log($"[Inventory] Usando ítem: {item.displayName} (ID: {item.itemId})");
 
         if (item.type == ItemType.Costume)
         {
@@ -312,11 +329,19 @@ public class InventoryController : NetworkBehaviour
             {
                 costumeCtrl = gameObject.AddComponent<CostumeController>();
             }
-            costumeCtrl.ApplyCostume(item.worldPrefab);
+
+            if (IsNetworkActive)
+            {
+                costumeCtrl.RequestCostumeChangeServerRpc(item.itemId);
+            }
+            else
+            {
+                costumeCtrl.ApplyCostumeLocal(item.worldPrefab);
+            }
         }
         else if (item.isUsable)
         {
-            // Lógica para otros consumibles si fuera necesario
+            // Lógica para otros consumibles
             RemoveItemServerRpc(item.itemId, 1);
         }
     }
