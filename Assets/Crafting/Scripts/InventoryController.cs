@@ -67,7 +67,7 @@ public class InventoryController : NetworkBehaviour
 
     [Header("Database & Settings")]
     public List<ItemData> itemDatabase;
-    public float dropDistance = 2.5f;
+    public float dropDistance = 3.5f;
 
     private static int s_CollectiblesRemaining = 0;
     private static bool s_CountDirty = true;
@@ -75,11 +75,10 @@ public class InventoryController : NetworkBehaviour
 
     private bool _open;
     private ItemData _draggedItem;
-    private Vector2 _dragOffset;
 
     // GUI Resources
     private Texture2D _texNormal, _texSelected, _texPanel, _texBtn;
-    private GUIStyle _titleSty, _qtySty, _emptySty, _btnSty, _tooltipSty;
+    private GUIStyle _titleSty, _qtySty, _emptySty, _btnSty;
     private bool _stylesReady;
 
     PlayerInput _playerInput;
@@ -100,10 +99,7 @@ public class InventoryController : NetworkBehaviour
         _costumeController = GetComponent<CostumeController>();
         if (_costumeController == null) _costumeController = gameObject.AddComponent<CostumeController>();
 
-        if (IsOwner)
-        {
-            LocalInstance = this;
-        }
+        if (IsOwner) LocalInstance = this;
 
         NetworkBag.OnListChanged += (changeEvent) => RefreshLocalCache();
         RefreshLocalCache();
@@ -165,6 +161,11 @@ public class InventoryController : NetworkBehaviour
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     public void RemoveItemServerRpc(int itemId, int qty)
     {
+        InternalRemoveItem(itemId, qty);
+    }
+
+    private void InternalRemoveItem(int itemId, int qty)
+    {
         for (int i = 0; i < NetworkBag.Count; i++)
         {
             if (NetworkBag[i].itemId == itemId)
@@ -184,19 +185,10 @@ public class InventoryController : NetworkBehaviour
         ItemData data = GetItemDataById(itemId);
         if (data != null)
         {
-            // Quitar del inventario
-            RemoveItemServerRpc(itemId, 1);
-
-            // Spawnear en el mundo usando el SpawnController
+            InternalRemoveItem(itemId, 1);
             if (_spawnController != null)
             {
-                // Buscamos un prefab genérico de Pickup o creamos uno si no hay
-                GameObject pickupPrefab = data.worldPrefab;
-                // Nota: El PickupController necesita el ItemData. En este sistema,
-                // solemos instanciar un prefab que ya tiene el PickupController configurado.
-                // Si el worldPrefab es solo el mesh, necesitaríamos un envoltorio.
-                // Por ahora asumimos que worldPrefab es el objeto recolectable.
-                _spawnController.SpawnSingleItem(pickupPrefab, position + Vector3.up * 0.5f, data.displayName);
+                _spawnController.SpawnSingleItem(data.worldPrefab, position + Vector3.up * 0.5f, data.displayName);
             }
         }
     }
@@ -210,7 +202,6 @@ public class InventoryController : NetworkBehaviour
     private void Update()
     {
         if (!IsOwner) return;
-
         if (Keyboard.current != null && (Keyboard.current.iKey.wasPressedThisFrame || Keyboard.current.tabKey.wasPressedThisFrame))
             SetOpen(!_open);
 
@@ -240,7 +231,6 @@ public class InventoryController : NetworkBehaviour
         Rect panelRect = new Rect((Screen.width - panelWidth) / 2f, (Screen.height - panelHeight) / 2f, panelWidth, panelHeight);
         DrawInventoryUI(panelRect, "MI INVENTARIO");
 
-        // Drag & Drop Visual
         if (_draggedItem != null)
         {
             Vector2 mousePos = Event.current.mousePosition;
@@ -249,10 +239,7 @@ public class InventoryController : NetworkBehaviour
 
             if (Event.current.type == EventType.MouseUp)
             {
-                if (!panelRect.Contains(mousePos))
-                {
-                    DropItem(_draggedItem);
-                }
+                if (!panelRect.Contains(mousePos)) DropItem(_draggedItem);
                 _draggedItem = null;
             }
         }
@@ -267,7 +254,6 @@ public class InventoryController : NetworkBehaviour
         if (GUI.Button(new Rect(panel.xMax - 50, panel.y + 15, 35, 35), "X", _btnSty)) SetOpen(false);
 
         int i = 0;
-        // Iteramos sobre una copia para evitar InvalidOperationException si la lista cambia al usar/soltar items
         var keysCopy = _localKeys.ToArray();
         foreach (var key in keysCopy)
         {
@@ -285,32 +271,17 @@ public class InventoryController : NetworkBehaviour
 
             GUI.Label(cell, "x" + slot.qty, _qtySty);
 
-            // Botones de acción debajo de cada celda
             Rect btnArea = new Rect(cell.x, cell.yMax + 2, cell.width, 35);
+            string actionText = (slot.def.type == ItemType.Costume && _costumeController != null && _costumeController.IsWearing(slot.def.itemId)) ? "QUITAR" : (slot.def.type == ItemType.Costume ? "EQUIPAR" : "USAR");
 
-            string actionText = "USAR";
-            if (slot.def.type == ItemType.Costume)
-            {
-                bool isEquipped = _costumeController != null && _costumeController.IsWearing(slot.def.itemId);
-                actionText = isEquipped ? "QUITAR" : "EQUIPAR";
-            }
+            if (GUI.Button(new Rect(btnArea.x, btnArea.y, btnArea.width * 0.5f, 30), actionText, _btnSty)) UseItem(slot.def);
+            if (GUI.Button(new Rect(btnArea.x + btnArea.width * 0.5f, btnArea.y, btnArea.width * 0.5f, 30), "DROP", _btnSty)) DropItem(slot.def);
 
-            if (GUI.Button(new Rect(btnArea.x, btnArea.y, btnArea.width * 0.5f, 30), actionText, _btnSty))
-            {
-                UseItem(slot.def);
-            }
-            if (GUI.Button(new Rect(btnArea.x + btnArea.width * 0.5f, btnArea.y, btnArea.width * 0.5f, 30), "DROP", _btnSty))
-            {
-                DropItem(slot.def);
-            }
-
-            // Detección de Drag
             if (isOver && Event.current.type == EventType.MouseDown && Event.current.button == 0)
             {
                 _draggedItem = slot.def;
                 Event.current.Use();
             }
-
             i++;
         }
 
@@ -324,8 +295,6 @@ public class InventoryController : NetworkBehaviour
         _texNormal = MakeRoundedTex(64, 8, new Color(1f, 1f, 1f, 0.08f), Color.clear, 0);
         _texSelected = MakeRoundedTex(64, 8, new Color(1f, 1f, 1f, 0.15f), accentColor, 2);
         _texPanel = MakeRoundedTex(64, cornerRadius, panelColor, Color.clear, 0);
-        _texBtn = MakeRoundedTex(64, 5, new Color(0.2f, 0.2f, 0.2f, 0.8f), Color.white, 1);
-
         _titleSty = Sty(32, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
         _qtySty = Sty(qtyFontSize, FontStyle.Bold, TextAnchor.LowerRight, accentColor);
         _emptySty = Sty(18, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0.5f));
@@ -357,14 +326,10 @@ public class InventoryController : NetworkBehaviour
 
     public void UseItem(ItemData item)
     {
-        if (item == null) return;
-
+        if (item == null || _costumeController == null) return;
         if (item.type == ItemType.Costume)
         {
-            if (_costumeController == null) return;
-
-            bool isEquipped = _costumeController.IsWearing(item.itemId);
-            if (isEquipped)
+            if (_costumeController.IsWearing(item.itemId))
             {
                 if (IsNetworkActive) _costumeController.RequestRestoreDefaultServerRpc();
                 else _costumeController.RestoreDefaultLocal();
@@ -375,10 +340,7 @@ public class InventoryController : NetworkBehaviour
                 else _costumeController.ApplyCostumeLocal(item.worldPrefab);
             }
         }
-        else if (item.isUsable)
-        {
-            RemoveItemServerRpc(item.itemId, 1);
-        }
+        else if (item.isUsable) RemoveItemServerRpc(item.itemId, 1);
     }
 
     public void DropItem(ItemData item)
@@ -388,7 +350,7 @@ public class InventoryController : NetworkBehaviour
         if (IsNetworkActive) DropItemServerRpc(item.itemId, dropPos);
         else
         {
-            RemoveItem(item.itemCode);
+            InternalRemoveItem(item.itemId, 1);
             if (_spawnController != null) _spawnController.SpawnSingleItem(item.worldPrefab, dropPos, item.displayName);
         }
     }

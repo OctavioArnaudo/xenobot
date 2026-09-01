@@ -91,6 +91,36 @@ namespace Crafting.Scripts
             _activeCostumeInstance.transform.localRotation = Quaternion.identity;
             _activeCostumeInstance.transform.localScale = Vector3.one;
             _activeCostumeInstance.SetActive(true);
+
+            // CRITICAL FIX: Limpiar componentes de lógica de mundo del nuevo mesh
+            // Si el prefab tiene PickupController, Rigidbody o Colliders, se activarán
+            // en el jugador causando bugs de colisión o auto-recolección (duplicación).
+
+            var pickup = _activeCostumeInstance.GetComponent<PickupController>();
+            if (pickup != null) Destroy(pickup);
+
+            var netObj = _activeCostumeInstance.GetComponent<NetworkObject>();
+            if (netObj != null) Destroy(netObj);
+
+            var rb = _activeCostumeInstance.GetComponent<Rigidbody>();
+            if (rb != null) Destroy(rb);
+
+            // Desactivar colliders para que no interfieran con el movimiento del player
+            foreach (var c in _activeCostumeInstance.GetComponentsInChildren<Collider>(true))
+            {
+                c.enabled = false;
+            }
+
+            // Asegurar visibilidad
+            foreach (var r in _activeCostumeInstance.GetComponentsInChildren<Renderer>(true))
+            {
+                r.enabled = true;
+            }
+
+            if (_activeCostumeInstance.TryGetComponent<Animator>(out var animInstance))
+            {
+                animInstance.enabled = false;
+            }
         }
 
         public void RestoreDefaultLocal()
@@ -101,6 +131,5 @@ namespace Crafting.Scripts
         }
 
         public bool IsWearing(int itemId) => _activeCostumeItemId.Value == itemId;
-        public bool IsWearingAny() => _activeCostumeItemId.Value != -1;
     }
 }
