@@ -60,4 +60,5 @@ public enum ItemType
     Equipment,
     Currency,
     ExpOrb,     // nuevo — objetos de experiencia
+    Costume     // nuevo — cambio de apariencia
 }

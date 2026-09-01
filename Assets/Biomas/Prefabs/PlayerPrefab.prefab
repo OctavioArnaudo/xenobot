@@ -528,6 +528,7 @@ GameObject:
   - component: {fileID: 5512223289139937047}
   - component: {fileID: 6433554270011581158}
   - component: {fileID: 2434908978572968271}
+  - component: {fileID: 6571925829028200894}
   - component: {fileID: 5920079192208945779}
   - component: {fileID: 4248289829439151912}
   m_Layer: 3
@@ -694,8 +695,6 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 65
   CinemachineCameraTarget: {fileID: 3634781621623708926}
-  Visuals: {fileID: 5633379113638269974}
-  VisualRotationOffset: 0
   PlayerVCamTag: CinemachineTarget
   TopClamp: 70
   BottomClamp: -30
@@ -729,6 +728,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InventoryController
   ShowTopMostFoldoutHeaderGroup: 1
+  NetworkBag:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
   panelWidth: 700
   panelHeight: 550
   columns: 6
@@ -746,8 +749,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 75b6b99d3e052724095a1f53dea46401, type: 2}
   - {fileID: 11400000, guid: d9ea5b9e700da844c9c2a3f7dd94e4a1, type: 2}
   - {fileID: 11400000, guid: c2611baf898373f4ba4bfca62eff5d6a, type: 2}
+  - {fileID: 11400000, guid: efd5d0a0c9077794ebff867795e6eea0, type: 2}
   dropDistance: 2.5
-
 --- !u!114 &7450631966458783124
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -900,6 +903,20 @@ MonoBehaviour:
   itemsToSpawn: []
   explosionForce: 10
   spreadRadius: 2.5
+--- !u!114 &6571925829028200894
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1804703078109025515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c70afe0c671254344a4a4e58ece50270, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.CostumeController
+  ShowTopMostFoldoutHeaderGroup: 1
+  meshRoot: {fileID: 8617124748198346622}
 --- !u!143 &5920079192208945779
 CharacterController:
   m_ObjectHideFlags: 0

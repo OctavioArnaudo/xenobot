@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Combating.Scripts;
+using Crafting.Scripts;
 
 // Estructura para sincronización de red
 public struct NetworkInventorySlot : INetworkSerializable, IEquatable<NetworkInventorySlot>
@@ -82,6 +83,8 @@ public class InventoryController : NetworkBehaviour
     PlayerInput _playerInput;
     SpawnController _spawnController;
 
+    private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+
     private void Awake()
     {
         NetworkBag = new NetworkList<NetworkInventorySlot>();
@@ -123,8 +126,23 @@ public class InventoryController : NetworkBehaviour
 
     public ItemData GetItemDataById(int id)
     {
-        if (itemDatabase == null) return null;
-        return itemDatabase.FirstOrDefault(x => x.itemId == id);
+        if (itemDatabase == null || itemDatabase.Count == 0)
+        {
+            // Cargar dinámicamente si la base de datos está vacía
+            itemDatabase = Resources.LoadAll<ItemData>("").ToList();
+        }
+
+        var found = itemDatabase.FirstOrDefault(x => x.itemId == id);
+
+        // Segundo intento: buscar en Resources directamente si no está en la lista
+        if (found == null)
+        {
+            var allItems = Resources.LoadAll<ItemData>("");
+            found = allItems.FirstOrDefault(x => x.itemId == id);
+            if (found != null && !itemDatabase.Contains(found)) itemDatabase.Add(found);
+        }
+
+        return found;
     }
 
     public ItemData GetItemDataByCode(string code)
@@ -244,6 +262,14 @@ public class InventoryController : NetworkBehaviour
                 GUI.DrawTexture(new Rect(cell.x + 10, cell.y + 10, cell.width - 20, cell.height - 20), slot.def.icon.texture);
 
             GUI.Label(cell, "x" + slot.qty, _qtySty);
+
+            // Acción de uso al hacer clic
+            if (isSelected && Event.current.type == EventType.MouseDown && Event.current.button == 0)
+            {
+                UseItem(slot.def);
+                Event.current.Use();
+            }
+
             i++;
         }
 
@@ -290,6 +316,35 @@ public class InventoryController : NetworkBehaviour
     public static List<string> GetKeys() => LocalInstance?._localKeys ?? new();
     public static void MarkCountDirty() => s_CountDirty = true;
     public static ItemData GetItemDataByCodeStatic(string code) => LocalInstance?.GetItemDataByCode(code);
+
+    public void UseItem(ItemData item)
+    {
+        if (item == null) return;
+        Debug.Log($"[Inventory] Usando ítem: {item.displayName} (ID: {item.itemId})");
+
+        if (item.type == ItemType.Costume)
+        {
+            var costumeCtrl = GetComponent<CostumeController>();
+            if (costumeCtrl == null)
+            {
+                costumeCtrl = gameObject.AddComponent<CostumeController>();
+            }
+
+            if (IsNetworkActive)
+            {
+                costumeCtrl.RequestCostumeChangeServerRpc(item.itemId);
+            }
+            else
+            {
+                costumeCtrl.ApplyCostumeLocal(item.worldPrefab);
+            }
+        }
+        else if (item.isUsable)
+        {
+            // Lógica para otros consumibles
+            RemoveItemServerRpc(item.itemId, 1);
+        }
+    }
 
     public override void OnDestroy() {
         base.OnDestroy();
