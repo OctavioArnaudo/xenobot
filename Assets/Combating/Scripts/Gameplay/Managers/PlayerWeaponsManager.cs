@@ -2,10 +2,10 @@
 using Unity.FPS.Game;
 using UnityEngine;
 using UnityEngine.Events;
+using Combating.Scripts;
 
 namespace Unity.FPS.Gameplay
 {
-    [RequireComponent(typeof(PlayerInputHandler))]
     public class PlayerWeaponsManager : MonoBehaviour
     {
         public enum WeaponSwitchState
@@ -81,7 +81,7 @@ namespace Unity.FPS.Gameplay
         public UnityAction<WeaponController, int> OnRemovedWeapon;
 
         WeaponController[] m_WeaponSlots = new WeaponController[9]; // 9 available weapon slots
-        PlayerInputHandler m_InputHandler;
+        PlayerController m_InputHandler;
         PlayerCharacterController m_PlayerCharacterController;
         float m_WeaponBobFactor;
         Vector3 m_LastCharacterPosition;
@@ -98,8 +98,8 @@ namespace Unity.FPS.Gameplay
             ActiveWeaponIndex = -1;
             m_WeaponSwitchState = WeaponSwitchState.Down;
 
-            m_InputHandler = GetComponent<PlayerInputHandler>();
-            DebugUtility.HandleErrorIfNullGetComponent<PlayerInputHandler, PlayerWeaponsManager>(m_InputHandler, this,
+            m_InputHandler = GetComponent<PlayerController>();
+            DebugUtility.HandleErrorIfNullGetComponent<PlayerController, PlayerWeaponsManager>(m_InputHandler, this,
                 gameObject);
 
             m_PlayerCharacterController = GetComponent<PlayerCharacterController>();
@@ -129,20 +129,20 @@ namespace Unity.FPS.Gameplay
 
             if (activeWeapon != null && m_WeaponSwitchState == WeaponSwitchState.Up)
             {
-                if (!activeWeapon.AutomaticReload && m_InputHandler.GetReloadButtonDown() && activeWeapon.CurrentAmmoRatio < 1.0f)
+                if (!activeWeapon.AutomaticReload && m_InputHandler.reload && activeWeapon.CurrentAmmoRatio < 1.0f)
                 {
                     IsAiming = false;
                     activeWeapon.StartReloadAnimation();
                     return;
                 }
                 // handle aiming down sights
-                IsAiming = m_InputHandler.GetAimInputHeld();
+                IsAiming = m_InputHandler.aim;
 
                 // handle shooting
                 bool hasFired = activeWeapon.HandleShootInputs(
-                    m_InputHandler.GetFireInputDown(),
-                    m_InputHandler.GetFireInputHeld(),
-                    m_InputHandler.GetFireInputReleased());
+                    m_InputHandler.fire,
+                    m_InputHandler.fireHeld,
+                    m_InputHandler.fireReleased);
 
                 // Handle accumulating recoil
                 if (hasFired)
@@ -157,7 +157,7 @@ namespace Unity.FPS.Gameplay
                 (activeWeapon == null || !activeWeapon.IsCharging) &&
                 (m_WeaponSwitchState == WeaponSwitchState.Up || m_WeaponSwitchState == WeaponSwitchState.Down))
             {
-                int switchWeaponInput = m_InputHandler.GetSwitchWeaponInput();
+                int switchWeaponInput = m_InputHandler.switchWeapon;
                 if (switchWeaponInput != 0)
                 {
                     bool switchUp = switchWeaponInput > 0;
@@ -165,7 +165,7 @@ namespace Unity.FPS.Gameplay
                 }
                 else
                 {
-                    switchWeaponInput = m_InputHandler.GetSelectWeaponInput();
+                    switchWeaponInput = m_InputHandler.selectWeapon;
                     if (switchWeaponInput != 0)
                     {
                         if (GetWeaponAtSlotIndex(switchWeaponInput - 1) != null)

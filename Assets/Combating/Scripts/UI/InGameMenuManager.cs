@@ -1,5 +1,6 @@
 ﻿using Unity.FPS.Game;
 using Unity.FPS.Gameplay;
+using Combating.Scripts;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -30,7 +31,7 @@ namespace Unity.FPS.UI
         [Tooltip("GameObject for the controls")]
         public GameObject ControlImage;
 
-        PlayerInputHandler m_PlayerInputsHandler;
+        PlayerController m_PlayerInputsHandler;
         Health m_PlayerHealth;
         FramerateCounter m_FramerateCounter;
         
@@ -41,7 +42,7 @@ namespace Unity.FPS.UI
 
         void Awake()
         {
-            m_PlayerInputsHandler = FindFirstObjectByType<PlayerInputHandler>();
+            m_PlayerInputsHandler = FindFirstObjectByType<PlayerController>();
             m_FramerateCounter = FindFirstObjectByType<FramerateCounter>();
 
             if (InputSystem.actions != null)
@@ -71,7 +72,7 @@ namespace Unity.FPS.UI
 
         void Start()
         {
-            DebugUtility.HandleErrorIfNullFindObject<PlayerInputHandler, InGameMenuManager>(m_PlayerInputsHandler,
+            DebugUtility.HandleErrorIfNullFindObject<PlayerController, InGameMenuManager>(m_PlayerInputsHandler,
                 this);
 
             if (m_PlayerInputsHandler != null)
@@ -86,7 +87,7 @@ namespace Unity.FPS.UI
 
             if (m_PlayerInputsHandler != null)
             {
-                LookSensitivitySlider.value = m_PlayerInputsHandler.LookSensitivity;
+                LookSensitivitySlider.value = m_PlayerInputsHandler.LookSensitivity.x / 7.5f;
                 LookSensitivitySlider.onValueChanged.AddListener(OnMouseSensitivityChanged);
             }
 
@@ -176,7 +177,7 @@ namespace Unity.FPS.UI
 
         void OnMouseSensitivityChanged(float newValue)
         {
-            m_PlayerInputsHandler.LookSensitivity = newValue;
+            if (m_PlayerInputsHandler != null) m_PlayerInputsHandler.LookSensitivity = new Vector2(newValue * 7.5f, newValue * 5.0f);
         }
 
         void OnShadowsChanged(bool newValue)

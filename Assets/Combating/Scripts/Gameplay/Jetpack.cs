@@ -1,6 +1,7 @@
 ﻿using Unity.FPS.Game;
 using UnityEngine;
 using UnityEngine.Events;
+using Combating.Scripts;
 
 namespace Unity.FPS.Gameplay
 {
@@ -40,7 +41,7 @@ namespace Unity.FPS.Gameplay
 
         bool m_CanUseJetpack;
         PlayerCharacterController m_PlayerCharacterController;
-        PlayerInputHandler m_InputHandler;
+        PlayerController m_InputHandler;
         float m_LastTimeOfUse;
 
         // stored ratio for jetpack resource (1 is full, 0 is empty)
@@ -59,8 +60,8 @@ namespace Unity.FPS.Gameplay
             DebugUtility.HandleErrorIfNullGetComponent<PlayerCharacterController, Jetpack>(m_PlayerCharacterController,
                 this, gameObject);
 
-            m_InputHandler = GetComponent<PlayerInputHandler>();
-            DebugUtility.HandleErrorIfNullGetComponent<PlayerInputHandler, Jetpack>(m_InputHandler, this, gameObject);
+            m_InputHandler = GetComponent<PlayerController>();
+            DebugUtility.HandleErrorIfNullGetComponent<PlayerController, Jetpack>(m_InputHandler, this, gameObject);
 
             CurrentFillRatio = 1f;
 
@@ -75,14 +76,14 @@ namespace Unity.FPS.Gameplay
             {
                 m_CanUseJetpack = false;
             }
-            else if (!m_PlayerCharacterController.HasJumpedThisFrame && m_InputHandler.GetJumpInputDown())
+            else if (!m_PlayerCharacterController.HasJumpedThisFrame && m_InputHandler.jump)
             {
                 m_CanUseJetpack = true;
             }
 
             // jetpack usage
             bool jetpackIsInUse = m_CanUseJetpack && IsJetpackUnlocked && CurrentFillRatio > 0f &&
-                                  m_InputHandler.GetJumpInputHeld();
+                                  m_InputHandler.jumpHeld;
             if (jetpackIsInUse)
             {
                 // store the last time of use for refill delay

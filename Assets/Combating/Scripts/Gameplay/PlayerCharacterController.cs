@@ -2,6 +2,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 using Unity.Netcode;
+using Combating.Scripts;
 
 namespace Unity.FPS.Gameplay
 {
@@ -9,7 +10,7 @@ namespace Unity.FPS.Gameplay
     /// Actúa como un puente de datos para la lógica de combate (armas, HUD).
     /// El movimiento y la cámara son manejados por un componente externo.
     /// </summary>
-    [RequireComponent(typeof(CharacterController), typeof(PlayerInputHandler), typeof(AudioSource))]
+    [RequireComponent(typeof(CharacterController), typeof(PlayerController), typeof(AudioSource))]
     public class PlayerCharacterController : MonoBehaviour
     {
         [Header("References")]
@@ -40,7 +41,7 @@ namespace Unity.FPS.Gameplay
         public float RotationMultiplier => 1f;
 
         Health m_Health;
-        PlayerInputHandler m_InputHandler;
+        PlayerController m_InputHandler;
         CharacterController m_Controller;
         PlayerWeaponsManager m_WeaponsManager;
 
@@ -53,7 +54,7 @@ namespace Unity.FPS.Gameplay
         void Start()
         {
             m_Controller = GetComponent<CharacterController>();
-            m_InputHandler = GetComponent<PlayerInputHandler>();
+            m_InputHandler = GetComponent<PlayerController>();
             m_WeaponsManager = GetComponent<PlayerWeaponsManager>();
             m_Health = GetComponent<Health>();
 
@@ -93,10 +94,10 @@ namespace Unity.FPS.Gameplay
             }
 
             // Puente para el estado de salto (usado por Jetpack)
-            HasJumpedThisFrame = m_InputHandler.GetJumpInputDown();
+            HasJumpedThisFrame = m_InputHandler.jump;
 
             // Manejo de agachado solo para estado/HUD (el movimiento lo hace el controlador externo)
-            if (m_InputHandler.GetCrouchInputDown())
+            if (m_InputHandler.crouch)
             {
                 IsCrouching = !IsCrouching;
                 OnStanceChanged?.Invoke(IsCrouching);

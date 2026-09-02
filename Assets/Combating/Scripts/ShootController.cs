@@ -27,15 +27,16 @@ namespace Combating.Scripts
         public float TracerLifetime = 0.05f;
         public float rotationSpeed = 10f;
 
-        private PlayerInputHandler m_Input;
+        private PlayerController m_Player;
         private HealthController m_Health;
         private float m_NextFireTime;
 
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
 
         void Awake()
         {
-            m_Input = GetComponent<PlayerInputHandler>();
+            m_Player = GetComponent<PlayerController>();
             m_Health = GetComponent<HealthController>();
             if (AimCamera == null) AimCamera = GetComponentInChildren<Camera>() ?? Camera.main;
             if (Muzzle == null) Muzzle = transform;
@@ -47,14 +48,19 @@ namespace Combating.Scripts
 
         void Update()
         {
-            if (!IsOwner || !UsePlayerInput) return;
+            if (!CanExecuteLocalLogic || !UsePlayerInput) return;
             if (WantsToFire()) TryFire();
         }
 
         bool WantsToFire()
         {
-            if (m_Input != null && m_Input.CanProcessInput())
-                return HoldToFire ? m_Input.GetFireInputHeld() : m_Input.GetFireInputDown();
+            if (m_Player != null)
+            {
+                // Si es ráfaga, usamos fireHeld. Si es semi, usamos fire (y lo consumimos)
+                bool input = HoldToFire ? m_Player.fireHeld : m_Player.fire;
+                if (!HoldToFire && input) m_Player.fire = false; // Consumir el disparo semiautomático
+                return input;
+            }
 
             if (Mouse.current == null) return false;
             return HoldToFire ? Mouse.current.leftButton.isPressed : Mouse.current.leftButton.wasPressedThisFrame;

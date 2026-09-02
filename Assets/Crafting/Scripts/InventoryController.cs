@@ -49,7 +49,10 @@ public class InventoryController : NetworkBehaviour
     [Header("Network Data")]
     public NetworkList<NetworkInventorySlot> NetworkBag;
 
-    // Cache local para acceso rápido
+    // Almacenamiento para modo offline
+    private List<NetworkInventorySlot> _offlineBag = new List<NetworkInventorySlot>();
+
+    // Cache local para acceso rápido (se alimenta de NetworkBag o _offlineBag)
     private Dictionary<string, (ItemData def, int qty)> _localBag = new();
     private List<string> _localKeys = new();
 
@@ -86,10 +89,21 @@ public class InventoryController : NetworkBehaviour
     CostumeController _costumeController;
 
     private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+    private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
 
     private void Awake()
     {
         NetworkBag = new NetworkList<NetworkInventorySlot>();
+
+        // Inicialización offline
+        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+        {
+            LocalInstance = this;
+            _playerInput = GetComponent<UnityEngine.InputSystem.PlayerInput>();
+            _spawnController = GetComponent<Combating.Scripts.SpawnController>();
+            _costumeController = GetComponent<CostumeController>();
+            if (_costumeController == null) _costumeController = gameObject.AddComponent<CostumeController>();
+        }
     }
 
     public override void OnNetworkSpawn()
@@ -109,15 +123,25 @@ public class InventoryController : NetworkBehaviour
     {
         _localBag.Clear();
         _localKeys.Clear();
-        foreach (var slot in NetworkBag)
+
+        if (IsNetworkActive)
         {
-            ItemData data = GetItemDataById(slot.itemId);
-            if (data != null)
-            {
-                string key = data.itemCode.ToLowerInvariant();
-                _localBag[key] = (data, slot.quantity);
-                if (!_localKeys.Contains(key)) _localKeys.Add(key);
-            }
+            foreach (var slot in NetworkBag) ProcessSlot(slot);
+        }
+        else
+        {
+            foreach (var slot in _offlineBag) ProcessSlot(slot);
+        }
+    }
+
+    private void ProcessSlot(NetworkInventorySlot slot)
+    {
+        ItemData data = GetItemDataById(slot.itemId);
+        if (data != null)
+        {
+            string key = data.itemCode.ToLowerInvariant();
+            _localBag[key] = (data, slot.quantity);
+            if (!_localKeys.Contains(key)) _localKeys.Add(key);
         }
     }
 
@@ -145,17 +169,42 @@ public class InventoryController : NetworkBehaviour
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     public void AddItemServerRpc(int itemId, int qty)
     {
-        for (int i = 0; i < NetworkBag.Count; i++)
+        InternalAddItem(itemId, qty);
+    }
+
+    public void InternalAddItem(int itemId, int qty)
+    {
+        if (IsNetworkActive)
         {
-            if (NetworkBag[i].itemId == itemId)
+            for (int i = 0; i < NetworkBag.Count; i++)
             {
-                var slot = NetworkBag[i];
-                slot.quantity += qty;
-                NetworkBag[i] = slot;
-                return;
+                if (NetworkBag[i].itemId == itemId)
+                {
+                    var slot = NetworkBag[i];
+                    slot.quantity += qty;
+                    NetworkBag[i] = slot;
+                    return;
+                }
             }
+            NetworkBag.Add(new NetworkInventorySlot { itemId = itemId, quantity = qty });
         }
-        NetworkBag.Add(new NetworkInventorySlot { itemId = itemId, quantity = qty });
+        else
+        {
+            // Lógica Offline
+            for (int i = 0; i < _offlineBag.Count; i++)
+            {
+                if (_offlineBag[i].itemId == itemId)
+                {
+                    var slot = _offlineBag[i];
+                    slot.quantity += qty;
+                    _offlineBag[i] = slot;
+                    RefreshLocalCache();
+                    return;
+                }
+            }
+            _offlineBag.Add(new NetworkInventorySlot { itemId = itemId, quantity = qty });
+            RefreshLocalCache();
+        }
     }
 
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -166,15 +215,34 @@ public class InventoryController : NetworkBehaviour
 
     private void InternalRemoveItem(int itemId, int qty)
     {
-        for (int i = 0; i < NetworkBag.Count; i++)
+        if (IsNetworkActive)
         {
-            if (NetworkBag[i].itemId == itemId)
+            for (int i = 0; i < NetworkBag.Count; i++)
             {
-                var slot = NetworkBag[i];
-                slot.quantity -= qty;
-                if (slot.quantity <= 0) NetworkBag.RemoveAt(i);
-                else NetworkBag[i] = slot;
-                return;
+                if (NetworkBag[i].itemId == itemId)
+                {
+                    var slot = NetworkBag[i];
+                    slot.quantity -= qty;
+                    if (slot.quantity <= 0) NetworkBag.RemoveAt(i);
+                    else NetworkBag[i] = slot;
+                    return;
+                }
+            }
+        }
+        else
+        {
+            // Lógica Offline
+            for (int i = 0; i < _offlineBag.Count; i++)
+            {
+                if (_offlineBag[i].itemId == itemId)
+                {
+                    var slot = _offlineBag[i];
+                    slot.quantity -= qty;
+                    if (slot.quantity <= 0) _offlineBag.RemoveAt(i);
+                    else _offlineBag[i] = slot;
+                    RefreshLocalCache();
+                    return;
+                }
             }
         }
     }
@@ -193,15 +261,25 @@ public class InventoryController : NetworkBehaviour
         }
     }
 
-    public static void Add(ItemData def) => LocalInstance?.AddItemServerRpc(def.itemId, 1);
+    public static void Add(ItemData def)
+    {
+        if (LocalInstance == null) return;
+        if (LocalInstance.IsNetworkActive) LocalInstance.AddItemServerRpc(def.itemId, 1);
+        else LocalInstance.InternalAddItem(def.itemId, 1);
+    }
+
     public static void RemoveItem(string key) {
         var data = LocalInstance?.GetItemDataByCode(key);
-        if (data != null) LocalInstance.RemoveItemServerRpc(data.itemId, 1);
+        if (data != null)
+        {
+            if (LocalInstance.IsNetworkActive) LocalInstance.RemoveItemServerRpc(data.itemId, 1);
+            else LocalInstance.InternalRemoveItem(data.itemId, 1);
+        }
     }
 
     private void Update()
     {
-        if (!IsOwner) return;
+        if (!CanExecuteLocalLogic) return;
         if (Keyboard.current != null && (Keyboard.current.iKey.wasPressedThisFrame || Keyboard.current.tabKey.wasPressedThisFrame))
             SetOpen(!_open);
 
@@ -224,7 +302,7 @@ public class InventoryController : NetworkBehaviour
 
     private void OnGUI()
     {
-        if (!IsOwner || !_open) return;
+        if (!CanExecuteLocalLogic || !_open) return;
         if (Crafting.Scripts.CraftingManager.Instance != null && Crafting.Scripts.CraftingManager.Instance.IsUIOpen) return;
 
         EnsureStyles();
@@ -337,7 +415,7 @@ public class InventoryController : NetworkBehaviour
             else
             {
                 if (IsNetworkActive) _costumeController.RequestCostumeChangeServerRpc(item.itemId);
-                else _costumeController.ApplyCostumeLocal(item.worldPrefab);
+                else _costumeController.ApplyCostumeLocal(item.worldPrefab, item.itemId);
             }
         }
         else if (item.isUsable) RemoveItemServerRpc(item.itemId, 1);

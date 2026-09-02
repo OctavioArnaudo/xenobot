@@ -51,6 +51,9 @@ public class StatsController : NetworkBehaviour
     private Transform _aureoleRoot;
     private Vector3 _aureoleBaseOffset = new Vector3(0, 2.4f, 0);
 
+    private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+    private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
+
     void Update()
     {
         // Billboard effect para el NameTag en red (Cacheando la camara para evitar Starvation)
@@ -83,6 +86,10 @@ public class StatsController : NetworkBehaviour
             if (Instance != null && Instance != this) { Destroy(this); return; }
             Instance = this;
             InitializeStats();
+
+            // Inicialización offline para HUD y Visuales
+            m_PlayerHealth = GetComponent<HealthController>();
+            UpdateVisuals();
         }
     }
 
@@ -229,7 +236,7 @@ public class StatsController : NetworkBehaviour
     {
         if (Event.current.type != EventType.Repaint) return; // Optimization: only run on repaint
         if (SceneManager.GetActiveScene().name != "BiomaScene") return;
-        if (!IsOwner) return;
+        if (!CanExecuteLocalLogic) return;
 
         EnsureAssets();
 

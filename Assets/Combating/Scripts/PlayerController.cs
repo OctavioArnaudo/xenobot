@@ -68,8 +68,17 @@ namespace Combating.Scripts
         [Header("Input Data")]
         public Vector2 move;
         public Vector2 look;
-        public bool jump;
+        public bool jump; // Jump Pressed
+        public bool jumpHeld;
         public bool sprint;
+        public bool fire;
+        public bool fireHeld;
+        public bool fireReleased;
+        public bool aim; // Aim Held
+        public bool crouch;
+        public bool reload;
+        public int switchWeapon; // -1, 0, 1
+        public int selectWeapon; // 1-9
         public bool analogMovement;
         public bool cursorLocked = true;
         public bool cursorInputForLook = true;
@@ -172,7 +181,11 @@ namespace Combating.Scripts
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
 
-            if (!IsNetworkActive) SetupPlayerLocal();
+            if (!IsNetworkActive)
+            {
+                SetupPlayerLocal();
+                TeleportToSceneSpawn(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+            }
         }
 
         public override void OnNetworkSpawn()
@@ -248,7 +261,7 @@ namespace Combating.Scripts
 
             #if ENABLE_INPUT_SYSTEM
             // Asegurar deteccion de salto mantenido para el Jetpack
-            if (Keyboard.current != null && IsOwner)
+            if (Keyboard.current != null && CanExecuteLocalLogic)
             {
                 _isJumpHeld = Keyboard.current.spaceKey.isPressed;
 
@@ -266,12 +279,48 @@ namespace Combating.Scripts
             JumpAndGravity();
             GroundedCheck();
             Move();
+
+            // Reset "one-frame" inputs at the end of Update
+            if (CanExecuteLocalLogic)
+            {
+                jump = false;
+                fire = false;
+                fireReleased = false;
+                reload = false;
+                switchWeapon = 0;
+                selectWeapon = 0;
+            }
         }
 
         private void LateUpdate()
         {
             if (!CanExecuteLocalLogic) return;
+            UpdateCameraTargetPosition();
             CameraRotation();
+        }
+
+        private void UpdateCameraTargetPosition()
+        {
+            if (CinemachineCameraTarget == null) return;
+
+            Animator anim = GetComponentInChildren<Animator>();
+            if (anim != null)
+            {
+                // Priorizar el hueso de la cabeza para una vista superior, luego cuello/pecho
+                Transform bone = anim.GetBoneTransform(HumanBodyBones.Head) ??
+                                 anim.GetBoneTransform(HumanBodyBones.Neck) ??
+                                 anim.GetBoneTransform(HumanBodyBones.Chest) ??
+                                 anim.transform.Find("head") ??
+                                 anim.transform.Find("Head") ??
+                                 anim.transform.Find("spine") ??
+                                 anim.transform.Find("Chest");
+
+                if (bone != null)
+                {
+                    // Mover el target a la posición del hueso, pero manteniendo su rotación
+                    CinemachineCameraTarget.transform.position = bone.position;
+                }
+            }
         }
         #endregion
 
@@ -319,9 +368,17 @@ namespace Combating.Scripts
             {
                 vcam.Follow = CinemachineCameraTarget.transform;
                 vcam.LookAt = CinemachineCameraTarget.transform;
-                vcam.enabled = IsOwner;
-                vcam.Priority = IsOwner ? 100 : 0;
+                vcam.enabled = CanExecuteLocalLogic;
+                vcam.Priority = CanExecuteLocalLogic ? 100 : 0;
             }
+        }
+
+        public void RefreshBodyReferences()
+        {
+            _animator = GetComponentInChildren<Animator>();
+            _hasAnimator = _animator != null;
+            AssignAnimationIDs();
+            SetupCamera();
         }
         #endregion
 
@@ -351,6 +408,28 @@ namespace Combating.Scripts
         public void LookInput(Vector2 newLookDirection) => look = newLookDirection;
         public void JumpInput(bool newJumpState) => jump = newJumpState;
         public void SprintInput(bool newSprintState) => sprint = newSprintState;
+
+        public void InputMove(InputValue value) => MoveInput(value.Get<Vector2>());
+        public void InputLook(InputValue value) => LookInput(value.Get<Vector2>());
+        public void InputJump(InputValue value)
+        {
+            jump = value.isPressed;
+            jumpHeld = value.isPressed;
+            JumpInput(value.isPressed);
+        }
+        public void InputSprint(InputValue value) => SprintInput(value.isPressed);
+        public void InputFire(InputValue value)
+        {
+            bool isPressed = value.isPressed;
+            if (isPressed) fire = true; // Se marca como activado este frame
+            fireHeld = isPressed;       // Mantiene el estado mientras se pulse
+            fireReleased = !isPressed;
+        }
+        public void InputAim(InputValue value) => aim = value.isPressed;
+        public void InputCrouch(InputValue value) => crouch = value.isPressed;
+        public void InputReload(InputValue value) => reload = value.isPressed;
+        public void InputNextWeapon(InputValue value) => switchWeapon = (int)value.Get<float>();
+        public void InputSelectWeapon(InputValue value) => selectWeapon = (int)value.Get<float>();
 
         private void OnApplicationFocus(bool hasFocus)
         {
@@ -387,7 +466,10 @@ namespace Combating.Scripts
 
             if (look.sqrMagnitude >= _threshold && !LockCameraPosition)
             {
-                float deltaTimeMultiplier = IsCurrentDeviceMouse ? 1.0f : Time.deltaTime;
+                // Si no hay red o es local, forzamos multiplicador 1.0 para ratón aunque el scheme no se haya actualizado
+                bool isMouse = IsCurrentDeviceMouse || (!IsNetworkActive && look.sqrMagnitude > 10f);
+                float deltaTimeMultiplier = isMouse ? 1.0f : Time.deltaTime;
+
                 _cinemachineTargetYaw += look.x * deltaTimeMultiplier * LookSensitivity.x;
                 _cinemachineTargetPitch += look.y * deltaTimeMultiplier * LookSensitivity.y;
             }

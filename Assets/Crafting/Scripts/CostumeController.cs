@@ -15,6 +15,7 @@ namespace Crafting.Scripts
 
         // Variable para sincronizar el ID del ítem que otorga el traje (-1 = Ninguno/Default)
         private NetworkVariable<int> _activeCostumeItemId = new NetworkVariable<int>(-1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        private int _offlineCostumeId = -1;
 
         private GameObject _activeCostumeInstance;
         private List<GameObject> _originalMeshes = new List<GameObject>();
@@ -54,13 +55,17 @@ namespace Crafting.Scripts
 
             if (item != null && item.worldPrefab != null)
             {
-                ApplyCostumeLocal(item.worldPrefab);
+                ApplyCostumeLocal(item.worldPrefab, itemId);
             }
         }
 
-        public void ApplyCostumeLocal(GameObject costumePrefab)
+        public void ApplyCostumeLocal(GameObject costumePrefab, int itemId = -1)
         {
             if (costumePrefab == null) return;
+
+            // Guardar ID para modo offline
+            bool isNetworkActive = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+            if (!isNetworkActive) _offlineCostumeId = itemId;
 
             // 1. Ocultar originales
             if (_originalMeshes.Count == 0)
@@ -117,19 +122,34 @@ namespace Crafting.Scripts
                 r.enabled = true;
             }
 
+            // Vincular el nuevo Animator al sistema de control del jugador
             if (_activeCostumeInstance.TryGetComponent<Animator>(out var animInstance))
             {
-                animInstance.enabled = false;
+                animInstance.enabled = true;
+                // Intentar copiar el AnimatorController del original si el nuevo no trae uno
+                var mainAnim = GetComponentInChildren<Animator>();
+                if (animInstance.runtimeAnimatorController == null && mainAnim != null)
+                    animInstance.runtimeAnimatorController = mainAnim.runtimeAnimatorController;
             }
+
+            // Notificar al PlayerController para refrescar cámara y animaciones
+            GetComponent<Combating.Scripts.PlayerController>()?.RefreshBodyReferences();
         }
 
         public void RestoreDefaultLocal()
         {
+            _offlineCostumeId = -1;
             if (_activeCostumeInstance != null) Destroy(_activeCostumeInstance);
             foreach(var m in _originalMeshes) if(m != null) m.SetActive(true);
             Debug.Log("[CostumeController] Regresando a apariencia default.");
         }
 
-        public bool IsWearing(int itemId) => _activeCostumeItemId.Value == itemId;
+        public bool IsWearing(int itemId)
+        {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                return _activeCostumeItemId.Value == itemId;
+
+            return _offlineCostumeId == itemId;
+        }
     }
 }

@@ -180,7 +180,11 @@ public class PickupController : NetworkBehaviour
         }
         else
         {
-            if (inv != null) inv.AddItemServerRpc(item.itemId, 1);
+            if (inv != null)
+            {
+                // Usar el método estático Add que ya tiene la protección de red o verificar manualmente
+                InventoryController.Add(item);
+            }
             else InventoryController.Add(item);
         }
     }
