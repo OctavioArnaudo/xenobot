@@ -87,7 +87,11 @@ public class PickupController : NetworkBehaviour
 
     void Update()
     {
-        transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.World);
+        // 1. Rotación estable sobre el eje Y local usando Quaternion para evitar Gimbal Lock
+        // Esto previene que los ejes X y Z salten erráticamente.
+        _timer += Time.deltaTime;
+        float currentRotationY = _timer * rotationSpeed;
+        transform.localRotation = Quaternion.Euler(0, currentRotationY, 0);
 
         if (TryGetComponent<Rigidbody>(out var rb) && !rb.isKinematic)
         {
@@ -96,9 +100,9 @@ public class PickupController : NetworkBehaviour
         }
         else
         {
-            // Cuando ya está quieto (kinematic), flota sobre su _startPos
-            _timer += Time.deltaTime * bobbingSpeed;
-            transform.position = _startPos + new Vector3(0, Mathf.Sin(_timer) * bobbingAmount, 0);
+            // 2. Flotación estable calculada desde el punto de inicio estático
+            float bobbing = Mathf.Sin(Time.time * bobbingSpeed) * bobbingAmount;
+            transform.position = new Vector3(_startPos.x, _startPos.y + bobbing, _startPos.z);
         }
     }
 

@@ -41,20 +41,28 @@ PrefabInstance:
     m_TransformParent: {fileID: 1000223982609801028}
     m_Modifications:
     - target: {fileID: 2788336841747114129, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
+      propertyPath: m_InScenePlaced
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2788336841747114129, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2303007070
+      value: 202784285
+      objectReference: {fileID: 0}
+    - target: {fileID: 2788336841747114129, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3201596142911811867, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -301.97583
+      value: 92.5
       objectReference: {fileID: 0}
     - target: {fileID: 3201596142911811867, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -28.39776
+      value: -0.8
       objectReference: {fileID: 0}
     - target: {fileID: 3201596142911811867, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 335.5963
+      value: -37
       objectReference: {fileID: 0}
     - target: {fileID: 3201596142911811867, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: m_LocalRotation.w
