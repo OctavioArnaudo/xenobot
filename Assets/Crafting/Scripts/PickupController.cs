@@ -23,7 +23,8 @@ public class PickupController : NetworkBehaviour
     private float _timer;
     private bool _taken;
     private float _spawnTime;
-    private const float PICKUP_DELAY = 0.3f; // Reducido el delay
+    private bool _grounded = false;
+    private const float PICKUP_DELAY = 0.3f;
 
     private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
@@ -35,22 +36,39 @@ public class PickupController : NetworkBehaviour
 
     private void CreateMasterTrigger()
     {
-        // Asegurar que haya un trigger para detectar al jugador
+        // 1. Asegurar que haya un trigger para detectar al jugador
         Collider[] colliders = GetComponents<Collider>();
         bool hasTrigger = false;
+        bool hasSolid = false;
         foreach (var c in colliders)
         {
-            if (c.isTrigger) { hasTrigger = true; break; }
+            if (c.isTrigger) hasTrigger = true;
+            else hasSolid = true;
         }
 
         if (!hasTrigger)
         {
             SphereCollider sc = gameObject.AddComponent<SphereCollider>();
             sc.isTrigger = true;
-            sc.radius = 0.7f; // Aumentado un poco el radio
+            sc.radius = 0.7f;
         }
 
-        // Asegurar Rigidbody para detección confiable con CharacterControllers
+        // 2. Asegurar un colisionador sólido para que no atraviese el suelo al caer
+        if (!hasSolid)
+        {
+            BoxCollider bc = gameObject.AddComponent<BoxCollider>();
+            bc.size = new Vector3(0.5f, 0.5f, 0.5f);
+            bc.isTrigger = false;
+        }
+        else
+        {
+            // Si ya tiene colisionadores sólidos, asegurar que si son MeshColliders sean Convexos
+            // para evitar errores con Rigidbodies dinámicos
+            var meshColliders = GetComponentsInChildren<MeshCollider>();
+            foreach (var mc in meshColliders) mc.convex = true;
+        }
+
+        // 3. Asegurar Rigidbody
         if (GetComponent<Rigidbody>() == null)
         {
             Rigidbody rb = gameObject.AddComponent<Rigidbody>();
@@ -62,31 +80,47 @@ public class PickupController : NetworkBehaviour
     void Start()
     {
         _startPos = transform.position;
-        _spawnTime = Time.time; // Reiniciar por si hubo delay en el spawn
+        _spawnTime = Time.time;
         ActiveCount++;
         InventoryController.MarkCountDirty();
     }
 
     void Update()
     {
-        // Movimiento de flotacion y rotacion (afecta a toda la jerarquia)
         transform.Rotate(Vector3.up, rotationSpeed * Time.deltaTime, Space.World);
 
-        // Si tiene un rigidbody NO kinematico (esta volando por fisica), actualizamos _startPos
         if (TryGetComponent<Rigidbody>(out var rb) && !rb.isKinematic)
         {
+            // Mientras esté cayendo (no sea kinematic), actualizamos el punto de inicio
             _startPos = transform.position;
         }
         else
         {
+            // Cuando ya está quieto (kinematic), flota sobre su _startPos
             _timer += Time.deltaTime * bobbingSpeed;
             transform.position = _startPos + new Vector3(0, Mathf.Sin(_timer) * bobbingAmount, 0);
         }
     }
 
+    private void OnCollisionEnter(Collision collision)
+    {
+        // Al tocar el suelo, desactivamos físicas para que empiece a flotar en ese punto
+        if (!_grounded && TryGetComponent<Rigidbody>(out var rb))
+        {
+            if (!rb.isKinematic)
+            {
+                rb.isKinematic = true;
+                rb.useGravity = false;
+                _grounded = true;
+                // Ajustamos _startPos un poco hacia arriba para que la flotación no atraviese el suelo
+                _startPos = transform.position + Vector3.up * 0.4f;
+                Debug.Log($"[Pickup] {gameObject.name} tocó suelo y comenzó a flotar.");
+            }
+        }
+    }
+
     void OnTriggerStay(Collider other)
     {
-        // Redirigir a OnTriggerEnter para manejar el caso de que el jugador ya esté encima al spawnear
         OnTriggerEnter(other);
     }
 
@@ -94,7 +128,6 @@ public class PickupController : NetworkBehaviour
     {
         if (_taken || Time.time < _spawnTime + PICKUP_DELAY) return;
 
-        // Solo el servidor tiene autoridad sobre la recoleccion real
         if (IsNetworkActive && !IsServer) return;
 
         InventoryController inv = other.GetComponentInParent<InventoryController>();
@@ -102,14 +135,7 @@ public class PickupController : NetworkBehaviour
 
         if (isPlayer)
         {
-            Debug.Log($"[Pickup] Detección de jugador confirmada en {gameObject.name}");
-
-            if (item == null)
-            {
-                Debug.LogWarning($"[Pickup] {gameObject.name} detectó al jugador pero no tiene ItemData.");
-                return;
-            }
-
+            if (item == null) return;
             _taken = true;
             if (IsNetworkActive) ProcessPickupAuthoritative(inv);
             else ProcessPickupLocal(inv);
@@ -118,14 +144,10 @@ public class PickupController : NetworkBehaviour
 
     private void ProcessPickupAuthoritative(InventoryController inv)
     {
-        // 1. Logica de Recompensa
         ApplyReward(inv);
-
-        // 2. Efecto visual
         SpawnHardcodedEffect();
         SpawnPickupEffectClientRpc();
 
-        // 3. Despawn: Manejo especial para objetos colocados manualmente en la escena
         NetworkObject netObj = GetComponent<NetworkObject>();
         if (netObj != null && netObj.IsSpawned)
         {
@@ -158,47 +180,35 @@ public class PickupController : NetworkBehaviour
         }
         else
         {
-            if (inv != null)
-            {
-                inv.AddItemServerRpc(item.itemId, 1);
-            }
-            else
-            {
-                InventoryController.Add(item);
-            }
+            if (inv != null) inv.AddItemServerRpc(item.itemId, 1);
+            else InventoryController.Add(item);
         }
     }
 
     [ClientRpc]
     private void SpawnPickupEffectClientRpc()
     {
-        if (IsOwner || IsServer) return; // Ya se ejecutó localmente o es el server
+        if (IsOwner || IsServer) return;
         SpawnHardcodedEffect();
     }
 
     private void SpawnHardcodedEffect()
     {
-        // Crear un efecto de partículas simple sin necesidad de prefab
         GameObject go = new GameObject("PickupEffect");
         go.transform.position = transform.position;
-
         ParticleSystem ps = go.AddComponent<ParticleSystem>();
-
         var main = ps.main;
         main.startLifetime = 0.5f;
         main.startSpeed = 5f;
         main.startSize = 0.2f;
         main.startColor = (item != null && item.expValue > 0) ? Color.yellow : Color.cyan;
         main.stopAction = ParticleSystemStopAction.Destroy;
-
         var emission = ps.emission;
         emission.rateOverTime = 0;
         emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0, 20) });
-
         var shape = ps.shape;
         shape.shapeType = ParticleSystemShapeType.Sphere;
         shape.radius = 0.1f;
-
         ps.Play();
     }
 

@@ -67,21 +67,23 @@ public class InventoryController : NetworkBehaviour
 
     [Header("Database & Settings")]
     public List<ItemData> itemDatabase;
-    public float dropDistance = 2.5f;
+    public float dropDistance = 3.5f;
 
     private static int s_CollectiblesRemaining = 0;
     private static bool s_CountDirty = true;
     private float _countUpdateTimer = 0f;
 
     private bool _open;
+    private ItemData _draggedItem;
 
     // GUI Resources
-    private Texture2D _texNormal, _texSelected, _texPanel;
+    private Texture2D _texNormal, _texSelected, _texPanel, _texBtn;
     private GUIStyle _titleSty, _qtySty, _emptySty, _btnSty;
     private bool _stylesReady;
 
     PlayerInput _playerInput;
     SpawnController _spawnController;
+    CostumeController _costumeController;
 
     private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
@@ -92,19 +94,14 @@ public class InventoryController : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        Debug.Log($"[Inventory] Spawning. Database size: {(itemDatabase != null ? itemDatabase.Count : "NULL")}");
+        _playerInput = GetComponent<PlayerInput>();
+        _spawnController = GetComponent<SpawnController>();
+        _costumeController = GetComponent<CostumeController>();
+        if (_costumeController == null) _costumeController = gameObject.AddComponent<CostumeController>();
 
-        if (IsOwner)
-        {
-            LocalInstance = this;
-            _playerInput = GetComponent<PlayerInput>();
-            _spawnController = GetComponent<SpawnController>();
-        }
+        if (IsOwner) LocalInstance = this;
 
-        NetworkBag.OnListChanged += (changeEvent) => {
-            Debug.Log($"[Inventory] List changed! Count: {NetworkBag.Count}");
-            RefreshLocalCache();
-        };
+        NetworkBag.OnListChanged += (changeEvent) => RefreshLocalCache();
         RefreshLocalCache();
     }
 
@@ -127,21 +124,15 @@ public class InventoryController : NetworkBehaviour
     public ItemData GetItemDataById(int id)
     {
         if (itemDatabase == null || itemDatabase.Count == 0)
-        {
-            // Cargar dinámicamente si la base de datos está vacía
             itemDatabase = Resources.LoadAll<ItemData>("").ToList();
-        }
 
         var found = itemDatabase.FirstOrDefault(x => x.itemId == id);
-
-        // Segundo intento: buscar en Resources directamente si no está en la lista
         if (found == null)
         {
             var allItems = Resources.LoadAll<ItemData>("");
             found = allItems.FirstOrDefault(x => x.itemId == id);
             if (found != null && !itemDatabase.Contains(found)) itemDatabase.Add(found);
         }
-
         return found;
     }
 
@@ -154,7 +145,6 @@ public class InventoryController : NetworkBehaviour
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     public void AddItemServerRpc(int itemId, int qty)
     {
-        Debug.Log($"[Inventory Server] Adding item ID {itemId} x{qty} to bag of {OwnerClientId}");
         for (int i = 0; i < NetworkBag.Count; i++)
         {
             if (NetworkBag[i].itemId == itemId)
@@ -171,6 +161,11 @@ public class InventoryController : NetworkBehaviour
     [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     public void RemoveItemServerRpc(int itemId, int qty)
     {
+        InternalRemoveItem(itemId, qty);
+    }
+
+    private void InternalRemoveItem(int itemId, int qty)
+    {
         for (int i = 0; i < NetworkBag.Count; i++)
         {
             if (NetworkBag[i].itemId == itemId)
@@ -184,28 +179,31 @@ public class InventoryController : NetworkBehaviour
         }
     }
 
-    public static void Add(ItemData def)
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+    public void DropItemServerRpc(int itemId, Vector3 position)
     {
-        if (LocalInstance != null && def != null) LocalInstance.AddItemServerRpc(def.itemId, 1);
+        ItemData data = GetItemDataById(itemId);
+        if (data != null)
+        {
+            InternalRemoveItem(itemId, 1);
+            if (_spawnController != null)
+            {
+                _spawnController.SpawnSingleItem(data.worldPrefab, position + Vector3.up * 0.5f, data.displayName);
+            }
+        }
     }
 
-    public static void RemoveItem(string key)
-    {
-        if (LocalInstance != null)
-        {
-            var data = LocalInstance.GetItemDataByCode(key);
-            if (data != null) LocalInstance.RemoveItemServerRpc(data.itemId, 1);
-        }
+    public static void Add(ItemData def) => LocalInstance?.AddItemServerRpc(def.itemId, 1);
+    public static void RemoveItem(string key) {
+        var data = LocalInstance?.GetItemDataByCode(key);
+        if (data != null) LocalInstance.RemoveItemServerRpc(data.itemId, 1);
     }
 
     private void Update()
     {
         if (!IsOwner) return;
-
         if (Keyboard.current != null && (Keyboard.current.iKey.wasPressedThisFrame || Keyboard.current.tabKey.wasPressedThisFrame))
-        {
             SetOpen(!_open);
-        }
 
         if (s_CountDirty || Time.time > _countUpdateTimer)
         {
@@ -221,55 +219,69 @@ public class InventoryController : NetworkBehaviour
         if (_playerInput != null) _playerInput.enabled = !open;
         Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = open;
+        if (!open) _draggedItem = null;
     }
 
     private void OnGUI()
     {
         if (!IsOwner || !_open) return;
-
-        // Evitar solapamiento con Crafting
         if (Crafting.Scripts.CraftingManager.Instance != null && Crafting.Scripts.CraftingManager.Instance.IsUIOpen) return;
 
+        EnsureStyles();
         Rect panelRect = new Rect((Screen.width - panelWidth) / 2f, (Screen.height - panelHeight) / 2f, panelWidth, panelHeight);
         DrawInventoryUI(panelRect, "MI INVENTARIO");
+
+        if (_draggedItem != null)
+        {
+            Vector2 mousePos = Event.current.mousePosition;
+            Rect dragRect = new Rect(mousePos.x - cellSize/2, mousePos.y - cellSize/2, cellSize, cellSize);
+            if (_draggedItem.icon != null) GUI.DrawTexture(dragRect, _draggedItem.icon.texture);
+
+            if (Event.current.type == EventType.MouseUp)
+            {
+                if (!panelRect.Contains(mousePos)) DropItem(_draggedItem);
+                _draggedItem = null;
+            }
+        }
     }
 
     public void DrawInventoryUI(Rect panel, string title)
     {
         EnsureStyles();
-
         GUI.DrawTexture(panel, _texPanel);
         GUI.Label(new Rect(panel.x, panel.y + 10, panel.width, titleH), title, _titleSty);
 
-        if (IsOwner && _open && (Crafting.Scripts.CraftingManager.Instance == null || !Crafting.Scripts.CraftingManager.Instance.IsUIOpen))
-        {
-            if (GUI.Button(new Rect(panel.xMax - 50, panel.y + 15, 35, 35), "X", _btnSty)) SetOpen(false);
-        }
+        if (GUI.Button(new Rect(panel.xMax - 50, panel.y + 15, 35, 35), "X", _btnSty)) SetOpen(false);
 
         int i = 0;
-        foreach (var key in _localKeys)
+        var keysCopy = _localKeys.ToArray();
+        foreach (var key in keysCopy)
         {
             if (!_localBag.TryGetValue(key, out var slot)) continue;
 
-            Rect cell = new Rect(panel.x + padding + (i % columns) * (cellSize + 5),
-                                 panel.y + titleH + (i / columns) * (cellSize + 5),
+            Rect cell = new Rect(panel.x + padding + (i % columns) * (cellSize + 10),
+                                 panel.y + titleH + (i / columns) * (cellSize + 40),
                                  cellSize, cellSize);
 
-            bool isSelected = cell.Contains(Event.current.mousePosition);
-            GUI.DrawTexture(cell, isSelected ? _texSelected : _texNormal);
+            bool isOver = cell.Contains(Event.current.mousePosition);
+            GUI.DrawTexture(cell, isOver ? _texSelected : _texNormal);
 
-            if (slot.def.icon != null)
+            if (slot.def.icon != null && slot.def.icon.texture != null)
                 GUI.DrawTexture(new Rect(cell.x + 10, cell.y + 10, cell.width - 20, cell.height - 20), slot.def.icon.texture);
 
             GUI.Label(cell, "x" + slot.qty, _qtySty);
 
-            // Acción de uso al hacer clic
-            if (isSelected && Event.current.type == EventType.MouseDown && Event.current.button == 0)
+            Rect btnArea = new Rect(cell.x, cell.yMax + 2, cell.width, 35);
+            string actionText = (slot.def.type == ItemType.Costume && _costumeController != null && _costumeController.IsWearing(slot.def.itemId)) ? "QUITAR" : (slot.def.type == ItemType.Costume ? "EQUIPAR" : "USAR");
+
+            if (GUI.Button(new Rect(btnArea.x, btnArea.y, btnArea.width * 0.5f, 30), actionText, _btnSty)) UseItem(slot.def);
+            if (GUI.Button(new Rect(btnArea.x + btnArea.width * 0.5f, btnArea.y, btnArea.width * 0.5f, 30), "DROP", _btnSty)) DropItem(slot.def);
+
+            if (isOver && Event.current.type == EventType.MouseDown && Event.current.button == 0)
             {
-                UseItem(slot.def);
+                _draggedItem = slot.def;
                 Event.current.Use();
             }
-
             i++;
         }
 
@@ -283,11 +295,11 @@ public class InventoryController : NetworkBehaviour
         _texNormal = MakeRoundedTex(64, 8, new Color(1f, 1f, 1f, 0.08f), Color.clear, 0);
         _texSelected = MakeRoundedTex(64, 8, new Color(1f, 1f, 1f, 0.15f), accentColor, 2);
         _texPanel = MakeRoundedTex(64, cornerRadius, panelColor, Color.clear, 0);
-
         _titleSty = Sty(32, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
         _qtySty = Sty(qtyFontSize, FontStyle.Bold, TextAnchor.LowerRight, accentColor);
         _emptySty = Sty(18, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0.5f));
-        _btnSty = Sty(20, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
+        _btnSty = new GUIStyle(GUI.skin.button) { fontSize = 10, fontStyle = FontStyle.Bold };
+        _btnSty.normal.textColor = Color.white;
         _stylesReady = true;
     }
 
@@ -312,39 +324,41 @@ public class InventoryController : NetworkBehaviour
         s.normal.textColor = c; return s;
     }
 
+    public void UseItem(ItemData item)
+    {
+        if (item == null || _costumeController == null) return;
+        if (item.type == ItemType.Costume)
+        {
+            if (_costumeController.IsWearing(item.itemId))
+            {
+                if (IsNetworkActive) _costumeController.RequestRestoreDefaultServerRpc();
+                else _costumeController.RestoreDefaultLocal();
+            }
+            else
+            {
+                if (IsNetworkActive) _costumeController.RequestCostumeChangeServerRpc(item.itemId);
+                else _costumeController.ApplyCostumeLocal(item.worldPrefab);
+            }
+        }
+        else if (item.isUsable) RemoveItemServerRpc(item.itemId, 1);
+    }
+
+    public void DropItem(ItemData item)
+    {
+        if (item == null) return;
+        Vector3 dropPos = transform.position + transform.forward * dropDistance;
+        if (IsNetworkActive) DropItemServerRpc(item.itemId, dropPos);
+        else
+        {
+            InternalRemoveItem(item.itemId, 1);
+            if (_spawnController != null) _spawnController.SpawnSingleItem(item.worldPrefab, dropPos, item.displayName);
+        }
+    }
+
     public static Dictionary<string, (ItemData def, int qty)> GetBag() => LocalInstance?._localBag ?? new();
     public static List<string> GetKeys() => LocalInstance?._localKeys ?? new();
     public static void MarkCountDirty() => s_CountDirty = true;
     public static ItemData GetItemDataByCodeStatic(string code) => LocalInstance?.GetItemDataByCode(code);
-
-    public void UseItem(ItemData item)
-    {
-        if (item == null) return;
-        Debug.Log($"[Inventory] Usando ítem: {item.displayName} (ID: {item.itemId})");
-
-        if (item.type == ItemType.Costume)
-        {
-            var costumeCtrl = GetComponent<CostumeController>();
-            if (costumeCtrl == null)
-            {
-                costumeCtrl = gameObject.AddComponent<CostumeController>();
-            }
-
-            if (IsNetworkActive)
-            {
-                costumeCtrl.RequestCostumeChangeServerRpc(item.itemId);
-            }
-            else
-            {
-                costumeCtrl.ApplyCostumeLocal(item.worldPrefab);
-            }
-        }
-        else if (item.isUsable)
-        {
-            // Lógica para otros consumibles
-            RemoveItemServerRpc(item.itemId, 1);
-        }
-    }
 
     public override void OnDestroy() {
         base.OnDestroy();

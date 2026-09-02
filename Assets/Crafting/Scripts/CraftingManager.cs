@@ -138,7 +138,7 @@ namespace Crafting.Scripts
             {
                 // Placeholder si no hay nadie más crafteando
                 GUI.DrawTexture(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), _texPanel);
-                GUI.Label(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), "ESPERANDO A OTRO JUGADOR...", _infoSty);
+                GUI.Label(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), "ESPERANDO A OTRO JUGADOR PARA INTERCAMBIAR...", _infoSty);
             }
 
             // Botón cerrar global
