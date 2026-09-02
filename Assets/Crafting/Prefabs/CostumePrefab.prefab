@@ -9,6 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4798841169852015837}
+  - component: {fileID: 6394073736889460860}
+  - component: {fileID: 4979682845164532023}
   m_Layer: 0
   m_Name: CostumePrefab
   m_TagString: Untagged
@@ -32,6 +34,50 @@ Transform:
   - {fileID: 2654258286272757072}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6394073736889460860
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7206365576661330795}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2491508413
+  InScenePlacedSourceGlobalObjectIdHash: 1844395123
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &4979682845164532023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7206365576661330795}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 55fcea8a4058c4d1aa6ca8fea4168f51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PickupController
+  ShowTopMostFoldoutHeaderGroup: 1
+  item: {fileID: 11400000, guid: efd5d0a0c9077794ebff867795e6eea0, type: 2}
+  rotationSpeed: 100
+  bobbingAmount: 0.15
+  bobbingSpeed: 2
 --- !u!1001 &2548870968937405115
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -139,65 +185,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7380000579493883703}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7390033157015206961}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}
 --- !u!4 &2654258286272757072 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}
   m_PrefabInstance: {fileID: 2548870968937405115}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &3431181571042633706 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}
-  m_PrefabInstance: {fileID: 2548870968937405115}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &7380000579493883703
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3431181571042633706}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3374944160
-  InScenePlacedSourceGlobalObjectIdHash: 1844395123
-  m_InScenePlacedDisabledByDefault: 0
-  DeferredDespawnTick: 0
-  Ownership: 1
-  AlwaysReplicateAsRoot: 0
-  SynchronizeTransform: 1
-  m_InScenePlaced: 1
-  ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
-  SpawnWithObservers: 1
-  DontDestroyWithOwner: 0
-  AutoObjectParentSync: 1
-  SyncOwnerTransformWhenParented: 1
-  AllowOwnerToParent: 0
---- !u!114 &7390033157015206961
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3431181571042633706}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 55fcea8a4058c4d1aa6ca8fea4168f51, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PickupController
-  ShowTopMostFoldoutHeaderGroup: 1
-  item: {fileID: 11400000, guid: efd5d0a0c9077794ebff867795e6eea0, type: 2}
-  rotationSpeed: 100
-  bobbingAmount: 0.15
-  bobbingSpeed: 2

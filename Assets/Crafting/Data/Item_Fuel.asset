@@ -11,15 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
   m_Name: Item_Fuel
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   _itemId: 101
   itemCode: fuel
   displayName: Combustible
-  icon: {fileID: 0}
+  icon: {fileID: -1107185042, guid: 7762129f4830c1949ae045a80a44e810, type: 3}
   type: 0
   isUsable: 0
   isStackable: 1
   maxStack: 99
-  description: "Necesario para motores y jetpacks."
+  description: Necesario para motores y jetpacks.
   expValue: 0
-  worldPrefab: {fileID: 0}
+  worldPrefab: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
