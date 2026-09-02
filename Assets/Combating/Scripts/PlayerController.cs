@@ -351,8 +351,8 @@ namespace Combating.Scripts
 
                 if (bone != null)
                 {
-                    // Mover el target a la posición del hueso, pero manteniendo su rotación
-                    CinemachineCameraTarget.transform.position = bone.position;
+                    // Mover el target a la posición del hueso + offset hacia arriba
+                    CinemachineCameraTarget.transform.position = bone.position + Vector3.up * 0.4f;
                 }
             }
         }
