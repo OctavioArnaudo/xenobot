@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
+  m_Name: Mission_02_Crafting
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.Missions.MissionData
+  missionId: craft_weapon_01
+  title: "Tecnología Prohibida"
+  description: "Usa la llave para entrar al Laboratorio. Craftea tu Arma Láser y ensambla tu Jetpack para prepararte para el escape."
+  mode: 2
+  requiredLocation: "Laboratorio"
+  requiredMissionIds:
+  - gather_iron_01
+  gatheringRequirements: []
+  craftingRequirements:
+  - item: {fileID: 11400000, guid: d7c9c3ed602c45bda00bb8572b645ef1, type: 2}
+    amount: 1
+  - item: {fileID: 11400000, guid: bb42e76d6f734c5091156f6de5048962, type: 2}
+    amount: 1
+  requiredSkillIds: []
+  missionPrefab: {fileID: 200001, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}

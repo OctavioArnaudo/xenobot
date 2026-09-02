@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
+  m_Name: Mission_06_DesertFinal
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.Missions.MissionData
+  missionId: desert_final_01
+  title: "La Llave Estelar"
+  description: "Recolecta 5 Estrellas en el desierto infectado y forja la Fuente de Energía Estelar para abrir el edificio y completar tu escape."
+  mode: 2
+  isFinalMission: 1
+  requiredLocation: "Interior Edificio Misterioso"
+  requiredMissionIds:
+  - desert_approach_01
+  gatheringRequirements:
+  - item: {fileID: 11400000, guid: 75b6b99d3e052724095a1f53dea46401, type: 2}
+    amount: 5
+  craftingRequirements:
+  - item: {fileID: 11400000, guid: 9f41a1c295b64338a231ce89c6aa91e6, type: 2}
+    amount: 1
+  requiredSkillIds: []
+  missionPrefab: {fileID: 600001, guid: 956e200413c54fcba7ca946c3c670ff5, type: 3}

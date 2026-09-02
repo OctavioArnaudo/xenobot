@@ -1,15 +1,14 @@
 using UnityEngine;
 using Unity.Netcode;
-using Missions.Manager;
 
-namespace Missions.Game
+namespace Missions.Scripts
 {
     /// <summary>
     /// Componente para activar o completar misiones.
     /// Funciona en Local y Multiplayer.
     /// </summary>
     [AddComponentMenu("Missions/Missions Component")]
-    public class MissionsGame : MonoBehaviour
+    public class MissionController : MonoBehaviour
     {
         public enum TriggerMode { StartMission, CompleteMission }
 

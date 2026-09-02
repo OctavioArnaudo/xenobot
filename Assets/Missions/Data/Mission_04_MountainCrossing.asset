@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
+  m_Name: Mission_04_MountainCrossing
+  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.Missions.MissionData
+  missionId: mountain_crossing_01
+  title: "Cruce de la Cordillera"
+  description: "Usa tu Jetpack para sobrevolar la cadena montañosa y dejar atrás la zona cerrada."
+  mode: 2
+  isFinalMission: 0
+  requiredLocation: "Cima Montaña"
+  requiredMissionIds:
+  - urban_cleanup_01
+  gatheringRequirements: []
+  craftingRequirements: []
+  requiredSkillIds: []
+  missionPrefab: {fileID: 400001, guid: 213ec5a41e644c398aff69e25ee62a76, type: 3}
