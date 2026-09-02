@@ -67,7 +67,7 @@ public class StatsController : NetworkBehaviour
         }
 
         // Aureole Animations: Floating & Rotation
-        if (_aureoleRoot != null)
+        if (_aureoleRoot != null && _aureoleRoot.gameObject.activeSelf)
         {
             float bob = Mathf.Sin(Time.time * 2f) * 0.1f;
             _aureoleRoot.localPosition = _aureoleBaseOffset + Vector3.up * bob;
@@ -117,6 +117,7 @@ public class StatsController : NetworkBehaviour
     public void UpdateVisuals()
     {
         ValidateVisualComponents();
+        if (_aureoleRoot != null) _aureoleRoot.gameObject.SetActive(IsNetworkActive);
         if (nameTagText != null) nameTagText.text = playerName.Value.ToString();
         if (colorRenderer != null) colorRenderer.material.color = playerColor.Value;
     }
