@@ -127,18 +127,18 @@ namespace Combating.Scripts
         private const float _threshold = 0.01f;
         private bool _hasAnimator;
 
-        private bool IsCurrentDeviceMouse
-        {
-            get
-            {
-#if ENABLE_INPUT_SYSTEM
-                return _playerInput != null && _playerInput.currentControlScheme == "KeyboardMouse";
-#else
-                return false;
-#endif
-            }
-        }
+        // Input Actions
+        private InputAction _moveAction;
+        private InputAction _lookAction;
+        private InputAction _jumpAction;
+        private InputAction _fireAction;
+        private InputAction _sprintAction;
+        private InputAction _aimAction;
+        private InputAction _crouchAction;
+        private InputAction _reloadAction;
+        private InputAction _nextWeaponAction;
 
+        private bool IsCurrentDeviceMouse => _playerInput != null && _playerInput.currentControlScheme == "KeyboardMouse";
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
         private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
         #endregion
@@ -152,6 +152,8 @@ namespace Combating.Scripts
 
             #if ENABLE_INPUT_SYSTEM
             _playerInput = GetComponent<PlayerInput>();
+            // Buscaremos las acciones en el primer Update si fallan en el Awake
+            RefreshInputActions();
             #endif
 
             if (_mainCamera == null)
@@ -260,35 +262,67 @@ namespace Combating.Scripts
             if (!CanExecuteLocalLogic) return;
 
             #if ENABLE_INPUT_SYSTEM
-            // Asegurar deteccion de salto mantenido para el Jetpack
-            if (Keyboard.current != null && CanExecuteLocalLogic)
-            {
-                _isJumpHeld = Keyboard.current.spaceKey.isPressed;
-
-                float moveX = (Keyboard.current.dKey.isPressed || Keyboard.current.rightArrowKey.isPressed ? 1f : 0f) -
-                              (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed ? 1f : 0f);
-                float moveY = (Keyboard.current.wKey.isPressed || Keyboard.current.upArrowKey.isPressed ? 1f : 0f) -
-                              (Keyboard.current.sKey.isPressed || Keyboard.current.downArrowKey.isPressed ? 1f : 0f);
-
-                move = new Vector2(moveX, moveY);
-                if (move.sqrMagnitude > 1f) move.Normalize();
-            }
+            if (_fireAction == null) RefreshInputActions(); // Asegurar carga
+            UpdateInputState();
             #endif
 
             HandleRespawn();
             JumpAndGravity();
             GroundedCheck();
             Move();
+        }
 
-            // Reset "one-frame" inputs at the end of Update
-            if (CanExecuteLocalLogic)
+        private void RefreshInputActions()
+        {
+            if (_playerInput == null || _playerInput.actions == null) return;
+
+            _moveAction = _playerInput.actions.FindAction("Move") ?? _playerInput.actions.FindAction("Player/Move");
+            _lookAction = _playerInput.actions.FindAction("Look") ?? _playerInput.actions.FindAction("Player/Look");
+            _jumpAction = _playerInput.actions.FindAction("Jump") ?? _playerInput.actions.FindAction("Player/Jump");
+            _fireAction = _playerInput.actions.FindAction("Fire") ?? _playerInput.actions.FindAction("Player/Fire");
+            _sprintAction = _playerInput.actions.FindAction("Sprint") ?? _playerInput.actions.FindAction("Player/Sprint");
+            _aimAction = _playerInput.actions.FindAction("Aim") ?? _playerInput.actions.FindAction("Player/Aim");
+            _crouchAction = _playerInput.actions.FindAction("Crouch") ?? _playerInput.actions.FindAction("Player/Crouch");
+            _reloadAction = _playerInput.actions.FindAction("Reload") ?? _playerInput.actions.FindAction("Player/Reload");
+            _nextWeaponAction = _playerInput.actions.FindAction("NextWeapon") ?? _playerInput.actions.FindAction("Player/NextWeapon");
+        }
+
+        private void UpdateInputState()
+        {
+            if (_moveAction != null) move = _moveAction.ReadValue<Vector2>();
+            if (_lookAction != null) look = _lookAction.ReadValue<Vector2>();
+
+            jump = _jumpAction != null && _jumpAction.WasPressedThisFrame();
+            jumpHeld = _jumpAction != null && _jumpAction.IsPressed();
+            _isJumpHeld = jumpHeld; // Sincronizar para Jetpack local
+
+            sprint = _sprintAction != null && _sprintAction.IsPressed();
+            fire = _fireAction != null && _fireAction.WasPressedThisFrame();
+            fireHeld = _fireAction != null && _fireAction.IsPressed();
+            fireReleased = _fireAction != null && _fireAction.WasReleasedThisFrame();
+
+            aim = _aimAction != null && _aimAction.IsPressed();
+            crouch = _crouchAction != null && _crouchAction.WasPressedThisFrame();
+            reload = _reloadAction != null && _reloadAction.WasPressedThisFrame();
+
+            if (_nextWeaponAction != null)
             {
-                jump = false;
-                fire = false;
-                fireReleased = false;
-                reload = false;
-                switchWeapon = 0;
-                selectWeapon = 0;
+                float val = _nextWeaponAction.ReadValue<float>();
+                switchWeapon = val > 0 ? 1 : (val < 0 ? -1 : 0);
+            }
+
+            // Teclas numéricas para armas (1-9)
+            selectWeapon = 0;
+            if (Keyboard.current != null)
+            {
+                for (int i = 1; i <= 9; i++)
+                {
+                    if (Keyboard.current[Key.Digit1 + (i - 1)].wasPressedThisFrame)
+                    {
+                        selectWeapon = i;
+                        break;
+                    }
+                }
             }
         }
 
@@ -466,12 +500,13 @@ namespace Combating.Scripts
 
             if (look.sqrMagnitude >= _threshold && !LockCameraPosition)
             {
-                // Si no hay red o es local, forzamos multiplicador 1.0 para ratón aunque el scheme no se haya actualizado
-                bool isMouse = IsCurrentDeviceMouse || (!IsNetworkActive && look.sqrMagnitude > 10f);
-                float deltaTimeMultiplier = isMouse ? 1.0f : Time.deltaTime;
+                // ESCALADO DEFINITIVO:
+                // Para el ratón, el delta ya es frame-rate independent. Usamos un factor de 0.5f (mucho más rápido que 0.12).
+                // Multiplicamos por 2 para dar esa sensación de "velocidad" que falta.
+                float deltaTimeMultiplier = (IsCurrentDeviceMouse) ? 0.5f : Time.deltaTime;
 
-                _cinemachineTargetYaw += look.x * deltaTimeMultiplier * LookSensitivity.x;
-                _cinemachineTargetPitch += look.y * deltaTimeMultiplier * LookSensitivity.y;
+                _cinemachineTargetYaw += look.x * deltaTimeMultiplier * LookSensitivity.x * 2f;
+                _cinemachineTargetPitch += look.y * deltaTimeMultiplier * LookSensitivity.y * 2f;
             }
 
             _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);

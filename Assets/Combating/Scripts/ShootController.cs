@@ -54,21 +54,30 @@ namespace Combating.Scripts
 
         bool WantsToFire()
         {
+            bool playerInput = false;
             if (m_Player != null)
             {
-                // Si es ráfaga, usamos fireHeld. Si es semi, usamos fire (y lo consumimos)
-                bool input = HoldToFire ? m_Player.fireHeld : m_Player.fire;
-                if (!HoldToFire && input) m_Player.fire = false; // Consumir el disparo semiautomático
-                return input;
+                playerInput = HoldToFire ? m_Player.fireHeld : m_Player.fire;
             }
 
-            if (Mouse.current == null) return false;
-            return HoldToFire ? Mouse.current.leftButton.isPressed : Mouse.current.leftButton.wasPressedThisFrame;
+            // Plan B: Lectura directa de hardware si el script del player falla
+            bool mouseInput = false;
+            if (Mouse.current != null)
+            {
+                mouseInput = HoldToFire ? Mouse.current.leftButton.isPressed : Mouse.current.leftButton.wasPressedThisFrame;
+            }
+
+            return playerInput || mouseInput;
         }
 
         public bool TryFire()
         {
-            if (Time.time < m_NextFireTime || ProjectilePrefab == null) return false;
+            if (ProjectilePrefab == null) { Debug.LogWarning("[Shoot] No hay proyectil asignado!"); return false; }
+
+            // Determinar punto de origen dinámico (Cabeza/Pecho)
+            Vector3 originPos = GetShootOrigin();
+
+            if (Time.time < m_NextFireTime) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
 
             float finalDamage = Damage;
@@ -77,13 +86,28 @@ namespace Combating.Scripts
                 finalDamage = Damage * (stats.Attack / 10f);
             }
 
-            Vector3 direction = GetAimDirection();
-            Vector3 spawnPos = Muzzle.position + direction * 0.8f;
+            Vector3 direction = GetAimDirection(originPos);
+            Vector3 spawnPos = originPos + direction * 0.5f;
 
             if (IsNetworkActive) RequestFireServerRpc(direction, spawnPos, spawnPos + direction * AimDistance, finalDamage);
             else SpawnProjectileLocally(direction, spawnPos, spawnPos + direction * AimDistance, finalDamage);
 
             return true;
+        }
+
+        private Vector3 GetShootOrigin()
+        {
+            Animator anim = GetComponentInChildren<Animator>();
+            if (anim != null)
+            {
+                Transform bone = anim.GetBoneTransform(HumanBodyBones.Head) ??
+                                 anim.GetBoneTransform(HumanBodyBones.Chest) ??
+                                 anim.transform.Find("head") ??
+                                 anim.transform.Find("Head") ??
+                                 anim.transform.Find("spine");
+                if (bone != null) return bone.position;
+            }
+            return (Muzzle != null) ? Muzzle.position : transform.position + Vector3.up * 1.5f;
         }
 
         /// <summary>
@@ -148,12 +172,18 @@ namespace Combating.Scripts
             SpawnTracer(spawnPos, impactPos);
         }
 
-        Vector3 GetAimDirection()
+        Vector3 GetAimDirection(Vector3 fromPosition)
         {
+            // Raycast desde el centro de la cámara
             Ray ray = new Ray(AimCamera.transform.position, AimCamera.transform.forward);
-            if (Physics.Raycast(ray, out RaycastHit hit, AimDistance, AimLayers, QueryTriggerInteraction.Ignore))
-                return (hit.point - Muzzle.position).normalized;
-            return (ray.GetPoint(AimDistance) - Muzzle.position).normalized;
+
+            // Ignorar Capas 3 (Player), 2 (Ignore Raycast)
+            int layerMask = ~((1 << 3) | (1 << 2));
+
+            if (Physics.Raycast(ray, out RaycastHit hit, AimDistance, layerMask, QueryTriggerInteraction.Ignore))
+                return (hit.point - fromPosition).normalized;
+
+            return ray.direction;
         }
 
         void SpawnTracer(Vector3 start, Vector3 end)
