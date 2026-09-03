@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine.UI;
 using Missions.Data;
+using Crafting.Scripts;
 
 namespace Missions.Scripts
 {
@@ -171,12 +172,46 @@ namespace Missions.Scripts
             return true;
         }
 
+        private bool HasRequiredItems(MissionData mission)
+        {
+            var bag = InventoryController.GetBag();
+
+            // Validar requerimientos de recolección
+            if (mission.gatheringRequirements != null)
+            {
+                foreach (var req in mission.gatheringRequirements)
+                {
+                    if (req.item == null) continue;
+                    string key = req.item.itemCode.ToLowerInvariant();
+                    if (!bag.TryGetValue(key, out var slot) || slot.qty < req.amount) return false;
+                }
+            }
+
+            // Validar requerimientos de crafteo
+            if (mission.craftingRequirements != null)
+            {
+                foreach (var req in mission.craftingRequirements)
+                {
+                    if (req.item == null) continue;
+                    string key = req.item.itemCode.ToLowerInvariant();
+                    if (!bag.TryGetValue(key, out var slot) || slot.qty < req.amount) return false;
+                }
+            }
+
+            return true;
+        }
+
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void CompleteMissionServerRpc(string missionId)
         {
             if (!IsMissionCompleted(missionId))
             {
-                _completedMissions.Add(missionId);
+                // El servidor también valida items antes de añadir a la lista sincronizada
+                MissionData m = allMissions.Find(x => x.missionId == missionId);
+                if (m != null && HasRequiredItems(m))
+                {
+                    _completedMissions.Add(missionId);
+                }
             }
         }
 
@@ -185,6 +220,14 @@ namespace Missions.Scripts
         /// </summary>
         public void CompleteMission(string missionId)
         {
+            MissionData mission = allMissions.Find(m => m.missionId == missionId);
+
+            if (mission != null && !HasRequiredItems(mission))
+            {
+                Debug.LogWarning($"[MissionsManager] Requisitos de ítems no cumplidos para: {mission.title}");
+                return;
+            }
+
             if (IsSpawned)
             {
                 CompleteMissionServerRpc(missionId);

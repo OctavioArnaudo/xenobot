@@ -1,64 +1,52 @@
 ﻿using UnityEngine;
 using UnityEngine.Serialization;
 
+public enum ItemType
+{
+    Resource,
+    Consumable,
+    Equipment,
+    Experience,
+    KeyItem
+}
+
 [CreateAssetMenu(menuName = "Items/Item Data", fileName = "Item_")]
 public class ItemData : ScriptableObject
 {
-    [FormerlySerializedAs("itemId")]
-    [SerializeField]
-    private int _itemId;
-
-    public int itemId
-    {
-        get => _itemId;
-        set => _itemId = value;
-    }
-
     [Header("Identificación")]
     public string itemCode;
     public string displayName;
 
     [Header("Visual")]
-    public Sprite icon;
+    [FormerlySerializedAs("icon")]
+    public Sprite itemSprite;
 
     [Header("Comportamiento")]
     public ItemType type;
-    public bool isUsable;
+
+    [Tooltip("¿Se puede apilar en el inventario?")]
     public bool isStackable = true;
     public int maxStack = 99;
+
+    [Tooltip("¿El jugador puede usarlo manualmente desde el inventario?")]
+    public bool canUse;
+
+    [Tooltip("¿Se usa automáticamente al recogerlo del suelo?")]
+    public bool autoUse;
 
     [TextArea]
     public string description;
 
-    [Header("EXP")]
-    [Tooltip("Si > 0 este ítem otorga EXP al recogerse (Exp A, Exp B, etc.)")]
-    public float expValue = 0f;
-
     [Header("World Representation")]
-    public GameObject worldPrefab;
+    [FormerlySerializedAs("worldPrefab")]
+    public GameObject itemPrefab;
 
-    private void OnValidate()
+    /// <summary>
+    /// Retorna un hash estable del itemCode para sincronización en red sin necesidad de IDs manuales.
+    /// </summary>
+    public int GetItemHashCode()
     {
-        if (_itemId == 0)
-        {
-            // Generar un ID único basado en el hash del nombre del asset si no tiene uno
-            _itemId = Mathf.Abs(name.GetHashCode());
-            if (_itemId == 0) _itemId = Random.Range(1, 999999);
-
-            #if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(this);
-            #endif
-        }
+        if (string.IsNullOrEmpty(itemCode)) return 0;
+        return itemCode.ToLowerInvariant().GetHashCode();
     }
-}
-
-public enum ItemType
-{
-    Collectible,
-    Key,
-    Consumable,
-    Equipment,
-    Currency,
-    ExpOrb,
-    Costume
 }

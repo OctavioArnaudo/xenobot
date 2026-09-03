@@ -11,15 +11,14 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
   m_Name: Item_Jetpack
-  m_EditorClassIdentifier:
-  _itemId: 102
+  m_EditorClassIdentifier: 
   itemCode: jetpack
   displayName: Jetpack
-  icon: {fileID: 0}
+  itemSprite: {fileID: 1261163628, guid: 545b79a24d76aea4fa805f93640c7941, type: 3}
   type: 3
-  isUsable: 1
   isStackable: 0
   maxStack: 1
-  description: "Permite el vuelo propulsado."
-  expValue: 0
-  worldPrefab: {fileID: 0}
+  canUse: 0
+  autoUse: 0
+  description: Permite el vuelo propulsado.
+  itemPrefab: {fileID: 4811940099931562289, guid: 77b852e9a68e4334f9b344e260270121, type: 3}

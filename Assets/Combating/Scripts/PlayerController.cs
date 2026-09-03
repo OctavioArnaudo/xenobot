@@ -121,7 +121,7 @@ namespace Combating.Scripts
         private GameObject _mainCamera;
 
         private HealthController _health;
-        private JetpackController _jetpack;
+        private PropulsionController _jetpack;
 
         private bool _isJumpHeld;
         private const float _threshold = 0.01f;
@@ -148,7 +148,7 @@ namespace Combating.Scripts
         {
             _controller = GetComponent<CharacterController>();
             _health = GetComponent<HealthController>();
-            _jetpack = GetComponent<JetpackController>();
+            RefreshFunctionalComponents();
 
             #if ENABLE_INPUT_SYSTEM
             _playerInput = GetComponent<PlayerInput>();
@@ -407,12 +407,18 @@ namespace Combating.Scripts
             }
         }
 
-        public void RefreshBodyReferences()
+        public void RefreshFunctionalComponents()
         {
+            _jetpack = GetComponentInChildren<PropulsionController>();
             _animator = GetComponentInChildren<Animator>();
             _hasAnimator = _animator != null;
             AssignAnimationIDs();
             SetupCamera();
+        }
+
+        public void RefreshBodyReferences()
+        {
+            RefreshFunctionalComponents();
         }
         #endregion
 

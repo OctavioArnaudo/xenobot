@@ -164,8 +164,8 @@ namespace Crafting.Scripts
                 GUI.DrawTexture(r, isSelected ? _texSelected : _texSlot);
                 if (availableTrades[i].OutputItem != null)
                 {
-                    if (availableTrades[i].OutputItem.icon != null)
-                        GUI.DrawTexture(new Rect(5, i * 55 + 5, 40, 40), availableTrades[i].OutputItem.icon.texture);
+                    if (availableTrades[i].OutputItem.itemSprite != null)
+                        GUI.DrawTexture(new Rect(5, i * 55 + 5, 40, 40), availableTrades[i].OutputItem.itemSprite.texture);
                     GUI.Label(new Rect(50, i * 55, listRect.width - 60, 50), availableTrades[i].OutputItem.displayName, _recipeSty);
                 }
                 if (Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition))
@@ -185,14 +185,14 @@ namespace Crafting.Scripts
                 float y = 0;
                 GUI.Label(new Rect(0, y, detailRect.width, 25), "REQUIERE:", _infoSty); y += 30;
                 GUI.DrawTexture(new Rect(0, y, 60, 60), _texSlot);
-                if (recipe.InputItem.icon != null) GUI.DrawTexture(new Rect(5, y + 5, 50, 50), recipe.InputItem.icon.texture);
+                if (recipe.InputItem.itemSprite != null) GUI.DrawTexture(new Rect(5, y + 5, 50, 50), recipe.InputItem.itemSprite.texture);
                 GUI.Label(new Rect(0, y, 60, 60), "x" + recipe.InputAmount, _qtySty);
                 GUI.Label(new Rect(70, y + 15, detailRect.width - 70, 30), recipe.InputItem.displayName, _recipeSty);
                 y += 75;
                 GUI.Label(new Rect(detailRect.width / 2 - 15, y - 5, 30, 30), "↓", _titleSty); y += 30;
                 GUI.Label(new Rect(0, y, detailRect.width, 25), "OBTIENES:", _infoSty); y += 30;
                 GUI.DrawTexture(new Rect(0, y, 60, 60), _texSlot);
-                if (recipe.OutputItem.icon != null) GUI.DrawTexture(new Rect(5, y + 5, 50, 50), recipe.OutputItem.icon.texture);
+                if (recipe.OutputItem.itemSprite != null) GUI.DrawTexture(new Rect(5, y + 5, 50, 50), recipe.OutputItem.itemSprite.texture);
                 GUI.Label(new Rect(0, y, 60, 60), "x" + recipe.OutputAmount, _qtySty);
                 GUI.Label(new Rect(70, y + 15, detailRect.width - 70, 30), recipe.OutputItem.displayName, _recipeSty);
                 y += 85;
@@ -234,7 +234,6 @@ namespace Crafting.Scripts
             var bag = InventoryController.GetBag();
             string key = recipe.InputItem.itemCode.ToLowerInvariant();
 
-            // Buscar en el inventario persistente
             if (bag.TryGetValue(key, out var slot))
             {
                 return slot.qty >= recipe.InputAmount;
@@ -245,7 +244,6 @@ namespace Crafting.Scripts
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestTradeServerRpc(int recipeId, ulong clientId)
         {
-            // El servidor procesa la lógica
             ExecuteTradeLocal(recipeId, clientId);
         }
 
@@ -269,7 +267,6 @@ namespace Crafting.Scripts
                 InventoryController.Add(recipe.OutputItem);
             }
 
-            // Si estamos en el cliente, forzar refresco de UI si fuera necesario
             InventoryController.MarkCountDirty();
         }
 

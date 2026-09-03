@@ -1,237 +1,215 @@
 using UnityEngine;
 using Unity.Netcode;
+using Combating.Scripts;
 
-/// <summary>
-/// Universal Pickup Controller for Xenobot.
-/// Handles Inventory Items, Experience Orbs, and Network Synchronization.
-/// Logic is on the Root, Visuals/Colliders can be anywhere in hierarchy.
-/// </summary>
-[RequireComponent(typeof(NetworkObject))]
-public class PickupController : NetworkBehaviour
+namespace Crafting.Scripts
 {
-    [Header("Data Configuration")]
-    public ItemData item;
-
-    public static int ActiveCount { get; private set; }
-
-    [Header("Motion")]
-    public float rotationSpeed = 100f;
-    public float bobbingAmount = 0.15f;
-    public float bobbingSpeed = 2f;
-
-    private Vector3 _startPos;
-    private float _timer;
-    private bool _taken;
-    private float _spawnTime;
-    private bool _grounded = false;
-    private const float PICKUP_DELAY = 0.3f;
-
-    private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
-
-    void Awake()
+    /// <summary>
+    /// Universal Pickup Controller for Xenobot.
+    /// Handles all items generically using ItemType and prefab logic.
+    /// </summary>
+    [RequireComponent(typeof(NetworkObject))]
+    public class PickupController : NetworkBehaviour
     {
-        _spawnTime = Time.time;
-        CreateMasterTrigger();
-    }
+        [Header("Data Configuration")]
+        public ItemData item;
 
-    private void CreateMasterTrigger()
-    {
-        // 1. Asegurar que haya un trigger para detectar al jugador
-        Collider[] colliders = GetComponents<Collider>();
-        bool hasTrigger = false;
-        bool hasSolid = false;
-        foreach (var c in colliders)
+        public static int ActiveCount { get; private set; }
+
+        [Header("Motion")]
+        public float rotationSpeed = 100f;
+        public float bobbingAmount = 0.15f;
+        public float bobbingSpeed = 2f;
+
+        private Vector3 _startPos;
+        private float _timer;
+        private bool _taken;
+        private float _spawnTime;
+        private bool _grounded = false;
+        private const float PICKUP_DELAY = 0.3f;
+
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+
+        void Awake()
         {
-            if (c.isTrigger) hasTrigger = true;
-            else hasSolid = true;
+            _spawnTime = Time.time;
+            CreateMasterTrigger();
         }
 
-        if (!hasTrigger)
+        private void CreateMasterTrigger()
         {
-            SphereCollider sc = gameObject.AddComponent<SphereCollider>();
-            sc.isTrigger = true;
-            sc.radius = 0.7f;
-        }
-
-        // 2. Asegurar un colisionador sólido para que no atraviese el suelo al caer
-        if (!hasSolid)
-        {
-            BoxCollider bc = gameObject.AddComponent<BoxCollider>();
-            bc.size = new Vector3(0.5f, 0.5f, 0.5f);
-            bc.isTrigger = false;
-        }
-        else
-        {
-            // Si ya tiene colisionadores sólidos, asegurar que si son MeshColliders sean Convexos
-            // para evitar errores con Rigidbodies dinámicos
-            var meshColliders = GetComponentsInChildren<MeshCollider>();
-            foreach (var mc in meshColliders) mc.convex = true;
-        }
-
-        // 3. Asegurar Rigidbody
-        if (GetComponent<Rigidbody>() == null)
-        {
-            Rigidbody rb = gameObject.AddComponent<Rigidbody>();
-            rb.isKinematic = true;
-            rb.useGravity = false;
-        }
-    }
-
-    void Start()
-    {
-        _startPos = transform.position;
-        _spawnTime = Time.time;
-        ActiveCount++;
-        InventoryController.MarkCountDirty();
-    }
-
-    void Update()
-    {
-        // 1. Rotación estable sobre el eje Y local usando Quaternion para evitar Gimbal Lock
-        // Esto previene que los ejes X y Z salten erráticamente.
-        _timer += Time.deltaTime;
-        float currentRotationY = _timer * rotationSpeed;
-        transform.localRotation = Quaternion.Euler(0, currentRotationY, 0);
-
-        if (TryGetComponent<Rigidbody>(out var rb) && !rb.isKinematic)
-        {
-            // Mientras esté cayendo (no sea kinematic), actualizamos el punto de inicio
-            _startPos = transform.position;
-        }
-        else
-        {
-            // 2. Flotación estable calculada desde el punto de inicio estático
-            float bobbing = Mathf.Sin(Time.time * bobbingSpeed) * bobbingAmount;
-            transform.position = new Vector3(_startPos.x, _startPos.y + bobbing, _startPos.z);
-        }
-    }
-
-    private void OnCollisionEnter(Collision collision)
-    {
-        // Al tocar el suelo, desactivamos físicas para que empiece a flotar en ese punto
-        if (!_grounded && TryGetComponent<Rigidbody>(out var rb))
-        {
-            if (!rb.isKinematic)
+            Collider[] colliders = GetComponents<Collider>();
+            bool hasTrigger = false;
+            bool hasSolid = false;
+            foreach (var c in colliders)
             {
-                rb.isKinematic = true;
-                rb.useGravity = false;
-                _grounded = true;
-                // Ajustamos _startPos un poco hacia arriba para que la flotación no atraviese el suelo
-                _startPos = transform.position + Vector3.up * 0.4f;
-                Debug.Log($"[Pickup] {gameObject.name} tocó suelo y comenzó a flotar.");
+                if (c.isTrigger) hasTrigger = true;
+                else hasSolid = true;
             }
-        }
-    }
 
-    void OnTriggerStay(Collider other)
-    {
-        OnTriggerEnter(other);
-    }
-
-    void OnTriggerEnter(Collider other)
-    {
-        if (_taken || Time.time < _spawnTime + PICKUP_DELAY) return;
-
-        if (IsNetworkActive && !IsServer) return;
-
-        InventoryController inv = other.GetComponentInParent<InventoryController>();
-        bool isPlayer = other.CompareTag("Player") || inv != null;
-
-        if (isPlayer)
-        {
-            if (item == null) return;
-            _taken = true;
-            if (IsNetworkActive) ProcessPickupAuthoritative(inv);
-            else ProcessPickupLocal(inv);
-        }
-    }
-
-    private void ProcessPickupAuthoritative(InventoryController inv)
-    {
-        ApplyReward(inv);
-        SpawnHardcodedEffect();
-        SpawnPickupEffectClientRpc();
-
-        NetworkObject netObj = GetComponent<NetworkObject>();
-        if (netObj != null && netObj.IsSpawned)
-        {
-            if (netObj.InScenePlaced)
+            if (!hasTrigger)
             {
-                netObj.Despawn(false);
-                Destroy(gameObject);
+                SphereCollider sc = gameObject.AddComponent<SphereCollider>();
+                sc.isTrigger = true;
+                sc.radius = 0.7f;
+            }
+
+            if (!hasSolid)
+            {
+                BoxCollider bc = gameObject.AddComponent<BoxCollider>();
+                bc.size = new Vector3(0.5f, 0.5f, 0.5f);
+                bc.isTrigger = false;
             }
             else
             {
-                netObj.Despawn(true);
+                var meshColliders = GetComponentsInChildren<MeshCollider>();
+                foreach (var mc in meshColliders) mc.convex = true;
+            }
+
+            if (GetComponent<Rigidbody>() == null)
+            {
+                Rigidbody rb = gameObject.AddComponent<Rigidbody>();
+                rb.isKinematic = true;
+                rb.useGravity = false;
             }
         }
-    }
 
-    private void ProcessPickupLocal(InventoryController inv)
-    {
-        ApplyReward(inv);
-        SpawnHardcodedEffect();
-        Destroy(gameObject);
-    }
-
-    private void ApplyReward(InventoryController inv)
-    {
-        if (item.expValue > 0f)
+        void Start()
         {
-            StatsController stats = inv != null ? inv.GetComponent<StatsController>() : null;
-            if (stats != null) stats.AddExp(item.expValue);
-            else if (StatsController.Instance != null) StatsController.Instance.AddExp(item.expValue);
+            _startPos = transform.position;
+            _spawnTime = Time.time;
+            ActiveCount++;
+            InventoryController.MarkCountDirty();
         }
-        else
+
+        void Update()
         {
-            if (inv != null)
+            _timer += Time.deltaTime;
+            transform.localRotation = Quaternion.Euler(0, _timer * rotationSpeed, 0);
+
+            if (TryGetComponent<Rigidbody>(out var rb) && !rb.isKinematic)
             {
-                // Usar el método estático Add que ya tiene la protección de red o verificar manualmente
+                _startPos = transform.position;
+            }
+            else
+            {
+                float bobbing = Mathf.Sin(Time.time * bobbingSpeed) * bobbingAmount;
+                transform.position = new Vector3(_startPos.x, _startPos.y + bobbing, _startPos.z);
+            }
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (!_grounded && TryGetComponent<Rigidbody>(out var rb))
+            {
+                if (!rb.isKinematic)
+                {
+                    rb.isKinematic = true;
+                    rb.useGravity = false;
+                    _grounded = true;
+                    _startPos = transform.position + Vector3.up * 0.4f;
+                }
+            }
+        }
+
+        void OnTriggerEnter(Collider other)
+        {
+            if (_taken || Time.time < _spawnTime + PICKUP_DELAY) return;
+            if (IsNetworkActive && !IsServer) return;
+
+            InventoryController inv = other.GetComponentInParent<InventoryController>();
+            bool isPlayer = other.CompareTag("Player") || inv != null;
+
+            if (isPlayer)
+            {
+                if (item == null) return;
+                _taken = true;
+                if (IsNetworkActive) ProcessPickupAuthoritative(inv, other.gameObject);
+                else ProcessPickupLocal(inv, other.gameObject);
+            }
+        }
+
+        private void ProcessPickupAuthoritative(InventoryController inv, GameObject player)
+        {
+            ApplyReward(inv, player);
+            SpawnPickupEffectClientRpc();
+            NetworkObject netObj = GetComponent<NetworkObject>();
+            if (netObj != null && netObj.IsSpawned)
+            {
+                if (netObj.InScenePlaced) { netObj.Despawn(false); Destroy(gameObject); }
+                else netObj.Despawn(true);
+            }
+        }
+
+        private void ProcessPickupLocal(InventoryController inv, GameObject player)
+        {
+            ApplyReward(inv, player);
+            SpawnHardcodedEffect();
+            Destroy(gameObject);
+        }
+
+        private void ApplyReward(InventoryController inv, GameObject player)
+        {
+            if (item == null) return;
+
+            if (item.autoUse)
+            {
+                // Usar la lógica del prefab directamente
+                foreach(var func in GetComponentsInChildren<IItemFunctional>())
+                {
+                    func.ApplyEffect(player);
+                }
+            }
+            else
+            {
                 InventoryController.Add(item);
             }
-            else InventoryController.Add(item);
         }
-    }
 
-    [ClientRpc]
-    private void SpawnPickupEffectClientRpc()
-    {
-        if (IsOwner || IsServer) return;
-        SpawnHardcodedEffect();
-    }
+        [ClientRpc]
+        private void SpawnPickupEffectClientRpc() => SpawnHardcodedEffect();
 
-    private void SpawnHardcodedEffect()
-    {
-        GameObject go = new GameObject("PickupEffect");
-        go.transform.position = transform.position;
-        ParticleSystem ps = go.AddComponent<ParticleSystem>();
-        var main = ps.main;
-        main.loop = false; // IMPORTANTE: Si está en loop, nunca se destruye
-        main.duration = 0.5f;
-        main.startLifetime = 0.5f;
-        main.startSpeed = 5f;
-        main.startSize = 0.2f;
-        main.startColor = (item != null && item.expValue > 0) ? Color.yellow : Color.cyan;
-        main.stopAction = ParticleSystemStopAction.Destroy;
+        private void SpawnHardcodedEffect()
+        {
+            GameObject go = new GameObject("PickupEffect");
+            go.transform.position = transform.position;
 
-        var emission = ps.emission;
-        emission.rateOverTime = 0;
-        emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0, 20) });
+            ParticleSystem ps = go.AddComponent<ParticleSystem>();
 
-        var shape = ps.shape;
-        shape.shapeType = ParticleSystemShapeType.Sphere;
-        shape.radius = 0.1f;
+            // Forzar parada para poder configurar parámetros estructurales (como duration)
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
-        ps.Play();
+            var main = ps.main;
+            main.loop = false;
+            main.duration = 0.5f;
+            main.startLifetime = 0.5f;
+            main.startSpeed = 5f;
+            main.startSize = 0.2f;
+            main.startColor = (item != null && item.type == ItemType.Experience) ? Color.yellow : Color.cyan;
+            main.stopAction = ParticleSystemStopAction.Destroy;
 
-        // Fallback de seguridad para asegurar la destrucción del objeto vacío
-        Destroy(go, 2.0f);
-    }
+            var emission = ps.emission;
+            emission.rateOverTime = 0;
+            emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0, 20) });
 
-    public override void OnDestroy()
-    {
-        base.OnDestroy();
-        ActiveCount--;
-        InventoryController.MarkCountDirty();
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = 0.1f;
+
+            // Asegurar que el renderer no tenga materiales rosas (URP/Standard)
+            var renderer = go.GetComponent<ParticleSystemRenderer>();
+            Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Particles/Standard Unlit");
+            if (shader != null) renderer.material = new Material(shader);
+
+            ps.Play();
+            Destroy(go, 2.0f);
+        }
+
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+            ActiveCount--;
+            InventoryController.MarkCountDirty();
+        }
     }
 }

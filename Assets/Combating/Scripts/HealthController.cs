@@ -108,6 +108,22 @@ namespace Combating.Scripts
             }
         }
 
+        public void Heal(int amount)
+        {
+            if (amount <= 0) return;
+
+            if (IsNetworkActive)
+            {
+                if (IsServer) currentHealth.Value = Mathf.Min(maxHealth, currentHealth.Value + amount);
+            }
+            else
+            {
+                m_OfflineHealth = Mathf.Min(maxHealth, m_OfflineHealth + amount);
+            }
+
+            Debug.Log($"[Health] Recuperada {amount} HP. Vida actual: {CurrentHP}");
+        }
+
         public void UpgradeMaxStats(int healthBonus, float jetpackBonus)
         {
             maxHealth += healthBonus;

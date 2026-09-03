@@ -15,9 +15,7 @@ GameObject:
   - component: {fileID: 8817458512756316894}
   - component: {fileID: -6156563700359369647}
   - component: {fileID: 7450631966458783124}
-  - component: {fileID: 5714182025742897013}
   - component: {fileID: 5512223289139937047}
-  - component: {fileID: 6433554270011581158}
   - component: {fileID: 2434908978572968271}
   - component: {fileID: 6571925829028200894}
   - component: {fileID: 5920079192208945779}
@@ -59,7 +57,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2082353490
+  GlobalObjectIdHash: 900052251
   InScenePlacedSourceGlobalObjectIdHash: 2082353490
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -254,6 +252,8 @@ MonoBehaviour:
   - {fileID: 11400000, guid: cc730feca3d9438aa9e28397df2e6fe4, type: 2}
   - {fileID: 11400000, guid: 9c17cf8896f842ca89037bfc4f46889c, type: 2}
   - {fileID: 11400000, guid: 6ac606d832f14c4fa3466276ffe3c0b4, type: 2}
+  - {fileID: 11400000, guid: d7c9c3ed602c45bda00bb8572b645ef1, type: 2}
+  - {fileID: 11400000, guid: bb42e76d6f734c5091156f6de5048962, type: 2}
   dropDistance: 2.5
 --- !u!114 &7450631966458783124
 MonoBehaviour:
@@ -276,35 +276,6 @@ MonoBehaviour:
     m_Bits: 0
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
-  rotationSpeed: 10
---- !u!114 &5714182025742897013
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804703078109025515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
-  ShowTopMostFoldoutHeaderGroup: 1
-  AimCamera: {fileID: 9017485172064717998}
-  Muzzle: {fileID: 0}
-  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
-  visualsToRotate: []
-  Damage: 25
-  FireRate: 20
-  AimDistance: 100
-  AimLayers:
-    serializedVersion: 2
-    m_Bits: 4087
-  HoldToFire: 1
-  UsePlayerInput: 1
-  MuzzleFlash: {fileID: 0}
-  TracerPrefab: {fileID: 0}
-  TracerLifetime: 0.05
   rotationSpeed: 10
 --- !u!114 &5512223289139937047
 MonoBehaviour:
@@ -372,25 +343,6 @@ MonoBehaviour:
   fontSize: 14
   barWidth: 180
   barHeight: 8
---- !u!114 &6433554270011581158
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804703078109025515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2a1f0ccf9aa977047af3b55cf76893f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.JetpackController
-  ShowTopMostFoldoutHeaderGroup: 1
-  jetpackForce: 60
-  hoverForce: 25
-  fuelConsumption: 20
-  fuelRegen: 25
-  maxUpwardVelocity: 15
-  hoverThreshold: 0.5
 --- !u!114 &2434908978572968271
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -572,7 +524,7 @@ Transform:
   m_GameObject: {fileID: 4635943162753486610}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.20000005, y: 0, z: -8}
+  m_LocalPosition: {x: -1.1421814, y: 0, z: 0.10140991}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -750,7 +702,7 @@ Transform:
   m_GameObject: {fileID: 5744773588333972899}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 453.55783, y: 25.14, z: -325.0986}
+  m_LocalPosition: {x: -1.1421814, y: 0, z: 0.10140991}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

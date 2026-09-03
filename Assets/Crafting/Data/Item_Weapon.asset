@@ -11,15 +11,14 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
   m_Name: Item_Weapon
-  m_EditorClassIdentifier:
-  _itemId: 104
+  m_EditorClassIdentifier: 
   itemCode: weapon
   displayName: Arma Laser
-  icon: {fileID: 0}
+  itemSprite: {fileID: -1623797015, guid: aa92465b7b60fdb49aaa0dd943bfe24d, type: 3}
   type: 3
-  isUsable: 1
   isStackable: 0
   maxStack: 1
-  description: "Defensa básica contra xenobots."
-  expValue: 0
-  worldPrefab: {fileID: 0}
+  canUse: 0
+  autoUse: 0
+  description: "Defensa b\xE1sica contra xenobots."
+  itemPrefab: {fileID: 3247048204812752460, guid: 77f40f708cbe22245bfeb1c857a21fab, type: 3}
