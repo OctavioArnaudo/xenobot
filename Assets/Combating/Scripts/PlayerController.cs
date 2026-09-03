@@ -68,17 +68,17 @@ namespace Combating.Scripts
         [Header("Input Data")]
         public Vector2 move;
         public Vector2 look;
-        public bool jump; // Jump Pressed
+        public bool jump;
         public bool jumpHeld;
         public bool sprint;
         public bool fire;
         public bool fireHeld;
         public bool fireReleased;
-        public bool aim; // Aim Held
+        public bool aim;
         public bool crouch;
         public bool reload;
-        public int switchWeapon; // -1, 0, 1
-        public int selectWeapon; // 1-9
+        public int switchWeapon;
+        public int selectWeapon;
         public bool analogMovement;
         public bool cursorLocked = true;
         public bool cursorInputForLook = true;
@@ -127,7 +127,6 @@ namespace Combating.Scripts
         private const float _threshold = 0.01f;
         private bool _hasAnimator;
 
-        // Input Actions
         private InputAction _moveAction;
         private InputAction _lookAction;
         private InputAction _jumpAction;
@@ -152,7 +151,6 @@ namespace Combating.Scripts
 
             #if ENABLE_INPUT_SYSTEM
             _playerInput = GetComponent<PlayerInput>();
-            // Buscaremos las acciones en el primer Update si fallan en el Awake
             RefreshInputActions();
             #endif
 
@@ -262,7 +260,7 @@ namespace Combating.Scripts
             if (!CanExecuteLocalLogic) return;
 
             #if ENABLE_INPUT_SYSTEM
-            if (_fireAction == null) RefreshInputActions(); // Asegurar carga
+            if (_fireAction == null) RefreshInputActions();
             UpdateInputState();
             #endif
 
@@ -294,7 +292,7 @@ namespace Combating.Scripts
 
             jump = _jumpAction != null && _jumpAction.WasPressedThisFrame();
             jumpHeld = _jumpAction != null && _jumpAction.IsPressed();
-            _isJumpHeld = jumpHeld; // Sincronizar para Jetpack local
+            _isJumpHeld = jumpHeld;
 
             sprint = _sprintAction != null && _sprintAction.IsPressed();
             fire = _fireAction != null && _fireAction.WasPressedThisFrame();
@@ -311,7 +309,6 @@ namespace Combating.Scripts
                 switchWeapon = val > 0 ? 1 : (val < 0 ? -1 : 0);
             }
 
-            // Teclas numéricas para armas (1-9)
             selectWeapon = 0;
             if (Keyboard.current != null)
             {
@@ -340,7 +337,6 @@ namespace Combating.Scripts
             Animator anim = GetComponentInChildren<Animator>();
             if (anim != null)
             {
-                // Priorizar el hueso de la cabeza para una vista superior, luego cuello/pecho
                 Transform bone = anim.GetBoneTransform(HumanBodyBones.Head) ??
                                  anim.GetBoneTransform(HumanBodyBones.Neck) ??
                                  anim.GetBoneTransform(HumanBodyBones.Chest) ??
@@ -351,7 +347,6 @@ namespace Combating.Scripts
 
                 if (bone != null)
                 {
-                    // Mover el target a la posición del hueso + offset hacia arriba
                     CinemachineCameraTarget.transform.position = bone.position + Vector3.up * 0.4f;
                 }
             }
@@ -461,8 +456,8 @@ namespace Combating.Scripts
         public void InputFire(InputValue value)
         {
             bool isPressed = value.isPressed;
-            if (isPressed) fire = true; // Se marca como activado este frame
-            fireHeld = isPressed;       // Mantiene el estado mientras se pulse
+            if (isPressed) fire = true;
+            fireHeld = isPressed;
             fireReleased = !isPressed;
         }
         public void InputAim(InputValue value) => aim = value.isPressed;
@@ -480,6 +475,41 @@ namespace Combating.Scripts
         {
             Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !newState;
+        }
+        #endregion
+
+        #region Network Shooting Bridge
+        public void RequestFire(ProjectileController prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team)
+        {
+            if (IsNetworkActive)
+            {
+                // We send the request. The server will instantiate using its own prefab reference.
+                // In a production environment, you might use a GUID or name-based registry.
+                FireServerRpc(direction, spawnPos, damage, team);
+            }
+            else
+            {
+                ProjectileController projectile = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
+                projectile.Launch(gameObject, direction, damage, team);
+            }
+        }
+
+        [ServerRpc]
+        private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team)
+        {
+            // The server needs a reference to the projectile prefab.
+            // For now, we will look for a default one if the bridge is used.
+            // BETTER: If ShootController is on an AI, it spawns directly.
+            // If it's a player, we use a registry or a public field.
+
+            // Temporary: Find the ShootController to get its prefab
+            var shooter = GetComponentInChildren<ShootController>();
+            if (shooter != null && shooter.ProjectilePrefab != null)
+            {
+                ProjectileController projectile = Instantiate(shooter.ProjectilePrefab, spawnPos, Quaternion.LookRotation(direction));
+                projectile.Launch(gameObject, direction, damage, team);
+                projectile.GetComponent<NetworkObject>().Spawn();
+            }
         }
         #endregion
 
@@ -506,9 +536,6 @@ namespace Combating.Scripts
 
             if (look.sqrMagnitude >= _threshold && !LockCameraPosition)
             {
-                // ESCALADO DEFINITIVO:
-                // Para el ratón, el delta ya es frame-rate independent. Usamos un factor de 0.5f (mucho más rápido que 0.12).
-                // Multiplicamos por 2 para dar esa sensación de "velocidad" que falta.
                 float deltaTimeMultiplier = (IsCurrentDeviceMouse) ? 0.5f : Time.deltaTime;
 
                 _cinemachineTargetYaw += look.x * deltaTimeMultiplier * LookSensitivity.x * 2f;
@@ -575,16 +602,13 @@ namespace Combating.Scripts
 
         private void JumpAndGravity()
         {
-            // --- 1. LÓGICA PRIORITARIA: JETPACK ---
             bool isUsingJetpack = false;
             if (_jetpack != null)
             {
-                // Usar _isJumpHeld que es actualizado por OnJump del InputSystem
                 isUsingJetpack = _jetpack.ProcessFlight(_isJumpHeld, Grounded, ref _verticalVelocity);
-                if (isUsingJetpack) jump = false; // Cancelar salto normal si estamos volando
+                if (isUsingJetpack) jump = false;
             }
 
-            // --- 2. LÓGICA DE TIERRA: SALTO NORMAL ---
             if (!isUsingJetpack && Grounded)
             {
                 _fallTimeoutDelta = FallTimeout;
@@ -605,7 +629,6 @@ namespace Combating.Scripts
 
                 if (_jumpTimeoutDelta >= 0.0f) _jumpTimeoutDelta -= Time.deltaTime;
             }
-            // --- 3. LÓGICA DE AIRE: CAÍDA LIBRE ---
             else if (!isUsingJetpack)
             {
                 _jumpTimeoutDelta = JumpTimeout;
