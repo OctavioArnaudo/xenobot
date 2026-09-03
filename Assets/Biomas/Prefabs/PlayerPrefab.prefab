@@ -17,7 +17,6 @@ GameObject:
   - component: {fileID: 7450631966458783124}
   - component: {fileID: 5512223289139937047}
   - component: {fileID: 2434908978572968271}
-  - component: {fileID: 6571925829028200894}
   - component: {fileID: 5920079192208945779}
   - component: {fileID: 4248289829439151912}
   m_Layer: 3
@@ -57,7 +56,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 900052251
+  GlobalObjectIdHash: 2082353490
   InScenePlacedSourceGlobalObjectIdHash: 2082353490
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -359,20 +358,6 @@ MonoBehaviour:
   itemsToSpawn: []
   explosionForce: 10
   spreadRadius: 2.5
---- !u!114 &6571925829028200894
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804703078109025515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c70afe0c671254344a4a4e58ece50270, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.CostumeController
-  ShowTopMostFoldoutHeaderGroup: 1
-  meshRoot: {fileID: 8303322781246357501}
 --- !u!143 &5920079192208945779
 CharacterController:
   m_ObjectHideFlags: 0
@@ -524,7 +509,7 @@ Transform:
   m_GameObject: {fileID: 4635943162753486610}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.1421814, y: 0, z: 0.10140991}
+  m_LocalPosition: {x: 0.20000005, y: 0, z: -8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -628,7 +613,7 @@ GameObject:
   - component: {fileID: 3849205041736059348}
   m_Layer: 3
   m_Name: PlayerRender
-  m_TagString: Player
+  m_TagString: PlayerRender
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -702,7 +687,7 @@ Transform:
   m_GameObject: {fileID: 5744773588333972899}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.1421814, y: 0, z: 0.10140991}
+  m_LocalPosition: {x: 0.20000005, y: 0, z: -8}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

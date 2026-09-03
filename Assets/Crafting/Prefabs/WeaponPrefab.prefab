@@ -61,7 +61,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0.00311253, y: -0.99933124, z: -0.0132533815, w: 0.03393767}
   m_LocalPosition: {x: 398.63, y: 25.821, z: -375.65}
-  m_LocalScale: {x: 1.755699, y: 1.7603072, z: 1.7216326}
+  m_LocalScale: {x: 1.755699, y: 1.7603073, z: 1.7216327}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3245837832010547614}
@@ -107,7 +107,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.PickupController
   ShowTopMostFoldoutHeaderGroup: 1
-  item: {fileID: 0}
+  item: {fileID: 11400000, guid: d7c9c3ed602c45bda00bb8572b645ef1, type: 2}
   rotationSpeed: 100
   bobbingAmount: 0.15
   bobbingSpeed: 2

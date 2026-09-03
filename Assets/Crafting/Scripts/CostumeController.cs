@@ -1,122 +1,93 @@
 using UnityEngine;
-using Unity.Netcode;
 using System.Collections.Generic;
 
 namespace Crafting.Scripts
 {
-    public class CostumeController : NetworkBehaviour
+    /// <summary>
+    /// Specialized modular controller for appearance changes.
+    /// Implements IItemFunctional to swap the player's mesh.
+    /// This script should be on the costume prefab.
+    /// </summary>
+    public class CostumeController : MonoBehaviour, IItemFunctional
     {
-        [Header("Configuración")]
-        public Transform meshRoot;
+        [Header("Settings")]
+        [Tooltip("Tag to find the render root in the player hierarchy")]
+        public string renderTag = "PlayerRender";
 
-        // Sincronización mediante el hash del itemCode
-        private NetworkVariable<int> _activeCostumeHash = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        private int _offlineCostumeHash = 0;
+        private static List<GameObject> _hiddenMeshes = new List<GameObject>();
+        private bool _isEquipped = false;
 
-        private GameObject _activeCostumeInstance;
-        private List<GameObject> _originalMeshes = new List<GameObject>();
-
-        public override void OnNetworkSpawn()
+        public void ApplyEffect(GameObject player)
         {
-            _activeCostumeHash.OnValueChanged += (oldVal, newVal) => {
-                if (newVal == 0) RestoreDefaultLocal();
-                else ApplyCostumeByHash(newVal);
-            };
+            if (_isEquipped) return;
 
-            if (_activeCostumeHash.Value != 0)
+            // 1. Find the target render root using the tag
+            GameObject renderRoot = FindChildWithTag(player, renderTag);
+
+            if (renderRoot == null)
             {
-                ApplyCostumeByHash(_activeCostumeHash.Value);
+                Debug.LogWarning($"[CostumeController] No se encontró un objeto con el tag '{renderTag}' en el jugador. Usando la raíz.");
+                renderRoot = player;
             }
-        }
 
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        public void RequestCostumeChangeServerRpc(int itemHash)
-        {
-            _activeCostumeHash.Value = itemHash;
-        }
-
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        public void RequestRestoreDefaultServerRpc()
-        {
-            _activeCostumeHash.Value = 0;
-        }
-
-        private void ApplyCostumeByHash(int hash)
-        {
-            var inv = GetComponent<InventoryController>() ?? InventoryController.LocalInstance;
-            ItemData item = inv != null ? inv.GetItemDataByHash(hash) : null;
-
-            if (item != null && item.itemPrefab != null)
+            // 2. Hide existing meshes in the player (only once)
+            // We search in the player, not just the root, to be thorough.
+            var allRenderers = player.GetComponentsInChildren<Renderer>(true);
+            foreach (var r in allRenderers)
             {
-                ApplyCostumeLocal(item.itemPrefab, hash);
-            }
-        }
+                // Don't hide our own mesh if we're already a child
+                if (r.transform.IsChildOf(transform)) continue;
 
-        public void ApplyCostumeLocal(GameObject costumePrefab, int hash = 0)
-        {
-            if (costumePrefab == null) return;
-            if (!IsNetworkActive) _offlineCostumeHash = hash;
-
-            // 1. Ocultar originales
-            if (_originalMeshes.Count == 0)
-            {
-                foreach (var r in GetComponentsInChildren<Renderer>(true))
+                if (r.gameObject.activeSelf)
                 {
-                    if (r.gameObject.name.Contains("Xenobot_")) continue;
-                    _originalMeshes.Add(r.gameObject);
+                    _hiddenMeshes.Add(r.gameObject);
+                    r.gameObject.SetActive(false);
                 }
             }
-            foreach(var m in _originalMeshes) if(m != null) m.SetActive(false);
 
-            // 2. Limpiar anterior
-            if (_activeCostumeInstance != null) Destroy(_activeCostumeInstance);
+            // 3. Attach myself to the render root
+            transform.SetParent(renderRoot.transform);
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+            transform.localScale = Vector3.one;
 
-            // 3. Raíz
-            if (meshRoot == null)
-            {
-                Animator anim = GetComponentInChildren<Animator>();
-                meshRoot = anim != null ? anim.transform : transform;
-            }
+            // 4. Clean up modular components to avoid bugs
+            if (TryGetComponent<PickupController>(out var p)) Destroy(p);
+            if (TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
+            foreach (var c in GetComponentsInChildren<Collider>(true)) c.enabled = false;
 
-            // 4. Instanciar
-            _activeCostumeInstance = Instantiate(costumePrefab, meshRoot);
-            _activeCostumeInstance.transform.localPosition = Vector3.zero;
-            _activeCostumeInstance.transform.localRotation = Quaternion.identity;
-            _activeCostumeInstance.transform.localScale = Vector3.one;
-            _activeCostumeInstance.SetActive(true);
+            _isEquipped = true;
+            Debug.Log($"[CostumeController] Chasis '{gameObject.name}' acoplado al tag '{renderTag}'.");
 
-            // 5. Limpieza de componentes lógicos del mesh (para evitar bugs en player)
-            if (_activeCostumeInstance.TryGetComponent<PickupController>(out var p)) Destroy(p);
-            if (_activeCostumeInstance.TryGetComponent<NetworkObject>(out var no)) Destroy(no);
-            if (_activeCostumeInstance.TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
-            foreach (var c in _activeCostumeInstance.GetComponentsInChildren<Collider>(true)) c.enabled = false;
-            foreach (var r in _activeCostumeInstance.GetComponentsInChildren<Renderer>(true)) r.enabled = true;
-
-            // 6. Sincronizar Animator
-            if (_activeCostumeInstance.TryGetComponent<Animator>(out var animInstance))
-            {
-                animInstance.enabled = true;
-                var mainAnim = GetComponentInChildren<Animator>();
-                if (animInstance.runtimeAnimatorController == null && mainAnim != null)
-                    animInstance.runtimeAnimatorController = mainAnim.runtimeAnimatorController;
-            }
-
-            GetComponent<Combating.Scripts.PlayerController>()?.RefreshBodyReferences();
+            // 5. Refresh Player (Animators/Camera)
+            player.GetComponent<Combating.Scripts.PlayerController>()?.RefreshFunctionalComponents();
         }
 
-        public void RestoreDefaultLocal()
+        private void OnDestroy()
         {
-            _offlineCostumeHash = 0;
-            if (_activeCostumeInstance != null) Destroy(_activeCostumeInstance);
-            foreach(var m in _originalMeshes) if(m != null) m.SetActive(true);
-            Debug.Log("[CostumeController] Apariencia original restaurada.");
+            if (_isEquipped)
+            {
+                RestoreOriginals();
+            }
         }
 
-        public bool IsWearing(int hash)
+        public void RestoreOriginals()
         {
-            return IsNetworkActive ? _activeCostumeHash.Value == hash : _offlineCostumeHash == hash;
+            foreach (var mesh in _hiddenMeshes)
+            {
+                if (mesh != null) mesh.SetActive(true);
+            }
+            _hiddenMeshes.Clear();
+            _isEquipped = false;
         }
 
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+        private GameObject FindChildWithTag(GameObject parent, string tag)
+        {
+            foreach (Transform child in parent.GetComponentsInChildren<Transform>(true))
+            {
+                if (child.CompareTag(tag)) return child.gameObject;
+            }
+            return null;
+        }
     }
 }

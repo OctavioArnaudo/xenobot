@@ -9,18 +9,6 @@ using Crafting.Scripts;
 
 namespace Crafting.Scripts
 {
-
-    /// <summary>
-    /// Interfaz para objetos que tienen una función activa al ser usados o equipados.
-    /// </summary>
-    public interface IItemFunctional
-    {
-        /// <summary>
-        /// Aplica el efecto del ítem sobre el jugador.
-        /// </summary>
-        void ApplyEffect(GameObject player);
-    }
-
     public struct NetworkInventorySlot : INetworkSerializable, IEquatable<NetworkInventorySlot>
     {
         public int itemHash;
@@ -79,7 +67,6 @@ namespace Crafting.Scripts
 
         PlayerInput _playerInput;
         SpawnController _spawnController;
-        CostumeController _costumeController;
         HealthController _health;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
@@ -107,9 +94,7 @@ namespace Crafting.Scripts
         {
             _playerInput = GetComponent<PlayerInput>();
             _spawnController = GetComponent<SpawnController>();
-            _costumeController = GetComponent<CostumeController>();
             _health = GetComponent<HealthController>();
-            if (_costumeController == null) _costumeController = gameObject.AddComponent<CostumeController>();
         }
 
         private void RefreshLocalCache()
@@ -322,7 +307,7 @@ namespace Crafting.Scripts
                 Rect btnArea = new Rect(cell.x, cell.yMax + 2, cell.width, 35);
                 int hash = slot.def.GetItemHashCode();
                 bool isEquipped = _equippedInstances.ContainsKey(hash);
-                string actionText = isEquipped ? "QUITAR" : (slot.def.type == ItemType.Equipment ? "EQUIPAR" : "USAR");
+                string actionText = isEquipped ? "QUIT" : "USE";
 
                 if (slot.def.canUse || slot.def.type == ItemType.Equipment)
                 {
@@ -398,28 +383,28 @@ namespace Crafting.Scripts
             {
                 Destroy(existing);
                 _equippedInstances.Remove(hash);
-
-                // Especial para Costume: si se quita, restaurar default
-                if (_costumeController != null && item.itemCode.ToLower().Contains("costume"))
-                    _costumeController.RestoreDefaultLocal();
             }
             else
             {
                 if (item.itemPrefab != null)
                 {
-                    // Instanciar como hijo del jugador para que los scripts encuentren al padre
+                    // 1. Instanciar como hijo del jugador
                     GameObject instance = Instantiate(item.itemPrefab, transform);
                     _equippedInstances[hash] = instance;
 
-                    // Ejecutar efectos iniciales (vinculación)
+                    // 2. LIMPIEZA CRÍTICA: Eliminar comportamiento de mundo/física en la versión equipada
+                    if (instance.TryGetComponent<PickupController>(out var p)) Destroy(p);
+                    if (instance.TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
+                    if (instance.TryGetComponent<NetworkObject>(out var no)) Destroy(no);
+
+                    // Desactivar colliders para que el Jetpack/Arma no empuje al jugador
+                    foreach (var c in instance.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+
+                    // 3. Ejecutar efectos iniciales (vinculación de lógica functional)
                     foreach (var func in instance.GetComponentsInChildren<IItemFunctional>())
                     {
                         func.ApplyEffect(gameObject);
                     }
-
-                    // Especial para Costume: si es un traje, disparar CostumeController
-                    if (_costumeController != null && item.itemCode.ToLower().Contains("costume"))
-                        _costumeController.ApplyCostumeLocal(item.itemPrefab, hash);
                 }
             }
 
@@ -445,8 +430,16 @@ namespace Crafting.Scripts
         public void DropItem(ItemData item)
         {
             if (item == null) return;
-            Vector3 dropPos = transform.position + transform.forward * dropDistance;
             int hash = item.GetItemHashCode();
+
+            // SI ESTÁ EQUIPADO, QUITAMOS LA HABILIDAD PRIMERO
+            if (_equippedInstances.ContainsKey(hash))
+            {
+                ToggleEquipment(item);
+            }
+
+            Vector3 dropPos = transform.position + transform.right * 1.5f + transform.up * 0.5f; // Un poco al costado
+
             if (IsNetworkActive) DropItemServerRpc(hash, dropPos);
             else
             {
@@ -462,7 +455,7 @@ namespace Crafting.Scripts
             if (data != null)
             {
                 InternalRemoveItem(hash, 1);
-                if (_spawnController != null) _spawnController.SpawnSingleItem(data.itemPrefab, position + Vector3.up * 0.5f, data.displayName);
+                if (_spawnController != null) _spawnController.SpawnSingleItem(data.itemPrefab, position, data.displayName);
             }
         }
 

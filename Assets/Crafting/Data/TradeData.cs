@@ -1,4 +1,5 @@
 using UnityEngine;
+using Crafting.Scripts;
 
 namespace Trades.Data
 {

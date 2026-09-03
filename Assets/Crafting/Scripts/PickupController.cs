@@ -26,7 +26,7 @@ namespace Crafting.Scripts
         private bool _taken;
         private float _spawnTime;
         private bool _grounded = false;
-        private const float PICKUP_DELAY = 0.3f;
+        private const float PICKUP_DELAY = 0.2f;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
@@ -38,37 +38,26 @@ namespace Crafting.Scripts
 
         private void CreateMasterTrigger()
         {
-            Collider[] colliders = GetComponents<Collider>();
-            bool hasTrigger = false;
-            bool hasSolid = false;
-            foreach (var c in colliders)
-            {
-                if (c.isTrigger) hasTrigger = true;
-                else hasSolid = true;
-            }
+            // 1. Force a trigger for player detection
+            SphereCollider sc = GetComponent<SphereCollider>();
+            if (sc == null) sc = gameObject.AddComponent<SphereCollider>();
+            sc.isTrigger = true;
+            sc.radius = 1.2f; // Increased pickup radius
 
-            if (!hasTrigger)
+            // 2. Ensure a solid collider for ground collision
+            BoxCollider bc = GetComponent<BoxCollider>();
+            if (bc == null)
             {
-                SphereCollider sc = gameObject.AddComponent<SphereCollider>();
-                sc.isTrigger = true;
-                sc.radius = 0.7f;
-            }
-
-            if (!hasSolid)
-            {
-                BoxCollider bc = gameObject.AddComponent<BoxCollider>();
+                bc = gameObject.AddComponent<BoxCollider>();
                 bc.size = new Vector3(0.5f, 0.5f, 0.5f);
                 bc.isTrigger = false;
             }
-            else
-            {
-                var meshColliders = GetComponentsInChildren<MeshCollider>();
-                foreach (var mc in meshColliders) mc.convex = true;
-            }
 
-            if (GetComponent<Rigidbody>() == null)
+            // 3. Ensure a Rigidbody for trigger detection
+            Rigidbody rb = GetComponent<Rigidbody>();
+            if (rb == null)
             {
-                Rigidbody rb = gameObject.AddComponent<Rigidbody>();
+                rb = gameObject.AddComponent<Rigidbody>();
                 rb.isKinematic = true;
                 rb.useGravity = false;
             }
@@ -115,14 +104,19 @@ namespace Crafting.Scripts
         void OnTriggerEnter(Collider other)
         {
             if (_taken || Time.time < _spawnTime + PICKUP_DELAY) return;
-            if (IsNetworkActive && !IsServer) return;
 
-            InventoryController inv = other.GetComponentInParent<InventoryController>();
+            // Check for player on self or parent
+            InventoryController inv = other.GetComponentInParent<InventoryController>() ?? other.GetComponent<InventoryController>();
             bool isPlayer = other.CompareTag("Player") || inv != null;
 
             if (isPlayer)
             {
-                if (item == null) return;
+                if (item == null)
+                {
+                    Debug.LogWarning($"[Pickup] {gameObject.name} no tiene ItemData asignado.");
+                    return;
+                }
+
                 _taken = true;
                 if (IsNetworkActive) ProcessPickupAuthoritative(inv, other.gameObject);
                 else ProcessPickupLocal(inv, other.gameObject);
@@ -131,13 +125,17 @@ namespace Crafting.Scripts
 
         private void ProcessPickupAuthoritative(InventoryController inv, GameObject player)
         {
-            ApplyReward(inv, player);
-            SpawnPickupEffectClientRpc();
-            NetworkObject netObj = GetComponent<NetworkObject>();
-            if (netObj != null && netObj.IsSpawned)
+            if (IsServer)
             {
-                if (netObj.InScenePlaced) { netObj.Despawn(false); Destroy(gameObject); }
-                else netObj.Despawn(true);
+                ApplyReward(inv, player);
+                SpawnPickupEffectClientRpc();
+
+                NetworkObject netObj = GetComponent<NetworkObject>();
+                if (netObj != null && netObj.IsSpawned)
+                {
+                    if (netObj.InScenePlaced) { netObj.Despawn(false); Destroy(gameObject); }
+                    else netObj.Despawn(true);
+                }
             }
         }
 
@@ -154,7 +152,6 @@ namespace Crafting.Scripts
 
             if (item.autoUse)
             {
-                // Usar la lógica del prefab directamente
                 foreach(var func in GetComponentsInChildren<IItemFunctional>())
                 {
                     func.ApplyEffect(player);
@@ -173,10 +170,7 @@ namespace Crafting.Scripts
         {
             GameObject go = new GameObject("PickupEffect");
             go.transform.position = transform.position;
-
             ParticleSystem ps = go.AddComponent<ParticleSystem>();
-
-            // Forzar parada para poder configurar parámetros estructurales (como duration)
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
             var main = ps.main;
@@ -196,7 +190,6 @@ namespace Crafting.Scripts
             shape.shapeType = ParticleSystemShapeType.Sphere;
             shape.radius = 0.1f;
 
-            // Asegurar que el renderer no tenga materiales rosas (URP/Standard)
             var renderer = go.GetComponent<ParticleSystemRenderer>();
             Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Particles/Standard Unlit");
             if (shader != null) renderer.material = new Material(shader);
