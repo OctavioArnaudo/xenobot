@@ -7,14 +7,12 @@ using Unity.Netcode;
 using Unity.Cinemachine;
 using Crafting.Scripts;
 
-namespace Combating.Scripts
-{
+namespace Combating.Scripts {
     [RequireComponent(typeof(CharacterController))]
 #if ENABLE_INPUT_SYSTEM
     [RequireComponent(typeof(PlayerInput))]
 #endif
-    public class PlayerController : NetworkBehaviour
-    {
+    public class PlayerController : NetworkBehaviour {
         #region Variables: Movement Settings
         [Header("Movement")]
         public float MoveSpeed = 2.0f;
@@ -51,8 +49,7 @@ namespace Combating.Scripts
 
         #region Variables: Respawn
         [System.Serializable]
-        public struct SceneSpawnConfig
-        {
+        public struct SceneSpawnConfig {
             public string SceneName;
             public string SpawnPointTag;
         }
@@ -102,17 +99,12 @@ namespace Combating.Scripts
         private float _jumpTimeoutDelta;
         private float _fallTimeoutDelta;
 
-        private int _animIDSpeed;
-        private int _animIDGrounded;
-        private int _animIDJump;
-        private int _animIDFreeFall;
-        private int _animIDMotionSpeed;
+        // Animator Parameter Hashes (match Animator Controller exactly)
+        private static readonly int _animIDSpeed = Animator.StringToHash("Speed");
+        private static readonly int _animIDIsGrounded = Animator.StringToHash("isGrounded");
 
         private bool _hasAnimIDSpeed;
-        private bool _hasAnimIDGrounded;
-        private bool _hasAnimIDJump;
-        private bool _hasAnimIDFreeFall;
-        private bool _hasAnimIDMotionSpeed;
+        private bool _hasAnimIDIsGrounded;
 
 #if ENABLE_INPUT_SYSTEM
         private PlayerInput _playerInput;
@@ -145,23 +137,21 @@ namespace Combating.Scripts
         #endregion
 
         #region Lifecycle
-        private void Awake()
-        {
+        private void Awake() {
             _controller = GetComponent<CharacterController>();
             _health = GetComponent<HealthController>();
             _inventory = GetComponent<InventoryController>();
             RefreshFunctionalComponents();
 
-            #if ENABLE_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM
             _playerInput = GetComponent<PlayerInput>();
             RefreshInputActions();
-            #endif
+#endif
 
             if (_mainCamera == null)
                 _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 
-            if (CanExecuteLocalLogic)
-            {
+            if (CanExecuteLocalLogic) {
                 if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "BiomaScene")
                     SetCursorState(cursorLocked);
                 else
@@ -169,8 +159,7 @@ namespace Combating.Scripts
             }
         }
 
-        private void Start()
-        {
+        private void Start() {
             _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
             _animator = GetComponentInChildren<Animator>();
             _hasAnimator = _animator != null;
@@ -184,17 +173,14 @@ namespace Combating.Scripts
             _jumpTimeoutDelta = JumpTimeout;
             _fallTimeoutDelta = FallTimeout;
 
-            if (!IsNetworkActive)
-            {
+            if (!IsNetworkActive) {
                 SetupPlayerLocal();
                 TeleportToSceneSpawn(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
             }
         }
 
-        public override void OnNetworkSpawn()
-        {
-            if (IsOwner)
-            {
+        public override void OnNetworkSpawn() {
+            if (IsOwner) {
                 NetworkObject netObj = GetComponentInParent<NetworkObject>();
                 if (netObj == null) netObj = GetComponent<NetworkObject>();
                 if (netObj != null) netObj.transform.SetParent(null);
@@ -210,8 +196,7 @@ namespace Combating.Scripts
 
                 UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
             }
-            else
-            {
+            else {
                 DisableLocalComponents();
                 if (_controller != null) _controller.enabled = false;
                 var vcam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
@@ -221,16 +206,13 @@ namespace Combating.Scripts
             }
         }
 
-        public override void OnNetworkDespawn()
-        {
+        public override void OnNetworkDespawn() {
             if (IsOwner)
                 UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
-        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
-        {
-            if (IsOwner || !IsNetworkActive)
-            {
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode) {
+            if (IsOwner || !IsNetworkActive) {
                 SetupCamera();
                 TeleportToSceneSpawn(scene.name);
 #if ENABLE_INPUT_SYSTEM
@@ -239,14 +221,12 @@ namespace Combating.Scripts
             }
         }
 
-        private void TeleportToSceneSpawn(string sceneName)
-        {
+        private void TeleportToSceneSpawn(string sceneName) {
             var config = SceneSpawns.Find(s => s.SceneName == sceneName);
             if (string.IsNullOrEmpty(config.SpawnPointTag)) return;
 
             GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag(config.SpawnPointTag);
-            if (spawnPoints.Length > 0)
-            {
+            if (spawnPoints.Length > 0) {
                 int index = (int)(OwnerClientId % (ulong)spawnPoints.Length);
                 Transform targetSpawn = spawnPoints[index].transform;
                 if (_controller != null) _controller.enabled = false;
@@ -258,23 +238,22 @@ namespace Combating.Scripts
             }
         }
 
-        private void Update()
-        {
+        private void Update() {
             if (!CanExecuteLocalLogic) return;
 
-            #if ENABLE_INPUT_SYSTEM
+#if ENABLE_INPUT_SYSTEM
             if (_fireAction == null) RefreshInputActions();
             UpdateInputState();
-            #endif
+#endif
 
             HandleRespawn();
             JumpAndGravity();
             GroundedCheck();
             Move();
+            UpdateAnimatorParameters();
         }
 
-        private void RefreshInputActions()
-        {
+        private void RefreshInputActions() {
             if (_playerInput == null || _playerInput.actions == null) return;
 
             _moveAction = _playerInput.actions.FindAction("Move") ?? _playerInput.actions.FindAction("Player/Move");
@@ -288,8 +267,7 @@ namespace Combating.Scripts
             _nextWeaponAction = _playerInput.actions.FindAction("NextWeapon") ?? _playerInput.actions.FindAction("Player/NextWeapon");
         }
 
-        private void UpdateInputState()
-        {
+        private void UpdateInputState() {
             if (_moveAction != null) move = _moveAction.ReadValue<Vector2>();
             if (_lookAction != null) look = _lookAction.ReadValue<Vector2>();
 
@@ -306,19 +284,15 @@ namespace Combating.Scripts
             crouch = _crouchAction != null && _crouchAction.WasPressedThisFrame();
             reload = _reloadAction != null && _reloadAction.WasPressedThisFrame();
 
-            if (_nextWeaponAction != null)
-            {
+            if (_nextWeaponAction != null) {
                 float val = _nextWeaponAction.ReadValue<float>();
                 switchWeapon = val > 0 ? 1 : (val < 0 ? -1 : 0);
             }
 
             selectWeapon = 0;
-            if (Keyboard.current != null)
-            {
-                for (int i = 1; i <= 9; i++)
-                {
-                    if (Keyboard.current[Key.Digit1 + (i - 1)].wasPressedThisFrame)
-                    {
+            if (Keyboard.current != null) {
+                for (int i = 1; i <= 9; i++) {
+                    if (Keyboard.current[Key.Digit1 + (i - 1)].wasPressedThisFrame) {
                         selectWeapon = i;
                         break;
                     }
@@ -326,20 +300,17 @@ namespace Combating.Scripts
             }
         }
 
-        private void LateUpdate()
-        {
+        private void LateUpdate() {
             if (!CanExecuteLocalLogic) return;
             UpdateCameraTargetPosition();
             CameraRotation();
         }
 
-        private void UpdateCameraTargetPosition()
-        {
+        private void UpdateCameraTargetPosition() {
             if (CinemachineCameraTarget == null) return;
 
             Animator anim = GetComponentInChildren<Animator>();
-            if (anim != null)
-            {
+            if (anim != null) {
                 Transform bone = anim.GetBoneTransform(HumanBodyBones.Head) ??
                                  anim.GetBoneTransform(HumanBodyBones.Neck) ??
                                  anim.GetBoneTransform(HumanBodyBones.Chest) ??
@@ -348,8 +319,7 @@ namespace Combating.Scripts
                                  anim.transform.Find("spine") ??
                                  anim.transform.Find("Chest");
 
-                if (bone != null)
-                {
+                if (bone != null) {
                     CinemachineCameraTarget.transform.position = bone.position + Vector3.up * 0.4f;
                 }
             }
@@ -357,11 +327,9 @@ namespace Combating.Scripts
         #endregion
 
         #region Setup & Configuration
-        private void SetupPlayerLocal()
-        {
+        private void SetupPlayerLocal() {
 #if ENABLE_INPUT_SYSTEM
-            if (_playerInput != null)
-            {
+            if (_playerInput != null) {
                 _playerInput.enabled = true;
                 _playerInput.ActivateInput();
             }
@@ -370,34 +338,28 @@ namespace Combating.Scripts
             SetCursorState(cursorLocked);
         }
 
-        private void DisableLocalComponents()
-        {
+        private void DisableLocalComponents() {
 #if ENABLE_INPUT_SYSTEM
-            if (_playerInput != null)
-            {
+            if (_playerInput != null) {
                 _playerInput.DeactivateInput();
                 _playerInput.enabled = false;
             }
 #endif
         }
 
-        private void SetupCamera()
-        {
+        private void SetupCamera() {
             _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
             GameObject root = transform.root.gameObject;
             CinemachineCamera vcam = null;
 
-            foreach (var cam in root.GetComponentsInChildren<CinemachineCamera>(true))
-            {
-                if (cam.transform.IsChildOf(root.transform))
-                {
+            foreach (var cam in root.GetComponentsInChildren<CinemachineCamera>(true)) {
+                if (cam.transform.IsChildOf(root.transform)) {
                     vcam = cam;
                     break;
                 }
             }
 
-            if (vcam != null && CinemachineCameraTarget != null)
-            {
+            if (vcam != null && CinemachineCameraTarget != null) {
                 vcam.Follow = CinemachineCameraTarget.transform;
                 vcam.LookAt = CinemachineCameraTarget.transform;
                 vcam.enabled = CanExecuteLocalLogic;
@@ -405,8 +367,7 @@ namespace Combating.Scripts
             }
         }
 
-        public void RefreshFunctionalComponents()
-        {
+        public void RefreshFunctionalComponents() {
             _jetpack = GetComponentInChildren<PropulsionController>();
             _animator = GetComponentInChildren<Animator>();
             _hasAnimator = _animator != null;
@@ -414,30 +375,25 @@ namespace Combating.Scripts
             SetupCamera();
         }
 
-        public void RefreshBodyReferences()
-        {
+        public void RefreshBodyReferences() {
             RefreshFunctionalComponents();
         }
         #endregion
 
         #region Input Handling
 #if ENABLE_INPUT_SYSTEM
-        public void OnJump(InputValue value)
-        {
+        public void OnJump(InputValue value) {
             _isJumpHeld = value.isPressed;
             if (CanExecuteLocalLogic) JumpInput(value.isPressed);
         }
 
-        public void OnLook(InputValue value)
-        {
-            if (cursorInputForLook && CanExecuteLocalLogic)
-            {
+        public void OnLook(InputValue value) {
+            if (cursorInputForLook && CanExecuteLocalLogic) {
                 LookInput(value.Get<Vector2>());
             }
         }
 
-        public void OnSprint(InputValue value)
-        {
+        public void OnSprint(InputValue value) {
             if (CanExecuteLocalLogic) SprintInput(value.isPressed);
         }
 #endif
@@ -449,15 +405,13 @@ namespace Combating.Scripts
 
         public void InputMove(InputValue value) => MoveInput(value.Get<Vector2>());
         public void InputLook(InputValue value) => LookInput(value.Get<Vector2>());
-        public void InputJump(InputValue value)
-        {
+        public void InputJump(InputValue value) {
             jump = value.isPressed;
             jumpHeld = value.isPressed;
             JumpInput(value.isPressed);
         }
         public void InputSprint(InputValue value) => SprintInput(value.isPressed);
-        public void InputFire(InputValue value)
-        {
+        public void InputFire(InputValue value) {
             bool isPressed = value.isPressed;
             if (isPressed) fire = true;
             fireHeld = isPressed;
@@ -469,28 +423,23 @@ namespace Combating.Scripts
         public void InputNextWeapon(InputValue value) => switchWeapon = (int)value.Get<float>();
         public void InputSelectWeapon(InputValue value) => selectWeapon = (int)value.Get<float>();
 
-        private void OnApplicationFocus(bool hasFocus)
-        {
+        private void OnApplicationFocus(bool hasFocus) {
             if (CanExecuteLocalLogic) SetCursorState(cursorLocked);
         }
 
-        private void SetCursorState(bool newState)
-        {
+        private void SetCursorState(bool newState) {
             Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !newState;
         }
         #endregion
 
         #region Network Shooting Bridge
-        public void RequestFire(ProjectileController prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team)
-        {
-            if (IsNetworkActive)
-            {
+        public void RequestFire(ProjectileController prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team) {
+            if (IsNetworkActive) {
                 // In modular mode, we use the local prefab directly for logic and notify the server
                 FireServerRpc(direction, spawnPos, damage, team);
             }
-            else
-            {
+            else {
                 // Local only fallback
                 ProjectileController projectile = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
                 projectile.Launch(gameObject, direction, damage, team);
@@ -498,44 +447,35 @@ namespace Combating.Scripts
         }
 
         [ServerRpc]
-        private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team)
-        {
+        private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team) {
             // Server-side projectile spawning logic
             ProjectileController projectilePrefab = null;
 
             // Find the active weapon prefab in the player's hierarchy to get its projectile reference
             var shooter = GetComponentInChildren<ShootController>();
-            if (shooter != null)
-            {
+            if (shooter != null) {
                 projectilePrefab = shooter.ProjectilePrefab;
             }
 
-            if (projectilePrefab != null)
-            {
+            if (projectilePrefab != null) {
                 ProjectileController instance = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
                 instance.Launch(gameObject, direction, damage, team);
                 instance.GetComponent<NetworkObject>().Spawn();
             }
-            else
-            {
+            else {
                 Debug.LogWarning("[PlayerController] El servidor no encontró un ShootController con proyectil asignado.");
             }
         }
         #endregion
 
         #region Movement Logic
-        private void GroundedCheck()
-        {
+        private void GroundedCheck() {
             Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
             Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
-            if (_hasAnimator && _hasAnimIDGrounded)
-                _animator.SetBool(_animIDGrounded, Grounded);
         }
 
-        private void CameraRotation()
-        {
-            if (IsRespawning)
-            {
+        private void CameraRotation() {
+            if (IsRespawning) {
                 _cinemachineTargetYaw = 0f;
                 _cinemachineTargetPitch = 0f;
                 CinemachineCameraTarget.transform.position = _cameraStartingPosition;
@@ -544,8 +484,7 @@ namespace Combating.Scripts
                 return;
             }
 
-            if (look.sqrMagnitude >= _threshold && !LockCameraPosition)
-            {
+            if (look.sqrMagnitude >= _threshold && !LockCameraPosition) {
                 float deltaTimeMultiplier = (IsCurrentDeviceMouse) ? 0.5f : Time.deltaTime;
 
                 _cinemachineTargetYaw += look.x * deltaTimeMultiplier * LookSensitivity.x * 2f;
@@ -555,8 +494,7 @@ namespace Combating.Scripts
             _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
             _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
 
-            if (CinemachineCameraTarget != null)
-            {
+            if (CinemachineCameraTarget != null) {
                 CinemachineCameraTarget.transform.rotation = Quaternion.Euler(
                     _cinemachineTargetPitch + CameraAngleOverride,
                     _cinemachineTargetYaw,
@@ -564,8 +502,7 @@ namespace Combating.Scripts
             }
         }
 
-        private void Move()
-        {
+        private void Move() {
             float targetSpeed = sprint ? SprintSpeed : MoveSpeed;
             if (move == Vector2.zero) targetSpeed = 0.0f;
 
@@ -573,13 +510,11 @@ namespace Combating.Scripts
             float speedOffset = 0.1f;
             float inputMagnitude = analogMovement ? move.magnitude : 1f;
 
-            if (currentHorizontalSpeed < targetSpeed - speedOffset || currentHorizontalSpeed > targetSpeed + speedOffset)
-            {
+            if (currentHorizontalSpeed < targetSpeed - speedOffset || currentHorizontalSpeed > targetSpeed + speedOffset) {
                 _speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude, Time.deltaTime * SpeedChangeRate);
                 _speed = Mathf.Round(_speed * 1000f) / 1000f;
             }
-            else
-            {
+            else {
                 _speed = targetSpeed;
             }
 
@@ -588,12 +523,10 @@ namespace Combating.Scripts
 
             Vector3 inputDirection = new Vector3(move.x, 0.0f, move.y).normalized;
 
-            if (move != Vector2.zero)
-            {
+            if (move != Vector2.zero) {
                 if (_mainCamera == null) _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 
-                if (_mainCamera != null)
-                {
+                if (_mainCamera != null) {
                     _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + _mainCamera.transform.eulerAngles.y;
                     float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
                     transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
@@ -602,48 +535,30 @@ namespace Combating.Scripts
 
             Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
             _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
-
-            if (_hasAnimator)
-            {
-                if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, _animationBlend);
-                if (_hasAnimIDMotionSpeed) _animator.SetFloat(_animIDMotionSpeed, inputMagnitude);
-            }
         }
 
-        private void JumpAndGravity()
-        {
+        private void JumpAndGravity() {
             bool isUsingJetpack = false;
-            if (_jetpack != null)
-            {
+            if (_jetpack != null) {
                 isUsingJetpack = _jetpack.ProcessFlight(_isJumpHeld, Grounded, ref _verticalVelocity);
                 if (isUsingJetpack) jump = false;
             }
 
-            if (!isUsingJetpack && Grounded)
-            {
+            if (!isUsingJetpack && Grounded) {
                 _fallTimeoutDelta = FallTimeout;
-                if (_hasAnimator)
-                {
-                    if (_hasAnimIDJump) _animator.SetBool(_animIDJump, false);
-                    if (_hasAnimIDFreeFall) _animator.SetBool(_animIDFreeFall, false);
-                }
 
                 if (_verticalVelocity < 0.0f) _verticalVelocity = -2f;
 
-                if (jump && _jumpTimeoutDelta <= 0.0f)
-                {
+                if (jump && _jumpTimeoutDelta <= 0.0f) {
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
-                    if (_hasAnimator && _hasAnimIDJump) _animator.SetBool(_animIDJump, true);
                     jump = false;
                 }
 
                 if (_jumpTimeoutDelta >= 0.0f) _jumpTimeoutDelta -= Time.deltaTime;
             }
-            else if (!isUsingJetpack)
-            {
+            else if (!isUsingJetpack) {
                 _jumpTimeoutDelta = JumpTimeout;
                 if (_fallTimeoutDelta >= 0.0f) _fallTimeoutDelta -= Time.deltaTime;
-                else if (_hasAnimator && _hasAnimIDFreeFall) _animator.SetBool(_animIDFreeFall, true);
 
                 if (_verticalVelocity > -_terminalVelocity)
                     _verticalVelocity += Gravity * Time.deltaTime;
@@ -654,18 +569,15 @@ namespace Combating.Scripts
         #endregion
 
         #region Respawn Logic
-        private void HandleRespawn()
-        {
+        private void HandleRespawn() {
             if (transform.position.y < yThreshold) Respawn();
         }
 
-        public void Respawn()
-        {
+        public void Respawn() {
             if (_controller != null) _controller.enabled = false;
             transform.position = _startingPosition;
             transform.rotation = Quaternion.Euler(0f, 90f, 0f);
-            if (_controller != null)
-            {
+            if (_controller != null) {
                 _controller.enabled = true;
                 _verticalVelocity = 0f;
             }
@@ -673,8 +585,7 @@ namespace Combating.Scripts
             if (respawnSound != null) AudioSource.PlayClipAtPoint(respawnSound, transform.position);
         }
 
-        public void ResetCameraRotation(float targetYaw)
-        {
+        public void ResetCameraRotation(float targetYaw) {
             _cinemachineTargetYaw = targetYaw;
             _cinemachineTargetPitch = 0f;
             if (CinemachineCameraTarget != null)
@@ -683,26 +594,26 @@ namespace Combating.Scripts
         #endregion
 
         #region Animation Helpers
-        private void AssignAnimationIDs()
-        {
-            _animIDSpeed = Animator.StringToHash("Speed");
-            _animIDGrounded = Animator.StringToHash("Grounded");
-            _animIDJump = Animator.StringToHash("Jump");
-            _animIDFreeFall = Animator.StringToHash("FreeFall");
-            _animIDMotionSpeed = Animator.StringToHash("MotionSpeed");
-
-            if (_hasAnimator)
-            {
+        private void AssignAnimationIDs() {
+            // Parámetros deben coincidir EXACTAMENTE con el Animator Controller:
+            // Speed (Float), isGrounded (Bool), shoot (Trigger), meleeAttack (Trigger), takeDamage (Trigger)
+            if (_hasAnimator) {
                 _hasAnimIDSpeed = HasParameter(_animator, _animIDSpeed);
-                _hasAnimIDGrounded = HasParameter(_animator, _animIDGrounded);
-                _hasAnimIDJump = HasParameter(_animator, _animIDJump);
-                _hasAnimIDFreeFall = HasParameter(_animator, _animIDFreeFall);
-                _hasAnimIDMotionSpeed = HasParameter(_animator, _animIDMotionSpeed);
+                _hasAnimIDIsGrounded = HasParameter(_animator, _animIDIsGrounded);
             }
         }
 
-        private bool HasParameter(Animator animator, int paramHash)
-        {
+        /// <summary>
+        /// Actualiza los parámetros Speed e isGrounded del Animator cada frame.
+        /// </summary>
+        private void UpdateAnimatorParameters() {
+            if (!_hasAnimator) return;
+
+            if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, _animationBlend);
+            if (_hasAnimIDIsGrounded) _animator.SetBool(_animIDIsGrounded, Grounded);
+        }
+
+        private bool HasParameter(Animator animator, int paramHash) {
             foreach (AnimatorControllerParameter param in animator.parameters)
                 if (param.nameHash == paramHash) return true;
             return false;
@@ -710,25 +621,21 @@ namespace Combating.Scripts
         #endregion
 
         #region Audio Helpers
-        private void OnFootstep(AnimationEvent animationEvent)
-        {
-            if (animationEvent.animatorClipInfo.weight > 0.5f && FootstepAudioClips.Length > 0)
-            {
+        private void OnFootstep(AnimationEvent animationEvent) {
+            if (animationEvent.animatorClipInfo.weight > 0.5f && FootstepAudioClips.Length > 0) {
                 var index = Random.Range(0, FootstepAudioClips.Length);
                 AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(_controller.center), FootstepAudioVolume);
             }
         }
 
-        private void OnLand(AnimationEvent animationEvent)
-        {
+        private void OnLand(AnimationEvent animationEvent) {
             if (animationEvent.animatorClipInfo.weight > 0.5f && LandingAudioClip != null)
                 AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
         }
         #endregion
 
         #region Math Helpers
-        private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
-        {
+        private static float ClampAngle(float lfAngle, float lfMin, float lfMax) {
             if (lfAngle < -360f) lfAngle += 360f;
             if (lfAngle > 360f) lfAngle -= 360f;
             return Mathf.Clamp(lfAngle, lfMin, lfMax);
@@ -736,8 +643,7 @@ namespace Combating.Scripts
         #endregion
 
         #region Debug
-        private void OnDrawGizmosSelected()
-        {
+        private void OnDrawGizmosSelected() {
             Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
             Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
             Gizmos.color = Grounded ? transparentGreen : transparentRed;
