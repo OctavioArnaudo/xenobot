@@ -206,18 +206,26 @@ public class PickupController : NetworkBehaviour
         go.transform.position = transform.position;
         ParticleSystem ps = go.AddComponent<ParticleSystem>();
         var main = ps.main;
+        main.loop = false; // IMPORTANTE: Si está en loop, nunca se destruye
+        main.duration = 0.5f;
         main.startLifetime = 0.5f;
         main.startSpeed = 5f;
         main.startSize = 0.2f;
         main.startColor = (item != null && item.expValue > 0) ? Color.yellow : Color.cyan;
         main.stopAction = ParticleSystemStopAction.Destroy;
+
         var emission = ps.emission;
         emission.rateOverTime = 0;
         emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0, 20) });
+
         var shape = ps.shape;
         shape.shapeType = ParticleSystemShapeType.Sphere;
         shape.radius = 0.1f;
+
         ps.Play();
+
+        // Fallback de seguridad para asegurar la destrucción del objeto vacío
+        Destroy(go, 2.0f);
     }
 
     public override void OnDestroy()
