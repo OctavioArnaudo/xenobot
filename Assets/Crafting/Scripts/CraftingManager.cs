@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using System.Collections.Generic;
-using NGO.Data;
+using Trades.Data;
 using System.Linq;
 
 namespace Crafting.Scripts

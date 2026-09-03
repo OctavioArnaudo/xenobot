@@ -11,15 +11,15 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
   m_Name: Item_Key
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   _itemId: 105
   itemCode: key_access
   displayName: Llave de Acceso
-  icon: {fileID: 0}
+  icon: {fileID: -524474589, guid: 33e6de57bc3b6444baab60bbd615ae5d, type: 3}
   type: 1
   isUsable: 0
   isStackable: 0
   maxStack: 1
-  description: "Abre puertas de seguridad."
+  description: Abre puertas de seguridad.
   expValue: 0
-  worldPrefab: {fileID: 0}
+  worldPrefab: {fileID: 6498493312331982842, guid: 68aa5efcc399c8e438441f35537cf6de, type: 3}

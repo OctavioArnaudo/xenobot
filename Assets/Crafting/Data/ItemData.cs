@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.Serialization;
 
-[CreateAssetMenu(menuName = "Inventory/Item Data", fileName = "Item_New")]
+[CreateAssetMenu(menuName = "Items/Item Data", fileName = "Item_")]
 public class ItemData : ScriptableObject
 {
     [FormerlySerializedAs("itemId")]
@@ -59,6 +59,6 @@ public enum ItemType
     Consumable,
     Equipment,
     Currency,
-    ExpOrb,     // nuevo — objetos de experiencia
-    Costume     // nuevo — cambio de apariencia
+    ExpOrb,
+    Costume
 }

@@ -4,6 +4,7 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using Unity.Netcode;
+using Levels.Data;
 
 public class LevelsMenu : MonoBehaviour
 {

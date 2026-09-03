@@ -4,7 +4,7 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using NGO.Networking;
 using UnityEngine.InputSystem;
-using Unity.Netcode;
+using Levels.Data;
 
 namespace Menus.Scripts
 {
