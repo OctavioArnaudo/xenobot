@@ -33,6 +33,8 @@ namespace Crafting.Scripts
         [Header("Network Data")]
         public NetworkList<NetworkInventorySlot> NetworkBag;
 
+        public NetworkVariable<int> EquippedWeaponHash = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
         private List<NetworkInventorySlot> _offlineBag = new List<NetworkInventorySlot>();
         private Dictionary<string, (ItemData def, int qty)> _localBag = new();
         private List<string> _localKeys = new();
@@ -383,32 +385,41 @@ namespace Crafting.Scripts
             {
                 Destroy(existing);
                 _equippedInstances.Remove(hash);
+
+                if (IsOwner && item.itemCode.ToLower().Contains("weapon"))
+                    EquippedWeaponHash.Value = 0;
             }
             else
             {
                 if (item.itemPrefab != null)
                 {
-                    // 1. Instanciar como hijo del jugador
                     GameObject instance = Instantiate(item.itemPrefab, transform);
                     _equippedInstances[hash] = instance;
 
-                    // 2. LIMPIEZA CRÍTICA: Eliminar comportamiento de mundo/física en la versión equipada
+                    // New rule: Only show meshes if the prefab has a CostumeController
+                    bool hasVisualModule = instance.GetComponentInChildren<CostumeController>() != null;
+                    if (!hasVisualModule)
+                    {
+                        foreach(var r in instance.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+                    }
+
                     if (instance.TryGetComponent<PickupController>(out var p)) Destroy(p);
                     if (instance.TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
                     if (instance.TryGetComponent<NetworkObject>(out var no)) Destroy(no);
 
-                    // Desactivar colliders para que el Jetpack/Arma no empuje al jugador
+                    // Always disable colliders on equipment to avoid player physics glitches
                     foreach (var c in instance.GetComponentsInChildren<Collider>(true)) c.enabled = false;
 
-                    // 3. Ejecutar efectos iniciales (vinculación de lógica functional)
                     foreach (var func in instance.GetComponentsInChildren<IItemFunctional>())
                     {
                         func.ApplyEffect(gameObject);
                     }
+
+                    if (IsOwner && item.itemCode.ToLower().Contains("weapon"))
+                        EquippedWeaponHash.Value = hash;
                 }
             }
 
-            // Notificar al PlayerController para que refresque referencias a equipo
             GetComponent<PlayerController>()?.RefreshFunctionalComponents();
         }
 
@@ -416,7 +427,6 @@ namespace Crafting.Scripts
         {
             if (item.itemPrefab != null)
             {
-                // Instancia temporal para ejecutar la lógica del prefab
                 GameObject temp = Instantiate(item.itemPrefab);
                 temp.SetActive(false);
                 foreach (var func in temp.GetComponentsInChildren<IItemFunctional>())
@@ -432,13 +442,12 @@ namespace Crafting.Scripts
             if (item == null) return;
             int hash = item.GetItemHashCode();
 
-            // SI ESTÁ EQUIPADO, QUITAMOS LA HABILIDAD PRIMERO
             if (_equippedInstances.ContainsKey(hash))
             {
                 ToggleEquipment(item);
             }
 
-            Vector3 dropPos = transform.position + transform.right * 1.5f + transform.up * 0.5f; // Un poco al costado
+            Vector3 dropPos = transform.position + transform.right * 1.5f + transform.up * 0.5f;
 
             if (IsNetworkActive) DropItemServerRpc(hash, dropPos);
             else

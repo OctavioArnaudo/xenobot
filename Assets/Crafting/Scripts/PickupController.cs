@@ -42,7 +42,7 @@ namespace Crafting.Scripts
             SphereCollider sc = GetComponent<SphereCollider>();
             if (sc == null) sc = gameObject.AddComponent<SphereCollider>();
             sc.isTrigger = true;
-            sc.radius = 1.2f; // Increased pickup radius
+            sc.radius = 1.2f;
 
             // 2. Ensure a solid collider for ground collision
             BoxCollider bc = GetComponent<BoxCollider>();
@@ -105,9 +105,10 @@ namespace Crafting.Scripts
         {
             if (_taken || Time.time < _spawnTime + PICKUP_DELAY) return;
 
-            // Check for player on self or parent
-            InventoryController inv = other.GetComponentInParent<InventoryController>() ?? other.GetComponent<InventoryController>();
-            bool isPlayer = other.CompareTag("Player") || inv != null;
+            // Robust player detection: Check root and parent hierarchy
+            Transform root = other.transform.root;
+            InventoryController inv = root.GetComponentInChildren<InventoryController>();
+            bool isPlayer = root.CompareTag("Player") || other.CompareTag("Player") || inv != null;
 
             if (isPlayer)
             {
@@ -118,8 +119,8 @@ namespace Crafting.Scripts
                 }
 
                 _taken = true;
-                if (IsNetworkActive) ProcessPickupAuthoritative(inv, other.gameObject);
-                else ProcessPickupLocal(inv, other.gameObject);
+                if (IsNetworkActive) ProcessPickupAuthoritative(inv, root.gameObject);
+                else ProcessPickupLocal(inv, root.gameObject);
             }
         }
 
@@ -159,6 +160,7 @@ namespace Crafting.Scripts
             }
             else
             {
+                // In Red mode, inv will handle the ServerRpc call
                 InventoryController.Add(item);
             }
         }

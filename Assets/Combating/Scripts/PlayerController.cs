@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 #endif
 using Unity.Netcode;
 using Unity.Cinemachine;
+using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
@@ -122,6 +123,7 @@ namespace Combating.Scripts
 
         private HealthController _health;
         private PropulsionController _jetpack;
+        private InventoryController _inventory;
 
         private bool _isJumpHeld;
         private const float _threshold = 0.01f;
@@ -147,6 +149,7 @@ namespace Combating.Scripts
         {
             _controller = GetComponent<CharacterController>();
             _health = GetComponent<HealthController>();
+            _inventory = GetComponent<InventoryController>();
             RefreshFunctionalComponents();
 
             #if ENABLE_INPUT_SYSTEM
@@ -483,12 +486,12 @@ namespace Combating.Scripts
         {
             if (IsNetworkActive)
             {
-                // We send the request. The server will instantiate using its own prefab reference.
-                // In a production environment, you might use a GUID or name-based registry.
+                // In modular mode, we use the local prefab directly for logic and notify the server
                 FireServerRpc(direction, spawnPos, damage, team);
             }
             else
             {
+                // Local only fallback
                 ProjectileController projectile = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
                 projectile.Launch(gameObject, direction, damage, team);
             }
@@ -497,18 +500,25 @@ namespace Combating.Scripts
         [ServerRpc]
         private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team)
         {
-            // The server needs a reference to the projectile prefab.
-            // For now, we will look for a default one if the bridge is used.
-            // BETTER: If ShootController is on an AI, it spawns directly.
-            // If it's a player, we use a registry or a public field.
+            // Server-side projectile spawning logic
+            ProjectileController projectilePrefab = null;
 
-            // Temporary: Find the ShootController to get its prefab
+            // Find the active weapon prefab in the player's hierarchy to get its projectile reference
             var shooter = GetComponentInChildren<ShootController>();
-            if (shooter != null && shooter.ProjectilePrefab != null)
+            if (shooter != null)
             {
-                ProjectileController projectile = Instantiate(shooter.ProjectilePrefab, spawnPos, Quaternion.LookRotation(direction));
-                projectile.Launch(gameObject, direction, damage, team);
-                projectile.GetComponent<NetworkObject>().Spawn();
+                projectilePrefab = shooter.ProjectilePrefab;
+            }
+
+            if (projectilePrefab != null)
+            {
+                ProjectileController instance = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
+                instance.Launch(gameObject, direction, damage, team);
+                instance.GetComponent<NetworkObject>().Spawn();
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerController] El servidor no encontró un ShootController con proyectil asignado.");
             }
         }
         #endregion

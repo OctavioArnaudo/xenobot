@@ -1,12 +1,12 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Crafting.Scripts
 {
     /// <summary>
     /// Specialized modular controller for appearance changes.
-    /// Implements IItemFunctional to swap the player's mesh.
-    /// This script should be on the costume prefab.
+    /// Handles hiding current visuals and restoring them when removed.
     /// </summary>
     public class CostumeController : MonoBehaviour, IItemFunctional
     {
@@ -14,80 +14,73 @@ namespace Crafting.Scripts
         [Tooltip("Tag to find the render root in the player hierarchy")]
         public string renderTag = "PlayerRender";
 
-        private static List<GameObject> _hiddenMeshes = new List<GameObject>();
+        private List<Renderer> _hiddenByMe = new List<Renderer>();
         private bool _isEquipped = false;
 
         public void ApplyEffect(GameObject player)
         {
             if (_isEquipped) return;
 
-            // 1. Find the target render root using the tag
+            // 1. Find the target render root
             GameObject renderRoot = FindChildWithTag(player, renderTag);
+            if (renderRoot == null) renderRoot = player;
 
-            if (renderRoot == null)
-            {
-                Debug.LogWarning($"[CostumeController] No se encontró un objeto con el tag '{renderTag}' en el jugador. Usando la raíz.");
-                renderRoot = player;
-            }
-
-            // 2. Hide existing meshes in the player (only once)
-            // We search in the player, not just the root, to be thorough.
+            // 2. HIDE EVERYTHING that is currently visible in the player
+            // This includes the original robot AND any other active costumes.
             var allRenderers = player.GetComponentsInChildren<Renderer>(true);
             foreach (var r in allRenderers)
             {
-                // Don't hide our own mesh if we're already a child
+                // Don't hide our own new mesh!
                 if (r.transform.IsChildOf(transform)) continue;
 
-                if (r.gameObject.activeSelf)
+                if (r.enabled)
                 {
-                    _hiddenMeshes.Add(r.gameObject);
-                    r.gameObject.SetActive(false);
+                    r.enabled = false;
+                    _hiddenByMe.Add(r);
                 }
             }
 
-            // 3. Attach myself to the render root
+            // 3. Attach and Show myself
             transform.SetParent(renderRoot.transform);
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
             transform.localScale = Vector3.one;
 
-            // 4. Clean up modular components to avoid bugs
+            SetMeshVisible(true);
+            _isEquipped = true;
+
+            // 4. Cleanup modular components
             if (TryGetComponent<PickupController>(out var p)) Destroy(p);
             if (TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
             foreach (var c in GetComponentsInChildren<Collider>(true)) c.enabled = false;
 
-            _isEquipped = true;
-            Debug.Log($"[CostumeController] Chasis '{gameObject.name}' acoplado al tag '{renderTag}'.");
-
-            // 5. Refresh Player (Animators/Camera)
             player.GetComponent<Combating.Scripts.PlayerController>()?.RefreshFunctionalComponents();
+        }
+
+        public void SetMeshVisible(bool visible)
+        {
+            foreach (var r in GetComponentsInChildren<Renderer>(true))
+            {
+                r.enabled = visible;
+            }
         }
 
         private void OnDestroy()
         {
-            if (_isEquipped)
-            {
-                RestoreOriginals();
-            }
-        }
+            if (!_isEquipped) return;
 
-        public void RestoreOriginals()
-        {
-            foreach (var mesh in _hiddenMeshes)
+            // RESTORE exactly what this specific costume hid
+            foreach (var r in _hiddenByMe)
             {
-                if (mesh != null) mesh.SetActive(true);
+                if (r != null) r.enabled = true;
             }
-            _hiddenMeshes.Clear();
-            _isEquipped = false;
+            _hiddenByMe.Clear();
         }
 
         private GameObject FindChildWithTag(GameObject parent, string tag)
         {
-            foreach (Transform child in parent.GetComponentsInChildren<Transform>(true))
-            {
-                if (child.CompareTag(tag)) return child.gameObject;
-            }
-            return null;
+            return parent.GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(t => t.CompareTag(tag))?.gameObject;
         }
     }
 }

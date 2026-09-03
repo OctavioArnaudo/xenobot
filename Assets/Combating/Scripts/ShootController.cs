@@ -49,7 +49,7 @@ namespace Combating.Scripts
             m_Player = player.GetComponent<PlayerController>();
             m_Health = player.GetComponent<HealthController>();
             RefreshReferences();
-            Debug.Log("[ShootController] Lógica de disparo vinculada.");
+            Debug.Log($"[ShootController] Vinculado a {player.name}. Player detected: {m_Player != null}");
         }
 
         private void RefreshReferences()
@@ -57,6 +57,7 @@ namespace Combating.Scripts
             if (m_Player == null) m_Player = GetComponentInParent<PlayerController>();
             if (m_Health == null) m_Health = GetComponentInParent<HealthController>();
 
+            // Critical: Search camera in parent player
             if (AimCamera == null && m_Player != null)
                 AimCamera = m_Player.GetComponentInChildren<Camera>();
 
@@ -72,6 +73,8 @@ namespace Combating.Scripts
                     Transform t = transform.Find("WeaponRender/MuzzlePoint");
                     if (t != null) Muzzle = t;
                 }
+
+                if (Muzzle == null) Muzzle = transform;
             }
 
             if (visualsToRotate == null || visualsToRotate.Length == 0)
@@ -85,24 +88,41 @@ namespace Combating.Scripts
         {
             if (!UsePlayerInput) return;
 
-            // Safely check ownership and network status
-            bool isOwner = (m_Player != null) ? (IsNetworkActive ? m_Player.IsOwner : true) : true;
-            if (!isOwner) return;
+            // Only the owner of the player should process input and trigger shots
+            bool canHandleInput = (m_Player != null) ? (IsNetworkActive ? m_Player.IsOwner : true) : true;
+            if (!canHandleInput) return;
 
             if (m_Player == null) RefreshReferences();
-            if (m_Player != null && WantsToFire()) TryFire();
+
+            if (m_Player != null && WantsToFire())
+            {
+                TryFire();
+            }
         }
 
         bool WantsToFire()
         {
-            bool playerInput = (m_Player != null) ? (HoldToFire ? m_Player.fireHeld : m_Player.fire) : false;
-            bool mouseInput = (Mouse.current != null) ? (HoldToFire ? Mouse.current.leftButton.isPressed : Mouse.current.leftButton.wasPressedThisFrame) : false;
-            return playerInput || mouseInput;
+            if (m_Player == null) return false;
+
+            bool inputActive = HoldToFire ? m_Player.fireHeld : m_Player.fire;
+
+            // Mouse fallback for robustness
+            if (!inputActive && Mouse.current != null)
+            {
+                inputActive = HoldToFire ? Mouse.current.leftButton.isPressed : Mouse.current.leftButton.wasPressedThisFrame;
+            }
+
+            return inputActive;
         }
 
         public bool TryFire()
         {
-            if (ProjectilePrefab == null || Muzzle == null) return false;
+            if (ProjectilePrefab == null || Muzzle == null)
+            {
+                RefreshReferences();
+                if (ProjectilePrefab == null || Muzzle == null) return false;
+            }
+
             if (Time.time < m_NextFireTime) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
 
@@ -114,7 +134,12 @@ namespace Combating.Scripts
 
         public bool FireAt(Vector3 targetPosition)
         {
-            if (ProjectilePrefab == null || Muzzle == null) return false;
+            if (ProjectilePrefab == null || Muzzle == null)
+            {
+                RefreshReferences();
+                if (ProjectilePrefab == null || Muzzle == null) return false;
+            }
+
             if (Time.time < m_NextFireTime) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
 
@@ -134,16 +159,18 @@ namespace Combating.Scripts
 
             Team team = m_Health != null ? m_Health.team : Team.Neutral;
 
-            if (m_Player != null)
+            if (m_Player != null && IsNetworkActive)
             {
+                // PLAYER NETWORK MODE
                 m_Player.RequestFire(ProjectilePrefab, direction, spawnPos, finalDamage, team);
             }
             else
             {
-                // Direct spawn for AI/Enemies
+                // LOCAL MODE OR AI
                 SpawnProjectileLocally(direction, spawnPos, finalDamage, team, IsNetworkActive && NetworkManager.Singleton.IsServer);
             }
 
+            // Local Visual Feedback (Immediate)
             if (MuzzleFlash != null && !MuzzleFlash.isPlaying) MuzzleFlash.Play();
             SpawnTracer(spawnPos, spawnPos + direction * AimDistance);
         }
@@ -153,7 +180,7 @@ namespace Combating.Scripts
             ProjectileController projectile = Instantiate(ProjectilePrefab, spawnPos, Quaternion.LookRotation(direction));
             if (projectile != null)
             {
-                projectile.Launch(gameObject, direction, damage, team);
+                projectile.Launch(m_Player != null ? m_Player.gameObject : gameObject, direction, damage, team);
                 if (shouldNetSpawn && projectile.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
             }
         }
@@ -177,9 +204,11 @@ namespace Combating.Scripts
         {
             if (AimCamera == null) return transform.forward;
             Ray ray = new Ray(AimCamera.transform.position, AimCamera.transform.forward);
-            int layerMask = ~((1 << 3) | (1 << 2));
+            int layerMask = ~((1 << 3) | (1 << 2)); // Ignore player and ignore raycast layers
+
             if (Physics.Raycast(ray, out RaycastHit hit, AimDistance, layerMask, QueryTriggerInteraction.Ignore))
                 return (hit.point - fromPosition).normalized;
+
             return ray.direction;
         }
 
