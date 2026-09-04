@@ -12,7 +12,7 @@ namespace Crafting.Scripts
     {
         [Header("Settings")]
         [Tooltip("Tag to find the render root in the player hierarchy")]
-        public string renderTag = "PlayerRender";
+        public string renderTag = "Render";
 
         private List<Renderer> _hiddenByMe = new List<Renderer>();
         private bool _isEquipped = false;
@@ -23,20 +23,38 @@ namespace Crafting.Scripts
 
             // 1. Find the target render root
             GameObject renderRoot = FindChildWithTag(player, renderTag);
-            if (renderRoot == null) renderRoot = player;
-
-            // 2. HIDE EVERYTHING that is currently visible in the player
-            // This includes the original robot AND any other active costumes.
-            var allRenderers = player.GetComponentsInChildren<Renderer>(true);
-            foreach (var r in allRenderers)
+            if (renderRoot == null)
             {
-                // Don't hide our own new mesh!
-                if (r.transform.IsChildOf(transform)) continue;
+                Debug.LogWarning($"[CostumeController] Render root with tag '{renderTag}' not found on {player.name}. Using player root.");
+                renderRoot = player;
+            }
 
-                if (r.enabled)
+            // 2. HIDE renderers specifically in the target root
+            // Special Rule: We also look for other "PlayerRoot" tagged objects to hide them
+            var myRenderers = new HashSet<Renderer>(GetComponentsInChildren<Renderer>(true));
+            var targetTransforms = renderRoot.GetComponentsInChildren<Transform>(true);
+
+            foreach (var t in targetTransforms)
+            {
+                // Hide any previous PlayerRoot or objects with renderers
+                if (t.CompareTag("Root") && !t.IsChildOf(transform))
                 {
-                    r.enabled = false;
-                    _hiddenByMe.Add(r);
+                    foreach(var r in t.GetComponentsInChildren<Renderer>())
+                    {
+                         if (myRenderers.Contains(r)) continue;
+                         r.enabled = false;
+                         _hiddenByMe.Add(r);
+                    }
+                }
+
+                if (t.TryGetComponent<Renderer>(out var rend))
+                {
+                    if (myRenderers.Contains(rend)) continue;
+                    if (rend.enabled)
+                    {
+                        rend.enabled = false;
+                        _hiddenByMe.Add(rend);
+                    }
                 }
             }
 

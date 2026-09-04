@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 4798841169852015837}
   - component: {fileID: 6394073736889460860}
   - component: {fileID: 4979682845164532023}
+  - component: {fileID: 6645872290849133498}
   m_Layer: 0
   m_Name: CostumePrefab
   m_TagString: Untagged
@@ -46,14 +47,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 848209015
-  InScenePlacedSourceGlobalObjectIdHash: 1844395123
+  GlobalObjectIdHash: 4249517566
+  InScenePlacedSourceGlobalObjectIdHash: 848209015
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -78,6 +79,19 @@ MonoBehaviour:
   rotationSpeed: 100
   bobbingAmount: 0.15
   bobbingSpeed: 2
+--- !u!114 &6645872290849133498
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7206365576661330795}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c70afe0c671254344a4a4e58ece50270, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.CostumeController
+  renderTag: Render
 --- !u!1001 &2548870968937405115
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -157,6 +171,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}
       propertyPath: m_Name
       value: CostumeRender
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}
+      propertyPath: m_TagString
+      value: Root
       objectReference: {fileID: 0}
     - target: {fileID: 1389387766190392032, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'

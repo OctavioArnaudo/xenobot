@@ -403,9 +403,9 @@ namespace Crafting.Scripts
                         foreach(var r in instance.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
                     }
 
-                    if (instance.TryGetComponent<PickupController>(out var p)) Destroy(p);
-                    if (instance.TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
-                    if (instance.TryGetComponent<NetworkObject>(out var no)) Destroy(no);
+                    if (instance.TryGetComponent<PickupController>(out var p)) DestroyImmediate(p);
+                    if (instance.TryGetComponent<Rigidbody>(out var rb)) DestroyImmediate(rb);
+                    if (instance.TryGetComponent<NetworkObject>(out var no)) DestroyImmediate(no);
 
                     // Always disable colliders on equipment to avoid player physics glitches
                     foreach (var c in instance.GetComponentsInChildren<Collider>(true)) c.enabled = false;
@@ -453,7 +453,7 @@ namespace Crafting.Scripts
             else
             {
                 InternalRemoveItem(hash, 1);
-                if (_spawnController != null) _spawnController.SpawnSingleItem(item.itemPrefab, dropPos, item.displayName);
+                if (_spawnController != null) _spawnController.SpawnDroppedItem(item.itemPrefab, transform.position, item.displayName);
             }
         }
 
@@ -464,7 +464,7 @@ namespace Crafting.Scripts
             if (data != null)
             {
                 InternalRemoveItem(hash, 1);
-                if (_spawnController != null) _spawnController.SpawnSingleItem(data.itemPrefab, position, data.displayName);
+                if (_spawnController != null) _spawnController.SpawnDroppedItem(data.itemPrefab, transform.position, data.displayName);
             }
         }
 

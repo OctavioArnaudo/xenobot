@@ -76,7 +76,7 @@ namespace Combating.Scripts
             if (isJumpHeld && !m_JetpackDepleted && m_Health.JetpackFuel > 0)
             {
                 m_IsUsingJetpack = true;
-                if (verticalVelocity < -2f) verticalVelocity = Mathf.Lerp(verticalVelocity, 0, Time.deltaTime * 10f);
+                if (verticalVelocity < -2f) verticalVelocity = Mathf.MoveTowards(verticalVelocity, 0, Time.deltaTime * 20f);
                 float currentForce = (verticalVelocity > hoverThreshold) ? hoverForce : jetpackForce;
                 verticalVelocity += currentForce * Time.deltaTime;
                 if (verticalVelocity > maxUpwardVelocity) verticalVelocity = maxUpwardVelocity;

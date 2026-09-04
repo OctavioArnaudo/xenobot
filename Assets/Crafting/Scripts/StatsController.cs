@@ -18,7 +18,6 @@ public class StatsController : NetworkBehaviour
     public NetworkVariable<Color> playerColor = new NetworkVariable<Color>(Color.white, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
     public TMPro.TMP_Text nameTagText;
-    public Renderer colorRenderer;
 
     [Header("Initial Ranges")]
     public Vector2 attackRange = new Vector2(5f, 15f);
@@ -71,11 +70,6 @@ public class StatsController : NetworkBehaviour
         {
             float bob = Mathf.Sin(Time.time * 2f) * 0.1f;
             _aureoleRoot.localPosition = _aureoleBaseOffset + Vector3.up * bob;
-
-            if (colorRenderer != null)
-            {
-                colorRenderer.transform.Rotate(Vector3.up, 60f * Time.deltaTime, Space.Self);
-            }
         }
     }
 
@@ -119,7 +113,6 @@ public class StatsController : NetworkBehaviour
         ValidateVisualComponents();
         if (_aureoleRoot != null) _aureoleRoot.gameObject.SetActive(IsNetworkActive);
         if (nameTagText != null) nameTagText.text = playerName.Value.ToString();
-        if (colorRenderer != null) colorRenderer.material.color = playerColor.Value;
     }
 
     private void ValidateVisualComponents()
@@ -127,7 +120,7 @@ public class StatsController : NetworkBehaviour
         // Zero-Dependency Bootstrapping: Root de la Aureola
         if (_aureoleRoot == null)
         {
-            var existingRoot = transform.Find("Xenobot_AureoleRoot") ?? transform.GetComponentInChildren<Animator>()?.transform.Find("Xenobot_AureoleRoot");
+            var existingRoot = transform.Find("AureoleRoot") ?? transform.GetComponentInChildren<Animator>()?.transform.Find("AureoleRoot");
 
             if (existingRoot != null)
             {
@@ -135,7 +128,7 @@ public class StatsController : NetworkBehaviour
             }
             else
             {
-                _aureoleRoot = new GameObject("Xenobot_AureoleRoot").transform;
+                _aureoleRoot = new GameObject("AureoleRoot").transform;
 
                 // Intentar encontrar el hueso de la cabeza para que la siga fielmente
                 Animator anim = GetComponentInChildren<Animator>();
@@ -158,29 +151,13 @@ public class StatsController : NetworkBehaviour
             }
         }
 
-        // Zero-Dependency Bootstrapping: Fallback para el Halo (Disc)
-        if (colorRenderer == null)
-        {
-            colorRenderer = _aureoleRoot.GetComponentInChildren<Renderer>();
-            if (colorRenderer == null)
-            {
-                var marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                marker.name = "Xenobot_IdentityHalo";
-                marker.transform.SetParent(_aureoleRoot);
-                marker.transform.localPosition = Vector3.zero;
-                marker.transform.localScale = new Vector3(0.6f, 0.05f, 0.6f); // Flattened to disc
-                if (marker.TryGetComponent<Collider>(out var col)) DestroyImmediate(col);
-                colorRenderer = marker.GetComponent<Renderer>();
-            }
-        }
-
         // Zero-Dependency Bootstrapping: Fallback para el NameTag
         if (nameTagText == null)
         {
             nameTagText = _aureoleRoot.GetComponentInChildren<TMPro.TMP_Text>();
             if (nameTagText == null)
             {
-                GameObject tagGO = new GameObject("Xenobot_NameTag");
+                GameObject tagGO = new GameObject("NameTag");
                 tagGO.transform.SetParent(_aureoleRoot);
                 tagGO.transform.localPosition = new Vector3(0, 0.4f, 0); // Above the halo
                 var tmp = tagGO.AddComponent<TMPro.TextMeshPro>();

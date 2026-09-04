@@ -2,6 +2,7 @@ using UnityEngine;
 using Unity.Netcode;
 using TMPro;
 using System.Collections.Generic;
+using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
@@ -19,6 +20,7 @@ namespace Combating.Scripts
     public class SpawnController : NetworkBehaviour
     {
         [Header("Spawn Settings")]
+        public List<ItemData> lootTable = new List<ItemData>();
         public List<SpawnableItem> itemsToSpawn = new List<SpawnableItem>();
         public float explosionForce = 10f;
         public float spreadRadius = 2.5f;
@@ -86,6 +88,20 @@ namespace Combating.Scripts
             }
         }
 
+        public void SpawnDroppedItem(GameObject prefab, Vector3 origin, string message = "")
+        {
+            if (prefab == null) return;
+
+            // Offset to the side/forward to avoid immediate re-pickup by the dropper
+            Vector3 offset = transform.right * 1.2f + transform.up * 0.5f;
+            Vector3 spawnPos = origin + offset;
+
+            // Impulse away from the center
+            Vector3 impulse = (transform.right + transform.up).normalized * 3f;
+
+            SpawnSingleItem(prefab, spawnPos, message, impulse);
+        }
+
         public void SpawnSingleItem(GameObject prefab, Vector3 position, string message = "", Vector3? impulse = null)
         {
             if (prefab == null) return;
@@ -140,9 +156,19 @@ namespace Combating.Scripts
 
         private void SpawnItems()
         {
+            // 1. Spawn items from the lootTable (ItemData)
+            foreach (var item in lootTable)
+            {
+                if (item != null)
+                {
+                    SpawnDroppedItem(item.itemPrefab, transform.position, item.displayName);
+                }
+            }
+
+            // 2. Spawn items from the legacy itemsToSpawn list
             foreach (var item in itemsToSpawn)
             {
-                SpawnSingleItem(item.prefab, transform.position + (Random.onUnitSphere * spreadRadius), item.message);
+                SpawnDroppedItem(item.prefab, transform.position, item.message);
             }
         }
     }
