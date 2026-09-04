@@ -63,7 +63,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -173,6 +173,8 @@ MonoBehaviour:
   - {fileID: 8300000, guid: a3194b8bbc96ef84fab1f98f4b7dae3e, type: 3}
   FootstepAudioVolume: 0.3
   JumpHeight: 6
+  EnableDoubleJump: 1
+  DoubleJumpHeight: 1.2
   Gravity: -60
   JumpTimeout: 0.3
   FallTimeout: 0.15
@@ -229,6 +231,11 @@ MonoBehaviour:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
       MaxSecondsBetweenUpdates: 0
+  EquippedWeaponHash:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 0
   panelWidth: 700
   panelHeight: 550
   columns: 6
@@ -333,7 +340,6 @@ MonoBehaviour:
       MaxSecondsBetweenUpdates: 0
     m_InternalValue: {r: 1, g: 1, b: 1, a: 1}
   nameTagText: {fileID: 0}
-  colorRenderer: {fileID: 0}
   attackRange: {x: 5, y: 15}
   defenseRange: {x: 3, y: 10}
   attackPerLevel: 2
@@ -355,6 +361,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SpawnController
   ShowTopMostFoldoutHeaderGroup: 1
+  lootTable: []
   itemsToSpawn: []
   explosionForce: 10
   spreadRadius: 2.5
@@ -613,7 +620,7 @@ GameObject:
   - component: {fileID: 3849205041736059348}
   m_Layer: 3
   m_Name: PlayerRender
-  m_TagString: PlayerRender
+  m_TagString: Render
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
