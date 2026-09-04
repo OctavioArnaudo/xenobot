@@ -22,14 +22,14 @@ namespace Combating.Scripts
         public Renderer[] visualsToRotate;
         public float rotationSpeed = 10f;
 
-        private HealthController m_Health;
+        private FuelController m_Health;
         private float m_NextAttackTime;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
         void Awake()
         {
-            m_Health = GetComponent<HealthController>();
+            m_Health = GetComponent<FuelController>();
             if (visualsToRotate == null || visualsToRotate.Length == 0)
                 visualsToRotate = GetComponentsInChildren<Renderer>();
         }
@@ -90,7 +90,7 @@ namespace Combating.Scripts
         private void ExecuteMelee()
         {
             float finalDamage = attackDamage;
-            if (TryGetComponent<StatsController>(out var stats))
+            if (TryGetComponent<HudController>(out var stats))
             {
                 finalDamage = attackDamage * (stats.Attack / 10f);
             }
@@ -101,7 +101,7 @@ namespace Combating.Scripts
 
             foreach (Collider hit in hits)
             {
-                var targetHealth = hit.GetComponentInParent<HealthController>();
+                var targetHealth = hit.GetComponentInParent<FuelController>();
                 if (targetHealth != null)
                 {
                     if (m_Health != null && targetHealth.team == m_Health.team) continue;

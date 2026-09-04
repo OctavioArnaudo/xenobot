@@ -19,9 +19,9 @@ namespace Combating.Scripts
         public float maxUpwardVelocity = 12f;
         public float hoverThreshold = 0.5f;
 
-        private HealthController m_Health;
+        private FuelController m_Health;
         private CharacterController m_CharController;
-        private PlayerController m_Player;
+        private MovementController m_Player;
         private bool m_IsUsingJetpack = false;
         private bool m_JetpackDepleted = false;
 
@@ -34,8 +34,8 @@ namespace Combating.Scripts
 
         public void ApplyEffect(GameObject player)
         {
-            m_Player = player.GetComponent<PlayerController>();
-            m_Health = player.GetComponent<HealthController>();
+            m_Player = player.GetComponent<MovementController>();
+            m_Health = player.GetComponent<FuelController>();
             m_CharController = player.GetComponent<CharacterController>();
 
             if (m_Health != null && m_Health.maxJetpack <= 0)
@@ -48,8 +48,8 @@ namespace Combating.Scripts
 
         private void RefreshReferences()
         {
-            if (m_Player == null) m_Player = GetComponentInParent<PlayerController>();
-            if (m_Health == null) m_Health = GetComponentInParent<HealthController>();
+            if (m_Player == null) m_Player = GetComponentInParent<MovementController>();
+            if (m_Health == null) m_Health = GetComponentInParent<FuelController>();
             if (m_CharController == null) m_CharController = GetComponentInParent<CharacterController>();
         }
 

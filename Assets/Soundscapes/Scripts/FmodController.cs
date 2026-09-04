@@ -80,7 +80,7 @@ public class FmodController : MonoBehaviour
     private bool EsJugadorLocal(Collider other)
     {
         if (!other.CompareTag("Player")) return false;
-        var pc = other.GetComponent<PlayerController>();
+        var pc = other.GetComponent<MovementController>();
         return pc != null ? pc.IsOwner : true;
     }
     #endregion

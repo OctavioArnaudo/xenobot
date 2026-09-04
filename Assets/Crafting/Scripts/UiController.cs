@@ -9,9 +9,9 @@ using NGO.Networking;
 /// Unified controller for character progression, HUD and Identity.
 /// Optimized to reduce CPU overhead and audio starvation.
 /// </summary>
-public class StatsController : NetworkBehaviour
+public class UiController : NetworkBehaviour
 {
-    public static StatsController Instance { get; private set; }
+    public static UiController Instance { get; private set; }
 
     [Header("Identity & Visuals")]
     public NetworkVariable<FixedString32Bytes> playerName = new NetworkVariable<FixedString32Bytes>(new FixedString32Bytes(""), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -42,7 +42,7 @@ public class StatsController : NetworkBehaviour
     private GUIStyle _labelStyle, _valueStyle, _timerStyle;
     private bool _stylesReady;
 
-    private HealthController m_PlayerHealth;
+    private FuelController m_PlayerHealth;
     private float _lastTimeUpdate;
     private string _cachedTimeStr = "00:00";
     private Camera _mainCamCache;
@@ -82,14 +82,14 @@ public class StatsController : NetworkBehaviour
             InitializeStats();
 
             // Inicialización offline para HUD y Visuales
-            m_PlayerHealth = GetComponent<HealthController>();
+            m_PlayerHealth = GetComponent<FuelController>();
             UpdateVisuals();
         }
     }
 
     public override void OnNetworkSpawn()
     {
-        m_PlayerHealth = GetComponent<HealthController>();
+        m_PlayerHealth = GetComponent<FuelController>();
         if (IsOwner)
         {
             Instance = this;

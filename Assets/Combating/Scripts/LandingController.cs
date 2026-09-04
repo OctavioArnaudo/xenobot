@@ -13,7 +13,7 @@ namespace Combating.Scripts
 #if ENABLE_INPUT_SYSTEM
     [RequireComponent(typeof(PlayerInput))]
 #endif
-    public class PlayerController : NetworkBehaviour
+    public class LandingController : NetworkBehaviour
     {
         #region Variables: Movement Settings
         [Header("Movement")]
@@ -122,7 +122,7 @@ namespace Combating.Scripts
         private CharacterController _controller;
         private GameObject _mainCamera;
 
-        private HealthController _health;
+        private FuelController _health;
         private PropulsionController _jetpack;
         private InventoryController _inventory;
 
@@ -149,7 +149,7 @@ namespace Combating.Scripts
         private void Awake()
         {
             _controller = GetComponent<CharacterController>();
-            _health = GetComponent<HealthController>();
+            _health = GetComponent<FuelController>();
             _inventory = GetComponent<InventoryController>();
             RefreshFunctionalComponents();
 

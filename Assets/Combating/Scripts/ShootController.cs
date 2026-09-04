@@ -32,8 +32,8 @@ namespace Combating.Scripts
         public float TracerLifetime = 0.05f;
         public float rotationSpeed = 10f;
 
-        private PlayerController m_Player;
-        private HealthController m_Health;
+        private MovementController m_Player;
+        private FuelController m_Health;
         private float m_NextFireTime;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
@@ -45,16 +45,16 @@ namespace Combating.Scripts
 
         public void ApplyEffect(GameObject player)
         {
-            m_Player = player.GetComponent<PlayerController>();
-            m_Health = player.GetComponent<HealthController>();
+            m_Player = player.GetComponent<MovementController>();
+            m_Health = player.GetComponent<FuelController>();
             RefreshReferences();
             Debug.Log($"[ShootController] Vinculado a {player.name}. Player detected: {m_Player != null}");
         }
 
         private void RefreshReferences()
         {
-            if (m_Player == null) m_Player = GetComponentInParent<PlayerController>();
-            if (m_Health == null) m_Health = GetComponentInParent<HealthController>();
+            if (m_Player == null) m_Player = GetComponentInParent<MovementController>();
+            if (m_Health == null) m_Health = GetComponentInParent<FuelController>();
 
             // Critical: Search camera in parent player
             if (AimCamera == null && m_Player != null)
@@ -153,7 +153,7 @@ namespace Combating.Scripts
         private void ExecuteFire(Vector3 direction, Vector3 spawnPos)
         {
             float finalDamage = Damage;
-            StatsController stats = (m_Player != null) ? m_Player.GetComponent<StatsController>() : GetComponentInParent<StatsController>();
+            HudController stats = (m_Player != null) ? m_Player.GetComponent<HudController>() : GetComponentInParent<HudController>();
             if (stats != null) finalDamage = Damage * (stats.Attack / 10f);
 
             Team team = m_Health != null ? m_Health.team : Team.Neutral;

@@ -26,8 +26,8 @@ namespace Crafting.Scripts
 
         public void ApplyEffect(GameObject player)
         {
-            StatsController stats = player.GetComponent<StatsController>();
-            if (stats == null) stats = StatsController.Instance;
+            HudController stats = player.GetComponent<HudController>();
+            if (stats == null) stats = HudController.Instance;
 
             if (stats != null)
             {

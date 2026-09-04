@@ -10,9 +10,9 @@ using Crafting.Scripts;
 namespace Crafting.Scripts
 {
     [RequireComponent(typeof(SpawnController))]
-    public class InventoryController : NetworkBehaviour
+    public class ItemsController : NetworkBehaviour
     {
-        public static InventoryController LocalInstance { get; private set; }
+        public static ItemsController LocalInstance { get; private set; }
 
         [Header("Network Data")]
         public NetworkList<NetworkInventorySlot> NetworkBag;

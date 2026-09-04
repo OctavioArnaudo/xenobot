@@ -4,12 +4,13 @@ using UnityEngine.Events;
 
 namespace Combating.Scripts
 {
+    public enum Team { Neutral, Player, Enemy }
 
     /// <summary>
     /// Universal controller for Health and Team.
     /// Handles life, damage, status and visual feedback.
     /// </summary>
-    public class FuelController : NetworkBehaviour
+    public class HealthController : NetworkBehaviour
     {
         [Header("Identity & Team")]
         public Team team = Team.Neutral;

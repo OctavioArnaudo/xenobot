@@ -4,13 +4,12 @@ using UnityEngine.Events;
 
 namespace Combating.Scripts
 {
-    public enum Team { Neutral, Player, Enemy }
 
     /// <summary>
     /// Universal controller for Health and Team.
     /// Handles life, damage, status and visual feedback.
     /// </summary>
-    public class HealthController : NetworkBehaviour
+    public class DamageController : NetworkBehaviour
     {
         [Header("Identity & Team")]
         public Team team = Team.Neutral;
@@ -65,7 +64,7 @@ namespace Combating.Scripts
             int finalDamage = damage;
 
             // Integracion con StatsController: Defensa
-            if (TryGetComponent<StatsController>(out var stats))
+            if (TryGetComponent<HudController>(out var stats))
             {
                 finalDamage = Mathf.RoundToInt(damage * (10f / (10f + stats.Defense)));
                 if (finalDamage < 1) finalDamage = 1;

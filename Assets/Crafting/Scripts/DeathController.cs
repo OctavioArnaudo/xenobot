@@ -9,7 +9,7 @@ namespace Combating.Scripts
     /// Universal controller for Health and Team.
     /// Handles life, damage, status and visual feedback.
     /// </summary>
-    public class FuelController : NetworkBehaviour
+    public class DeathController : NetworkBehaviour
     {
         [Header("Identity & Team")]
         public Team team = Team.Neutral;

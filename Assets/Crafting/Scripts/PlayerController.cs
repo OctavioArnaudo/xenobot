@@ -9,10 +9,26 @@ using Crafting.Scripts;
 
 namespace Crafting.Scripts
 {
-    [RequireComponent(typeof(SpawnController))]
-    public class InventoryController : NetworkBehaviour
+    public struct NetworkInventorySlot : INetworkSerializable, IEquatable<NetworkInventorySlot>
     {
-        public static InventoryController LocalInstance { get; private set; }
+        public int itemHash;
+        public int quantity;
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref itemHash);
+            serializer.SerializeValue(ref quantity);
+        }
+
+        public bool Equals(NetworkInventorySlot other) => itemHash == other.itemHash && quantity == other.quantity;
+        public override bool Equals(object obj) => obj is NetworkInventorySlot other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(itemHash, quantity);
+    }
+
+    [RequireComponent(typeof(SpawnController))]
+    public class PlayerController : NetworkBehaviour
+    {
+        public static PlayerController LocalInstance { get; private set; }
 
         [Header("Network Data")]
         public NetworkList<NetworkInventorySlot> NetworkBag;
