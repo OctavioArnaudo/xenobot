@@ -10,19 +10,20 @@ Material:
   m_Name: Material_SandWavey1
   m_Shader: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
   m_Parent: {fileID: 2100000, guid: 079afe837d731314d821227726dfcfe9, type: 2}
-  m_ModifiedSerializedProperties: 8
+  m_ModifiedSerializedProperties: 24
   m_ValidKeywords:
   - _NORMALMAP
+  - _SPECULAR_SETUP
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
+  m_CustomRenderQueue: 2000
   stringTagMap:
     RenderType: Opaque
   disabledShaderPasses:
   - MOTIONVECTORS
-  m_LockedProperties: _Smoothness
+  m_LockedProperties: _Smoothness _SmoothnessTextureChannel
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -44,12 +45,20 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Blend: 2
     - _Cull: 2
+    - _DstBlend: 0
+    - _DstBlendAlpha: 0
     - _Metallic: 0.08
-    - _Smoothness: 0.74
+    - _Smoothness: 1
+    - _SrcBlend: 1
+    - _SrcBlendAlpha: 1
+    - _Surface: 0
+    - _WorkflowMode: 0
+    - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 0.081612684, g: 0.13207549, b: 0.13207549, a: 1}
-    - _Color: {r: 0.081612654, g: 0.13207546, b: 0.13207546, a: 1}
+    - _BaseColor: {r: 0, g: 0, b: 0, a: 1}
+    - _Color: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.2, g: 0.2, b: 0.2, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
