@@ -1,4 +1,3 @@
-using Unity.FPS.Gameplay;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
