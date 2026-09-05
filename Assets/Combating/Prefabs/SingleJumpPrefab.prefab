@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1439850061835911075}
+  - component: {fileID: -7251337379128705487}
   - component: {fileID: 1203483700300405211}
   m_Layer: 0
   m_Name: SingleJumpPrefab
@@ -32,6 +33,33 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-7251337379128705487
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3154506891948942532}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1026433965
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!114 &1203483700300405211
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -45,48 +73,3 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SingleJumpController
   ShowTopMostFoldoutHeaderGroup: 1
-  MoveSpeed: 2
-  SprintSpeed: 5.335
-  RotationSmoothTime: 0.12
-  SpeedChangeRate: 10
-  LandingAudioClip: {fileID: 0}
-  FootstepAudioClips: []
-  FootstepAudioVolume: 0.5
-  JumpHeight: 1.2
-  EnableDoubleJump: 1
-  DoubleJumpHeight: 1.2
-  Gravity: -15
-  JumpTimeout: 0.5
-  FallTimeout: 0.15
-  Grounded: 1
-  GroundedOffset: -0.14
-  GroundedRadius: 0.28
-  GroundLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  CinemachineCameraTarget: {fileID: 0}
-  PlayerVCamTag: PlayerVCam
-  TopClamp: 70
-  BottomClamp: -30
-  CameraAngleOverride: 0
-  LockCameraPosition: 0
-  LookSensitivity: {x: 7.5, y: 5}
-  SceneSpawns: []
-  yThreshold: -5
-  respawnSound: {fileID: 0}
-  move: {x: 0, y: 0}
-  look: {x: 0, y: 0}
-  jump: 0
-  jumpHeld: 0
-  sprint: 0
-  fire: 0
-  fireHeld: 0
-  fireReleased: 0
-  aim: 0
-  crouch: 0
-  reload: 0
-  switchWeapon: 0
-  selectWeapon: 0
-  analogMovement: 0
-  cursorLocked: 1
-  cursorInputForLook: 1

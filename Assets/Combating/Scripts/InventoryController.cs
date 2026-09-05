@@ -439,12 +439,11 @@ namespace Crafting.Scripts
                     GameObject instance = Instantiate(prefab, transform);
                     _equippedInstances[hash] = instance;
 
-                    if (instance.TryGetComponent<PickupController>(out var p)) DestroyImmediate(p);
-                    if (instance.TryGetComponent<Rigidbody>(out var rb)) DestroyImmediate(rb);
-                    if (instance.TryGetComponent<NetworkObject>(out var no)) DestroyImmediate(no);
+                    // Use Hub Sanitization
+                    if (_hub != null) _hub.SanitizeModuleInstance(instance);
 
-                    // Always disable colliders on equipment to avoid player physics glitches
-                    foreach (var c in instance.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+                    // Legacy cleanup for extra safety
+                    if (instance.TryGetComponent<PickupController>(out var p)) DestroyImmediate(p);
 
                     foreach (var func in instance.GetComponentsInChildren<IItemFunctional>())
                     {

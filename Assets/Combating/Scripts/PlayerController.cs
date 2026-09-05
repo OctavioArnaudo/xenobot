@@ -130,14 +130,21 @@ namespace Crafting.Scripts
                     GameObject instance = Instantiate(prefab, transform);
                     instance.name = type.Name;
 
+                    // Apply Hardware Sanitization
+                    SanitizeModuleInstance(instance);
+
                     foreach (var module in instance.GetComponentsInChildren<IModular>(true))
                     {
+                        // Ignore deactivated modules if requested
+                        if (module is MonoBehaviour mb && !mb.enabled) continue;
+
                         module.Bind(this);
                     }
 
+                    // Only spawn if it's explicitly allowed and still enabled
                     if (IsServer && IsSpawned && instance.TryGetComponent<NetworkObject>(out var netObj))
                     {
-                        netObj.Spawn(true);
+                        if (netObj.enabled) netObj.Spawn(true);
                     }
                 }
             }

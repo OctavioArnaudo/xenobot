@@ -9,10 +9,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2939793482611471027}
+  - component: {fileID: 5589284727334321745}
   - component: {fileID: 9132997474280271883}
   - component: {fileID: 1233105737571033774}
   m_Layer: 0
-  m_Name: ItemsPrefab
+  m_Name: InventoryPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -33,6 +34,33 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5589284727334321745
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7656348132711684315}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1018577466
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!114 &9132997474280271883
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -67,6 +95,15 @@ MonoBehaviour:
   accentColor: {r: 1, g: 0.85, b: 0, a: 1}
   itemDatabase:
   - {fileID: 11400000, guid: bb42e76d6f734c5091156f6de5048962, type: 2}
+  - {fileID: 11400000, guid: d7c9c3ed602c45bda00bb8572b645ef1, type: 2}
+  - {fileID: 11400000, guid: 75b6b99d3e052724095a1f53dea46401, type: 2}
+  - {fileID: 11400000, guid: 82f936139cf00f24fbb2382cd48dd828, type: 2}
+  - {fileID: 11400000, guid: 9c17cf8896f842ca89037bfc4f46889c, type: 2}
+  - {fileID: 11400000, guid: 6ac606d832f14c4fa3466276ffe3c0b4, type: 2}
+  - {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
+  - {fileID: 11400000, guid: cc730feca3d9438aa9e28397df2e6fe4, type: 2}
+  - {fileID: 11400000, guid: 9f41a1c295b64338a231ce89c6aa91e6, type: 2}
+  - {fileID: 11400000, guid: efd5d0a0c9077794ebff867795e6eea0, type: 2}
   dropDistance: 3.5
 --- !u!114 &1233105737571033774
 MonoBehaviour:

@@ -67,14 +67,18 @@ namespace Combating.Scripts
                 GameObject instance = Instantiate(prefab, transform);
                 instance.name = prefab.name;
 
+                // Apply Hardware Sanitization
+                SanitizeModuleInstance(instance);
+
                 foreach (var module in instance.GetComponentsInChildren<IModular>(true))
                 {
+                    if (module is MonoBehaviour mb && !mb.enabled) continue;
                     module.Bind(this);
                 }
 
                 if (IsServer && IsSpawned && instance.TryGetComponent<NetworkObject>(out var netObj))
                 {
-                    netObj.Spawn(true);
+                    if (netObj.enabled) netObj.Spawn(true);
                 }
             }
         }

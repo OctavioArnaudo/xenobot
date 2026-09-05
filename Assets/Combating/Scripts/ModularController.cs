@@ -127,5 +127,31 @@ namespace Combating.Scripts
         protected bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
 
         public abstract GameObject GetPrefabFromList(string prefabName);
+
+        /// <summary>
+        /// Cleans up an instantiated module or equipment to prevent interference.
+        /// </summary>
+        public void SanitizeModuleInstance(GameObject instance)
+        {
+            if (instance == null) return;
+
+            // 1. Network Safety
+            if (instance.TryGetComponent<NetworkObject>(out var netObj))
+            {
+                netObj.enabled = false;
+            }
+
+            // 2. Physics Safety
+            if (instance.TryGetComponent<Rigidbody>(out var rb))
+            {
+                rb.isKinematic = true;
+                rb.useGravity = false;
+            }
+
+            foreach (var col in instance.GetComponentsInChildren<Collider>(true))
+            {
+                col.isTrigger = true;
+            }
+        }
     }
 }
