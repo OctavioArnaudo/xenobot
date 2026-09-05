@@ -22,7 +22,8 @@ namespace Combating.Scripts
         private GameObject _target;
         private CinemachineCamera _vcam;
 
-        private bool HasInputAuthority => _hub != null && (!NetworkManager.Singleton.IsListening || _hub.IsOwner);
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        private bool HasInputAuthority => _hub != null && (!IsNetworkActive || _hub.IsOwner);
 
         private void Awake()
         {
