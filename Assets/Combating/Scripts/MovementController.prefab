@@ -45,20 +45,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MovementController
   ShowTopMostFoldoutHeaderGroup: 1
-  MoveSpeed: 2
-  SprintSpeed: 5.335
-  RotationSmoothTime: 0.12
-  SpeedChangeRate: 10
-  JumpHeight: 1.2
-  EnableDoubleJump: 1
-  DoubleJumpHeight: 1.2
-  Gravity: -15
-  JumpTimeout: 0.5
-  FallTimeout: 0.15
-  Grounded: 1
-  GroundedOffset: -0.14
-  GroundedRadius: 0.28
+  MoveSpeed: 25
+  SpeedChangeRate: 25
+  Gravity: -35
   GroundLayers:
     serializedVersion: 2
     m_Bits: 1
-  yThreshold: -5

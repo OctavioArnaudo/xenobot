@@ -73,10 +73,11 @@ namespace Crafting.Scripts
         public RenderController activeModel;
 
         // Dynamic properties that always point to the active model's bones
-        public Transform HeadPoint => activeModel != null ? activeModel.headPoint : null;
-        public Transform SpinePoint => activeModel != null ? activeModel.spinePoint : null;
-        public Transform MuzzlePoint => activeModel != null ? activeModel.muzzlePoint : null;
-        public Transform CameraLookAtPoint => activeModel != null ? activeModel.cameraLookAtPoint : null;
+        // Usamos EnsurePoints para evitar que la cámara apunte al 0,0,0 por falta de inicialización
+        public Transform HeadPoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.headPoint : null; } }
+        public Transform SpinePoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.spinePoint : null; } }
+        public Transform MuzzlePoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.muzzlePoint : null; } }
+        public Transform CameraLookAtPoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.cameraLookAtPoint : null; } }
 
         private static int s_CollectiblesRemaining = 0;
         private static bool s_CountDirty = true;
@@ -123,21 +124,19 @@ namespace Crafting.Scripts
             if (animator == null) animator = GetComponentInChildren<Animator>();
 
             // 1. Sanitize Hierarchy positions
-            if (cameraTarget == null) cameraTarget = transform.Find("PlayerTarget")?.gameObject;
-            if (cameraTarget != null) cameraTarget.transform.localPosition = Vector3.zero;
+            // Los módulos autónomos se encargan de su propia jerarquía
+            if (renderRoot == null) renderRoot = transform.Find("PlayerRender");
 
-            // Búsqueda más robusta de la cámara (Tag + Jerarquía)
+            // 2. Búsqueda de la cámara
             if (mainCamera == null)
             {
-                var cam = GameObject.FindGameObjectWithTag("MainCamera");
-                if (cam == null) cam = GetComponentInChildren<Camera>(true)?.gameObject;
-                mainCamera = cam;
+                mainCamera = GetComponentInChildren<Camera>(true)?.gameObject;
             }
-            if (mainCamera != null) mainCamera.transform.localPosition = Vector3.zero;
 
+            // IMPORTANTE: Primero descubrimos el cuerpo y sus huesos, LUEGO creamos los módulos
+            RefreshBodyReferences();
             EnsureCoreModules();
             RefreshInputActions();
-            RefreshBodyReferences();
         }
 
         private void EnsureCoreModules()
@@ -193,13 +192,14 @@ namespace Crafting.Scripts
             // 2. Intelligent Model Discovery (Supporting Variant Prefabs)
             if (renderRoot != null)
             {
-                // Check if the root itself or any descendant has the RenderController
-                activeModel = renderRoot.GetComponent<RenderController>() ?? renderRoot.GetComponentInChildren<RenderController>(true);
+                // Priorizamos los hijos (Variant Prefabs) sobre el contenedor root para que los puntos de interés específicos manden
+                activeModel = renderRoot.GetComponentsInChildren<RenderController>(true)
+                    .FirstOrDefault(rc => rc.transform != renderRoot)
+                    ?? renderRoot.GetComponent<RenderController>();
 
                 if (activeModel != null)
                 {
                     // Ensure the model is active.
-                    // We NO LONGER deactivate siblings to respect Variant Prefab parts.
                     activeModel.gameObject.SetActive(true);
                 }
                 else

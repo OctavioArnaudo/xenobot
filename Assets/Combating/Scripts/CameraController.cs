@@ -11,6 +11,10 @@ namespace Combating.Scripts
         public Vector2 LookSensitivity = new Vector2(1.0f, 0.8f);
         public float TopClamp = 85.0f;
         public float BottomClamp = -60.0f;
+        public float MinLookAtHeight = 0.5f;
+
+        public float Yaw => _yaw;
+        public float Pitch => _pitch;
 
         private float _yaw;
         private float _pitch;
@@ -60,7 +64,7 @@ namespace Combating.Scripts
             // 1. Ubicar el Target (Seguimiento de posición, NO de rotación)
             UpdateTargetState();
 
-            if (_vcam == null) RefreshCameraLink();
+            if (_vcam == null || _vcam.LookAt == null) RefreshCameraLink();
 
             // 2. Rotación con el Mouse
             if (_hub.look.sqrMagnitude > 0.001f)
@@ -83,35 +87,54 @@ namespace Combating.Scripts
         {
             if (_hub == null) return;
 
-            // _target is maintained by OnRefreshModule() via Hub.cameraTarget
-            if (_target == null) _target = _hub.cameraTarget ?? _hub.gameObject;
+            // Buscamos el target modular interno
+            if (_target == null) _target = transform.Find("PlayerTarget")?.gameObject ?? gameObject;
 
-            // Delegación directa a las propiedades dinámicas del Hub
-            Transform followBone = _hub.CameraLookAtPoint ?? _hub.HeadPoint;
+            Transform lookPoint = _hub.CameraLookAtPoint ?? _hub.HeadPoint;
 
-            if (followBone != null)
+            if (lookPoint != null)
             {
-                _target.transform.position = followBone.position;
+                // SEGUIMIENTO DE POSICIÓN PURO:
+                // El target modular se mueve a la cabeza, pero MANTIENE su propia rotación
+                _target.transform.position = lookPoint.position;
             }
             else
             {
-                // FALLBACK DE SEGURIDAD: Si no hay puntos definidos, forzar altura de ojos (1.6m)
                 _target.transform.position = _hub.transform.position + Vector3.up * 1.6f;
             }
+
+            // SEGURIDAD: Nunca mirar al suelo (0,0,0) relativo al jugador
+            float minY = _hub.transform.position.y + MinLookAtHeight;
+            if (_target.transform.position.y < minY)
+            {
+                Vector3 safePos = _target.transform.position;
+                safePos.y = minY;
+                _target.transform.position = safePos;
+            }
+
+            // La rotación del target es la que manda el ratón, independiente del robot
+            _target.transform.rotation = Quaternion.Euler(_pitch, _yaw, 0.0f);
         }
 
         private void RefreshCameraLink()
         {
             if (_hub == null) return;
-            _vcam = _hub.GetComponentInChildren<CinemachineCamera>(true);
+
+            _vcam = GetComponentInChildren<CinemachineCamera>(true);
+
             if (_vcam != null)
             {
                 _vcam.enabled = HasInputAuthority;
-                if (_target != null)
-                {
-                    _vcam.Follow = _target.transform;
-                    _vcam.LookAt = _target.transform;
-                }
+
+                // Forzamos a Cinemachine a mirar SIEMPRE al target modular interno
+                // Este target es el que movemos a la posición del hueso en UpdateTargetState
+                if (_target == null) UpdateTargetState();
+
+                _vcam.Follow = _target.transform;
+                _vcam.LookAt = _target.transform;
+
+                var cam = GetComponentInChildren<Camera>(true);
+                if (cam != null) cam.tag = "MainCamera";
             }
         }
 

@@ -92,20 +92,24 @@ namespace Combating.Scripts
 
         private void ApplyMovement()
         {
-            float targetSpeed = _hub.sprint ? MoveSpeed * 2.0f : MoveSpeed;
+            // Ajuste de velocidades: 25 base, 62.5 en sprint
+            float targetSpeed = _hub.sprint ? MoveSpeed * 2.5f : MoveSpeed;
             if (_hub.move == Vector2.zero) targetSpeed = 0.0f;
 
             _speed = Mathf.Lerp(_speed, targetSpeed, Time.deltaTime * SpeedChangeRate);
 
             if (_hub.move != Vector2.zero)
             {
-                // La rotación se basa en la cámara, pero SOLO se aplica al RENDER (hijo)
-                float camYaw = Camera.main != null ? Camera.main.transform.eulerAngles.y : 0;
+                // ESTABILIDAD TOTAL: Usamos la propiedad Yaw limpia del módulo
+                var camCtrl = _hub.GetModule<CameraController>();
+                float camYaw = (camCtrl != null) ? camCtrl.Yaw : 0;
+
                 float inputRotation = Mathf.Atan2(_hub.move.x, _hub.move.y) * Mathf.Rad2Deg + camYaw;
 
                 if (_renderTransform != null)
                 {
-                    float rotation = Mathf.SmoothDampAngle(_renderTransform.eulerAngles.y, inputRotation, ref _rotationVelocity, 0.1f);
+                    // Giro ultra-rápido (0.03s)
+                    float rotation = Mathf.SmoothDampAngle(_renderTransform.eulerAngles.y, inputRotation, ref _rotationVelocity, 0.03f);
                     _renderTransform.rotation = Quaternion.Euler(0, rotation, 0);
                 }
                 _targetRotation = inputRotation;
