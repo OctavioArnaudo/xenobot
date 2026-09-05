@@ -9,7 +9,7 @@ namespace Combating.Scripts
     /// Manages its own rotation and execution logic.
     /// Works for both Players and AI Enemies.
     /// </summary>
-    public class MeleeController : NetworkBehaviour, IPlayerModule
+    public class MeleeController : NetworkBehaviour, IPlayer
     {
         [Header("Settings")]
         public float attackRange = 2.5f;

@@ -10,7 +10,7 @@ namespace Combating.Scripts
     /// Specialized controller for character Health state and Team identity.
     /// Acts as the data source for life status.
     /// </summary>
-    public class HealthController : NetworkBehaviour, IPlayerModule
+    public class HealthController : NetworkBehaviour, IPlayer
     {
         [Header("Identity & Team")]
         public Team team = Team.Neutral;

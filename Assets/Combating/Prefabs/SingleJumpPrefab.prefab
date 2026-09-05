@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &2897382283054978359
+--- !u!1 &3154506891948942532
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,22 +8,22 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 8287693840702323303}
-  - component: {fileID: 7456565713539776170}
+  - component: {fileID: 1439850061835911075}
+  - component: {fileID: 1203483700300405211}
   m_Layer: 0
-  m_Name: SprintController
+  m_Name: SingleJumpPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &8287693840702323303
+--- !u!4 &1439850061835911075
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2897382283054978359}
+  m_GameObject: {fileID: 3154506891948942532}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 1.6, z: 0}
@@ -32,18 +32,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &7456565713539776170
+--- !u!114 &1203483700300405211
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2897382283054978359}
+  m_GameObject: {fileID: 3154506891948942532}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2ec2c6012480c9d47b97b4d649db1176, type: 3}
+  m_Script: {fileID: 11500000, guid: 7abc95df3e5c98c45aab6efb4a4a809b, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SprintController
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SingleJumpController
   ShowTopMostFoldoutHeaderGroup: 1
   MoveSpeed: 2
   SprintSpeed: 5.335

@@ -5,10 +5,27 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Combating.Scripts;
-using Crafting.Scripts;
 
 namespace Crafting.Scripts
 {
+    /// <summary>
+    /// Interfaz base para todos los módulos que forman parte del ecosistema del Jugador.
+    /// Permite una vinculación (Binding) explícita con el Hub central.
+    /// </summary>
+    public interface IPlayer
+    {
+        /// <summary>
+        /// Vincula el módulo con el PlayerController central.
+        /// Se llama inmediatamente después de la instanciación o en el Awake/OnNetworkSpawn.
+        /// </summary>
+        void Bind(PlayerController hub);
+
+        /// <summary>
+        /// Se llama cuando el Hub detecta un cambio importante en la jerarquía
+        /// (ej: cambio de traje, cambio de animator).
+        /// </summary>
+        void OnRefreshModule();
+    }
     public class PlayerController : NetworkBehaviour
     {
         public static PlayerController LocalInstance { get; private set; }
@@ -164,7 +181,7 @@ namespace Crafting.Scripts
                     instance.name = moduleName;
 
                     // Bind module if it implements IPlayerModule
-                    foreach (var module in instance.GetComponents<IPlayerModule>())
+                    foreach (var module in instance.GetComponents<IPlayer>())
                     {
                         module.Bind(this);
                     }
@@ -226,6 +243,14 @@ namespace Crafting.Scripts
             {
                 animator = activeModel.Animator;
 
+                // Forzar al Animator a reiniciarse con el nuevo Avatar
+                if (animator != null)
+                {
+                    animator.enabled = true;
+                    animator.Rebind();
+                    animator.Update(0);
+                }
+
                 // Ensure all renderers are enabled
                 foreach (var r in activeModel.GetComponentsInChildren<Renderer>(true))
                 {
@@ -252,7 +277,7 @@ namespace Crafting.Scripts
         {
             foreach (var module in _registeredModules.Values)
             {
-                if (module is IPlayerModule playerModule)
+                if (module is IPlayer playerModule)
                 {
                     playerModule.OnRefreshModule();
                 }

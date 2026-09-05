@@ -7,7 +7,7 @@ namespace Combating.Scripts
     /// <summary>
     /// Specialized controller for Landing audio and visual effects.
     /// </summary>
-    public class LandingController : NetworkBehaviour, IPlayerModule
+    public class LandingController : NetworkBehaviour, IPlayer
     {
         [Header("Audio Settings")]
         public AudioClip LandingAudioClip;

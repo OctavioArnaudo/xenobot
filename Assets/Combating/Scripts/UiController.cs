@@ -8,7 +8,7 @@ using Combating.Scripts;
 /// Specialized controller for character HUD and Identity visuals.
 /// Only handles rendering and visual feedback.
 /// </summary>
-public class UiController : NetworkBehaviour, IPlayerModule
+public class UiController : NetworkBehaviour, IPlayer
 {
     public static UiController Instance { get; private set; }
 

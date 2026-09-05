@@ -22,15 +22,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 454.7
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 31.54
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -380.90002
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}
       propertyPath: m_LocalRotation.w
@@ -213,8 +213,6 @@ MonoBehaviour:
   spinePoint: {fileID: 7388972274799602572}
   muzzlePoint: {fileID: 6166158213577890947}
   cameraLookAtPoint: {fileID: 2661726166630698764}
-  modelHeight: 1.8
-  cameraVerticalOffset: 0.5
 --- !u!4 &6166158213577890947 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7157781474384415956, guid: 08ca8df5f4ec3624daa0f34bffd9f0ef, type: 3}

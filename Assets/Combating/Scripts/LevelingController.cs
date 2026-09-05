@@ -5,7 +5,7 @@ using Crafting.Scripts;
 /// <summary>
 /// Specialized controller for character leveling and progression logic.
 /// </summary>
-public class LevelingController : NetworkBehaviour, IPlayerModule
+public class LevelingController : NetworkBehaviour, IPlayer
 {
     private HudController _stats;
     private PlayerController _hub;

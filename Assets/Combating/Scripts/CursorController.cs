@@ -7,7 +7,7 @@ namespace Combating.Scripts
     /// <summary>
     /// Specialized controller for Cursor state (Locked/Visible).
     /// </summary>
-    public class CursorController : NetworkBehaviour, IPlayerModule
+    public class CursorController : NetworkBehaviour, IPlayer
     {
         private PlayerController _hub;
 

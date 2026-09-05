@@ -8,7 +8,7 @@ namespace Crafting.Scripts
     /// Specialized modular controller for appearance changes.
     /// Handles hiding current visuals and restoring them when removed.
     /// </summary>
-    public class CostumeController : MonoBehaviour, IItemFunctional, IPlayerModule
+    public class CostumeController : MonoBehaviour, IItemFunctional, IPlayer
     {
         [Header("Settings")]
         [Tooltip("Tag to find the render root in the player hierarchy")]

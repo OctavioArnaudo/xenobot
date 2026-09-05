@@ -4,7 +4,7 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    public class MovementController : NetworkBehaviour, IPlayerModule
+    public class MovementController : NetworkBehaviour, IPlayer
     {
         [Header("Settings")]
         public float MoveSpeed = 10.0f;
@@ -120,6 +120,27 @@ namespace Combating.Scripts
 
             Vector3 finalMotion = (moveDir * _speed) + (Vector3.up * _verticalVelocity);
             _controller.Move(finalMotion * Time.deltaTime);
+
+            // LOGICA DE ANIMACIÓN: Sincronizada con "New Animator Controller 1"
+            if (_hub.animator != null)
+            {
+                _hub.animator.SetFloat("Speed", _speed);
+                _hub.animator.SetBool("isGrounded", _isGrounded);
+
+                // Solo intentamos setear lo que existe para evitar errores en consola
+                if (_hub.jump && HasParameter(_hub.animator, "Jump")) _hub.animator.SetBool("Jump", true);
+            }
+        }
+
+        // Método auxiliar para evitar errores de "Parameter not found"
+        private bool HasParameter(Animator anim, string paramName)
+        {
+            if (anim == null || anim.runtimeAnimatorController == null) return false;
+            foreach (AnimatorControllerParameter param in anim.parameters)
+            {
+                if (param.name == paramName) return true;
+            }
+            return false;
         }
 
         public void ResetPhysics()

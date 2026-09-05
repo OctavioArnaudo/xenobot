@@ -10,7 +10,7 @@ namespace Combating.Scripts
     /// Handles firing projectiles, cooldowns, and input.
     /// Works for both Players (via bridge) and AI (direct server spawning).
     /// </summary>
-    public class ShootController : MonoBehaviour, IItemFunctional, IPlayerModule
+    public class ShootController : MonoBehaviour, IItemFunctional, IPlayer
     {
         [Header("References")]
         public Camera AimCamera;

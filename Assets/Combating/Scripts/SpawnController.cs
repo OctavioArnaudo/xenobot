@@ -17,7 +17,7 @@ namespace Combating.Scripts
     /// Handles visual death effects and loot spawning.
     /// Triggered by HealthController upon death.
     /// </summary>
-    public class SpawnController : NetworkBehaviour, IPlayerModule
+    public class SpawnController : NetworkBehaviour, IPlayer
     {
         [Header("Spawn Settings")]
         public List<ItemData> lootTable = new List<ItemData>();

@@ -26,7 +26,7 @@ namespace Crafting.Scripts
     }
 
     [RequireComponent(typeof(SpawnController))]
-    public class ItemsController : NetworkBehaviour, IPlayerModule
+    public class ItemsController : NetworkBehaviour, IPlayer
     {
         public static ItemsController LocalInstance { get; private set; }
 

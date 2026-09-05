@@ -7,7 +7,7 @@ namespace Combating.Scripts
     /// <summary>
     /// Modular component to enable/configure double jumping.
     /// </summary>
-    public class DoubleJumpController : NetworkBehaviour, IPlayerModule
+    public class DoubleJumpController : NetworkBehaviour, IPlayer
     {
         private PlayerController _hub;
 

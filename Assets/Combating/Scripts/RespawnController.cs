@@ -11,7 +11,7 @@ namespace Combating.Scripts
     /// Specialized controller for player Respawn and scene spawning.
     /// Operates on the player root transform.
     /// </summary>
-    public class RespawnController : NetworkBehaviour, IPlayerModule
+    public class RespawnController : NetworkBehaviour, IPlayer
     {
         [System.Serializable]
         public struct SceneSpawnConfig

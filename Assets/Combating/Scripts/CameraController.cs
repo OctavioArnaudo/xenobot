@@ -5,7 +5,7 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    public class CameraController : NetworkBehaviour, IPlayerModule
+    public class CameraController : NetworkBehaviour, IPlayer
     {
         [Header("Settings")]
         public Vector2 LookSensitivity = new Vector2(1.0f, 0.8f);

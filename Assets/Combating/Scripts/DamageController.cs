@@ -9,7 +9,7 @@ namespace Combating.Scripts
     /// Specialized controller for Damage reception and visual feedback.
     /// Handles mitigation logic and flash effects.
     /// </summary>
-    public class DamageController : NetworkBehaviour, IPlayerModule
+    public class DamageController : NetworkBehaviour, IPlayer
     {
         [Header("Visual Feedback")]
         public Renderer[] visualsToFlash;

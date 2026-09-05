@@ -7,7 +7,7 @@ namespace Combating.Scripts
     /// <summary>
     /// Modular component to enable/configure basic jumping.
     /// </summary>
-    public class SingleJumpController : NetworkBehaviour, IPlayerModule
+    public class SingleJumpController : NetworkBehaviour, IPlayer
     {
         private PlayerController _hub;
 

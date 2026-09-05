@@ -8,7 +8,7 @@ namespace Combating.Scripts
     /// Specialized controller for Sprint logic.
     /// Communicates with the hub to set sprint state.
     /// </summary>
-    public class SprintController : NetworkBehaviour, IPlayerModule
+    public class SprintController : NetworkBehaviour, IPlayer
     {
         private PlayerController _hub;
 

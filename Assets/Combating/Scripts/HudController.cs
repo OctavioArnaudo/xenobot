@@ -8,7 +8,7 @@ using Crafting.Scripts;
 /// Specialized controller for character progression and stats.
 /// Acts as the data source for the player's attributes.
 /// </summary>
-public class HudController : NetworkBehaviour, IPlayerModule
+public class HudController : NetworkBehaviour, IPlayer
 {
     public static HudController Instance { get; private set; }
 

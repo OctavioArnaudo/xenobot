@@ -22,15 +22,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 454.7
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 31.54
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -384.7
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
       propertyPath: m_LocalRotation.w
@@ -62,7 +62,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
       propertyPath: m_Name
-      value: ROBOTO 1_6
+      value: PlayerRender3
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
       propertyPath: m_IsActive
@@ -79,7 +79,25 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4093661043896467221}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2174140445077471253}
   m_SourcePrefab: {fileID: 100100000, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
+--- !u!4 &582177931048655418 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4417229102775565207, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
+  m_PrefabInstance: {fileID: 3844220070059205037}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &2937742434084088363 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2134034303982635910, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
+  m_PrefabInstance: {fileID: 3844220070059205037}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3464666448044747846 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8841236708769559061, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
+  m_PrefabInstance: {fileID: 3844220070059205037}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &4150067162490559740 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 4f7e553c1ecb6ba4fa658079dc3a8610, type: 3}
@@ -108,3 +126,19 @@ CapsuleCollider:
   m_Height: 7.3560476
   m_Direction: 1
   m_Center: {x: 0.056025505, y: 2.1544223, z: -0.03364867}
+--- !u!114 &2174140445077471253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4150067162490559740}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1aa9ee72c6c61454792e57ad9faddac9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.RenderController
+  headPoint: {fileID: 3464666448044747846}
+  spinePoint: {fileID: 582177931048655418}
+  muzzlePoint: {fileID: 2937742434084088363}
+  cameraLookAtPoint: {fileID: 2937742434084088363}

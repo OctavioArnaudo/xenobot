@@ -7,7 +7,7 @@ namespace Combating.Scripts
     /// <summary>
     /// Specialized controller for Ground-related audio and visual effects (e.g. Footsteps).
     /// </summary>
-    public class GroundController : NetworkBehaviour, IPlayerModule
+    public class GroundController : NetworkBehaviour, IPlayer
     {
         [Header("Audio Settings")]
         public AudioClip[] FootstepAudioClips;

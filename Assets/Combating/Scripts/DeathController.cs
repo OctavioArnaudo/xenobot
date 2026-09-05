@@ -8,7 +8,7 @@ namespace Combating.Scripts
     /// <summary>
     /// Specialized controller for character Death events and destruction logic.
     /// </summary>
-    public class DeathController : NetworkBehaviour, IPlayerModule
+    public class DeathController : NetworkBehaviour, IPlayer
     {
         [Header("Events")]
         public UnityEvent OnDeath;

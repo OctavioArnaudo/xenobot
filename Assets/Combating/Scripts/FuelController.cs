@@ -7,7 +7,7 @@ namespace Combating.Scripts
     /// <summary>
     /// Specialized controller for character Jetpack fuel management.
     /// </summary>
-    public class FuelController : NetworkBehaviour, IPlayerModule
+    public class FuelController : NetworkBehaviour, IPlayer
     {
         [Header("Jetpack Settings")]
         public float maxJetpack = 100f;
