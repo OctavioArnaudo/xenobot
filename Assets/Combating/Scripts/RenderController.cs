@@ -24,7 +24,14 @@ namespace Crafting.Scripts
         {
             if (_isInitialized) return;
 
-            // Auto-discovery de huesos críticos
+            // Force visual alignment with the physical root
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
+
+            // 1. Limpieza de colisionadores antiguos y setup de MeshColliders
+            SetupPreciseColliders();
+
+            // 2. Auto-discovery de huesos críticos
             if (headPoint == null)
             {
                 var anim = Animator;
@@ -74,6 +81,61 @@ namespace Crafting.Scripts
                 if (result != null) return result;
             }
             return null;
+        }
+
+        /// <summary>
+        /// Reemplaza CapsuleColliders por MeshColliders precisos o BoxColliders según la complejidad.
+        /// </summary>
+        private void SetupPreciseColliders()
+        {
+            foreach (var cap in GetComponentsInChildren<CapsuleCollider>(true))
+            {
+                if (Application.isPlaying) Destroy(cap);
+                else DestroyImmediate(cap);
+            }
+
+            // Procesar SkinnedMeshRenderers (Partes animadas)
+            foreach (var smr in GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (smr.gameObject.GetComponent<Collider>() != null) continue;
+                if (smr.sharedMesh == null) continue;
+
+                // Si la malla es muy compleja (> 250 vértices), usamos un BoxCollider por rendimiento y estabilidad
+                if (smr.sharedMesh.vertexCount > 250)
+                {
+                    var bc = smr.gameObject.AddComponent<BoxCollider>();
+                    bc.isTrigger = true;
+                }
+                else
+                {
+                    var mc = smr.gameObject.AddComponent<MeshCollider>();
+                    mc.convex = true;
+                    mc.isTrigger = true;
+                    mc.sharedMesh = smr.sharedMesh;
+                }
+            }
+
+            // Procesar MeshRenderers (Partes estáticas/accesorios)
+            foreach (var mr in GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (mr.gameObject.GetComponent<Collider>() != null) continue;
+                if (!mr.TryGetComponent<MeshFilter>(out var mf) || mf.sharedMesh == null) continue;
+
+                if (mf.sharedMesh.vertexCount > 250)
+                {
+                    var bc = mr.gameObject.AddComponent<BoxCollider>();
+                    bc.isTrigger = true;
+                }
+                else
+                {
+                    var mc = mr.gameObject.AddComponent<MeshCollider>();
+                    mc.convex = true;
+                    mc.isTrigger = true;
+                    mc.sharedMesh = mf.sharedMesh;
+                }
+            }
+
+            Debug.Log($"[RenderController] Optimized Colliders generated for {gameObject.name}");
         }
     }
 }

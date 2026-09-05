@@ -9,18 +9,14 @@ namespace Combating.Scripts
         [Header("Settings")]
         public float MoveSpeed = 10.0f;
         public float SpeedChangeRate = 12.0f;
-        public float Gravity = -35.0f;
-        public LayerMask GroundLayers = 1;
 
         private float _speed;
-        private float _verticalVelocity;
         private float _targetRotation = 0.0f;
         private float _rotationVelocity;
 
         private CharacterController _controller;
         private ModularController _hub;
         private Transform _renderTransform;
-        private bool _isGrounded;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
         private bool HasInputAuthority => _hub != null && (!IsNetworkActive || _hub.IsOwner);
@@ -65,42 +61,30 @@ namespace Combating.Scripts
             if (_controller == null) _controller = _hub.controller ?? _hub.GetComponent<CharacterController>();
             if (_controller == null) return;
 
-            ApplyPhysics();
+            // Physical state is now read directly from Hub
+            float verticalVelocity = _hub.VerticalVelocity;
+            bool isGrounded = _hub.IsGrounded;
 
-            // Movement is driven by PlayerController input
+            // Handle combined movement
             if (_hub is PlayerController playerHub)
             {
-                ApplyMovement(playerHub);
+                var propulsion = _hub.GetModule<PropulsionController>();
+                if (propulsion != null)
+                {
+                    propulsion.ProcessFlight(playerHub.jumpHeld, isGrounded, ref verticalVelocity);
+                    _hub.VerticalVelocity = verticalVelocity; // Update Hub state
+                }
+
+                ApplyMovement(playerHub, verticalVelocity, isGrounded);
             }
             else
             {
-                // For Non-Player (AI), vertical velocity still applies
-                Vector3 motion = Vector3.up * _verticalVelocity;
+                Vector3 motion = Vector3.up * verticalVelocity;
                 _controller.Move(motion * Time.deltaTime);
             }
         }
 
-        private void ApplyPhysics()
-        {
-            _isGrounded = _controller.isGrounded || Physics.CheckSphere(_hub.transform.position, 0.3f, GroundLayers, QueryTriggerInteraction.Ignore);
-
-            if (_isGrounded)
-            {
-                if (_verticalVelocity < 0) _verticalVelocity = -2f;
-
-                if (_hub is PlayerController player && player.jump)
-                {
-                    _verticalVelocity = Mathf.Sqrt(4.0f * -2f * Gravity);
-                    player.jump = false;
-                }
-            }
-            else
-            {
-                _verticalVelocity += Gravity * Time.deltaTime;
-            }
-        }
-
-        private void ApplyMovement(PlayerController player)
+        private void ApplyMovement(PlayerController player, float verticalVelocity, bool isGrounded)
         {
             float targetSpeed = player.sprint ? MoveSpeed * 2.5f : MoveSpeed;
             if (player.move == Vector2.zero) targetSpeed = 0.0f;
@@ -125,13 +109,13 @@ namespace Combating.Scripts
             Vector3 moveDir = Quaternion.Euler(0, _targetRotation, 0) * Vector3.forward;
             if (player.move == Vector2.zero) moveDir = Vector3.zero;
 
-            Vector3 finalMotion = (moveDir * _speed) + (Vector3.up * _verticalVelocity);
+            Vector3 finalMotion = (moveDir * _speed) + (Vector3.up * verticalVelocity);
             _controller.Move(finalMotion * Time.deltaTime);
 
             if (player.animator != null)
             {
                 player.animator.SetFloat("Speed", _speed);
-                player.animator.SetBool("isGrounded", _isGrounded);
+                player.animator.SetBool("isGrounded", isGrounded);
 
                 if (player.jump && HasParameter(player.animator, "Jump")) player.animator.SetBool("Jump", true);
             }
@@ -149,7 +133,7 @@ namespace Combating.Scripts
 
         public void ResetPhysics()
         {
-            _verticalVelocity = 0;
+            if (_hub != null) _hub.VerticalVelocity = 0;
             _speed = 0;
         }
 

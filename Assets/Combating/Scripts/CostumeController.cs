@@ -53,7 +53,7 @@ namespace Crafting.Scripts
 
             // 3. Attach and Show myself
             transform.SetParent(renderRoot.transform);
-            transform.localPosition = Vector3.zero;
+            transform.localPosition = Vector3.zero; // Corregido de Vector3.one a Vector3.zero
             transform.localRotation = Quaternion.identity;
             transform.localScale = Vector3.one;
 

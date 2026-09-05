@@ -47,6 +47,11 @@ namespace Combating.Scripts
         public Transform MuzzlePoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.muzzlePoint : null; } }
         public Transform CameraLookAtPoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.cameraLookAtPoint : null; } }
 
+        [Header("Shared Physical State")]
+        public float VerticalVelocity;
+        public bool IsGrounded;
+        public float BaseGravity = -35f;
+
         public T GetModule<T>() where T : MonoBehaviour
         {
             if (_registeredModules.TryGetValue(typeof(T), out var module))
@@ -85,6 +90,10 @@ namespace Combating.Scripts
 
             if (renderRoot != null)
             {
+                // Force base alignment: The render root must be at the feet of the entity
+                renderRoot.localPosition = Vector3.zero;
+                renderRoot.localRotation = Quaternion.identity;
+
                 // Intelligent Model Discovery: The RenderController is usually on the renderRoot or its children
                 activeModel = renderRoot.GetComponentsInChildren<RenderController>(true)
                     .FirstOrDefault(rc => rc.transform != renderRoot)
