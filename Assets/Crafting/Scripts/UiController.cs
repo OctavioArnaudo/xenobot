@@ -18,6 +18,9 @@ public class UiController : NetworkBehaviour, IPlayerModule
     public int barHeight = 6;
     public TMPro.TMP_Text nameTagText;
 
+    [Header("Visibility")]
+    public System.Collections.Generic.List<string> allowedScenes = new System.Collections.Generic.List<string> { "BiomaScene" };
+
     private Texture2D _bg, _barBg, _atkFill, _defFill, _expFill, _hpFill, _jetFill;
     private GUIStyle _labelStyle, _valueStyle, _timerStyle;
     private bool _stylesReady;
@@ -145,6 +148,10 @@ public class UiController : NetworkBehaviour, IPlayerModule
     void OnGUI()
     {
         if (Event.current.type != EventType.Repaint) return;
+
+        // Verificar si la escena actual está en la lista de permitidas
+        string currentScene = SceneManager.GetActiveScene().name;
+        if (!allowedScenes.Contains(currentScene)) return;
 
         if (_stats == null || _health == null) ResolveReferences();
         if (!CanExecuteLocalLogic || _stats == null) return;
