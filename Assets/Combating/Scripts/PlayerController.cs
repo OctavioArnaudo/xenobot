@@ -160,28 +160,43 @@ namespace Crafting.Scripts
         {
             if (moduleLibrary == null || moduleLibrary.Count == 0) return;
 
-            string[] coreModuleNames = {
-                "MovementController", "CameraController", "CursorController", "RespawnController",
-                "HudController", "UiController", "LevelingController", "HealthController",
-                "DamageController", "DeathController", "FuelController", "SpawnController",
-                "SprintController", "SingleJumpController", "DoubleJumpController",
-                "GroundController", "LandingController", "MeleeController",
-                "ShootController", "ItemsController", "ExperienceController", "CostumeController"
+            // Tipos de componentes que buscamos instanciar
+            System.Type[] coreComponentTypes = {
+                typeof(MovementController), typeof(CameraController), typeof(CursorController),
+                typeof(RespawnController), typeof(HudController), typeof(UiController),
+                typeof(LevelingController), typeof(HealthController), typeof(DamageController),
+                typeof(DeathController), typeof(FuelController), typeof(SpawnController),
+                typeof(SprintController), typeof(SingleJumpController), typeof(DoubleJumpController),
+                typeof(GroundController), typeof(LandingController), typeof(MeleeController),
+                typeof(ShootController), typeof(ItemsController), typeof(ExperienceController),
+                typeof(CostumeController)
             };
 
-            foreach (var moduleName in coreModuleNames)
+            foreach (var type in coreComponentTypes)
             {
-                // Check if the component or a child with that name already exists
-                if (GetComponent(moduleName) != null || transform.Find(moduleName) != null) continue;
+                // 1. Verificamos si ya existe el componente en el Player o sus hijos
+                if (GetComponentInChildren(type, true) != null) continue;
 
-                var prefab = moduleLibrary.FirstOrDefault(x => x != null && x.name == moduleName);
+                // 2. Buscamos en la librería un prefab que tenga ese componente
+                GameObject prefab = null;
+                foreach (var item in moduleLibrary)
+                {
+                    if (item != null && item.GetComponentInChildren(type, true) != null)
+                    {
+                        prefab = item;
+                        break;
+                    }
+                }
+
+                // 3. Si lo encontramos, lo instanciamos
                 if (prefab != null)
                 {
                     GameObject instance = Instantiate(prefab, transform);
-                    instance.name = moduleName;
+                    // Le ponemos el nombre del tipo para mantener orden
+                    instance.name = type.Name;
 
-                    // Bind module if it implements IPlayerModule
-                    foreach (var module in instance.GetComponents<IPlayer>())
+                    // Vinculamos usando la nueva interfaz IPlayer
+                    foreach (var module in instance.GetComponentsInChildren<IPlayer>(true))
                     {
                         module.Bind(this);
                     }
@@ -190,6 +205,10 @@ namespace Crafting.Scripts
                     {
                         netObj.Spawn(true);
                     }
+                }
+                else
+                {
+                    Debug.LogWarning($"[PlayerController] No se encontró un prefab en la moduleLibrary para el sistema: {type.Name}");
                 }
             }
         }
