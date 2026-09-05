@@ -63,17 +63,22 @@ namespace Combating.Scripts
         void Awake()
         {
             _startPosition = transform.position;
-            m_Agent = GetComponentInChildren<NavMeshAgent>() ?? gameObject.AddComponent<NavMeshAgent>();
+
+            // Fallback if not modularly bound yet
+            if (_hub == null) _hub = GetComponentInParent<ModularController>();
+            if (_hub != null) Bind(_hub);
+
+            // Buscamos el agente en el Hub o en nosotros mismos
+            if (m_Agent == null)
+            {
+                m_Agent = (_hub != null) ? _hub.GetComponent<NavMeshAgent>() : GetComponent<NavMeshAgent>();
+            }
 
             if (m_Agent != null)
             {
                 m_Agent.baseOffset = hoverHeight;
                 m_Agent.updateRotation = false;
             }
-
-            // Fallback if not modularly bound yet
-            if (_hub == null) _hub = GetComponentInParent<ModularController>();
-            if (_hub != null) Bind(_hub);
         }
 
         public override void OnNetworkSpawn()

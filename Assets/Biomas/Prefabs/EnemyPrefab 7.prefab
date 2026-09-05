@@ -10,6 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 6750020611864431804}
   - component: {fileID: 6129884601333243839}
+  - component: {fileID: 2584797575244041525}
+  - component: {fileID: 6104584533537498815}
   m_Layer: 6
   m_Name: EnemyPrefab 7
   m_TagString: Enemy
@@ -25,7 +27,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5288374260116034286}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.008357048, y: -0.67270595, z: 0.009190626, w: -0.73980564}
+  m_LocalRotation: {x: 0.0083599845, y: -0.6727088, z: 0.009193786, w: -0.73980296}
   m_LocalPosition: {x: -16.464844, y: 8.041079, z: -105.01688}
   m_LocalScale: {x: 2.20797, y: 2.2079697, z: 2.2079697}
   m_ConstrainProportionsScale: 0
@@ -45,14 +47,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2798224211
-  InScenePlacedSourceGlobalObjectIdHash: 0
+  GlobalObjectIdHash: 1347394993
+  InScenePlacedSourceGlobalObjectIdHash: 3120498232
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -60,6 +62,53 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &2584797575244041525
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5288374260116034286}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ded788f973937a40a78673cbe642d87, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.EnemyController
+  ShowTopMostFoldoutHeaderGroup: 1
+  controller: {fileID: 0}
+  animator: {fileID: 0}
+  mainCamera: {fileID: 0}
+  renderRoot: {fileID: 0}
+  cameraTarget: {fileID: 0}
+  activeModel: {fileID: 0}
+  networkPrefabs: {fileID: 11400000, guid: 2fe6c7967098a65449bf54e7b56a0963, type: 2}
+  enemyModules:
+  - {fileID: 2319961470605166441, guid: cd534d2dfda16b84c95843103b60d185, type: 3}
+  - {fileID: 117791641144016130, guid: f0b006941ceecd545bd10deeda288d7d, type: 3}
+  - {fileID: 5040821937642077840, guid: 4061e74eca20022439cb1d41afe509a4, type: 3}
+  - {fileID: 6084437705818728493, guid: 876bf25b46cfb39438b05315b3bc0bc6, type: 3}
+--- !u!195 &6104584533537498815
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5288374260116034286}
+  m_Enabled: 1
+  m_AgentTypeID: 0
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
 --- !u!1001 &2532675523953081889
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -112,7 +161,8 @@ PrefabInstance:
       propertyPath: m_Name
       value: EnemyRender
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 759143642413766422, guid: a0c7e73ff31d845449413b68512cd165, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []

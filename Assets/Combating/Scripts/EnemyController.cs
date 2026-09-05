@@ -12,6 +12,7 @@ namespace Combating.Scripts
     public class EnemyController : ModularController
     {
         [Header("Enemy Library")]
+        public NetworkPrefabsList networkPrefabs;
         public List<GameObject> enemyModules;
 
         private void Awake()
@@ -31,7 +32,12 @@ namespace Combating.Scripts
         {
             if (controller == null) controller = GetComponent<CharacterController>();
             if (animator == null) animator = GetComponentInChildren<Animator>();
-            if (renderRoot == null) renderRoot = transform.Find("Render") ?? transform.Find("PlayerRender");
+
+            // Nos aseguramos de que el Hardware Hub tenga el NavMeshAgent si no existe
+            if (GetComponent<UnityEngine.AI.NavMeshAgent>() == null)
+            {
+                gameObject.AddComponent<UnityEngine.AI.NavMeshAgent>();
+            }
 
             RefreshBodyReferences();
             EnsureEnemyModules();
@@ -39,13 +45,22 @@ namespace Combating.Scripts
 
         private void EnsureEnemyModules()
         {
-            if (enemyModules == null || enemyModules.Count == 0) return;
+            List<GameObject> allPrefabs = new List<GameObject>();
+            if (enemyModules != null) allPrefabs.AddRange(enemyModules);
+            if (networkPrefabs != null)
+            {
+                foreach (var item in networkPrefabs.PrefabList)
+                {
+                    if (item.Prefab != null) allPrefabs.Add(item.Prefab);
+                }
+            }
 
-            foreach (var prefab in enemyModules)
+            if (allPrefabs.Count == 0) return;
+
+            foreach (var prefab in allPrefabs)
             {
                 if (prefab == null) continue;
 
-                // Simple check to avoid double instantiation
                 var moduleType = GetModuleTypeFromPrefab(prefab);
                 if (moduleType != null && GetComponentInChildren(moduleType, true) != null) continue;
 
@@ -72,8 +87,17 @@ namespace Combating.Scripts
 
         public override GameObject GetPrefabFromList(string prefabName)
         {
-            if (enemyModules == null) return null;
-            return enemyModules.FirstOrDefault(x => x != null && x.name == prefabName);
+            if (enemyModules != null)
+            {
+                var p = enemyModules.FirstOrDefault(x => x != null && x.name == prefabName);
+                if (p != null) return p;
+            }
+            if (networkPrefabs != null)
+            {
+                var p = networkPrefabs.PrefabList.FirstOrDefault(x => x.Prefab != null && x.Prefab.name == prefabName);
+                if (p.Prefab != null) return p.Prefab;
+            }
+            return null;
         }
     }
 }

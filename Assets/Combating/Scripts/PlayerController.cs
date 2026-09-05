@@ -76,7 +76,6 @@ namespace Crafting.Scripts
             }
 
             if (animator == null) animator = GetComponentInChildren<Animator>();
-            if (renderRoot == null) renderRoot = transform.Find("PlayerRender");
 
             if (mainCamera == null)
             {

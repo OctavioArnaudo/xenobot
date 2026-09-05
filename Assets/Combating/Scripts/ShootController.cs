@@ -78,7 +78,17 @@ namespace Combating.Scripts
             if (_hub != null)
             {
                 m_Health = _hub.GetModule<HealthController>();
-                AimCamera = _hub.mainCamera?.GetComponent<Camera>() ?? _hub.GetComponentInChildren<Camera>();
+
+                // Safe access to camera - Enemies don't strictly need it
+                if (_hub.mainCamera != null)
+                {
+                    AimCamera = _hub.mainCamera.GetComponent<Camera>();
+                }
+
+                if (AimCamera == null)
+                {
+                    AimCamera = _hub.GetComponentInChildren<Camera>();
+                }
 
                 if (_hub.MuzzlePoint != null)
                 {

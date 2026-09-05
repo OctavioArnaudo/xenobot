@@ -68,11 +68,24 @@ namespace Combating.Scripts
 
         public virtual void RefreshBodyReferences()
         {
+            // 1. Auto-discovery of Render Root via Tag "Render"
+            if (renderRoot == null)
+            {
+                var taggedRender = GetComponentsInChildren<Transform>(true)
+                    .FirstOrDefault(t => t != transform && t.CompareTag("Render"));
+
+                if (taggedRender != null) renderRoot = taggedRender;
+            }
+
+            // Legacy Fallbacks
             if (renderRoot == null) renderRoot = transform.Find("PlayerRender") ?? transform.Find("Render");
+
+            // Auto-discovery of Camera Target
             if (cameraTarget == null) cameraTarget = transform.Find("PlayerTarget")?.gameObject ?? transform.Find("Target")?.gameObject;
 
             if (renderRoot != null)
             {
+                // Intelligent Model Discovery: The RenderController is usually on the renderRoot or its children
                 activeModel = renderRoot.GetComponentsInChildren<RenderController>(true)
                     .FirstOrDefault(rc => rc.transform != renderRoot)
                     ?? renderRoot.GetComponent<RenderController>();
