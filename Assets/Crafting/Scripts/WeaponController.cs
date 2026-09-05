@@ -1,5 +1,5 @@
 using UnityEngine;
-using Crafting.Scripts;
+using Combating.Scripts;
 using System.Collections.Generic;
 
 namespace Crafting.Scripts
@@ -42,9 +42,8 @@ namespace Crafting.Scripts
             #endif
         }
 
-        public void ApplyEffect(GameObject player)
+        public void ApplyEffect(GameObject entity)
         {
-            // Positioned closer to the player body (Z=0.2 instead of 0.5)
             transform.localPosition = new Vector3(0.4f, 1.2f, 0.2f);
             transform.localRotation = Quaternion.identity;
         }
@@ -65,10 +64,9 @@ namespace Crafting.Scripts
             List<Vector3> verts = new List<Vector3>();
             List<int> tris = new List<int>();
 
-            // More compact parts
-            AddBox(verts, tris, Vector3.zero, new Vector3(0.15f, 0.25f, 0.5f)); // Body
-            AddBox(verts, tris, new Vector3(0, 0.05f, 0.4f), new Vector3(0.1f, 0.1f, 0.4f)); // Barrel
-            AddBox(verts, tris, new Vector3(0, -0.2f, 0.1f), new Vector3(0.12f, 0.3f, 0.12f)); // Grip
+            AddBox(verts, tris, Vector3.zero, new Vector3(0.15f, 0.25f, 0.5f));
+            AddBox(verts, tris, new Vector3(0, 0.05f, 0.4f), new Vector3(0.1f, 0.1f, 0.4f));
+            AddBox(verts, tris, new Vector3(0, -0.2f, 0.1f), new Vector3(0.12f, 0.3f, 0.12f));
 
             mesh.vertices = verts.ToArray();
             mesh.triangles = tris.ToArray();
@@ -81,7 +79,6 @@ namespace Crafting.Scripts
             if (mr.sharedMaterial == null || mr.sharedMaterial.shader != shader) mr.sharedMaterial = new Material(shader);
             mr.sharedMaterial.color = weaponColor;
 
-            // MuzzlePoint at the end of the shorter barrel (Z=0.6 relative to WeaponRender)
             Transform muzTransform = visual.transform.Find("MuzzlePoint");
             if (muzTransform == null)
             {

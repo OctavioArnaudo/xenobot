@@ -24,15 +24,19 @@ namespace Crafting.Scripts
             GenerateOrbVisuals();
         }
 
-        public void ApplyEffect(GameObject player)
+        public void ApplyEffect(GameObject entity)
         {
-            HudController stats = player.GetComponent<HudController>();
-            if (stats == null) stats = HudController.Instance;
+            HudController stats = entity.GetComponent<HudController>();
+            if (stats == null)
+            {
+                var hub = entity.GetComponent<ModularController>();
+                if (hub != null) stats = hub.GetModule<HudController>();
+            }
 
             if (stats != null)
             {
                 stats.AddExp(expAmount);
-                Debug.Log($"[ExperienceController] Otorgados {expAmount} EXP al jugador.");
+                Debug.Log($"[ExperienceController] Otorgados {expAmount} EXP a {entity.name}.");
             }
         }
 

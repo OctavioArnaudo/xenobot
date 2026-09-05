@@ -3,12 +3,13 @@ using Unity.Netcode;
 using Unity.Collections;
 using NGO.Networking;
 using Crafting.Scripts;
+using Combating.Scripts;
 
 /// <summary>
 /// Specialized controller for character progression and stats.
 /// Acts as the data source for the player's attributes.
 /// </summary>
-public class HudController : NetworkBehaviour, IPlayer
+public class HudController : NetworkBehaviour, IModular
 {
     public static HudController Instance { get; private set; }
 
@@ -30,8 +31,8 @@ public class HudController : NetworkBehaviour, IPlayer
     public int Level { get; private set; } = 1;
     public float Exp { get; private set; }
 
-    private Combating.Scripts.HealthController m_PlayerHealth;
-    private PlayerController _hub;
+    private HealthController m_Health;
+    private ModularController _hub;
 
     private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
@@ -43,7 +44,7 @@ public class HudController : NetworkBehaviour, IPlayer
             Instance = this;
             InitializeStats();
 
-            _hub = GetComponentInParent<PlayerController>();
+            _hub = GetComponentInParent<ModularController>();
             if (_hub != null) Bind(_hub);
         }
     }
@@ -57,12 +58,12 @@ public class HudController : NetworkBehaviour, IPlayer
             if (LocalUserConfig.UserName != null) playerName.Value = LocalUserConfig.UserName;
             playerColor.Value = LocalUserConfig.UserColor;
 
-            _hub = GetComponentInParent<PlayerController>();
+            _hub = GetComponentInParent<ModularController>();
             if (_hub != null) Bind(_hub);
         }
     }
 
-    public void Bind(PlayerController hub)
+    public void Bind(ModularController hub)
     {
         _hub = hub;
         if (_hub != null)
@@ -76,7 +77,7 @@ public class HudController : NetworkBehaviour, IPlayer
     {
         if (_hub != null)
         {
-            m_PlayerHealth = _hub.GetModule<Combating.Scripts.HealthController>();
+            m_Health = _hub.GetModule<HealthController>();
         }
     }
 
@@ -99,12 +100,12 @@ public class HudController : NetworkBehaviour, IPlayer
         Defense += defensePerLevel;
         expToLevelUp *= 1.2f;
 
-        if (m_PlayerHealth != null)
+        if (m_Health != null)
         {
-            m_PlayerHealth.UpgradeMaxHealth(15);
+            m_Health.UpgradeMaxHealth(15);
         }
 
-        var fuel = _hub?.GetModule<Combating.Scripts.FuelController>();
+        var fuel = _hub?.GetModule<FuelController>();
         if (fuel != null) fuel.UpgradeMaxStats(0, 20f);
     }
 }

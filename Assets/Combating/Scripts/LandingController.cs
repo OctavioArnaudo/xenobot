@@ -4,25 +4,22 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    /// <summary>
-    /// Specialized controller for Landing audio and visual effects.
-    /// </summary>
-    public class LandingController : NetworkBehaviour, IPlayer
+    public class LandingController : NetworkBehaviour, IModular
     {
         [Header("Audio Settings")]
         public AudioClip LandingAudioClip;
         [Range(0, 1)] public float LandingAudioVolume = 0.5f;
 
         private CharacterController _controller;
-        private PlayerController _hub;
+        private ModularController _hub;
 
         private void Awake()
         {
-            _hub = GetComponentInParent<PlayerController>();
+            _hub = GetComponentInParent<ModularController>();
             if (_hub != null) Bind(_hub);
         }
 
-        public void Bind(PlayerController hub)
+        public void Bind(ModularController hub)
         {
             _hub = hub;
             if (_hub != null)

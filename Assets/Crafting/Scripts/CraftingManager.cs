@@ -4,6 +4,8 @@ using Unity.Netcode;
 using System.Collections.Generic;
 using Trades.Data;
 using System.Linq;
+using Crafting.Scripts;
+using Combating.Scripts;
 
 namespace Crafting.Scripts
 {
@@ -29,7 +31,6 @@ namespace Crafting.Scripts
         private Vector2 _scrollPos;
         private int _selectedRecipeIndex = -1;
 
-        // Styles & Textures
         private Texture2D _texPanel, _texSlot, _texSelected, _texBtnNormal, _texBtnHover;
         private GUIStyle _titleSty, _recipeSty, _btnSty, _infoSty, _qtySty;
         private bool _stylesReady;
@@ -108,42 +109,35 @@ namespace Crafting.Scripts
             float screenW = Screen.width;
             float screenH = Screen.height;
 
-            // Encontrar todos los inventories en la escena
-            var allInventories = Object.FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
-            var myInv = PlayerController.LocalInstance;
-            var otherInvs = allInventories.Where(x => x != myInv).ToList();
+            var allHubs = Object.FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
+            var myHub = PlayerController.LocalInstance;
+            var otherHubs = allHubs.Where(x => x != myHub).ToList();
 
-            // Layout de 3 columnas
-            float panelW = 450; // Ancho por panel
-            float totalW = panelW * 3 + 40; // 3 paneles + gaps
+            float panelW = 450;
+            float totalW = panelW * 3 + 40;
             float xStart = (screenW - totalW) / 2f;
             float y0 = (screenH - panelHeight) / 2f;
 
-            // 1. Panel Izquierda: Mi Inventario
-            if (myInv != null)
+            if (myHub != null)
             {
-                var items = myInv.GetModule<ItemsController>();
-                if (items != null) items.DrawInventoryUI(new Rect(xStart, y0, panelW, panelHeight), "MI INVENTARIO");
+                var inv = myHub.GetModule<InventoryController>();
+                if (inv != null) inv.DrawInventoryUI(new Rect(xStart, y0, panelW, panelHeight), "MI INVENTARIO");
             }
 
-            // 2. Panel Centro: Crafting
             Rect centerRect = new Rect(xStart + panelW + 20, y0, panelW, panelHeight);
             DrawCraftingPanel(centerRect);
 
-            // 3. Panel Derecha: Inventario de otro player (si hay)
-            if (otherInvs.Count > 0)
+            if (otherHubs.Count > 0)
             {
-                var items = otherInvs[0].GetModule<ItemsController>();
-                if (items != null) items.DrawInventoryUI(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), "INVENTARIO REMOTO");
+                var inv = otherHubs[0].GetModule<InventoryController>();
+                if (inv != null) inv.DrawInventoryUI(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), "INVENTARIO REMOTO");
             }
             else
             {
-                // Placeholder si no hay nadie más crafteando
                 GUI.DrawTexture(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), _texPanel);
                 GUI.Label(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), "ESPERANDO A OTRO JUGADOR PARA INTERCAMBIAR...", _infoSty);
             }
 
-            // Botón cerrar global
             if (GUI.Button(new Rect(screenW / 2 + totalW / 2 - 50, y0 + 15, 35, 35), "X", _btnSty)) SetOpen(false);
         }
 
@@ -156,7 +150,6 @@ namespace Crafting.Scripts
             Rect listRect = new Rect(rect.x + paddingInner, rect.y + titleH + 10, rect.width * 0.45f, rect.height - titleH - 30);
             Rect detailRect = new Rect(rect.x + rect.width * 0.5f, rect.y + titleH + 10, rect.width * 0.45f, rect.height - titleH - 30);
 
-            // Lista de recetas (scrollable)
             GUI.BeginGroup(listRect);
             _scrollPos = GUI.BeginScrollView(new Rect(0, 0, listRect.width, listRect.height), _scrollPos, new Rect(0, 0, listRect.width - 20, availableTrades.Count * 55));
             for (int i = 0; i < availableTrades.Count; i++)
@@ -179,7 +172,6 @@ namespace Crafting.Scripts
             GUI.EndScrollView();
             GUI.EndGroup();
 
-            // Detalle de receta
             if (_selectedRecipeIndex >= 0)
             {
                 TradeData recipe = availableTrades[_selectedRecipeIndex];
@@ -212,7 +204,6 @@ namespace Crafting.Scripts
             TradeData recipe = availableTrades[index];
             ulong myId = (NetworkManager.Singleton != null) ? NetworkManager.Singleton.LocalClientId : 0;
 
-            // Validación rápida antes de enviar al servidor (opcional, pero buena práctica)
             if (CanCraft(recipe))
             {
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient)
@@ -221,7 +212,6 @@ namespace Crafting.Scripts
                 }
                 else
                 {
-                    // Fallback Offline
                     ExecuteTradeLocal(index, myId);
                 }
             }
@@ -233,7 +223,7 @@ namespace Crafting.Scripts
 
         private bool CanCraft(TradeData recipe)
         {
-            var bag = PlayerController.GetBag();
+            var bag = InventoryController.GetBag();
             string key = recipe.InputItem.itemCode.ToLowerInvariant();
 
             if (bag.TryGetValue(key, out var slot))
@@ -256,23 +246,20 @@ namespace Crafting.Scripts
             TradeData recipe = availableTrades[recipeId];
             Debug.Log($"[Server/Local] Procesando tradeo {recipe.name} para cliente {clientId}");
 
-            // 1. Quitar ingredientes
             string inputKey = recipe.InputItem.itemCode.ToLowerInvariant();
             for (int i = 0; i < recipe.InputAmount; i++)
             {
-                PlayerController.RemoveItem(inputKey);
+                InventoryController.RemoveItem(inputKey);
             }
 
-            // 2. Añadir resultado
             for (int i = 0; i < recipe.OutputAmount; i++)
             {
-                PlayerController.Add(recipe.OutputItem);
+                InventoryController.Add(recipe.OutputItem);
             }
 
-            PlayerController.MarkCountDirty();
+            InventoryController.MarkCountDirty();
         }
 
-        // --- Market Logic (Placeholder centralizado) ---
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void OfferItemMarketServerRpc(string itemCode, int quantity, ulong senderId)
         {

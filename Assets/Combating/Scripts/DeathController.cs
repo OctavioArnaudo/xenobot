@@ -8,20 +8,20 @@ namespace Combating.Scripts
     /// <summary>
     /// Specialized controller for character Death events and destruction logic.
     /// </summary>
-    public class DeathController : NetworkBehaviour, IPlayer
+    public class DeathController : NetworkBehaviour, IModular
     {
         [Header("Events")]
         public UnityEvent OnDeath;
 
-        private PlayerController _hub;
+        private ModularController _hub;
 
         private void Awake()
         {
-            _hub = GetComponentInParent<PlayerController>();
+            _hub = GetComponentInParent<ModularController>();
             if (_hub != null) Bind(_hub);
         }
 
-        public void Bind(PlayerController hub)
+        public void Bind(ModularController hub)
         {
             _hub = hub;
             if (_hub != null) _hub.RegisterModule(this);
@@ -33,10 +33,10 @@ namespace Combating.Scripts
         {
             OnDeath?.Invoke();
 
-            // Check for spawn controller (loot, etc.)
-            if (TryGetComponent<SpawnController>(out var sc))
+            var spawnCtrl = (_hub != null) ? _hub.GetModule<SpawnController>() : GetComponent<SpawnController>();
+            if (spawnCtrl != null)
             {
-                sc.TriggerDeath();
+                spawnCtrl.TriggerDeath();
             }
             else
             {

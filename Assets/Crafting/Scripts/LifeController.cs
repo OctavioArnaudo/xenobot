@@ -44,13 +44,19 @@ namespace Crafting.Scripts
             }
         }
 
-        public void ApplyEffect(GameObject player)
+        public void ApplyEffect(GameObject entity)
         {
-            Combating.Scripts.HealthController health = player.GetComponent<Combating.Scripts.HealthController>();
+            HealthController health = entity.GetComponent<HealthController>();
+            if (health == null)
+            {
+                var hub = entity.GetComponent<ModularController>();
+                if (hub != null) health = hub.GetModule<HealthController>();
+            }
+
             if (health != null)
             {
                 health.Heal(healAmount);
-                Debug.Log($"[LifeController] Curado {healAmount} HP al jugador.");
+                Debug.Log($"[LifeController] Curado {healAmount} HP a {entity.name}.");
             }
         }
 
@@ -75,24 +81,24 @@ namespace Crafting.Scripts
             Mesh mesh = new Mesh();
             mesh.name = "Heart_Mesh";
 
-            float w = 0.4f; // half width
-            float h = 0.7f; // total height
-            float d = 0.15f; // half depth
-            float indent = 0.5f; // indent height
+            float w = 0.4f;
+            float h = 0.7f;
+            float d = 0.15f;
+            float indent = 0.5f;
 
             Vector3[] vertices = new Vector3[]
             {
-                new Vector3(0, 0, 0),             // 0: Bottom Tip
-                new Vector3(-w, 0.5f, d),        // 1: L Shoulder F
-                new Vector3(0, indent, d),       // 2: C Indent F
-                new Vector3(w, 0.5f, d),         // 3: R Shoulder F
-                new Vector3(-w, 0.5f, -d),       // 4: L Shoulder B
-                new Vector3(0, indent, -d),      // 5: C Indent B
-                new Vector3(w, 0.5f, -d),        // 6: R Shoulder B
-                new Vector3(-w*0.6f, h, d*0.5f), // 7: L Peak F
-                new Vector3(w*0.6f, h, d*0.5f),  // 8: R Peak F
-                new Vector3(-w*0.6f, h, -d*0.5f),// 9: L Peak B
-                new Vector3(w*0.6f, h, -d*0.5f)  // 10: R Peak B
+                new Vector3(0, 0, 0),
+                new Vector3(-w, 0.5f, d),
+                new Vector3(0, indent, d),
+                new Vector3(w, 0.5f, d),
+                new Vector3(-w, 0.5f, -d),
+                new Vector3(0, indent, -d),
+                new Vector3(w, 0.5f, -d),
+                new Vector3(-w*0.6f, h, d*0.5f),
+                new Vector3(w*0.6f, h, d*0.5f),
+                new Vector3(-w*0.6f, h, -d*0.5f),
+                new Vector3(w*0.6f, h, -d*0.5f)
             };
 
             int[] triangles = new int[]

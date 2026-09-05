@@ -8,7 +8,7 @@ using Combating.Scripts;
 /// Specialized controller for character HUD and Identity visuals.
 /// Only handles rendering and visual feedback.
 /// </summary>
-public class UiController : NetworkBehaviour, IPlayer
+public class UiController : NetworkBehaviour, IModular
 {
     public static UiController Instance { get; private set; }
 
@@ -28,7 +28,7 @@ public class UiController : NetworkBehaviour, IPlayer
     private HudController _stats;
     private Combating.Scripts.FuelController _fuel;
     private HealthController _health;
-    private PlayerController _hub;
+    private ModularController _hub;
 
     private float _lastTimeUpdate;
     private string _cachedTimeStr = "00:00";
@@ -45,12 +45,12 @@ public class UiController : NetworkBehaviour, IPlayer
         if (Instance != null && Instance != this) { Destroy(this); return; }
         Instance = this;
 
-        _hub = GetComponentInParent<PlayerController>();
+        _hub = GetComponentInParent<ModularController>();
         if (_hub != null) Bind(_hub);
         else ResolveReferences();
     }
 
-    public void Bind(PlayerController hub)
+    public void Bind(ModularController hub)
     {
         _hub = hub;
         if (_hub != null)
@@ -85,12 +85,11 @@ public class UiController : NetworkBehaviour, IPlayer
 
     private void ResolveReferences()
     {
-        var hub = GetComponentInParent<PlayerController>();
-        if (hub != null)
+        if (_hub != null)
         {
-            if (_stats == null) _stats = hub.GetComponentInChildren<HudController>();
-            if (_fuel == null) _fuel = hub.GetComponentInChildren<Combating.Scripts.FuelController>();
-            if (_health == null) _health = hub.GetComponentInChildren<HealthController>();
+            if (_stats == null) _stats = _hub.GetModule<HudController>();
+            if (_fuel == null) _fuel = _hub.GetModule<Combating.Scripts.FuelController>();
+            if (_health == null) _health = _hub.GetModule<HealthController>();
         }
 
         if (_stats == null) _stats = GetComponent<HudController>();
@@ -132,7 +131,7 @@ public class UiController : NetworkBehaviour, IPlayer
             else
             {
                 _aureoleRoot = new GameObject("AureoleRoot").transform;
-                Animator anim = GetComponentInChildren<Animator>();
+                Animator anim = (_hub != null) ? _hub.animator : GetComponentInChildren<Animator>();
                 Transform headBone = anim != null && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.Head) : null;
                 _aureoleRoot.SetParent(headBone != null ? headBone : transform);
                 _aureoleRoot.localPosition = headBone != null ? new Vector3(0, 0.4f, 0) : _aureoleBaseOffset;
@@ -148,8 +147,6 @@ public class UiController : NetworkBehaviour, IPlayer
     void OnGUI()
     {
         if (Event.current.type != EventType.Repaint) return;
-
-        // Verificar si la escena actual está en la lista de permitidas
         string currentScene = SceneManager.GetActiveScene().name;
         if (!allowedScenes.Contains(currentScene)) return;
 

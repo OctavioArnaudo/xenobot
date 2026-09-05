@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
+using Combating.Scripts;
 
 namespace Crafting.Scripts
 {
@@ -8,7 +9,7 @@ namespace Crafting.Scripts
     /// Specialized modular controller for appearance changes.
     /// Handles hiding current visuals and restoring them when removed.
     /// </summary>
-    public class CostumeController : MonoBehaviour, IItemFunctional, IPlayer
+    public class CostumeController : MonoBehaviour, IItemFunctional, IModular
     {
         [Header("Settings")]
         [Tooltip("Tag to find the render root in the player hierarchy")]
@@ -16,9 +17,9 @@ namespace Crafting.Scripts
 
         private GameObject _modelHiddenByMe;
         private bool _isEquipped = false;
-        private PlayerController _hub;
+        private ModularController _hub;
 
-        public void Bind(PlayerController hub)
+        public void Bind(ModularController hub)
         {
             _hub = hub;
             if (_hub != null) _hub.RegisterModule(this);
@@ -30,7 +31,7 @@ namespace Crafting.Scripts
         {
             if (_isEquipped) return;
 
-            if (_hub == null) _hub = player.GetComponent<PlayerController>();
+            if (_hub == null) _hub = player.GetComponent<ModularController>();
 
             // 1. Find the target render root
             GameObject renderRoot = (_hub != null && _hub.renderRoot != null)

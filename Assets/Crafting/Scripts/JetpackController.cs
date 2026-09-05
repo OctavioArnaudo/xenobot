@@ -1,5 +1,5 @@
 using UnityEngine;
-using Crafting.Scripts;
+using Combating.Scripts;
 using System.Collections.Generic;
 
 namespace Crafting.Scripts
@@ -40,18 +40,16 @@ namespace Crafting.Scripts
             #endif
         }
 
-        public void ApplyEffect(GameObject player)
+        public void ApplyEffect(GameObject entity)
         {
-            // Posicionar en la espalda del robot
             transform.localPosition = new Vector3(0, 2.4f, -0.35f);
             transform.localRotation = Quaternion.identity;
 
-            Debug.Log("[JetpackController] Visuales de jetpack vinculados al jugador.");
+            Debug.Log($"[JetpackController] Visuales de jetpack vinculados a {entity.name}.");
         }
 
         public void GenerateJetpackMesh()
         {
-            // 1. Buscar o Crear el objeto visual único
             Transform renderTransform = transform.Find("JetpackRender");
             GameObject visual;
 
@@ -73,20 +71,15 @@ namespace Crafting.Scripts
             if (!visual.TryGetComponent<MeshRenderer>(out MeshRenderer mr))
                 mr = visual.AddComponent<MeshRenderer>();
 
-            // 2. Construcción de Malla Única
             Mesh mesh = new Mesh();
             mesh.name = "Jetpack_Mesh";
 
             List<Vector3> verts = new List<Vector3>();
             List<int> tris = new List<int>();
 
-            // Cuerpo Central (Placa de espalda)
             AddBox(verts, tris, Vector3.zero, new Vector3(0.5f, 0.7f, 0.2f));
-            // Tanque Izquierdo
             AddBox(verts, tris, new Vector3(-0.35f, 0, 0.05f), new Vector3(0.25f, 0.6f, 0.25f));
-            // Tanque Derecho
             AddBox(verts, tris, new Vector3(0.35f, 0, 0.05f), new Vector3(0.25f, 0.6f, 0.25f));
-            // Toberas
             AddBox(verts, tris, new Vector3(-0.35f, -0.4f, 0.05f), new Vector3(0.15f, 0.2f, 0.15f));
             AddBox(verts, tris, new Vector3(0.35f, -0.4f, 0.05f), new Vector3(0.15f, 0.2f, 0.15f));
 
@@ -104,7 +97,6 @@ namespace Crafting.Scripts
 
             mf.sharedMesh = mesh;
 
-            // 3. Material (Robust URP Support)
             Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
 
             if (mr.sharedMaterial == null || mr.sharedMaterial.shader != shader)
@@ -113,7 +105,6 @@ namespace Crafting.Scripts
                 mr.sharedMaterial.name = "Jetpack_Material";
             }
 
-            // Aplicar color de forma segura para URP y Standard
             mr.sharedMaterial.color = jetpackColor;
             if (mr.sharedMaterial.HasProperty("_BaseColor"))
                 mr.sharedMaterial.SetColor("_BaseColor", jetpackColor);
@@ -127,15 +118,14 @@ namespace Crafting.Scripts
             int vCount = verts.Count;
             Vector3 h = size * 0.5f;
 
-            // FIX: Vertex 7 was wrong (z was -h.z instead of h.z)
-            verts.Add(center + new Vector3(-h.x, -h.y, -h.z)); // 0
-            verts.Add(center + new Vector3(h.x, -h.y, -h.z));  // 1
-            verts.Add(center + new Vector3(h.x, h.y, -h.z));   // 2
-            verts.Add(center + new Vector3(-h.x, h.y, -h.z));  // 3
-            verts.Add(center + new Vector3(-h.x, -h.y, h.z));  // 4
-            verts.Add(center + new Vector3(h.x, -h.y, h.z));   // 5
-            verts.Add(center + new Vector3(h.x, h.y, h.z));    // 6
-            verts.Add(center + new Vector3(-h.x, h.y, h.z));   // 7
+            verts.Add(center + new Vector3(-h.x, -h.y, -h.z));
+            verts.Add(center + new Vector3(h.x, -h.y, -h.z));
+            verts.Add(center + new Vector3(h.x, h.y, -h.z));
+            verts.Add(center + new Vector3(-h.x, h.y, -h.z));
+            verts.Add(center + new Vector3(-h.x, -h.y, h.z));
+            verts.Add(center + new Vector3(h.x, -h.y, h.z));
+            verts.Add(center + new Vector3(h.x, h.y, h.z));
+            verts.Add(center + new Vector3(-h.x, h.y, h.z));
 
             int[] cubeTris = {
                 0,2,1, 0,3,2, 4,5,6, 4,6,7,

@@ -4,7 +4,7 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    public class MovementController : NetworkBehaviour, IPlayer
+    public class MovementController : NetworkBehaviour, IModular
     {
         [Header("Settings")]
         public float MoveSpeed = 10.0f;
@@ -18,7 +18,7 @@ namespace Combating.Scripts
         private float _rotationVelocity;
 
         private CharacterController _controller;
-        private PlayerController _hub;
+        private ModularController _hub;
         private Transform _renderTransform;
         private bool _isGrounded;
 
@@ -27,11 +27,11 @@ namespace Combating.Scripts
 
         private void Awake()
         {
-            if (_hub == null) _hub = GetComponentInParent<PlayerController>();
+            if (_hub == null) _hub = GetComponentInParent<ModularController>();
             if (_hub != null) Bind(_hub);
         }
 
-        public void Bind(PlayerController hub)
+        public void Bind(ModularController hub)
         {
             _hub = hub;
             if (_hub != null)
@@ -46,7 +46,6 @@ namespace Combating.Scripts
         {
             if (_hub != null)
             {
-                // Priorizar el transform del modelo activo, no el contenedor raíz
                 _renderTransform = (_hub.activeModel != null) ? _hub.activeModel.transform : _hub.renderRoot;
                 _controller = _hub.controller ?? _hub.GetComponent<CharacterController>();
             }
@@ -55,21 +54,30 @@ namespace Combating.Scripts
         private void Start()
         {
             if (_hub == null) _hub = PlayerController.LocalInstance;
-            if (_hub != null) _renderTransform = _hub.transform.Find("PlayerRender");
+            if (_hub != null && _renderTransform == null) _renderTransform = _hub.renderRoot;
         }
 
         private void Update()
         {
-            if (_hub == null) _hub = PlayerController.LocalInstance;
-            if (_hub == null || !HasInputAuthority) return;
+            if (_hub == null) return;
+            if (!HasInputAuthority) return;
 
             if (_controller == null) _controller = _hub.controller ?? _hub.GetComponent<CharacterController>();
             if (_controller == null) return;
 
-            // _renderTransform is now maintained by OnRefreshModule() via Hub.renderRoot
-
             ApplyPhysics();
-            ApplyMovement();
+
+            // Movement is driven by PlayerController input
+            if (_hub is PlayerController playerHub)
+            {
+                ApplyMovement(playerHub);
+            }
+            else
+            {
+                // For Non-Player (AI), vertical velocity still applies
+                Vector3 motion = Vector3.up * _verticalVelocity;
+                _controller.Move(motion * Time.deltaTime);
+            }
         }
 
         private void ApplyPhysics()
@@ -79,10 +87,11 @@ namespace Combating.Scripts
             if (_isGrounded)
             {
                 if (_verticalVelocity < 0) _verticalVelocity = -2f;
-                if (_hub.jump)
+
+                if (_hub is PlayerController player && player.jump)
                 {
                     _verticalVelocity = Mathf.Sqrt(4.0f * -2f * Gravity);
-                    _hub.jump = false;
+                    player.jump = false;
                 }
             }
             else
@@ -91,25 +100,22 @@ namespace Combating.Scripts
             }
         }
 
-        private void ApplyMovement()
+        private void ApplyMovement(PlayerController player)
         {
-            // Ajuste de velocidades: 25 base, 62.5 en sprint
-            float targetSpeed = _hub.sprint ? MoveSpeed * 2.5f : MoveSpeed;
-            if (_hub.move == Vector2.zero) targetSpeed = 0.0f;
+            float targetSpeed = player.sprint ? MoveSpeed * 2.5f : MoveSpeed;
+            if (player.move == Vector2.zero) targetSpeed = 0.0f;
 
             _speed = Mathf.Lerp(_speed, targetSpeed, Time.deltaTime * SpeedChangeRate);
 
-            if (_hub.move != Vector2.zero)
+            if (player.move != Vector2.zero)
             {
-                // ESTABILIDAD TOTAL: Usamos la propiedad Yaw limpia del módulo
                 var camCtrl = _hub.GetModule<CameraController>();
                 float camYaw = (camCtrl != null) ? camCtrl.Yaw : 0;
 
-                float inputRotation = Mathf.Atan2(_hub.move.x, _hub.move.y) * Mathf.Rad2Deg + camYaw;
+                float inputRotation = Mathf.Atan2(player.move.x, player.move.y) * Mathf.Rad2Deg + camYaw;
 
                 if (_renderTransform != null)
                 {
-                    // Giro ultra-rápido (0.03s)
                     float rotation = Mathf.SmoothDampAngle(_renderTransform.eulerAngles.y, inputRotation, ref _rotationVelocity, 0.03f);
                     _renderTransform.rotation = Quaternion.Euler(0, rotation, 0);
                 }
@@ -117,23 +123,20 @@ namespace Combating.Scripts
             }
 
             Vector3 moveDir = Quaternion.Euler(0, _targetRotation, 0) * Vector3.forward;
-            if (_hub.move == Vector2.zero) moveDir = Vector3.zero;
+            if (player.move == Vector2.zero) moveDir = Vector3.zero;
 
             Vector3 finalMotion = (moveDir * _speed) + (Vector3.up * _verticalVelocity);
             _controller.Move(finalMotion * Time.deltaTime);
 
-            // LOGICA DE ANIMACIÓN: Sincronizada con "New Animator Controller 1"
-            if (_hub.animator != null)
+            if (player.animator != null)
             {
-                _hub.animator.SetFloat("Speed", _speed);
-                _hub.animator.SetBool("isGrounded", _isGrounded);
+                player.animator.SetFloat("Speed", _speed);
+                player.animator.SetBool("isGrounded", _isGrounded);
 
-                // Solo intentamos setear lo que existe para evitar errores en consola
-                if (_hub.jump && HasParameter(_hub.animator, "Jump")) _hub.animator.SetBool("Jump", true);
+                if (player.jump && HasParameter(player.animator, "Jump")) player.animator.SetBool("Jump", true);
             }
         }
 
-        // Método auxiliar para evitar errores de "Parameter not found"
         private bool HasParameter(Animator anim, string paramName)
         {
             if (anim == null || anim.runtimeAnimatorController == null) return false;
@@ -150,6 +153,6 @@ namespace Combating.Scripts
             _speed = 0;
         }
 
-        public void RefreshFunctionalComponents() { _hub = GetComponentInParent<PlayerController>(); _controller = null; }
+        public void RefreshFunctionalComponents() { _hub = GetComponentInParent<ModularController>(); _controller = null; }
     }
 }

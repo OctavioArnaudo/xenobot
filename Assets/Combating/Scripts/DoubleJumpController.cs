@@ -4,20 +4,17 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    /// <summary>
-    /// Modular component to enable/configure double jumping.
-    /// </summary>
-    public class DoubleJumpController : NetworkBehaviour, IPlayer
+    public class DoubleJumpController : NetworkBehaviour, IModular
     {
-        private PlayerController _hub;
+        private ModularController _hub;
 
         private void Awake()
         {
-            _hub = GetComponentInParent<PlayerController>();
+            _hub = GetComponentInParent<ModularController>();
             if (_hub != null) Bind(_hub);
         }
 
-        public void Bind(PlayerController hub)
+        public void Bind(ModularController hub)
         {
             _hub = hub;
             if (_hub != null) _hub.RegisterModule(this);

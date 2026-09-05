@@ -7,11 +7,7 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    /// <summary>
-    /// Specialized controller for player Respawn and scene spawning.
-    /// Operates on the player root transform.
-    /// </summary>
-    public class RespawnController : NetworkBehaviour, IPlayer
+    public class RespawnController : NetworkBehaviour, IModular
     {
         [System.Serializable]
         public struct SceneSpawnConfig
@@ -22,21 +18,22 @@ namespace Combating.Scripts
 
         [Header("Respawn & Spawning")]
         public List<SceneSpawnConfig> SceneSpawns = new List<SceneSpawnConfig>();
+        public float FallThreshold = -50f;
         public AudioClip respawnSound;
 
         private Vector3 _startingPosition;
         private Quaternion _startingRotation;
-        private PlayerController _hub;
+        private ModularController _hub;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
         private void Awake()
         {
-            _hub = GetComponentInParent<PlayerController>();
+            _hub = GetComponentInParent<ModularController>();
             if (_hub != null) Bind(_hub);
         }
 
-        public void Bind(PlayerController hub)
+        public void Bind(ModularController hub)
         {
             _hub = hub;
             if (_hub != null) _hub.RegisterModule(this);
@@ -46,7 +43,6 @@ namespace Combating.Scripts
 
         private void Start()
         {
-            if (_hub == null) _hub = GetComponentInParent<PlayerController>();
             if (_hub == null) _hub = PlayerController.LocalInstance;
 
             if (_hub != null)
@@ -60,12 +56,8 @@ namespace Combating.Scripts
 
         private IEnumerator TeleportSequence()
         {
-            // 1. Esperar a que la escena se estabilice un poco más
             yield return new WaitForSeconds(0.3f);
-
             string sceneName = SceneManager.GetActiveScene().name;
-
-            // 2. Intentar spawnear hasta 15 veces (útil para escenas pesadas en red)
             bool success = false;
             for (int i = 0; i < 15; i++)
             {
@@ -109,24 +101,16 @@ namespace Combating.Scripts
             if (spawnPoint != null && Vector3.Distance(spawnPoint.transform.position, Vector3.zero) > 0.1f)
             {
                 if (_hub.controller != null) _hub.controller.enabled = false;
-
-                // Forzar posición y rotación
                 _hub.transform.SetPositionAndRotation(spawnPoint.transform.position, spawnPoint.transform.rotation);
-
-                // CRÍTICO: Avisar al sistema de físicas que el objeto se movió manualmente
                 Physics.SyncTransforms();
 
-                // Resetear velocidad en el MovementController
-                var move = _hub.GetComponentInChildren<MovementController>();
+                var move = _hub.GetModule<MovementController>();
                 if (move != null) move.ResetPhysics();
 
-                // Solo guardamos como punto de respawn si no es el origen
                 _startingPosition = _hub.transform.position;
                 _startingRotation = _hub.transform.rotation;
 
                 if (_hub.controller != null) _hub.controller.enabled = true;
-
-                Debug.Log($"[RespawnController] EXITO: Jugador teletransportado a {spawnPoint.name} (Tag: {targetTag}) en {spawnPoint.transform.position}");
                 return true;
             }
             return false;
@@ -134,32 +118,26 @@ namespace Combating.Scripts
 
         private GameObject FindSpawnPoint(string tag)
         {
-            // 1. Intentar encontrar un spawn point que sea hijo del gestor de misiones o bioma (más específico)
             GameObject[] tagged = GameObject.FindGameObjectsWithTag(tag);
             if (tagged.Length > 0)
             {
-                // Ordenar por cercanía a la posición actual del objeto (útil para checkpoints)
                 System.Array.Sort(tagged, (a, b) =>
                     Vector3.Distance(transform.position, a.transform.position).CompareTo(
                     Vector3.Distance(transform.position, b.transform.position)));
-
                 return tagged[0];
             }
-
-            // 2. Intentar búsqueda profunda por nombre si el Tag falló
-            var allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
-            foreach (var t in allTransforms)
-            {
-                // Solo objetos que estén en una escena activa (no prefabs)
-                if (t.gameObject.scene.name == null) continue;
-
-                if (t.CompareTag(tag) || t.name.Equals(tag, System.StringComparison.OrdinalIgnoreCase))
-                {
-                    return t.gameObject;
-                }
-            }
-
             return null;
+        }
+
+        void Update()
+        {
+            bool hasAuthority = (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening) ? true : IsOwner;
+            if (!hasAuthority || _hub == null) return;
+
+            if (_hub.transform.position.y < FallThreshold)
+            {
+                Respawn();
+            }
         }
 
         public void Respawn()
@@ -172,7 +150,7 @@ namespace Combating.Scripts
 
             if (_hub.controller != null) _hub.controller.enabled = true;
 
-            var cam = _hub.GetComponentInChildren<CameraController>();
+            var cam = _hub.GetModule<CameraController>();
             if (cam != null) cam.ResetCameraRotation(_startingRotation.eulerAngles.y);
 
             if (respawnSound != null) AudioSource.PlayClipAtPoint(respawnSound, _hub.transform.position);

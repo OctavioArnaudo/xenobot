@@ -7,20 +7,21 @@ namespace Combating.Scripts
     /// <summary>
     /// Specialized controller for character Jetpack fuel management.
     /// </summary>
-    public class FuelController : NetworkBehaviour, IPlayer
+    public class FuelController : NetworkBehaviour, IModular
     {
         [Header("Jetpack Settings")]
         public float maxJetpack = 100f;
 
         private float m_Jetpack;
+        private ModularController _hub;
 
         public float JetpackFuel => m_Jetpack;
 
         void Awake()
         {
             m_Jetpack = maxJetpack;
-            var hub = GetComponentInParent<PlayerController>();
-            if (hub != null) Bind(hub);
+            _hub = GetComponentInParent<ModularController>();
+            if (_hub != null) Bind(_hub);
         }
 
         public override void OnNetworkSpawn()
@@ -28,9 +29,10 @@ namespace Combating.Scripts
             m_Jetpack = maxJetpack;
         }
 
-        public void Bind(PlayerController hub)
+        public void Bind(ModularController hub)
         {
-            if (hub != null) hub.RegisterModule(this);
+            _hub = hub;
+            if (_hub != null) _hub.RegisterModule(this);
         }
 
         public void OnRefreshModule() { }
@@ -47,8 +49,7 @@ namespace Combating.Scripts
 
         public void UpgradeMaxStats(int healthBonus, float jetpackBonus)
         {
-            // Update Health through HealthController
-            var health = GetComponent<HealthController>();
+            var health = (_hub != null) ? _hub.GetModule<HealthController>() : GetComponent<HealthController>();
             if (health != null) health.UpgradeMaxHealth(healthBonus);
 
             maxJetpack += jetpackBonus;

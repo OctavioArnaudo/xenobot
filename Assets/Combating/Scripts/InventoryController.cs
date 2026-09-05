@@ -26,13 +26,13 @@ namespace Crafting.Scripts
     }
 
     [RequireComponent(typeof(SpawnController))]
-    public class ItemsController : NetworkBehaviour, IPlayer
+    public class InventoryController : NetworkBehaviour, IModular
     {
-        public static ItemsController LocalInstance { get; private set; }
+        public static InventoryController LocalInstance { get; private set; }
 
-        private PlayerController _hub;
+        private ModularController _hub;
 
-        public void Bind(PlayerController hub)
+        public void Bind(ModularController hub)
         {
             _hub = hub;
             if (_hub != null)
@@ -107,7 +107,7 @@ namespace Crafting.Scripts
         {
             if (IsOwner) LocalInstance = this;
 
-            _hub = GetComponentInParent<PlayerController>();
+            _hub = GetComponentInParent<ModularController>();
             if (_hub != null) Bind(_hub);
 
             NetworkBag.OnListChanged += (changeEvent) => RefreshLocalCache();
@@ -124,8 +124,8 @@ namespace Crafting.Scripts
 
         public GameObject GetPrefabFromList(string prefabName)
         {
-            if (_hub == null || _hub.moduleLibrary == null) return null;
-            return _hub.moduleLibrary.FirstOrDefault(x => x != null && x.name == prefabName);
+            if (_hub == null) return null;
+            return _hub.GetPrefabFromList(prefabName);
         }
 
         private void RefreshLocalCache()

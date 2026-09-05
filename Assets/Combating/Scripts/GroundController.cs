@@ -4,25 +4,22 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    /// <summary>
-    /// Specialized controller for Ground-related audio and visual effects (e.g. Footsteps).
-    /// </summary>
-    public class GroundController : NetworkBehaviour, IPlayer
+    public class GroundController : NetworkBehaviour, IModular
     {
         [Header("Audio Settings")]
         public AudioClip[] FootstepAudioClips;
         [Range(0, 1)] public float FootstepAudioVolume = 0.5f;
 
         private CharacterController _controller;
-        private PlayerController _hub;
+        private ModularController _hub;
 
         private void Awake()
         {
-            _hub = GetComponentInParent<PlayerController>();
+            _hub = GetComponentInParent<ModularController>();
             if (_hub != null) Bind(_hub);
         }
 
-        public void Bind(PlayerController hub)
+        public void Bind(ModularController hub)
         {
             _hub = hub;
             if (_hub != null)

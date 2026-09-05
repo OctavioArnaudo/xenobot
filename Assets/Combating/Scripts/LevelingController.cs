@@ -1,22 +1,20 @@
 using UnityEngine;
 using Unity.Netcode;
 using Crafting.Scripts;
+using Combating.Scripts;
 
-/// <summary>
-/// Specialized controller for character leveling and progression logic.
-/// </summary>
-public class LevelingController : NetworkBehaviour, IPlayer
+public class LevelingController : NetworkBehaviour, IModular
 {
     private HudController _stats;
-    private PlayerController _hub;
+    private ModularController _hub;
 
     void Awake()
     {
-        _hub = GetComponentInParent<PlayerController>();
+        _hub = GetComponentInParent<ModularController>();
         if (_hub != null) Bind(_hub);
     }
 
-    public void Bind(PlayerController hub)
+    public void Bind(ModularController hub)
     {
         _hub = hub;
         if (_hub != null)

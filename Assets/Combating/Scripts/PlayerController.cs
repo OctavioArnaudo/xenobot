@@ -8,25 +8,7 @@ using Combating.Scripts;
 
 namespace Crafting.Scripts
 {
-    /// <summary>
-    /// Interfaz base para todos los módulos que forman parte del ecosistema del Jugador.
-    /// Permite una vinculación (Binding) explícita con el Hub central.
-    /// </summary>
-    public interface IPlayer
-    {
-        /// <summary>
-        /// Vincula el módulo con el PlayerController central.
-        /// Se llama inmediatamente después de la instanciación o en el Awake/OnNetworkSpawn.
-        /// </summary>
-        void Bind(PlayerController hub);
-
-        /// <summary>
-        /// Se llama cuando el Hub detecta un cambio importante en la jerarquía
-        /// (ej: cambio de traje, cambio de animator).
-        /// </summary>
-        void OnRefreshModule();
-    }
-    public class PlayerController : NetworkBehaviour
+    public class PlayerController : ModularController
     {
         public static PlayerController LocalInstance { get; private set; }
 
@@ -35,29 +17,6 @@ namespace Crafting.Scripts
         public List<GameObject> moduleLibrary;
 
         public NetworkVariable<int> EquippedWeaponHash = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-
-        private Dictionary<int, GameObject> _equippedInstances = new();
-        private Dictionary<System.Type, MonoBehaviour> _registeredModules = new();
-
-        public T GetModule<T>() where T : MonoBehaviour
-        {
-            if (_registeredModules.TryGetValue(typeof(T), out var module))
-                return module as T;
-
-            // Fallback: búsqueda directa si no está registrado aún
-            var found = GetComponentInChildren<T>();
-            if (found != null) _registeredModules[typeof(T)] = found;
-            return found;
-        }
-
-        public void RegisterModule(MonoBehaviour module)
-        {
-            var type = module.GetType();
-            if (!_registeredModules.ContainsKey(type))
-            {
-                _registeredModules[type] = module;
-            }
-        }
 
         [Header("Panel Settings")]
         public Color accentColor = new Color(1f, 0.85f, 0f, 1f);
@@ -80,36 +39,14 @@ namespace Crafting.Scripts
         public bool cursorLocked = true;
         public bool cursorInputForLook = true;
 
-        [Header("Core References")]
-        public CharacterController controller;
-        public Animator animator;
-        public GameObject mainCamera;
-
-        [Header("Hierarchy Articulation")]
-        public Transform renderRoot;
-        public GameObject cameraTarget;
-        public RenderController activeModel;
-
-        // Dynamic properties that always point to the active model's bones
-        // Usamos EnsurePoints para evitar que la cámara apunte al 0,0,0 por falta de inicialización
-        public Transform HeadPoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.headPoint : null; } }
-        public Transform SpinePoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.spinePoint : null; } }
-        public Transform MuzzlePoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.muzzlePoint : null; } }
-        public Transform CameraLookAtPoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.cameraLookAtPoint : null; } }
-
         private static int s_CollectiblesRemaining = 0;
         private static bool s_CountDirty = true;
         private float _countUpdateTimer = 0f;
 
         PlayerInput _playerInput;
-        SpawnController _spawnController;
-
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
-        private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
 
         private void Awake()
         {
-            // En offline, este es siempre el LocalInstance
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
             {
                 LocalInstance = this;
@@ -126,7 +63,6 @@ namespace Crafting.Scripts
         private void InitializeComponents()
         {
             _playerInput = GetComponent<PlayerInput>();
-            _spawnController = GetComponent<SpawnController>();
 
             if (controller == null) controller = GetComponent<CharacterController>();
             if (controller != null)
@@ -140,18 +76,13 @@ namespace Crafting.Scripts
             }
 
             if (animator == null) animator = GetComponentInChildren<Animator>();
-
-            // 1. Sanitize Hierarchy positions
-            // Los módulos autónomos se encargan de su propia jerarquía
             if (renderRoot == null) renderRoot = transform.Find("PlayerRender");
 
-            // 2. Búsqueda de la cámara
             if (mainCamera == null)
             {
                 mainCamera = GetComponentInChildren<Camera>(true)?.gameObject;
             }
 
-            // IMPORTANTE: Primero descubrimos el cuerpo y sus huesos, LUEGO creamos los módulos
             RefreshBodyReferences();
             EnsureCoreModules();
             RefreshInputActions();
@@ -159,7 +90,6 @@ namespace Crafting.Scripts
 
         private void EnsureCoreModules()
         {
-            // Combinar fuentes de prefabs: library manual + asset de red
             List<GameObject> allPrefabs = new List<GameObject>();
             if (moduleLibrary != null) allPrefabs.AddRange(moduleLibrary);
             if (networkPrefabs != null)
@@ -172,23 +102,20 @@ namespace Crafting.Scripts
 
             if (allPrefabs.Count == 0) return;
 
-            // Tipos de componentes que buscamos instanciar
             System.Type[] coreComponentTypes = {
                 typeof(MovementController), typeof(CameraController), typeof(CursorController),
                 typeof(RespawnController), typeof(HudController), typeof(UiController),
                 typeof(LevelingController), typeof(HealthController), typeof(DamageController),
                 typeof(DeathController), typeof(FuelController), typeof(SpawnController),
                 typeof(SprintController), typeof(SingleJumpController), typeof(DoubleJumpController),
-                typeof(GroundController), typeof(LandingController), typeof(MeleeController),
-                typeof(ShootController), typeof(ItemsController), typeof(CostumeController)
+                typeof(GroundController),                typeof(LandingController), typeof(MeleeController),
+                typeof(ShootController), typeof(InventoryController), typeof(CostumeController)
             };
 
             foreach (var type in coreComponentTypes)
             {
-                // 1. Verificamos si ya existe el componente en el Player o sus hijos
                 if (GetComponentInChildren(type, true) != null) continue;
 
-                // 2. Buscamos en la librería un prefab que tenga ese componente
                 GameObject prefab = null;
                 foreach (var item in allPrefabs)
                 {
@@ -199,15 +126,12 @@ namespace Crafting.Scripts
                     }
                 }
 
-                // 3. Si lo encontramos, lo instanciamos
                 if (prefab != null)
                 {
                     GameObject instance = Instantiate(prefab, transform);
-                    // Le ponemos el nombre del tipo para mantener orden
                     instance.name = type.Name;
 
-                    // Vinculamos usando la nueva interfaz IPlayer
-                    foreach (var module in instance.GetComponentsInChildren<IPlayer>(true))
+                    foreach (var module in instance.GetComponentsInChildren<IModular>(true))
                     {
                         module.Bind(this);
                     }
@@ -217,14 +141,29 @@ namespace Crafting.Scripts
                         netObj.Spawn(true);
                     }
                 }
-                else
+            }
+        }
+
+        public override void RefreshBodyReferences()
+        {
+            base.RefreshBodyReferences();
+
+            // Player-specific logic for Default Model
+            if (activeModel == null && renderRoot != null)
+            {
+                var defaultPrefab = GetPrefabFromList("DefaultPlayerModel") ?? GetPrefabFromList("ROBOTO FBX ANIMACIONES OK");
+                if (defaultPrefab != null)
                 {
-                    Debug.LogWarning($"[PlayerController] No se encontró un prefab en la moduleLibrary para el sistema: {type.Name}");
+                    var go = Instantiate(defaultPrefab, renderRoot);
+                    go.name = "DefaultModel";
+                    go.SetActive(true);
+                    activeModel = go.GetComponent<RenderController>() ?? go.AddComponent<RenderController>();
+                    base.RefreshBodyReferences(); // Re-run base to sync animator/target
                 }
             }
         }
 
-        public GameObject GetPrefabFromList(string prefabName)
+        public override GameObject GetPrefabFromList(string prefabName)
         {
             if (moduleLibrary != null)
             {
@@ -237,90 +176,6 @@ namespace Crafting.Scripts
                 if (p.Prefab != null) return p.Prefab;
             }
             return null;
-        }
-
-        public void RefreshBodyReferences()
-        {
-            // 1. Auto-discovery of hierarchy if not set
-            if (renderRoot == null) renderRoot = transform.Find("PlayerRender");
-            if (cameraTarget == null) cameraTarget = transform.Find("PlayerTarget")?.gameObject;
-
-            // 2. Intelligent Model Discovery (Supporting Variant Prefabs)
-            if (renderRoot != null)
-            {
-                // Priorizamos los hijos (Variant Prefabs) sobre el contenedor root para que los puntos de interés específicos manden
-                activeModel = renderRoot.GetComponentsInChildren<RenderController>(true)
-                    .FirstOrDefault(rc => rc.transform != renderRoot)
-                    ?? renderRoot.GetComponent<RenderController>();
-
-                if (activeModel != null)
-                {
-                    // Ensure the model is active.
-                    activeModel.gameObject.SetActive(true);
-                }
-                else
-                {
-                    // Bootstrapping Visual: If no model found, look for default in library
-                    var defaultPrefab = GetPrefabFromList("DefaultPlayerModel") ?? GetPrefabFromList("ROBOTO FBX ANIMACIONES OK");
-                    if (defaultPrefab != null)
-                    {
-                        var go = Instantiate(defaultPrefab, renderRoot);
-                        go.name = "DefaultModel";
-                        go.SetActive(true);
-                        activeModel = go.GetComponent<RenderController>() ?? go.AddComponent<RenderController>();
-                    }
-                    else
-                    {
-                        // Final fallback: Make the renderRoot itself the model
-                        activeModel = renderRoot.gameObject.AddComponent<RenderController>();
-                    }
-                }
-            }
-
-            // 3. Sync critical components
-            if (activeModel != null)
-            {
-                animator = activeModel.Animator;
-
-                // Forzar al Animator a reiniciarse con el nuevo Avatar
-                if (animator != null)
-                {
-                    animator.enabled = true;
-                    animator.Rebind();
-                    animator.Update(0);
-                }
-
-                // Ensure all renderers are enabled
-                foreach (var r in activeModel.GetComponentsInChildren<Renderer>(true))
-                {
-                    r.enabled = true;
-                }
-
-                if (cameraTarget != null)
-                {
-                    // Initial target position sync
-                    Transform lookPoint = CameraLookAtPoint ?? HeadPoint ?? activeModel.transform;
-                    cameraTarget.transform.position = lookPoint.position;
-                }
-            }
-            else
-            {
-                animator = GetComponentInChildren<Animator>();
-            }
-
-            // 4. Notify all modules
-            NotifyModulesRefresh();
-        }
-
-        public void NotifyModulesRefresh()
-        {
-            foreach (var module in _registeredModules.Values)
-            {
-                if (module is IPlayer playerModule)
-                {
-                    playerModule.OnRefreshModule();
-                }
-            }
         }
 
         private InputAction _moveAction, _lookAction, _jumpAction, _fireAction, _sprintAction, _aimAction, _crouchAction, _reloadAction, _nextWeaponAction;
@@ -361,8 +216,6 @@ namespace Crafting.Scripts
             if (_lookAction != null)
             {
                 look = _lookAction.ReadValue<Vector2>();
-
-                // FALLBACK: Si el look es cero pero el ratón se mueve, forzamos lectura directa
                 if (look.sqrMagnitude < 0.001f && Mouse.current != null)
                 {
                     look = Mouse.current.delta.ReadValue() * 0.1f;
@@ -409,7 +262,7 @@ namespace Crafting.Scripts
 
         public void DrawInventoryUI(Rect rect, string title)
         {
-            var items = GetModule<ItemsController>();
+            var items = GetModule<InventoryController>();
             if (items != null) items.DrawInventoryUI(rect, title);
         }
 
@@ -441,10 +294,10 @@ namespace Crafting.Scripts
             }
         }
 
-        public static Dictionary<string, (ItemData def, int qty)> GetBag() => ItemsController.GetBag();
-        public static void MarkCountDirty() => ItemsController.MarkCountDirty();
-        public static ItemData GetItemDataByCodeStatic(string code) => ItemsController.LocalInstance != null ? ItemsController.LocalInstance.GetItemDataByCode(code) : null;
-        public static void Add(ItemData def) => ItemsController.Add(def);
-        public static void RemoveItem(string key) => ItemsController.RemoveItem(key);
+        public static Dictionary<string, (ItemData def, int qty)> GetBag() => InventoryController.GetBag();
+        public static void MarkCountDirty() => InventoryController.MarkCountDirty();
+        public static ItemData GetItemDataByCodeStatic(string code) => InventoryController.LocalInstance != null ? InventoryController.LocalInstance.GetItemDataByCode(code) : null;
+        public static void Add(ItemData def) => InventoryController.Add(def);
+        public static void RemoveItem(string key) => InventoryController.RemoveItem(key);
     }
 }

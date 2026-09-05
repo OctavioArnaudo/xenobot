@@ -4,29 +4,22 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    /// <summary>
-    /// Specialized controller for Sprint logic.
-    /// Communicates with the hub to set sprint state.
-    /// </summary>
-    public class SprintController : NetworkBehaviour, IPlayer
+    public class SprintController : NetworkBehaviour, IModular
     {
-        private PlayerController _hub;
+        private ModularController _hub;
 
         private void Awake()
         {
-            _hub = GetComponentInParent<PlayerController>();
+            _hub = GetComponentInParent<ModularController>();
             if (_hub != null) Bind(_hub);
         }
 
-        public void Bind(PlayerController hub)
+        public void Bind(ModularController hub)
         {
             _hub = hub;
             if (_hub != null) _hub.RegisterModule(this);
         }
 
         public void OnRefreshModule() { }
-
-        // The hub already updates sprint state from PlayerInput.
-        // This script can be used for extra logic like stamina or visual effects.
     }
 }

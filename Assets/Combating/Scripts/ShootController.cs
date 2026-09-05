@@ -3,13 +3,10 @@ using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Crafting.Scripts;
 
-namespace Combating.Scripts {
-    /// <summary>
-    /// Logic controller for shooting mechanics.
-    /// Handles firing projectiles, cooldowns, and input.
-    /// Works for both Players (via bridge) and AI (direct server spawning).
-    /// </summary>
-    public class ShootController : MonoBehaviour, IItemFunctional, IPlayer {
+namespace Combating.Scripts
+{
+    public class ShootController : MonoBehaviour, IItemFunctional, IModular
+    {
         [Header("References")]
         public Camera AimCamera;
         public Transform Muzzle;
@@ -33,92 +30,105 @@ namespace Combating.Scripts {
         [Header("Animation")]
         public Animator animator;
 
-        private PlayerController m_Player;
+        private ModularController _hub;
         private HealthController m_Health;
         private float m_NextFireTime;
 
-        // Debe coincidir EXACTAMENTE con el parámetro Trigger "shoot" del Animator Controller
         private static readonly int _animIDShoot = Animator.StringToHash("shoot");
         private bool _hasAnimator;
         private bool _hasAnimIDShoot;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
-        void Awake() {
-            m_Player = GetComponentInParent<PlayerController>();
-            if (m_Player != null) Bind(m_Player);
+        void Awake()
+        {
+            _hub = GetComponentInParent<ModularController>();
+            if (_hub != null) Bind(_hub);
+            else
+            {
+                if (m_Health == null) m_Health = GetComponentInParent<HealthController>();
+                if (Muzzle == null)
+                {
+                    Transform foundMuzzle = transform.Find("Muzzle") ?? transform.Find("FirePoint");
+                    Muzzle = foundMuzzle != null ? foundMuzzle : transform;
+                }
+            }
             RefreshAnimatorReference();
         }
 
-        public void ApplyEffect(GameObject player) {
-            m_Player = player.GetComponent<PlayerController>();
-            if (m_Player != null) Bind(m_Player);
+        public void ApplyEffect(GameObject player)
+        {
+            _hub = player.GetComponent<ModularController>();
+            if (_hub != null) Bind(_hub);
             RefreshAnimatorReference();
-            Debug.Log($"[ShootController] Vinculado a {player.name}. Player detected: {m_Player != null}");
         }
 
-        public void Bind(PlayerController hub) {
-            m_Player = hub;
-            if (m_Player != null) {
-                m_Player.RegisterModule(this);
+        public void Bind(ModularController hub)
+        {
+            _hub = hub;
+            if (_hub != null)
+            {
+                _hub.RegisterModule(this);
                 OnRefreshModule();
             }
         }
 
-        public void OnRefreshModule() {
-            if (m_Player != null) {
-                m_Health = m_Player.GetModule<HealthController>();
-                AimCamera = m_Player.mainCamera?.GetComponent<Camera>() ?? m_Player.GetComponentInChildren<Camera>();
+        public void OnRefreshModule()
+        {
+            if (_hub != null)
+            {
+                m_Health = _hub.GetModule<HealthController>();
+                AimCamera = _hub.mainCamera?.GetComponent<Camera>() ?? _hub.GetComponentInChildren<Camera>();
 
-                // Uso de puntos dinámicos del Hub
-                if (m_Player.MuzzlePoint != null) {
-                    Muzzle = m_Player.MuzzlePoint;
+                if (_hub.MuzzlePoint != null)
+                {
+                    Muzzle = _hub.MuzzlePoint;
                 }
             }
-
             RefreshAnimatorReference();
         }
 
-        /// <summary>
-        /// Busca y cachea el Animator del jugador/enemigo y verifica si tiene el parámetro "shoot".
-        /// </summary>
-        private void RefreshAnimatorReference() {
-            if (animator == null) {
-                animator = (m_Player != null) ? m_Player.GetComponentInChildren<Animator>() : GetComponentInChildren<Animator>();
+        private void RefreshAnimatorReference()
+        {
+            if (animator == null)
+            {
+                animator = (_hub != null) ? _hub.animator : GetComponentInChildren<Animator>();
             }
 
             _hasAnimator = animator != null;
             if (_hasAnimator) _hasAnimIDShoot = HasParameter(animator, _animIDShoot);
         }
 
-        void Update() {
-            if (!UsePlayerInput) return;
+        void Update()
+        {
+            if (!UsePlayerInput || _hub == null || !(_hub is PlayerController)) return;
 
-            // Only the owner of the player should process input and trigger shots
-            bool canHandleInput = (m_Player != null) ? (IsNetworkActive ? m_Player.IsOwner : true) : true;
+            PlayerController player = (PlayerController)_hub;
+
+            bool canHandleInput = IsNetworkActive ? player.IsOwner : true;
             if (!canHandleInput) return;
 
-            if (m_Player != null && WantsToFire()) {
+            if (WantsToFire(player))
+            {
                 TryFire();
             }
         }
 
-        bool WantsToFire() {
-            if (m_Player == null) return false;
-
-            bool inputActive = HoldToFire ? m_Player.fireHeld : m_Player.fire;
-
-            // Mouse fallback for robustness
-            if (!inputActive && Mouse.current != null) {
+        bool WantsToFire(PlayerController player)
+        {
+            bool inputActive = HoldToFire ? player.fireHeld : player.fire;
+            if (!inputActive && Mouse.current != null)
+            {
                 inputActive = HoldToFire ? Mouse.current.leftButton.isPressed : Mouse.current.leftButton.wasPressedThisFrame;
             }
-
             return inputActive;
         }
 
-        public bool TryFire() {
-            if (ProjectilePrefab == null || Muzzle == null) {
-                if (m_Player != null) OnRefreshModule();
+        public bool TryFire()
+        {
+            if (ProjectilePrefab == null || Muzzle == null)
+            {
+                if (_hub != null) OnRefreshModule();
                 if (ProjectilePrefab == null || Muzzle == null) return false;
             }
 
@@ -131,16 +141,18 @@ namespace Combating.Scripts {
             return true;
         }
 
-        public bool FireAt(Vector3 targetPosition) {
-            if (ProjectilePrefab == null || Muzzle == null) {
-                if (m_Player != null) OnRefreshModule();
+        public bool FireAt(Vector3 targetPosition)
+        {
+            if (ProjectilePrefab == null || Muzzle == null)
+            {
+                if (_hub != null) OnRefreshModule();
                 if (ProjectilePrefab == null || Muzzle == null) return false;
             }
 
+            RotateVisualsTowards(targetPosition);
+
             if (Time.time < m_NextFireTime) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
-
-            RotateVisualsTowards(targetPosition);
 
             Vector3 originPos = Muzzle.position;
             Vector3 direction = (targetPosition - originPos).normalized;
@@ -148,65 +160,68 @@ namespace Combating.Scripts {
             return true;
         }
 
-        private void ExecuteFire(Vector3 direction, Vector3 spawnPos) {
+        private void ExecuteFire(Vector3 direction, Vector3 spawnPos)
+        {
             float finalDamage = Damage;
-            HudController stats = (m_Player != null) ? m_Player.GetComponent<HudController>() : GetComponentInParent<HudController>();
+            HudController stats = (_hub != null) ? _hub.GetModule<HudController>() : GetComponentInParent<HudController>();
             if (stats != null) finalDamage = Damage * (stats.Attack / 10f);
 
             Team team = m_Health != null ? m_Health.team : Team.Neutral;
 
-            if (m_Player != null && IsNetworkActive) {
-                // PLAYER NETWORK MODE
-                m_Player.RequestFire(ProjectilePrefab, direction, spawnPos, finalDamage, team);
+            if (_hub != null && _hub is PlayerController player && IsNetworkActive)
+            {
+                player.RequestFire(ProjectilePrefab, direction, spawnPos, finalDamage, team);
             }
-            else {
-                // LOCAL MODE OR AI
+            else
+            {
                 SpawnProjectileLocally(direction, spawnPos, finalDamage, team, IsNetworkActive && NetworkManager.Singleton.IsServer);
             }
 
-            // Local Visual Feedback (Immediate)
             if (MuzzleFlash != null && !MuzzleFlash.isPlaying) MuzzleFlash.Play();
             SpawnTracer(spawnPos, spawnPos + direction * AimDistance);
-
             TriggerShootAnimation();
         }
 
-        /// <summary>
-        /// Dispara el Trigger "shoot" en el Animator del jugador/enemigo.
-        /// </summary>
-        private void TriggerShootAnimation() {
-            if (!_hasAnimator || animator == null) {
+        private void TriggerShootAnimation()
+        {
+            if (!_hasAnimator || animator == null)
+            {
                 RefreshAnimatorReference();
                 if (!_hasAnimator || animator == null) return;
             }
-
             if (_hasAnimIDShoot) animator.SetTrigger(_animIDShoot);
         }
 
-        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool shouldNetSpawn) {
+        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool shouldNetSpawn)
+        {
             ProjectileController projectile = Instantiate(ProjectilePrefab, spawnPos, Quaternion.LookRotation(direction));
-            if (projectile != null) {
-                projectile.Launch(m_Player != null ? m_Player.gameObject : gameObject, direction, damage, team);
+            if (projectile != null)
+            {
+                projectile.Launch(_hub != null ? _hub.gameObject : gameObject, direction, damage, team);
                 if (shouldNetSpawn && projectile.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
             }
         }
 
-        private void RotateVisualsTowards(Vector3 targetPosition) {
+        private void RotateVisualsTowards(Vector3 targetPosition)
+        {
             if (visualsToRotate == null) return;
             Vector3 direction = (targetPosition - transform.position).normalized;
-            if (direction.sqrMagnitude > 0.001f) {
+            if (direction.sqrMagnitude > 0.001f)
+            {
                 Quaternion targetFullRotation = Quaternion.LookRotation(direction);
-                foreach (var r in visualsToRotate) {
+                foreach (var r in visualsToRotate)
+                {
                     if (r != null)
                         r.transform.rotation = Quaternion.Slerp(r.transform.rotation, targetFullRotation, rotationSpeed * Time.deltaTime);
                 }
             }
         }
 
-        Vector3 GetAimDirection(Vector3 fromPosition) {
+        Vector3 GetAimDirection(Vector3 fromPosition)
+        {
             if (AimCamera == null) return transform.forward;
             Ray ray = new Ray(AimCamera.transform.position, AimCamera.transform.forward);
-            int layerMask = ~((1 << 3) | (1 << 2)); // Ignore player and ignore raycast layers
+            int layerMask = ~((1 << 3) | (1 << 2));
 
             if (Physics.Raycast(ray, out RaycastHit hit, AimDistance, layerMask, QueryTriggerInteraction.Ignore))
                 return (hit.point - fromPosition).normalized;
@@ -214,7 +229,8 @@ namespace Combating.Scripts {
             return ray.direction;
         }
 
-        void SpawnTracer(Vector3 start, Vector3 end) {
+        void SpawnTracer(Vector3 start, Vector3 end)
+        {
             if (TracerPrefab == null) return;
             LineRenderer tracer = Instantiate(TracerPrefab, start, Quaternion.identity);
             tracer.positionCount = 2;
@@ -223,7 +239,8 @@ namespace Combating.Scripts {
             Destroy(tracer.gameObject, TracerLifetime);
         }
 
-        private bool HasParameter(Animator anim, int paramHash) {
+        private bool HasParameter(Animator anim, int paramHash)
+        {
             if (anim == null) return false;
             foreach (AnimatorControllerParameter param in anim.parameters)
                 if (param.nameHash == paramHash) return true;
