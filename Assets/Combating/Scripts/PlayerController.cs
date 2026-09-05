@@ -31,6 +31,7 @@ namespace Crafting.Scripts
         public static PlayerController LocalInstance { get; private set; }
 
         [Header("Network Data")]
+        public NetworkPrefabsList networkPrefabs;
         public List<GameObject> moduleLibrary;
 
         public NetworkVariable<int> EquippedWeaponHash = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -158,7 +159,18 @@ namespace Crafting.Scripts
 
         private void EnsureCoreModules()
         {
-            if (moduleLibrary == null || moduleLibrary.Count == 0) return;
+            // Combinar fuentes de prefabs: library manual + asset de red
+            List<GameObject> allPrefabs = new List<GameObject>();
+            if (moduleLibrary != null) allPrefabs.AddRange(moduleLibrary);
+            if (networkPrefabs != null)
+            {
+                foreach (var item in networkPrefabs.PrefabList)
+                {
+                    if (item.Prefab != null) allPrefabs.Add(item.Prefab);
+                }
+            }
+
+            if (allPrefabs.Count == 0) return;
 
             // Tipos de componentes que buscamos instanciar
             System.Type[] coreComponentTypes = {
@@ -168,8 +180,7 @@ namespace Crafting.Scripts
                 typeof(DeathController), typeof(FuelController), typeof(SpawnController),
                 typeof(SprintController), typeof(SingleJumpController), typeof(DoubleJumpController),
                 typeof(GroundController), typeof(LandingController), typeof(MeleeController),
-                typeof(ShootController), typeof(ItemsController), typeof(ExperienceController),
-                typeof(CostumeController)
+                typeof(ShootController), typeof(ItemsController), typeof(CostumeController)
             };
 
             foreach (var type in coreComponentTypes)
@@ -179,7 +190,7 @@ namespace Crafting.Scripts
 
                 // 2. Buscamos en la librería un prefab que tenga ese componente
                 GameObject prefab = null;
-                foreach (var item in moduleLibrary)
+                foreach (var item in allPrefabs)
                 {
                     if (item != null && item.GetComponentInChildren(type, true) != null)
                     {
@@ -215,8 +226,17 @@ namespace Crafting.Scripts
 
         public GameObject GetPrefabFromList(string prefabName)
         {
-            if (moduleLibrary == null) return null;
-            return moduleLibrary.FirstOrDefault(x => x != null && x.name == prefabName);
+            if (moduleLibrary != null)
+            {
+                var p = moduleLibrary.FirstOrDefault(x => x != null && x.name == prefabName);
+                if (p != null) return p;
+            }
+            if (networkPrefabs != null)
+            {
+                var p = networkPrefabs.PrefabList.FirstOrDefault(x => x.Prefab != null && x.Prefab.name == prefabName);
+                if (p.Prefab != null) return p.Prefab;
+            }
+            return null;
         }
 
         public void RefreshBodyReferences()
