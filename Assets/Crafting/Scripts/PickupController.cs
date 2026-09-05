@@ -160,8 +160,17 @@ namespace Crafting.Scripts
             }
             else
             {
-                // In Red mode, inv will handle the ServerRpc call
-                PlayerController.Add(item);
+                // Correctly use the instance found instead of static LocalInstance
+                if (inv != null)
+                {
+                    var items = inv.GetModule<ItemsController>();
+                    if (items != null) items.AddItem(item);
+                    else PlayerController.Add(item); // Fallback
+                }
+                else
+                {
+                    PlayerController.Add(item);
+                }
             }
         }
 

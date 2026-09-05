@@ -8,7 +8,7 @@ namespace Combating.Scripts
     public class CameraController : NetworkBehaviour, IPlayerModule
     {
         [Header("Settings")]
-        public Vector2 LookSensitivity = new Vector2(0.5f, 0.4f);
+        public Vector2 LookSensitivity = new Vector2(1.0f, 0.8f);
         public float TopClamp = 85.0f;
         public float BottomClamp = -60.0f;
 

@@ -60,21 +60,18 @@ namespace Combating.Scripts
 
         private IEnumerator TeleportSequence()
         {
-            // Esperar un frame para que todo se asiente
-            yield return null;
+            // 1. Esperar a que la escena se estabilice un poco más
+            yield return new WaitForSeconds(0.3f);
 
             string sceneName = SceneManager.GetActiveScene().name;
-            TeleportToSceneSpawn(sceneName);
 
-            // Reintento si seguimos en 0,0,0
-            if (_hub != null && Vector3.Distance(_hub.transform.position, Vector3.zero) < 0.1f)
+            // 2. Intentar spawnear hasta 15 veces (útil para escenas pesadas en red)
+            bool success = false;
+            for (int i = 0; i < 15; i++)
             {
-                for (int i = 0; i < 5; i++)
-                {
-                    yield return new WaitForSeconds(0.2f);
-                    TeleportToSceneSpawn(sceneName);
-                    if (Vector3.Distance(_hub.transform.position, Vector3.zero) > 0.1f) break;
-                }
+                success = TeleportToSceneSpawn(sceneName);
+                if (success) break;
+                yield return new WaitForSeconds(0.2f);
             }
         }
 
@@ -98,10 +95,10 @@ namespace Combating.Scripts
             TeleportToSceneSpawn(scene.name);
         }
 
-        public void TeleportToSceneSpawn(string sceneName)
+        public bool TeleportToSceneSpawn(string sceneName)
         {
             if (_hub == null) _hub = PlayerController.LocalInstance;
-            if (_hub == null) return;
+            if (_hub == null) return false;
 
             string targetTag = "Respawn";
             var config = SceneSpawns.Find(s => s.SceneName == sceneName);
@@ -109,37 +106,47 @@ namespace Combating.Scripts
 
             GameObject spawnPoint = FindSpawnPoint(targetTag);
 
-            if (spawnPoint != null)
+            if (spawnPoint != null && Vector3.Distance(spawnPoint.transform.position, Vector3.zero) > 0.1f)
             {
                 if (_hub.controller != null) _hub.controller.enabled = false;
 
-                _hub.transform.position = spawnPoint.transform.position;
-                _hub.transform.rotation = spawnPoint.transform.rotation;
+                // Forzar posición y rotación
+                _hub.transform.SetPositionAndRotation(spawnPoint.transform.position, spawnPoint.transform.rotation);
+
+                // CRÍTICO: Avisar al sistema de físicas que el objeto se movió manualmente
+                Physics.SyncTransforms();
 
                 // Resetear velocidad en el MovementController
                 var move = _hub.GetComponentInChildren<MovementController>();
                 if (move != null) move.ResetPhysics();
 
+                // Solo guardamos como punto de respawn si no es el origen
                 _startingPosition = _hub.transform.position;
                 _startingRotation = _hub.transform.rotation;
 
                 if (_hub.controller != null) _hub.controller.enabled = true;
 
-                Debug.Log($"[RespawnController] EXITO: Jugador teletransportado a {spawnPoint.name} en {spawnPoint.transform.position}");
+                Debug.Log($"[RespawnController] EXITO: Jugador teletransportado a {spawnPoint.name} (Tag: {targetTag}) en {spawnPoint.transform.position}");
+                return true;
             }
-            else
-            {
-                //Debug.LogError($"[RespawnController] ERROR: No se encontró ningún objeto con Tag o Nombre '{targetTag}' en la escena actual.");
-            }
+            return false;
         }
 
         private GameObject FindSpawnPoint(string tag)
         {
-            // 1. Intentar por Tag estándar (solo activos)
+            // 1. Intentar encontrar un spawn point que sea hijo del gestor de misiones o bioma (más específico)
             GameObject[] tagged = GameObject.FindGameObjectsWithTag(tag);
-            if (tagged.Length > 0) return tagged[0];
+            if (tagged.Length > 0)
+            {
+                // Ordenar por cercanía a la posición actual del objeto (útil para checkpoints)
+                System.Array.Sort(tagged, (a, b) =>
+                    Vector3.Distance(transform.position, a.transform.position).CompareTo(
+                    Vector3.Distance(transform.position, b.transform.position)));
 
-            // 2. Intentar búsqueda profunda (incluyendo inactivos)
+                return tagged[0];
+            }
+
+            // 2. Intentar búsqueda profunda por nombre si el Tag falló
             var allTransforms = Resources.FindObjectsOfTypeAll<Transform>();
             foreach (var t in allTransforms)
             {
@@ -160,8 +167,8 @@ namespace Combating.Scripts
             if (_hub == null) return;
             if (_hub.controller != null) _hub.controller.enabled = false;
 
-            _hub.transform.position = _startingPosition;
-            _hub.transform.rotation = _startingRotation;
+            _hub.transform.SetPositionAndRotation(_startingPosition, _startingRotation);
+            Physics.SyncTransforms();
 
             if (_hub.controller != null) _hub.controller.enabled = true;
 

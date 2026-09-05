@@ -253,12 +253,23 @@ namespace Crafting.Scripts
             }
         }
 
+        public void AddItem(ItemData def)
+        {
+            int hash = def.GetItemHashCode();
+            if (IsNetworkActive)
+            {
+                if (IsOwner) AddItemServerRpc(hash, 1);
+                else if (IsServer) InternalAddItem(hash, 1);
+            }
+            else
+            {
+                InternalAddItem(hash, 1);
+            }
+        }
+
         public static void Add(ItemData def)
         {
-            if (LocalInstance == null) return;
-            int hash = def.GetItemHashCode();
-            if (LocalInstance.IsNetworkActive) LocalInstance.AddItemServerRpc(hash, 1);
-            else LocalInstance.InternalAddItem(hash, 1);
+            if (LocalInstance != null) LocalInstance.AddItem(def);
         }
 
         public static void RemoveItem(string key)

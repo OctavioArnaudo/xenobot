@@ -7,7 +7,7 @@ namespace Combating.Scripts
     public class MovementController : NetworkBehaviour, IPlayerModule
     {
         [Header("Settings")]
-        public float MoveSpeed = 5.0f;
+        public float MoveSpeed = 10.0f;
         public float SpeedChangeRate = 12.0f;
         public float Gravity = -35.0f;
         public LayerMask GroundLayers = 1;
@@ -79,7 +79,7 @@ namespace Combating.Scripts
                 if (_verticalVelocity < 0) _verticalVelocity = -2f;
                 if (_hub.jump)
                 {
-                    _verticalVelocity = Mathf.Sqrt(1.8f * -2f * Gravity);
+                    _verticalVelocity = Mathf.Sqrt(4.0f * -2f * Gravity);
                     _hub.jump = false;
                 }
             }
@@ -91,7 +91,7 @@ namespace Combating.Scripts
 
         private void ApplyMovement()
         {
-            float targetSpeed = _hub.sprint ? MoveSpeed * 1.6f : MoveSpeed;
+            float targetSpeed = _hub.sprint ? MoveSpeed * 2.0f : MoveSpeed;
             if (_hub.move == Vector2.zero) targetSpeed = 0.0f;
 
             _speed = Mathf.Lerp(_speed, targetSpeed, Time.deltaTime * SpeedChangeRate);
