@@ -9,14 +9,50 @@ using Crafting.Scripts;
 
 namespace Crafting.Scripts
 {
+    public struct NetworkInventorySlot : INetworkSerializable, IEquatable<NetworkInventorySlot>
+    {
+        public int itemHash;
+        public int quantity;
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref itemHash);
+            serializer.SerializeValue(ref quantity);
+        }
+
+        public bool Equals(NetworkInventorySlot other) => itemHash == other.itemHash && quantity == other.quantity;
+        public override bool Equals(object obj) => obj is NetworkInventorySlot other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(itemHash, quantity);
+    }
+
     [RequireComponent(typeof(SpawnController))]
-    public class ItemsController : NetworkBehaviour
+    public class ItemsController : NetworkBehaviour, IPlayerModule
     {
         public static ItemsController LocalInstance { get; private set; }
 
+        private PlayerController _hub;
+
+        public void Bind(PlayerController hub)
+        {
+            _hub = hub;
+            if (_hub != null)
+            {
+                _hub.RegisterModule(this);
+                OnRefreshModule();
+            }
+        }
+
+        public void OnRefreshModule()
+        {
+            if (_hub != null)
+            {
+                _playerInput = _hub.GetComponent<PlayerInput>();
+                _spawnController = _hub.GetComponent<SpawnController>();
+            }
+        }
+
         [Header("Network Data")]
         public NetworkList<NetworkInventorySlot> NetworkBag;
-        public List<GameObject> moduleLibrary;
 
         public NetworkVariable<int> EquippedWeaponHash = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
@@ -64,53 +100,32 @@ namespace Crafting.Scripts
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
             {
                 LocalInstance = this;
-                InitializeComponents();
             }
         }
 
         public override void OnNetworkSpawn()
         {
-            InitializeComponents();
             if (IsOwner) LocalInstance = this;
+
+            _hub = GetComponentInParent<PlayerController>();
+            if (_hub != null) Bind(_hub);
+
             NetworkBag.OnListChanged += (changeEvent) => RefreshLocalCache();
             RefreshLocalCache();
         }
 
         private void InitializeComponents()
         {
-            _playerInput = GetComponent<PlayerInput>();
-            _spawnController = GetComponent<SpawnController>();
-
-            EnsureCoreModules();
+            _playerInput = GetComponentInParent<PlayerInput>() ?? GetComponent<PlayerInput>();
+            _spawnController = GetComponentInParent<SpawnController>() ?? GetComponent<SpawnController>();
         }
 
-        private void EnsureCoreModules()
-        {
-            if (moduleLibrary == null) return;
-            string[] coreModuleNames = {
-                "MovementController", "CameraController", "CursorController", "RespawnController",
-                "HudController", "UiController", "LevelingController", "HealthController",
-                "DamageController", "DeathController", "FuelController", "SpawnController",
-                "SprintController", "SingleJumpController", "DoubleJumpController",
-                "GroundController", "LandingController", "MeleeController"
-            };
-            foreach (var moduleName in coreModuleNames)
-            {
-                if (transform.Find(moduleName) != null) continue;
-                var prefab = moduleLibrary.FirstOrDefault(x => x != null && x.name == moduleName);
-                if (prefab != null)
-                {
-                    GameObject instance = Instantiate(prefab, transform);
-                    instance.name = moduleName;
-                    if (IsServer && IsSpawned && instance.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn(true);
-                }
-            }
-        }
+        // Removed EnsureCoreModules to avoid double instantiation (Hub handles this now)
 
         public GameObject GetPrefabFromList(string prefabName)
         {
-            if (moduleLibrary == null) return null;
-            return moduleLibrary.FirstOrDefault(x => x != null && x.name == prefabName);
+            if (_hub == null || _hub.moduleLibrary == null) return null;
+            return _hub.moduleLibrary.FirstOrDefault(x => x != null && x.name == prefabName);
         }
 
         private void RefreshLocalCache()

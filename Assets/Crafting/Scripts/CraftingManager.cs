@@ -122,7 +122,8 @@ namespace Crafting.Scripts
             // 1. Panel Izquierda: Mi Inventario
             if (myInv != null)
             {
-                myInv.DrawInventoryUI(new Rect(xStart, y0, panelW, panelHeight), "MI INVENTARIO");
+                var items = myInv.GetModule<ItemsController>();
+                if (items != null) items.DrawInventoryUI(new Rect(xStart, y0, panelW, panelHeight), "MI INVENTARIO");
             }
 
             // 2. Panel Centro: Crafting
@@ -132,7 +133,8 @@ namespace Crafting.Scripts
             // 3. Panel Derecha: Inventario de otro player (si hay)
             if (otherInvs.Count > 0)
             {
-                otherInvs[0].DrawInventoryUI(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), "INVENTARIO REMOTO");
+                var items = otherInvs[0].GetModule<ItemsController>();
+                if (items != null) items.DrawInventoryUI(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), "INVENTARIO REMOTO");
             }
             else
             {

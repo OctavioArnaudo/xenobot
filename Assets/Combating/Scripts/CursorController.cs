@@ -7,14 +7,23 @@ namespace Combating.Scripts
     /// <summary>
     /// Specialized controller for Cursor state (Locked/Visible).
     /// </summary>
-    public class CursorController : NetworkBehaviour
+    public class CursorController : NetworkBehaviour, IPlayerModule
     {
         private PlayerController _hub;
 
         private void Awake()
         {
-            _hub = GetComponent<PlayerController>();
+            _hub = GetComponentInParent<PlayerController>();
+            if (_hub != null) Bind(_hub);
         }
+
+        public void Bind(PlayerController hub)
+        {
+            _hub = hub;
+            if (_hub != null) _hub.RegisterModule(this);
+        }
+
+        public void OnRefreshModule() { }
 
         private void Start()
         {

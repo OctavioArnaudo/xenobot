@@ -8,7 +8,7 @@ namespace Crafting.Scripts
     /// Specialized modular controller for appearance changes.
     /// Handles hiding current visuals and restoring them when removed.
     /// </summary>
-    public class CostumeController : MonoBehaviour, IItemFunctional
+    public class CostumeController : MonoBehaviour, IItemFunctional, IPlayerModule
     {
         [Header("Settings")]
         [Tooltip("Tag to find the render root in the player hierarchy")]
@@ -16,13 +16,26 @@ namespace Crafting.Scripts
 
         private List<Renderer> _hiddenByMe = new List<Renderer>();
         private bool _isEquipped = false;
+        private PlayerController _hub;
+
+        public void Bind(PlayerController hub)
+        {
+            _hub = hub;
+            if (_hub != null) _hub.RegisterModule(this);
+        }
+
+        public void OnRefreshModule() { }
 
         public void ApplyEffect(GameObject player)
         {
             if (_isEquipped) return;
 
+            if (_hub == null) _hub = player.GetComponent<PlayerController>();
+
             // 1. Find the target render root
-            GameObject renderRoot = FindChildWithTag(player, renderTag);
+            GameObject renderRoot = (_hub != null && _hub.renderRoot != null)
+                ? _hub.renderRoot.gameObject
+                : FindChildWithTag(player, renderTag);
             if (renderRoot == null)
             {
                 Debug.LogWarning($"[CostumeController] Render root with tag '{renderTag}' not found on {player.name}. Using player root.");
@@ -72,7 +85,7 @@ namespace Crafting.Scripts
             if (TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
             foreach (var c in GetComponentsInChildren<Collider>(true)) c.enabled = false;
 
-            player.GetComponent<PlayerController>()?.RefreshBodyReferences();
+            if (_hub != null) _hub.RefreshBodyReferences();
         }
 
         public void SetMeshVisible(bool visible)

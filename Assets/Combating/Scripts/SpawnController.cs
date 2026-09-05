@@ -17,13 +17,29 @@ namespace Combating.Scripts
     /// Handles visual death effects and loot spawning.
     /// Triggered by HealthController upon death.
     /// </summary>
-    public class SpawnController : NetworkBehaviour
+    public class SpawnController : NetworkBehaviour, IPlayerModule
     {
         [Header("Spawn Settings")]
         public List<ItemData> lootTable = new List<ItemData>();
         public List<SpawnableItem> itemsToSpawn = new List<SpawnableItem>();
         public float explosionForce = 10f;
         public float spreadRadius = 2.5f;
+
+        private PlayerController _hub;
+
+        private void Awake()
+        {
+            _hub = GetComponentInParent<PlayerController>();
+            if (_hub != null) Bind(_hub);
+        }
+
+        public void Bind(PlayerController hub)
+        {
+            _hub = hub;
+            if (_hub != null) _hub.RegisterModule(this);
+        }
+
+        public void OnRefreshModule() { }
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 

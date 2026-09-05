@@ -10,7 +10,7 @@ namespace Combating.Scripts
     /// Handles firing projectiles, cooldowns, and input.
     /// Works for both Players (via bridge) and AI (direct server spawning).
     /// </summary>
-    public class ShootController : MonoBehaviour, IItemFunctional
+    public class ShootController : MonoBehaviour, IItemFunctional, IPlayerModule
     {
         [Header("References")]
         public Camera AimCamera;
@@ -40,46 +40,38 @@ namespace Combating.Scripts
 
         void Awake()
         {
-            RefreshReferences();
+            m_Player = GetComponentInParent<PlayerController>();
+            if (m_Player != null) Bind(m_Player);
         }
 
         public void ApplyEffect(GameObject player)
         {
             m_Player = player.GetComponent<PlayerController>();
-            m_Health = player.GetComponent<HealthController>();
-            RefreshReferences();
+            if (m_Player != null) Bind(m_Player);
             Debug.Log($"[ShootController] Vinculado a {player.name}. Player detected: {m_Player != null}");
         }
 
-        private void RefreshReferences()
+        public void Bind(PlayerController hub)
         {
-            if (m_Player == null) m_Player = GetComponentInParent<PlayerController>();
-            if (m_Health == null) m_Health = GetComponentInParent<HealthController>();
-
-            // Critical: Search camera in parent player
-            if (AimCamera == null && m_Player != null)
-                AimCamera = m_Player.GetComponentInChildren<Camera>();
-
-            if (AimCamera == null) AimCamera = Camera.main;
-
-            if (Muzzle == null)
+            m_Player = hub;
+            if (m_Player != null)
             {
-                var wc = GetComponent<WeaponController>();
-                if (wc != null) Muzzle = wc.muzzlePoint;
-
-                if (Muzzle == null)
-                {
-                    Transform t = transform.Find("WeaponRender/MuzzlePoint");
-                    if (t != null) Muzzle = t;
-                }
-
-                if (Muzzle == null) Muzzle = transform;
+                m_Player.RegisterModule(this);
+                OnRefreshModule();
             }
+        }
 
-            if (visualsToRotate == null || visualsToRotate.Length == 0)
+        public void OnRefreshModule()
+        {
+            if (m_Player != null)
             {
-                var mr = GetComponentInChildren<MeshRenderer>();
-                if (mr != null) visualsToRotate = new Renderer[] { mr };
+                m_Health = m_Player.GetModule<HealthController>();
+                AimCamera = m_Player.mainCamera?.GetComponent<Camera>() ?? m_Player.GetComponentInChildren<Camera>();
+
+                if (m_Player.activeModel != null && m_Player.activeModel.muzzlePoint != null)
+                {
+                    Muzzle = m_Player.activeModel.muzzlePoint;
+                }
             }
         }
 
@@ -90,8 +82,6 @@ namespace Combating.Scripts
             // Only the owner of the player should process input and trigger shots
             bool canHandleInput = (m_Player != null) ? (IsNetworkActive ? m_Player.IsOwner : true) : true;
             if (!canHandleInput) return;
-
-            if (m_Player == null) RefreshReferences();
 
             if (m_Player != null && WantsToFire())
             {
@@ -118,7 +108,7 @@ namespace Combating.Scripts
         {
             if (ProjectilePrefab == null || Muzzle == null)
             {
-                RefreshReferences();
+                if (m_Player != null) OnRefreshModule();
                 if (ProjectilePrefab == null || Muzzle == null) return false;
             }
 
@@ -135,7 +125,7 @@ namespace Combating.Scripts
         {
             if (ProjectilePrefab == null || Muzzle == null)
             {
-                RefreshReferences();
+                if (m_Player != null) OnRefreshModule();
                 if (ProjectilePrefab == null || Muzzle == null) return false;
             }
 

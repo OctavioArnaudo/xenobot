@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
@@ -9,7 +10,7 @@ namespace Combating.Scripts
     /// Specialized controller for character Health state and Team identity.
     /// Acts as the data source for life status.
     /// </summary>
-    public class HealthController : NetworkBehaviour
+    public class HealthController : NetworkBehaviour, IPlayerModule
     {
         [Header("Identity & Team")]
         public Team team = Team.Neutral;
@@ -24,7 +25,16 @@ namespace Combating.Scripts
         void Awake()
         {
             m_OfflineHealth = maxHealth;
+            var hub = GetComponentInParent<PlayerController>();
+            if (hub != null) Bind(hub);
         }
+
+        public void Bind(PlayerController hub)
+        {
+            if (hub != null) hub.RegisterModule(this);
+        }
+
+        public void OnRefreshModule() { }
 
         public override void OnNetworkSpawn()
         {

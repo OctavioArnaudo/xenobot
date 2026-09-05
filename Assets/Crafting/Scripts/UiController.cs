@@ -8,7 +8,7 @@ using Combating.Scripts;
 /// Specialized controller for character HUD and Identity visuals.
 /// Only handles rendering and visual feedback.
 /// </summary>
-public class UiController : NetworkBehaviour
+public class UiController : NetworkBehaviour, IPlayerModule
 {
     public static UiController Instance { get; private set; }
 
@@ -25,6 +25,7 @@ public class UiController : NetworkBehaviour
     private HudController _stats;
     private Combating.Scripts.FuelController _fuel;
     private HealthController _health;
+    private PlayerController _hub;
 
     private float _lastTimeUpdate;
     private string _cachedTimeStr = "00:00";
@@ -40,7 +41,31 @@ public class UiController : NetworkBehaviour
     {
         if (Instance != null && Instance != this) { Destroy(this); return; }
         Instance = this;
-        ResolveReferences();
+
+        _hub = GetComponentInParent<PlayerController>();
+        if (_hub != null) Bind(_hub);
+        else ResolveReferences();
+    }
+
+    public void Bind(PlayerController hub)
+    {
+        _hub = hub;
+        if (_hub != null)
+        {
+            _hub.RegisterModule(this);
+            OnRefreshModule();
+        }
+    }
+
+    public void OnRefreshModule()
+    {
+        if (_hub != null)
+        {
+            _stats = _hub.GetModule<HudController>();
+            _fuel = _hub.GetModule<Combating.Scripts.FuelController>();
+            _health = _hub.GetModule<HealthController>();
+            UpdateVisuals();
+        }
     }
 
     public override void OnNetworkSpawn()

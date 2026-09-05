@@ -1,14 +1,28 @@
 using UnityEngine;
 using Unity.Netcode;
+using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
     /// <summary>
     /// Modular component to enable/configure double jumping.
     /// </summary>
-    public class DoubleJumpController : NetworkBehaviour
+    public class DoubleJumpController : NetworkBehaviour, IPlayerModule
     {
-        // Double jump logic is integrated in MovementController.
-        // This script can serve as a marker or for specific double jump effects.
+        private PlayerController _hub;
+
+        private void Awake()
+        {
+            _hub = GetComponentInParent<PlayerController>();
+            if (_hub != null) Bind(_hub);
+        }
+
+        public void Bind(PlayerController hub)
+        {
+            _hub = hub;
+            if (_hub != null) _hub.RegisterModule(this);
+        }
+
+        public void OnRefreshModule() { }
     }
 }

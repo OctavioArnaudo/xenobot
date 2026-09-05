@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.Events;
+using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
@@ -8,7 +9,7 @@ namespace Combating.Scripts
     /// Specialized controller for Damage reception and visual feedback.
     /// Handles mitigation logic and flash effects.
     /// </summary>
-    public class DamageController : NetworkBehaviour
+    public class DamageController : NetworkBehaviour, IPlayerModule
     {
         [Header("Visual Feedback")]
         public Renderer[] visualsToFlash;
@@ -20,18 +21,38 @@ namespace Combating.Scripts
 
         private HealthController _health;
         private HudController _stats; // For defense calculation
+        private PlayerController _hub;
         private float _damageFlashTimer;
 
         void Awake()
         {
-            _health = GetComponentInParent<HealthController>();
-            if (_health == null) _health = GetComponent<HealthController>();
-
-            _stats = GetComponentInParent<HudController>();
-            if (_stats == null) _stats = GetComponent<HudController>();
+            _hub = GetComponentInParent<PlayerController>();
+            if (_hub != null) Bind(_hub);
 
             if (visualsToFlash == null || visualsToFlash.Length == 0)
                 visualsToFlash = GetComponentsInChildren<Renderer>();
+        }
+
+        public void Bind(PlayerController hub)
+        {
+            _hub = hub;
+            if (_hub != null)
+            {
+                _hub.RegisterModule(this);
+                OnRefreshModule();
+            }
+        }
+
+        public void OnRefreshModule()
+        {
+            if (_hub != null)
+            {
+                _health = _hub.GetModule<HealthController>();
+                _stats = _hub.GetModule<HudController>();
+
+                // Refresh visual flash targets if needed
+                visualsToFlash = _hub.GetComponentsInChildren<Renderer>();
+            }
         }
 
         void Update()

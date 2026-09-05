@@ -11,7 +11,7 @@ namespace Combating.Scripts
     /// Specialized controller for player Respawn and scene spawning.
     /// Operates on the player root transform.
     /// </summary>
-    public class RespawnController : NetworkBehaviour
+    public class RespawnController : NetworkBehaviour, IPlayerModule
     {
         [System.Serializable]
         public struct SceneSpawnConfig
@@ -33,7 +33,16 @@ namespace Combating.Scripts
         private void Awake()
         {
             _hub = GetComponentInParent<PlayerController>();
+            if (_hub != null) Bind(_hub);
         }
+
+        public void Bind(PlayerController hub)
+        {
+            _hub = hub;
+            if (_hub != null) _hub.RegisterModule(this);
+        }
+
+        public void OnRefreshModule() { }
 
         private void Start()
         {
@@ -106,6 +115,10 @@ namespace Combating.Scripts
 
                 _hub.transform.position = spawnPoint.transform.position;
                 _hub.transform.rotation = spawnPoint.transform.rotation;
+
+                // Resetear velocidad en el MovementController
+                var move = _hub.GetComponentInChildren<MovementController>();
+                if (move != null) move.ResetPhysics();
 
                 _startingPosition = _hub.transform.position;
                 _startingRotation = _hub.transform.rotation;

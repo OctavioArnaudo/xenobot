@@ -1,12 +1,13 @@
 using UnityEngine;
 using Unity.Netcode;
+using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
     /// <summary>
     /// Specialized controller for character Jetpack fuel management.
     /// </summary>
-    public class FuelController : NetworkBehaviour
+    public class FuelController : NetworkBehaviour, IPlayerModule
     {
         [Header("Jetpack Settings")]
         public float maxJetpack = 100f;
@@ -18,12 +19,21 @@ namespace Combating.Scripts
         void Awake()
         {
             m_Jetpack = maxJetpack;
+            var hub = GetComponentInParent<PlayerController>();
+            if (hub != null) Bind(hub);
         }
 
         public override void OnNetworkSpawn()
         {
             m_Jetpack = maxJetpack;
         }
+
+        public void Bind(PlayerController hub)
+        {
+            if (hub != null) hub.RegisterModule(this);
+        }
+
+        public void OnRefreshModule() { }
 
         public void UseFuel(float amount)
         {

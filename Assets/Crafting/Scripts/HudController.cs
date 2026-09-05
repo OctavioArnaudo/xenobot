@@ -8,7 +8,7 @@ using Crafting.Scripts;
 /// Specialized controller for character progression and stats.
 /// Acts as the data source for the player's attributes.
 /// </summary>
-public class HudController : NetworkBehaviour
+public class HudController : NetworkBehaviour, IPlayerModule
 {
     public static HudController Instance { get; private set; }
 
@@ -30,7 +30,8 @@ public class HudController : NetworkBehaviour
     public int Level { get; private set; } = 1;
     public float Exp { get; private set; }
 
-    private Combating.Scripts.FuelController m_PlayerHealth;
+    private Combating.Scripts.HealthController m_PlayerHealth;
+    private PlayerController _hub;
 
     private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
@@ -41,32 +42,42 @@ public class HudController : NetworkBehaviour
             if (Instance != null && Instance != this) { Destroy(this); return; }
             Instance = this;
             InitializeStats();
-            ResolveHealthReference();
+
+            _hub = GetComponentInParent<PlayerController>();
+            if (_hub != null) Bind(_hub);
         }
     }
 
     public override void OnNetworkSpawn()
     {
-        ResolveHealthReference();
         if (IsOwner)
         {
             Instance = this;
             InitializeStats();
             if (LocalUserConfig.UserName != null) playerName.Value = LocalUserConfig.UserName;
             playerColor.Value = LocalUserConfig.UserColor;
+
+            _hub = GetComponentInParent<PlayerController>();
+            if (_hub != null) Bind(_hub);
         }
     }
 
-    private void ResolveHealthReference()
+    public void Bind(PlayerController hub)
     {
-        var hub = GetComponentInParent<PlayerController>();
-        if (hub != null)
+        _hub = hub;
+        if (_hub != null)
         {
-            m_PlayerHealth = hub.GetComponentInChildren<Combating.Scripts.FuelController>();
+            _hub.RegisterModule(this);
+            OnRefreshModule();
         }
+    }
 
-        if (m_PlayerHealth == null)
-            m_PlayerHealth = GetComponent<Combating.Scripts.FuelController>();
+    public void OnRefreshModule()
+    {
+        if (_hub != null)
+        {
+            m_PlayerHealth = _hub.GetModule<Combating.Scripts.HealthController>();
+        }
     }
 
     void InitializeStats()
@@ -90,7 +101,10 @@ public class HudController : NetworkBehaviour
 
         if (m_PlayerHealth != null)
         {
-            m_PlayerHealth.UpgradeMaxStats(15, 20f);
+            m_PlayerHealth.UpgradeMaxHealth(15);
         }
+
+        var fuel = _hub?.GetModule<Combating.Scripts.FuelController>();
+        if (fuel != null) fuel.UpgradeMaxStats(0, 20f);
     }
 }

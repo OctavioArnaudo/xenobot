@@ -5,146 +5,130 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    /// <summary>
-    /// Specialized controller for Cinemachine Camera rotation and target positioning.
-    /// Acts on the target object which follows the player's head.
-    /// </summary>
-    public class CameraController : NetworkBehaviour
+    public class CameraController : NetworkBehaviour, IPlayerModule
     {
-        [Header("Cinemachine")]
-        public GameObject CinemachineCameraTarget;
-        public float TopClamp = 70.0f;
-        public float BottomClamp = -30.0f;
-        public float CameraAngleOverride = 0.0f;
-        public bool LockCameraPosition = false;
-        public Vector2 LookSensitivity = new Vector2(7.5f, 5.0f);
+        [Header("Settings")]
+        public Vector2 LookSensitivity = new Vector2(0.5f, 0.4f);
+        public float TopClamp = 85.0f;
+        public float BottomClamp = -60.0f;
 
-        private float _cinemachineTargetYaw;
-        private float _cinemachineTargetPitch;
+        private float _yaw;
+        private float _pitch;
         private PlayerController _hub;
-        private const float _threshold = 0.01f;
+        private GameObject _target;
+        private CinemachineCamera _vcam;
 
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-        private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
+        private bool HasInputAuthority => _hub != null && (!NetworkManager.Singleton.IsListening || _hub.IsOwner);
 
         private void Awake()
         {
-            _hub = GetComponentInParent<PlayerController>();
+            if (_hub == null) _hub = GetComponentInParent<PlayerController>();
+            if (_hub != null) Bind(_hub);
+        }
+
+        public void Bind(PlayerController hub)
+        {
+            _hub = hub;
+            if (_hub != null)
+            {
+                _hub.RegisterModule(this);
+                OnRefreshModule();
+            }
+        }
+
+        public void OnRefreshModule()
+        {
+            if (_hub != null)
+            {
+                _target = _hub.cameraTarget;
+                RefreshCameraLink();
+            }
         }
 
         private void Start()
         {
-            if (CinemachineCameraTarget != null)
-                _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
-
-            if (IsOwner || !IsNetworkActive)
-            {
-                SetupCamera();
-            }
-        }
-
-        public override void OnNetworkSpawn()
-        {
-            if (IsOwner)
-            {
-                SetupCamera();
-            }
-            else
-            {
-                // On remote clients, ensure we don't have a VCam fighting for control
-                var root = transform.root.gameObject;
-                var vcam = root.GetComponentInChildren<CinemachineCamera>(true);
-                if (vcam != null && vcam.transform.IsChildOf(root.transform)) vcam.enabled = false;
-            }
+            if (_hub == null) _hub = PlayerController.LocalInstance;
+            if (_hub != null) _yaw = _hub.transform.eulerAngles.y;
+            RefreshCameraLink();
         }
 
         private void LateUpdate()
         {
-            if (!CanExecuteLocalLogic || _hub == null) return;
-            UpdateCameraTargetPosition();
-            CameraRotation();
-        }
+            if (_hub == null) _hub = PlayerController.LocalInstance;
+            if (_hub == null || !HasInputAuthority) return;
 
-        private void UpdateCameraTargetPosition()
-        {
-            if (CinemachineCameraTarget == null || _hub.animator == null) return;
+            // 1. Ubicar el Target (Seguimiento de posición, NO de rotación)
+            UpdateTargetState();
 
-            Transform bone = _hub.animator.GetBoneTransform(HumanBodyBones.Head) ??
-                             _hub.animator.GetBoneTransform(HumanBodyBones.Neck) ??
-                             _hub.animator.transform.Find("Head");
+            if (_vcam == null) RefreshCameraLink();
 
-            if (bone != null)
+            // 2. Rotación con el Mouse
+            if (_hub.look.sqrMagnitude > 0.001f)
             {
-                CinemachineCameraTarget.transform.position = bone.position + Vector3.up * 0.4f;
+                _yaw += _hub.look.x * LookSensitivity.x;
+                _pitch -= _hub.look.y * LookSensitivity.y;
+            }
+
+            _pitch = Mathf.Clamp(_pitch, BottomClamp, TopClamp);
+
+            if (_target != null)
+            {
+                // USAMOS WORLD ROTATION (Absoluta)
+                // Esto ignora si el padre (Player) rota con WASD
+                _target.transform.rotation = Quaternion.Euler(_pitch, _yaw, 0.0f);
             }
         }
 
-        private void CameraRotation()
-        {
-            if (_hub == null) _hub = GetComponentInParent<PlayerController>();
-            if (_hub == null) return;
-
-            // Asegurar que tenemos el target del prefab padre
-            if (CinemachineCameraTarget == null)
-            {
-                Transform target = _hub.transform.Find("PlayerTarget");
-                if (target != null) CinemachineCameraTarget = target.gameObject;
-            }
-
-            if (_hub.look.sqrMagnitude >= _threshold && !LockCameraPosition)
-            {
-                float mouseSpeedFactor = 0.5f;
-
-                _cinemachineTargetYaw += _hub.look.x * mouseSpeedFactor * LookSensitivity.x;
-                _cinemachineTargetPitch -= _hub.look.y * mouseSpeedFactor * LookSensitivity.y;
-            }
-
-            _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
-            _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
-
-            if (CinemachineCameraTarget != null)
-            {
-                CinemachineCameraTarget.transform.rotation = Quaternion.Euler(
-                    _cinemachineTargetPitch + CameraAngleOverride,
-                    _cinemachineTargetYaw,
-                    0.0f);
-            }
-        }
-
-        public void RefreshFunctionalComponents()
-        {
-            SetupCamera();
-        }
-
-        private void SetupCamera()
+        private void UpdateTargetState()
         {
             if (_hub == null) return;
 
-            GameObject root = _hub.gameObject;
-            CinemachineCamera vcam = root.GetComponentInChildren<CinemachineCamera>(true);
+            // _target is now maintained by OnRefreshModule() via Hub.cameraTarget
+            if (_target == null) _target = _hub.gameObject;
 
-            if (vcam != null && CinemachineCameraTarget != null)
+            // Priority: HeadPoint from active model
+            Transform followBone = null;
+            if (_hub.activeModel != null)
             {
-                vcam.Follow = CinemachineCameraTarget.transform;
-                vcam.LookAt = CinemachineCameraTarget.transform;
-                vcam.enabled = true;
-                vcam.Priority = 100;
+                followBone = _hub.activeModel.headPoint;
+            }
+
+            if (followBone == null && _hub.animator != null)
+            {
+                followBone = _hub.animator.GetBoneTransform(HumanBodyBones.Head);
+            }
+
+            if (followBone != null)
+            {
+                _target.transform.position = followBone.position;
+            }
+            else
+            {
+                _target.transform.position = _hub.transform.position + Vector3.up * 1.5f;
+            }
+        }
+
+        private void RefreshCameraLink()
+        {
+            if (_hub == null) return;
+            _vcam = _hub.GetComponentInChildren<CinemachineCamera>(true);
+            if (_vcam != null)
+            {
+                _vcam.enabled = HasInputAuthority;
+                if (_target != null)
+                {
+                    _vcam.Follow = _target.transform;
+                    _vcam.LookAt = _target.transform;
+                }
             }
         }
 
         public void ResetCameraRotation(float targetYaw)
         {
-            _cinemachineTargetYaw = targetYaw;
-            _cinemachineTargetPitch = 0f;
-            if (CinemachineCameraTarget != null)
-                CinemachineCameraTarget.transform.rotation = Quaternion.Euler(_cinemachineTargetPitch, _cinemachineTargetYaw, 0f);
+            _yaw = targetYaw;
+            _pitch = 0f;
         }
 
-        private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
-        {
-            if (lfAngle < -360f) lfAngle += 360f;
-            if (lfAngle > 360f) lfAngle -= 360f;
-            return Mathf.Clamp(lfAngle, lfMin, lfMax);
-        }
+        public void RefreshFunctionalComponents() => RefreshCameraLink();
     }
 }

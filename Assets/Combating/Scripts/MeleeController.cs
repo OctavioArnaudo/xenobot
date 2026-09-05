@@ -9,7 +9,7 @@ namespace Combating.Scripts
     /// Manages its own rotation and execution logic.
     /// Works for both Players and AI Enemies.
     /// </summary>
-    public class MeleeController : NetworkBehaviour
+    public class MeleeController : NetworkBehaviour, IPlayerModule
     {
         [Header("Settings")]
         public float attackRange = 2.5f;
@@ -30,14 +30,33 @@ namespace Combating.Scripts
 
         void Awake()
         {
-            m_Health = GetComponentInParent<HealthController>();
-            if (m_Health == null) m_Health = GetComponent<HealthController>();
-
             _hub = GetComponentInParent<PlayerController>();
             if (_hub == null) _hub = GetComponent<PlayerController>();
+            if (_hub != null) Bind(_hub);
 
             if (visualsToRotate == null || visualsToRotate.Length == 0)
                 visualsToRotate = GetComponentsInChildren<Renderer>();
+        }
+
+        public void Bind(PlayerController hub)
+        {
+            _hub = hub;
+            if (_hub != null)
+            {
+                _hub.RegisterModule(this);
+                OnRefreshModule();
+            }
+        }
+
+        public void OnRefreshModule()
+        {
+            if (_hub != null)
+            {
+                m_Health = _hub.GetModule<HealthController>();
+
+                // Refresh visuals to rotate if they change with costume
+                visualsToRotate = _hub.renderRoot?.GetComponentsInChildren<Renderer>() ?? GetComponentsInChildren<Renderer>();
+            }
         }
 
         private void Update()
@@ -98,7 +117,8 @@ namespace Combating.Scripts
         private void ExecuteMelee()
         {
             float finalDamage = attackDamage;
-            if (TryGetComponent<HudController>(out var stats))
+            var stats = _hub?.GetModule<HudController>();
+            if (stats != null)
             {
                 finalDamage = attackDamage * (stats.Attack / 10f);
             }

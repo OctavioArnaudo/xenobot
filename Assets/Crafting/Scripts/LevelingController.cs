@@ -1,21 +1,37 @@
 using UnityEngine;
 using Unity.Netcode;
+using Crafting.Scripts;
 
 /// <summary>
 /// Specialized controller for character leveling and progression logic.
 /// </summary>
-public class LevelingController : NetworkBehaviour
+public class LevelingController : NetworkBehaviour, IPlayerModule
 {
     private HudController _stats;
+    private PlayerController _hub;
 
     void Awake()
     {
-        _stats = GetComponent<HudController>();
+        _hub = GetComponentInParent<PlayerController>();
+        if (_hub != null) Bind(_hub);
     }
 
-    public override void OnNetworkSpawn()
+    public void Bind(PlayerController hub)
     {
-        if (_stats == null) _stats = GetComponent<HudController>();
+        _hub = hub;
+        if (_hub != null)
+        {
+            _hub.RegisterModule(this);
+            OnRefreshModule();
+        }
+    }
+
+    public void OnRefreshModule()
+    {
+        if (_hub != null)
+        {
+            _stats = _hub.GetModule<HudController>();
+        }
     }
 
     public void AddExp(float amount)
