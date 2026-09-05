@@ -14,7 +14,7 @@ namespace Crafting.Scripts
         [Tooltip("Tag to find the render root in the player hierarchy")]
         public string renderTag = "Render";
 
-        private List<Renderer> _hiddenByMe = new List<Renderer>();
+        private GameObject _modelHiddenByMe;
         private bool _isEquipped = false;
         private PlayerController _hub;
 
@@ -36,39 +36,18 @@ namespace Crafting.Scripts
             GameObject renderRoot = (_hub != null && _hub.renderRoot != null)
                 ? _hub.renderRoot.gameObject
                 : FindChildWithTag(player, renderTag);
+
             if (renderRoot == null)
             {
                 Debug.LogWarning($"[CostumeController] Render root with tag '{renderTag}' not found on {player.name}. Using player root.");
                 renderRoot = player;
             }
 
-            // 2. HIDE renderers specifically in the target root
-            // Special Rule: We also look for other "PlayerRoot" tagged objects to hide them
-            var myRenderers = new HashSet<Renderer>(GetComponentsInChildren<Renderer>(true));
-            var targetTransforms = renderRoot.GetComponentsInChildren<Transform>(true);
-
-            foreach (var t in targetTransforms)
+            // 2. HIDE the previous model if it exists
+            if (_hub != null && _hub.activeModel != null)
             {
-                // Hide any previous PlayerRoot or objects with renderers
-                if (t.CompareTag("Root") && !t.IsChildOf(transform))
-                {
-                    foreach(var r in t.GetComponentsInChildren<Renderer>())
-                    {
-                         if (myRenderers.Contains(r)) continue;
-                         r.enabled = false;
-                         _hiddenByMe.Add(r);
-                    }
-                }
-
-                if (t.TryGetComponent<Renderer>(out var rend))
-                {
-                    if (myRenderers.Contains(rend)) continue;
-                    if (rend.enabled)
-                    {
-                        rend.enabled = false;
-                        _hiddenByMe.Add(rend);
-                    }
-                }
+                _modelHiddenByMe = _hub.activeModel.gameObject;
+                _modelHiddenByMe.SetActive(false);
             }
 
             // 3. Attach and Show myself
@@ -77,7 +56,7 @@ namespace Crafting.Scripts
             transform.localRotation = Quaternion.identity;
             transform.localScale = Vector3.one;
 
-            SetMeshVisible(true);
+            gameObject.SetActive(true);
             _isEquipped = true;
 
             // 4. Cleanup modular components
@@ -88,24 +67,15 @@ namespace Crafting.Scripts
             if (_hub != null) _hub.RefreshBodyReferences();
         }
 
-        public void SetMeshVisible(bool visible)
-        {
-            foreach (var r in GetComponentsInChildren<Renderer>(true))
-            {
-                r.enabled = visible;
-            }
-        }
-
         private void OnDestroy()
         {
             if (!_isEquipped) return;
 
             // RESTORE exactly what this specific costume hid
-            foreach (var r in _hiddenByMe)
+            if (_modelHiddenByMe != null)
             {
-                if (r != null) r.enabled = true;
+                _modelHiddenByMe.SetActive(true);
             }
-            _hiddenByMe.Clear();
         }
 
         private GameObject FindChildWithTag(GameObject parent, string tag)

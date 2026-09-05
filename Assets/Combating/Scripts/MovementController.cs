@@ -45,7 +45,8 @@ namespace Combating.Scripts
         {
             if (_hub != null)
             {
-                _renderTransform = _hub.renderRoot;
+                // Priorizar el transform del modelo activo, no el contenedor raíz
+                _renderTransform = (_hub.activeModel != null) ? _hub.activeModel.transform : _hub.renderRoot;
                 _controller = _hub.controller ?? _hub.GetComponent<CharacterController>();
             }
         }

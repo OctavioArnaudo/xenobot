@@ -439,13 +439,6 @@ namespace Crafting.Scripts
                     GameObject instance = Instantiate(prefab, transform);
                     _equippedInstances[hash] = instance;
 
-                    // New rule: Only show meshes if the prefab has a CostumeController
-                    bool hasVisualModule = instance.GetComponentInChildren<CostumeController>() != null;
-                    if (!hasVisualModule)
-                    {
-                        foreach(var r in instance.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
-                    }
-
                     if (instance.TryGetComponent<PickupController>(out var p)) DestroyImmediate(p);
                     if (instance.TryGetComponent<Rigidbody>(out var rb)) DestroyImmediate(rb);
                     if (instance.TryGetComponent<NetworkObject>(out var no)) DestroyImmediate(no);

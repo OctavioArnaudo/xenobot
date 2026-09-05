@@ -26,7 +26,7 @@ Transform:
   m_GameObject: {fileID: 165653068685440053}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.6, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -45,48 +45,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.CameraController
   ShowTopMostFoldoutHeaderGroup: 1
-  MoveSpeed: 2
-  SprintSpeed: 5.335
-  RotationSmoothTime: 0.12
-  SpeedChangeRate: 10
-  LandingAudioClip: {fileID: 0}
-  FootstepAudioClips: []
-  FootstepAudioVolume: 0.5
-  JumpHeight: 1.2
-  EnableDoubleJump: 1
-  DoubleJumpHeight: 1.2
-  Gravity: -15
-  JumpTimeout: 0.5
-  FallTimeout: 0.15
-  Grounded: 1
-  GroundedOffset: -0.14
-  GroundedRadius: 0.28
-  GroundLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  CinemachineCameraTarget: {fileID: 0}
-  PlayerVCamTag: PlayerVCam
+  LookSensitivity: {x: 7.5, y: 5}
   TopClamp: 70
   BottomClamp: -30
-  CameraAngleOverride: 0
-  LockCameraPosition: 0
-  LookSensitivity: {x: 7.5, y: 5}
-  SceneSpawns: []
-  yThreshold: -5
-  respawnSound: {fileID: 0}
-  move: {x: 0, y: 0}
-  look: {x: 0, y: 0}
-  jump: 0
-  jumpHeld: 0
-  sprint: 0
-  fire: 0
-  fireHeld: 0
-  fireReleased: 0
-  aim: 0
-  crouch: 0
-  reload: 0
-  switchWeapon: 0
-  selectWeapon: 0
-  analogMovement: 0
-  cursorLocked: 1
-  cursorInputForLook: 1

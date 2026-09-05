@@ -68,9 +68,10 @@ namespace Combating.Scripts
                 m_Health = m_Player.GetModule<HealthController>();
                 AimCamera = m_Player.mainCamera?.GetComponent<Camera>() ?? m_Player.GetComponentInChildren<Camera>();
 
-                if (m_Player.activeModel != null && m_Player.activeModel.muzzlePoint != null)
+                // Uso de puntos dinámicos del Hub
+                if (m_Player.MuzzlePoint != null)
                 {
-                    Muzzle = m_Player.activeModel.muzzlePoint;
+                    Muzzle = m_Player.MuzzlePoint;
                 }
             }
         }

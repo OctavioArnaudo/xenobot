@@ -83,20 +83,11 @@ namespace Combating.Scripts
         {
             if (_hub == null) return;
 
-            // _target is now maintained by OnRefreshModule() via Hub.cameraTarget
-            if (_target == null) _target = _hub.gameObject;
+            // _target is maintained by OnRefreshModule() via Hub.cameraTarget
+            if (_target == null) _target = _hub.cameraTarget ?? _hub.gameObject;
 
-            // Priority: HeadPoint from active model
-            Transform followBone = null;
-            if (_hub.activeModel != null)
-            {
-                followBone = _hub.activeModel.headPoint;
-            }
-
-            if (followBone == null && _hub.animator != null)
-            {
-                followBone = _hub.animator.GetBoneTransform(HumanBodyBones.Head);
-            }
+            // Delegación directa a las propiedades dinámicas del Hub
+            Transform followBone = _hub.CameraLookAtPoint ?? _hub.HeadPoint;
 
             if (followBone != null)
             {
@@ -104,7 +95,8 @@ namespace Combating.Scripts
             }
             else
             {
-                _target.transform.position = _hub.transform.position + Vector3.up * 1.5f;
+                // FALLBACK DE SEGURIDAD: Si no hay puntos definidos, forzar altura de ojos (1.6m)
+                _target.transform.position = _hub.transform.position + Vector3.up * 1.6f;
             }
         }
 

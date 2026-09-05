@@ -70,7 +70,13 @@ namespace Crafting.Scripts
         [Header("Hierarchy Articulation")]
         public Transform renderRoot;
         public GameObject cameraTarget;
-        public ModelDefinition activeModel;
+        public RenderController activeModel;
+
+        // Dynamic properties that always point to the active model's bones
+        public Transform HeadPoint => activeModel != null ? activeModel.headPoint : null;
+        public Transform SpinePoint => activeModel != null ? activeModel.spinePoint : null;
+        public Transform MuzzlePoint => activeModel != null ? activeModel.muzzlePoint : null;
+        public Transform CameraLookAtPoint => activeModel != null ? activeModel.cameraLookAtPoint : null;
 
         private static int s_CollectiblesRemaining = 0;
         private static bool s_CountDirty = true;
@@ -184,38 +190,33 @@ namespace Crafting.Scripts
             if (renderRoot == null) renderRoot = transform.Find("PlayerRender");
             if (cameraTarget == null) cameraTarget = transform.Find("PlayerTarget")?.gameObject;
 
-            // 2. Aggressive Model Discovery & Cleanup
+            // 2. Intelligent Model Discovery (Supporting Variant Prefabs)
             if (renderRoot != null)
             {
-                bool modelFound = false;
+                // Check if the root itself or any descendant has the RenderController
+                activeModel = renderRoot.GetComponent<RenderController>() ?? renderRoot.GetComponentInChildren<RenderController>(true);
 
-                // Clear any null or destroyed references in children
-                foreach (Transform child in renderRoot)
+                if (activeModel != null)
                 {
-                    if (child == null) continue;
-
-                    if (child.gameObject.activeSelf && !modelFound)
-                    {
-                        activeModel = child.GetComponent<ModelDefinition>() ?? child.gameObject.AddComponent<ModelDefinition>();
-                        modelFound = true;
-                    }
-                    else if (child.gameObject.activeSelf)
-                    {
-                        // Deactivate redundant or extra models
-                        child.gameObject.SetActive(false);
-                    }
+                    // Ensure the model is active.
+                    // We NO LONGER deactivate siblings to respect Variant Prefab parts.
+                    activeModel.gameObject.SetActive(true);
                 }
-
-                // Bootstrapping Visual: If still no model, try to instantiate default from library
-                if (!modelFound)
+                else
                 {
+                    // Bootstrapping Visual: If no model found, look for default in library
                     var defaultPrefab = GetPrefabFromList("DefaultPlayerModel") ?? GetPrefabFromList("ROBOTO FBX ANIMACIONES OK");
                     if (defaultPrefab != null)
                     {
                         var go = Instantiate(defaultPrefab, renderRoot);
                         go.name = "DefaultModel";
                         go.SetActive(true);
-                        activeModel = go.GetComponent<ModelDefinition>() ?? go.AddComponent<ModelDefinition>();
+                        activeModel = go.GetComponent<RenderController>() ?? go.AddComponent<RenderController>();
+                    }
+                    else
+                    {
+                        // Final fallback: Make the renderRoot itself the model
+                        activeModel = renderRoot.gameObject.AddComponent<RenderController>();
                     }
                 }
             }
@@ -224,10 +225,18 @@ namespace Crafting.Scripts
             if (activeModel != null)
             {
                 animator = activeModel.Animator;
+
+                // Ensure all renderers are enabled
+                foreach (var r in activeModel.GetComponentsInChildren<Renderer>(true))
+                {
+                    r.enabled = true;
+                }
+
                 if (cameraTarget != null)
                 {
-                    // Align target with model height (Head or center)
-                    cameraTarget.transform.position = activeModel.headPoint != null ? activeModel.headPoint.position : transform.position + Vector3.up * activeModel.modelHeight;
+                    // Initial target position sync
+                    Transform lookPoint = CameraLookAtPoint ?? HeadPoint ?? activeModel.transform;
+                    cameraTarget.transform.position = lookPoint.position;
                 }
             }
             else
