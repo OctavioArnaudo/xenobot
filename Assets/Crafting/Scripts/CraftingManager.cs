@@ -109,8 +109,8 @@ namespace Crafting.Scripts
             float screenH = Screen.height;
 
             // Encontrar todos los inventories en la escena
-            var allInventories = Object.FindObjectsByType<InventoryController>(FindObjectsSortMode.None);
-            var myInv = InventoryController.LocalInstance;
+            var allInventories = Object.FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
+            var myInv = PlayerController.LocalInstance;
             var otherInvs = allInventories.Where(x => x != myInv).ToList();
 
             // Layout de 3 columnas
@@ -231,7 +231,7 @@ namespace Crafting.Scripts
 
         private bool CanCraft(TradeData recipe)
         {
-            var bag = InventoryController.GetBag();
+            var bag = PlayerController.GetBag();
             string key = recipe.InputItem.itemCode.ToLowerInvariant();
 
             if (bag.TryGetValue(key, out var slot))
@@ -258,16 +258,16 @@ namespace Crafting.Scripts
             string inputKey = recipe.InputItem.itemCode.ToLowerInvariant();
             for (int i = 0; i < recipe.InputAmount; i++)
             {
-                InventoryController.RemoveItem(inputKey);
+                PlayerController.RemoveItem(inputKey);
             }
 
             // 2. Añadir resultado
             for (int i = 0; i < recipe.OutputAmount; i++)
             {
-                InventoryController.Add(recipe.OutputItem);
+                PlayerController.Add(recipe.OutputItem);
             }
 
-            InventoryController.MarkCountDirty();
+            PlayerController.MarkCountDirty();
         }
 
         // --- Market Logic (Placeholder centralizado) ---

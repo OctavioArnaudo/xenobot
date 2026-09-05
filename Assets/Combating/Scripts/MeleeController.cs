@@ -1,6 +1,6 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Unity.Netcode;
+using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
@@ -22,22 +22,31 @@ namespace Combating.Scripts
         public Renderer[] visualsToRotate;
         public float rotationSpeed = 10f;
 
-        private FuelController m_Health;
+        private HealthController m_Health;
+        private PlayerController _hub;
         private float m_NextAttackTime;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
         void Awake()
         {
-            m_Health = GetComponent<FuelController>();
+            m_Health = GetComponentInParent<HealthController>();
+            if (m_Health == null) m_Health = GetComponent<HealthController>();
+
+            _hub = GetComponentInParent<PlayerController>();
+            if (_hub == null) _hub = GetComponent<PlayerController>();
+
             if (visualsToRotate == null || visualsToRotate.Length == 0)
                 visualsToRotate = GetComponentsInChildren<Renderer>();
         }
 
-        public void OnAttack(InputValue value)
+        private void Update()
         {
-            if (!value.isPressed || Time.time < m_NextAttackTime) return;
-            PerformMeleeAction();
+            if (_hub != null && _hub.fire && Time.time >= m_NextAttackTime)
+            {
+                PerformMeleeAction();
+                _hub.fire = false; // Consume input
+            }
         }
 
         /// <summary>
@@ -48,7 +57,6 @@ namespace Combating.Scripts
         {
             if (Time.time < m_NextAttackTime) return;
 
-            // How to attack: Rotate + Execute
             if (targetPosition.HasValue)
             {
                 RotateVisualsTowards(targetPosition.Value);
@@ -95,21 +103,21 @@ namespace Combating.Scripts
                 finalDamage = attackDamage * (stats.Attack / 10f);
             }
 
-            // 1. Physical Detection
             Vector3 attackCenter = transform.position + transform.forward * (attackRange * 0.5f);
             Collider[] hits = Physics.OverlapSphere(attackCenter, attackRange, targetLayers);
 
             foreach (Collider hit in hits)
             {
-                var targetHealth = hit.GetComponentInParent<FuelController>();
+                var targetHealth = hit.GetComponentInParent<HealthController>();
                 if (targetHealth != null)
                 {
                     if (m_Health != null && targetHealth.team == m_Health.team) continue;
-                    targetHealth.TakeDamage((int)finalDamage);
+
+                    var targetDamage = hit.GetComponentInParent<DamageController>();
+                    if (targetDamage != null) targetDamage.TakeDamage((int)finalDamage);
                 }
             }
 
-            // 2. Visual Effects
             if (swingVfxPrefab != null)
             {
                 ProjectileController vfx = Instantiate(swingVfxPrefab, transform.position + transform.forward, transform.rotation);

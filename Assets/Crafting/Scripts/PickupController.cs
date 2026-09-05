@@ -68,7 +68,7 @@ namespace Crafting.Scripts
             _startPos = transform.position;
             _spawnTime = Time.time;
             ActiveCount++;
-            InventoryController.MarkCountDirty();
+            PlayerController.MarkCountDirty();
         }
 
         void Update()
@@ -107,7 +107,7 @@ namespace Crafting.Scripts
 
             // Robust player detection: Check root and parent hierarchy
             Transform root = other.transform.root;
-            InventoryController inv = root.GetComponentInChildren<InventoryController>();
+            PlayerController inv = root.GetComponentInChildren<PlayerController>();
             bool isPlayer = root.CompareTag("Player") || other.CompareTag("Player") || inv != null;
 
             if (isPlayer)
@@ -124,7 +124,7 @@ namespace Crafting.Scripts
             }
         }
 
-        private void ProcessPickupAuthoritative(InventoryController inv, GameObject player)
+        private void ProcessPickupAuthoritative(PlayerController inv, GameObject player)
         {
             if (IsServer)
             {
@@ -140,14 +140,14 @@ namespace Crafting.Scripts
             }
         }
 
-        private void ProcessPickupLocal(InventoryController inv, GameObject player)
+        private void ProcessPickupLocal(PlayerController inv, GameObject player)
         {
             ApplyReward(inv, player);
             SpawnHardcodedEffect();
             Destroy(gameObject);
         }
 
-        private void ApplyReward(InventoryController inv, GameObject player)
+        private void ApplyReward(PlayerController inv, GameObject player)
         {
             if (item == null) return;
 
@@ -161,7 +161,7 @@ namespace Crafting.Scripts
             else
             {
                 // In Red mode, inv will handle the ServerRpc call
-                InventoryController.Add(item);
+                PlayerController.Add(item);
             }
         }
 
@@ -204,7 +204,7 @@ namespace Crafting.Scripts
         {
             base.OnDestroy();
             ActiveCount--;
-            InventoryController.MarkCountDirty();
+            PlayerController.MarkCountDirty();
         }
     }
 }

@@ -174,7 +174,7 @@ namespace Missions.Scripts
 
         private bool HasRequiredItems(MissionData mission)
         {
-            var bag = InventoryController.GetBag();
+            var bag = PlayerController.GetBag();
 
             // Validar requerimientos de recolección
             if (mission.gatheringRequirements != null)

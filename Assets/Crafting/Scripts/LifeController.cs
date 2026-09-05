@@ -46,7 +46,7 @@ namespace Crafting.Scripts
 
         public void ApplyEffect(GameObject player)
         {
-            Combating.Scripts.FuelController health = player.GetComponent<Combating.Scripts.FuelController>();
+            Combating.Scripts.HealthController health = player.GetComponent<Combating.Scripts.HealthController>();
             if (health != null)
             {
                 health.Heal(healAmount);

@@ -1,48 +1,31 @@
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
+using Crafting.Scripts;
 using Combating.Scripts;
-using Unity.Collections;
-using NGO.Networking;
 
 /// <summary>
-/// Unified controller for character progression, HUD and Identity.
-/// Optimized to reduce CPU overhead and audio starvation.
+/// Specialized controller for character HUD and Identity visuals.
+/// Only handles rendering and visual feedback.
 /// </summary>
 public class UiController : NetworkBehaviour
 {
     public static UiController Instance { get; private set; }
 
-    [Header("Identity & Visuals")]
-    public NetworkVariable<FixedString32Bytes> playerName = new NetworkVariable<FixedString32Bytes>(new FixedString32Bytes(""), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-    public NetworkVariable<Color> playerColor = new NetworkVariable<Color>(Color.white, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
-
-    public TMPro.TMP_Text nameTagText;
-
-    [Header("Initial Ranges")]
-    public Vector2 attackRange = new Vector2(5f, 15f);
-    public Vector2 defenseRange = new Vector2(3f, 10f);
-
-    [Header("Base Growth")]
-    public float attackPerLevel = 2f;
-    public float defensePerLevel = 1.5f;
-    public float expToLevelUp = 100f;
-
     [Header("HUD Config")]
     public int fontSize = 14;
     public int barWidth = 160;
     public int barHeight = 6;
-
-    public float Attack { get; private set; }
-    public float Defense { get; private set; }
-    public int Level { get; private set; } = 1;
-    public float Exp { get; private set; }
+    public TMPro.TMP_Text nameTagText;
 
     private Texture2D _bg, _barBg, _atkFill, _defFill, _expFill, _hpFill, _jetFill;
     private GUIStyle _labelStyle, _valueStyle, _timerStyle;
     private bool _stylesReady;
 
-    private FuelController m_PlayerHealth;
+    private HudController _stats;
+    private Combating.Scripts.FuelController _fuel;
+    private HealthController _health;
+
     private float _lastTimeUpdate;
     private string _cachedTimeStr = "00:00";
     private Camera _mainCamCache;
@@ -50,12 +33,45 @@ public class UiController : NetworkBehaviour
     private Transform _aureoleRoot;
     private Vector3 _aureoleBaseOffset = new Vector3(0, 2.4f, 0);
 
-    private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+    private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
     private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
+
+    void Awake()
+    {
+        if (Instance != null && Instance != this) { Destroy(this); return; }
+        Instance = this;
+        ResolveReferences();
+    }
+
+    public override void OnNetworkSpawn()
+    {
+        ResolveReferences();
+
+        if (_stats != null)
+        {
+            _stats.playerName.OnValueChanged += (oldVal, newVal) => UpdateVisuals();
+            _stats.playerColor.OnValueChanged += (oldVal, newVal) => UpdateVisuals();
+        }
+        UpdateVisuals();
+    }
+
+    private void ResolveReferences()
+    {
+        var hub = GetComponentInParent<PlayerController>();
+        if (hub != null)
+        {
+            if (_stats == null) _stats = hub.GetComponentInChildren<HudController>();
+            if (_fuel == null) _fuel = hub.GetComponentInChildren<Combating.Scripts.FuelController>();
+            if (_health == null) _health = hub.GetComponentInChildren<HealthController>();
+        }
+
+        if (_stats == null) _stats = GetComponent<HudController>();
+        if (_fuel == null) _fuel = GetComponent<Combating.Scripts.FuelController>();
+        if (_health == null) _health = GetComponent<HealthController>();
+    }
 
     void Update()
     {
-        // Billboard effect para el NameTag en red (Cacheando la camara para evitar Starvation)
         if (nameTagText != null)
         {
             if (_mainCamCache == null) _mainCamCache = Camera.main;
@@ -65,7 +81,6 @@ public class UiController : NetworkBehaviour
             }
         }
 
-        // Aureole Animations: Floating & Rotation
         if (_aureoleRoot != null && _aureoleRoot.gameObject.activeSelf)
         {
             float bob = Mathf.Sin(Time.time * 2f) * 0.1f;
@@ -73,121 +88,100 @@ public class UiController : NetworkBehaviour
         }
     }
 
-    void Awake()
-    {
-        if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
-        {
-            if (Instance != null && Instance != this) { Destroy(this); return; }
-            Instance = this;
-            InitializeStats();
-
-            // Inicialización offline para HUD y Visuales
-            m_PlayerHealth = GetComponent<FuelController>();
-            UpdateVisuals();
-        }
-    }
-
-    public override void OnNetworkSpawn()
-    {
-        m_PlayerHealth = GetComponent<FuelController>();
-        if (IsOwner)
-        {
-            Instance = this;
-            InitializeStats();
-            playerName.Value = LocalUserConfig.UserName;
-            playerColor.Value = LocalUserConfig.UserColor;
-        }
-        playerName.OnValueChanged += (oldVal, newVal) => UpdateVisuals();
-        playerColor.OnValueChanged += (oldVal, newVal) => UpdateVisuals();
-        UpdateVisuals();
-    }
-
-    void InitializeStats()
-    {
-        Attack = Random.Range(attackRange.x, attackRange.y);
-        Defense = Random.Range(defenseRange.x, defenseRange.y);
-    }
-
     public void UpdateVisuals()
     {
         ValidateVisualComponents();
         if (_aureoleRoot != null) _aureoleRoot.gameObject.SetActive(IsNetworkActive);
-        if (nameTagText != null) nameTagText.text = playerName.Value.ToString();
+        if (nameTagText != null && _stats != null) nameTagText.text = _stats.playerName.Value.ToString();
     }
 
     private void ValidateVisualComponents()
     {
-        // Zero-Dependency Bootstrapping: Root de la Aureola
         if (_aureoleRoot == null)
         {
-            var existingRoot = transform.Find("AureoleRoot") ?? transform.GetComponentInChildren<Animator>()?.transform.Find("AureoleRoot");
-
-            if (existingRoot != null)
-            {
-                _aureoleRoot = existingRoot;
-            }
+            var existingRoot = transform.Find("AureoleRoot");
+            if (existingRoot != null) _aureoleRoot = existingRoot;
             else
             {
                 _aureoleRoot = new GameObject("AureoleRoot").transform;
-
-                // Intentar encontrar el hueso de la cabeza para que la siga fielmente
                 Animator anim = GetComponentInChildren<Animator>();
-                Transform headBone = null;
-                if (anim != null && anim.isHuman) headBone = anim.GetBoneTransform(HumanBodyBones.Head);
-                if (headBone == null)
-                {
-                    foreach (Transform child in GetComponentsInChildren<Transform>())
-                    {
-                        if (child.name.ToLower().Contains("head"))
-                        {
-                            headBone = child;
-                            break;
-                        }
-                    }
-                }
-
+                Transform headBone = anim != null && anim.isHuman ? anim.GetBoneTransform(HumanBodyBones.Head) : null;
                 _aureoleRoot.SetParent(headBone != null ? headBone : transform);
                 _aureoleRoot.localPosition = headBone != null ? new Vector3(0, 0.4f, 0) : _aureoleBaseOffset;
             }
         }
 
-        // Zero-Dependency Bootstrapping: Fallback para el NameTag
         if (nameTagText == null)
         {
             nameTagText = _aureoleRoot.GetComponentInChildren<TMPro.TMP_Text>();
-            if (nameTagText == null)
-            {
-                GameObject tagGO = new GameObject("NameTag");
-                tagGO.transform.SetParent(_aureoleRoot);
-                tagGO.transform.localPosition = new Vector3(0, 0.4f, 0); // Above the halo
-                var tmp = tagGO.AddComponent<TMPro.TextMeshPro>();
-                tmp.alignment = TMPro.TextAlignmentOptions.Center;
-                tmp.fontSize = 4;
-                tmp.rectTransform.sizeDelta = new Vector2(5, 1);
-                nameTagText = tmp;
-            }
         }
     }
 
-    public void AddExp(float amount)
+    void OnGUI()
     {
-        Exp += amount;
-        while (Exp >= expToLevelUp) { Exp -= expToLevelUp; LevelUp(); }
-    }
+        if (Event.current.type != EventType.Repaint) return;
 
-    void LevelUp()
-    {
-        Level++;
-        Attack += attackPerLevel;
-        Defense += defensePerLevel;
-        expToLevelUp *= 1.2f;
+        if (_stats == null || _health == null) ResolveReferences();
+        if (!CanExecuteLocalLogic || _stats == null) return;
 
-        // Bono de Vida y Jetpack al subir de nivel
-        if (m_PlayerHealth != null)
+        EnsureAssets();
+
+        if (Time.time - _lastTimeUpdate > 0.5f)
         {
-            // Expandir maximos y curar un poco (ej: 15 HP y 20 Fuel extra por nivel)
-            m_PlayerHealth.UpgradeMaxStats(15, 20f);
+            float t = Time.timeSinceLevelLoad;
+            LevelsMenu.ultimoTiempoSession = t;
+            LevelsMenu.ultimoNivelSession = SceneManager.GetActiveScene().name;
+            _cachedTimeStr = LevelsMenu.FormatTime(t);
+            _lastTimeUpdate = Time.time;
         }
+
+        DrawTopRightHUD();
+        DrawBottomLeftHUD();
+    }
+
+    private void DrawTopRightHUD()
+    {
+        int rowH = fontSize + barHeight + 2;
+        int totalH = rowH * 4 + 6;
+        float x = Screen.width - barWidth;
+        GUI.DrawTexture(new Rect(x, 0, barWidth, totalH), _bg);
+        float curY = 2;
+        GUI.Label(new Rect(x, curY, barWidth, fontSize + 4), $"TIME {_cachedTimeStr}", _timerStyle);
+        curY += fontSize + 6;
+        DrawRow(x, ref curY, " ATK", _stats.Attack, 100f, _atkFill);
+        DrawRow(x, ref curY, " DEF", _stats.Defense, 100f, _defFill);
+        DrawRow(x, ref curY, $" LVL {_stats.Level}", _stats.Exp, _stats.expToLevelUp, _expFill);
+    }
+
+    private void DrawBottomLeftHUD()
+    {
+        int rowH = fontSize + barHeight + 2;
+        int rows = 0;
+        if (_fuel != null) rows++;
+        if (_health != null) rows++;
+
+        if (rows == 0) return;
+
+        int totalH = rowH * rows + 4;
+        float y = Screen.height - totalH;
+        GUI.DrawTexture(new Rect(0, y, barWidth, totalH), _bg);
+        float curY = y + 2;
+
+        if (_fuel != null)
+            DrawRow(0, ref curY, " JET", _fuel.JetpackFuel, _fuel.maxJetpack, _jetFill);
+
+        if (_health != null)
+            DrawRow(0, ref curY, " HP", _health.CurrentHP, _health.maxHealth, _hpFill);
+    }
+
+    void DrawRow(float x, ref float y, string label, float val, float max, Texture2D fill)
+    {
+        GUI.Label(new Rect(x, y, barWidth - 2, fontSize + 2), label, _labelStyle);
+        GUI.Label(new Rect(x, y, barWidth - 2, fontSize + 2), val.ToString("F0"), _valueStyle);
+        y += fontSize + 2;
+        GUI.DrawTexture(new Rect(x, y, barWidth, barHeight), _barBg);
+        GUI.DrawTexture(new Rect(x, y, barWidth * Mathf.Clamp01(val / (max > 0 ? max : 1f)), barHeight), fill);
+        y += barHeight;
     }
 
     void EnsureAssets()
@@ -200,7 +194,6 @@ public class UiController : NetworkBehaviour
         _expFill = MakeTex(new Color(1f, 0.9f, 0f, 1f));
         _hpFill = MakeTex(new Color(0.9f, 0.1f, 0.1f, 1f));
         _jetFill = MakeTex(new Color(0f, 0.9f, 0.9f, 1f));
-
         _labelStyle = new GUIStyle(GUI.skin.label) { fontSize = fontSize, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleLeft };
         _valueStyle = new GUIStyle(_labelStyle) { alignment = TextAnchor.MiddleRight, fontStyle = FontStyle.Normal };
         _timerStyle = new GUIStyle(_labelStyle) { alignment = TextAnchor.MiddleCenter, fontSize = fontSize + 2 };
@@ -209,62 +202,4 @@ public class UiController : NetworkBehaviour
     }
 
     Texture2D MakeTex(Color c) { var t = new Texture2D(1, 1); t.SetPixel(0, 0, c); t.Apply(); return t; }
-
-    void OnGUI()
-    {
-        if (Event.current.type != EventType.Repaint) return; // Optimization: only run on repaint
-        if (SceneManager.GetActiveScene().name != "BiomaScene") return;
-        if (!CanExecuteLocalLogic) return;
-
-        EnsureAssets();
-
-        // Timer Cache (once per 0.5s)
-        if (Time.time - _lastTimeUpdate > 0.5f)
-        {
-            float t = Time.timeSinceLevelLoad;
-            LevelsMenu.ultimoTiempoSession = t;
-            LevelsMenu.ultimoNivelSession = SceneManager.GetActiveScene().name;
-            _cachedTimeStr = LevelsMenu.FormatTime(t);
-            _lastTimeUpdate = Time.time;
-        }
-
-        DrawTopRightHUD();
-        if (m_PlayerHealth != null) DrawBottomLeftHUD();
-    }
-
-    private void DrawTopRightHUD()
-    {
-        int rowH = fontSize + barHeight + 2;
-        int totalH = rowH * 4 + 6;
-        float x = Screen.width - barWidth;
-        GUI.DrawTexture(new Rect(x, 0, barWidth, totalH), _bg);
-        float curY = 2;
-        GUI.Label(new Rect(x, curY, barWidth, fontSize + 4), $"TIME {_cachedTimeStr}", _timerStyle);
-        curY += fontSize + 6;
-        DrawRow(x, ref curY, " ATK", Attack, 100f, _atkFill);
-        DrawRow(x, ref curY, " DEF", Defense, 100f, _defFill);
-        DrawRow(x, ref curY, $" LVL {Level}", Exp, expToLevelUp, _expFill);
-    }
-
-    private void DrawBottomLeftHUD()
-    {
-        bool hasJet = m_PlayerHealth.maxJetpack > 0;
-        int rowH = fontSize + barHeight + 2;
-        int totalH = rowH * (hasJet ? 2 : 1) + 4;
-        float y = Screen.height - totalH;
-        GUI.DrawTexture(new Rect(0, y, barWidth, totalH), _bg);
-        float curY = y + 2;
-        if (hasJet) DrawRow(0, ref curY, " JET", m_PlayerHealth.JetpackFuel, m_PlayerHealth.maxJetpack, _jetFill);
-        DrawRow(0, ref curY, " HP", m_PlayerHealth.CurrentHP, m_PlayerHealth.maxHealth, _hpFill);
-    }
-
-    void DrawRow(float x, ref float y, string label, float val, float max, Texture2D fill)
-    {
-        GUI.Label(new Rect(x, y, barWidth - 2, fontSize + 2), label, _labelStyle);
-        GUI.Label(new Rect(x, y, barWidth - 2, fontSize + 2), val.ToString("F0"), _valueStyle);
-        y += fontSize + 2;
-        GUI.DrawTexture(new Rect(x, y, barWidth, barHeight), _barBg);
-        GUI.DrawTexture(new Rect(x, y, barWidth * Mathf.Clamp01(val / (max > 0 ? max : 1f)), barHeight), fill);
-        y += barHeight;
-    }
 }

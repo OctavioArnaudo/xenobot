@@ -106,12 +106,15 @@ namespace Combating.Scripts
             if (m_HasHit || other.isTrigger) return;
             if (m_Owner != null && (other.gameObject == m_Owner || other.transform.IsChildOf(m_Owner.transform))) return;
 
-            var targetHealth = other.GetComponentInParent<FuelController>();
+            var targetHealth = other.GetComponentInParent<HealthController>();
             if (targetHealth != null)
             {
                 if (targetHealth.team == m_OwnerTeam && m_OwnerTeam != Team.Neutral) return;
                 m_HasHit = true;
-                targetHealth.TakeDamage((int)damage);
+
+                var damageCtrl = targetHealth.GetComponent<DamageController>();
+                if (damageCtrl != null) damageCtrl.TakeDamage((int)damage);
+                else targetHealth.ApplyDirectHealthChange(-(int)damage);
             }
             else
             {

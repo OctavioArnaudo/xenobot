@@ -72,7 +72,7 @@ namespace Crafting.Scripts
             if (TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
             foreach (var c in GetComponentsInChildren<Collider>(true)) c.enabled = false;
 
-            player.GetComponent<Combating.Scripts.MovementController>()?.RefreshFunctionalComponents();
+            player.GetComponent<PlayerController>()?.RefreshBodyReferences();
         }
 
         public void SetMeshVisible(bool visible)

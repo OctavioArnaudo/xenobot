@@ -21,20 +21,20 @@ namespace Combating.Scripts
 
         private FuelController m_Health;
         private CharacterController m_CharController;
-        private MovementController m_Player;
+        private PlayerController m_Player;
         private bool m_IsUsingJetpack = false;
         private bool m_JetpackDepleted = false;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
-        void Awake()
+        private void Awake()
         {
             RefreshReferences();
         }
 
         public void ApplyEffect(GameObject player)
         {
-            m_Player = player.GetComponent<MovementController>();
+            m_Player = player.GetComponent<PlayerController>();
             m_Health = player.GetComponent<FuelController>();
             m_CharController = player.GetComponent<CharacterController>();
 
@@ -48,9 +48,9 @@ namespace Combating.Scripts
 
         private void RefreshReferences()
         {
-            if (m_Player == null) m_Player = GetComponentInParent<MovementController>();
-            if (m_Health == null) m_Health = GetComponentInParent<FuelController>();
-            if (m_CharController == null) m_CharController = GetComponentInParent<CharacterController>();
+            m_Player = GetComponentInParent<PlayerController>();
+            m_Health = GetComponentInParent<FuelController>();
+            m_CharController = GetComponentInParent<CharacterController>();
         }
 
         public bool ProcessFlight(bool isJumpHeld, bool isGrounded, ref float verticalVelocity)

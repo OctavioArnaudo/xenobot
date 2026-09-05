@@ -32,7 +32,7 @@ namespace Combating.Scripts
         [Header("Combat (Optional Controllers)")]
         public ShootController m_Shooter;
         public MeleeController m_Melee;
-        public FuelController m_Health;
+        public HealthController m_Health;
         public SpawnController m_Spawn;
 
         private NavMeshAgent m_Agent;
@@ -56,7 +56,7 @@ namespace Combating.Scripts
             // Auto-detección opcional de módulos
             if (m_Shooter == null) m_Shooter = GetComponent<ShootController>();
             if (m_Melee == null) m_Melee = GetComponent<MeleeController>();
-            if (m_Health == null) m_Health = GetComponent<FuelController>();
+            if (m_Health == null) m_Health = GetComponent<HealthController>();
             if (m_Spawn == null) m_Spawn = GetComponent<SpawnController>();
 
             if (m_Shooter != null) m_Shooter.UsePlayerInput = false;

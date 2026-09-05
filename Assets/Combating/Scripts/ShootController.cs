@@ -32,8 +32,8 @@ namespace Combating.Scripts
         public float TracerLifetime = 0.05f;
         public float rotationSpeed = 10f;
 
-        private MovementController m_Player;
-        private FuelController m_Health;
+        private PlayerController m_Player;
+        private HealthController m_Health;
         private float m_NextFireTime;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
@@ -45,16 +45,16 @@ namespace Combating.Scripts
 
         public void ApplyEffect(GameObject player)
         {
-            m_Player = player.GetComponent<MovementController>();
-            m_Health = player.GetComponent<FuelController>();
+            m_Player = player.GetComponent<PlayerController>();
+            m_Health = player.GetComponent<HealthController>();
             RefreshReferences();
             Debug.Log($"[ShootController] Vinculado a {player.name}. Player detected: {m_Player != null}");
         }
 
         private void RefreshReferences()
         {
-            if (m_Player == null) m_Player = GetComponentInParent<MovementController>();
-            if (m_Health == null) m_Health = GetComponentInParent<FuelController>();
+            if (m_Player == null) m_Player = GetComponentInParent<PlayerController>();
+            if (m_Health == null) m_Health = GetComponentInParent<HealthController>();
 
             // Critical: Search camera in parent player
             if (AimCamera == null && m_Player != null)

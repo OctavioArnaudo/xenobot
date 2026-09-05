@@ -16,6 +16,7 @@ namespace Crafting.Scripts
 
         [Header("Network Data")]
         public NetworkList<NetworkInventorySlot> NetworkBag;
+        public List<GameObject> moduleLibrary;
 
         public NetworkVariable<int> EquippedWeaponHash = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
@@ -53,7 +54,6 @@ namespace Crafting.Scripts
 
         PlayerInput _playerInput;
         SpawnController _spawnController;
-        Combating.Scripts.FuelController _health;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
         private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
@@ -80,7 +80,37 @@ namespace Crafting.Scripts
         {
             _playerInput = GetComponent<PlayerInput>();
             _spawnController = GetComponent<SpawnController>();
-            _health = GetComponent<Combating.Scripts.FuelController>();
+
+            EnsureCoreModules();
+        }
+
+        private void EnsureCoreModules()
+        {
+            if (moduleLibrary == null) return;
+            string[] coreModuleNames = {
+                "MovementController", "CameraController", "CursorController", "RespawnController",
+                "HudController", "UiController", "LevelingController", "HealthController",
+                "DamageController", "DeathController", "FuelController", "SpawnController",
+                "SprintController", "SingleJumpController", "DoubleJumpController",
+                "GroundController", "LandingController", "MeleeController"
+            };
+            foreach (var moduleName in coreModuleNames)
+            {
+                if (transform.Find(moduleName) != null) continue;
+                var prefab = moduleLibrary.FirstOrDefault(x => x != null && x.name == moduleName);
+                if (prefab != null)
+                {
+                    GameObject instance = Instantiate(prefab, transform);
+                    instance.name = moduleName;
+                    if (IsServer && IsSpawned && instance.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn(true);
+                }
+            }
+        }
+
+        public GameObject GetPrefabFromList(string prefabName)
+        {
+            if (moduleLibrary == null) return null;
+            return moduleLibrary.FirstOrDefault(x => x != null && x.name == prefabName);
         }
 
         private void RefreshLocalCache()
@@ -375,9 +405,12 @@ namespace Crafting.Scripts
             }
             else
             {
-                if (item.itemPrefab != null)
+                GameObject prefab = item.itemPrefab;
+                if (prefab == null) prefab = GetPrefabFromList(item.itemCode);
+
+                if (prefab != null)
                 {
-                    GameObject instance = Instantiate(item.itemPrefab, transform);
+                    GameObject instance = Instantiate(prefab, transform);
                     _equippedInstances[hash] = instance;
 
                     // New rule: Only show meshes if the prefab has a CostumeController

@@ -25,13 +25,13 @@ namespace Crafting.Scripts
         public override int GetHashCode() => HashCode.Combine(itemHash, quantity);
     }
 
-    [RequireComponent(typeof(SpawnController))]
     public class PlayerController : NetworkBehaviour
     {
         public static PlayerController LocalInstance { get; private set; }
 
         [Header("Network Data")]
         public NetworkList<NetworkInventorySlot> NetworkBag;
+        public List<GameObject> moduleLibrary;
 
         public NetworkVariable<int> EquippedWeaponHash = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
@@ -56,6 +56,29 @@ namespace Crafting.Scripts
         public List<ItemData> itemDatabase;
         public float dropDistance = 3.5f;
 
+        [Header("Shared Input Data")]
+        public Vector2 move;
+        public Vector2 look;
+        public bool jump;
+        public bool jumpHeld;
+        public bool sprint;
+        public bool fire;
+        public bool fireHeld;
+        public bool fireReleased;
+        public bool aim;
+        public bool crouch;
+        public bool reload;
+        public int switchWeapon;
+        public int selectWeapon;
+        public bool analogMovement;
+        public bool cursorLocked = true;
+        public bool cursorInputForLook = true;
+
+        [Header("Core References")]
+        public CharacterController controller;
+        public Animator animator;
+        public GameObject mainCamera;
+
         private static int s_CollectiblesRemaining = 0;
         private static bool s_CountDirty = true;
         private float _countUpdateTimer = 0f;
@@ -69,17 +92,16 @@ namespace Crafting.Scripts
 
         PlayerInput _playerInput;
         SpawnController _spawnController;
-        Combating.Scripts.FuelController _health;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
         private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
 
         private void Awake()
         {
+            LocalInstance = this; // Forzamos la instancia local inmediatamente
             NetworkBag = new NetworkList<NetworkInventorySlot>();
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
             {
-                LocalInstance = this;
                 InitializeComponents();
             }
         }
@@ -96,7 +118,86 @@ namespace Crafting.Scripts
         {
             _playerInput = GetComponent<PlayerInput>();
             _spawnController = GetComponent<SpawnController>();
-            _health = GetComponent<Combating.Scripts.FuelController>();
+
+            if (controller == null) controller = GetComponent<CharacterController>();
+            if (animator == null) animator = GetComponentInChildren<Animator>();
+
+            // Búsqueda más robusta de la cámara
+            if (mainCamera == null)
+            {
+                var cam = GetComponentInChildren<Camera>();
+                if (cam != null) mainCamera = cam.gameObject;
+                else mainCamera = Camera.main != null ? Camera.main.gameObject : null;
+            }
+
+            EnsureCoreModules();
+            RefreshInputActions();
+        }
+
+        private void EnsureCoreModules()
+        {
+            if (moduleLibrary == null || moduleLibrary.Count == 0) return;
+
+            string[] coreModuleNames = {
+                "MovementController", "CameraController", "CursorController", "RespawnController",
+                "HudController", "UiController", "LevelingController", "HealthController",
+                "DamageController", "DeathController", "FuelController", "SpawnController",
+                "SprintController", "SingleJumpController", "DoubleJumpController",
+                "GroundController", "LandingController", "MeleeController"
+            };
+
+            foreach (var moduleName in coreModuleNames)
+            {
+                // Check if the component or a child with that name already exists
+                if (GetComponent(moduleName) != null || transform.Find(moduleName) != null) continue;
+
+                var prefab = moduleLibrary.FirstOrDefault(x => x != null && x.name == moduleName);
+                if (prefab != null)
+                {
+                    GameObject instance = Instantiate(prefab, transform);
+                    instance.name = moduleName;
+
+                    if (IsServer && IsSpawned && instance.TryGetComponent<NetworkObject>(out var netObj))
+                    {
+                        netObj.Spawn(true);
+                    }
+                }
+            }
+        }
+
+        public GameObject GetPrefabFromList(string prefabName)
+        {
+            if (moduleLibrary == null) return null;
+            return moduleLibrary.FirstOrDefault(x => x != null && x.name == prefabName);
+        }
+
+        public void RefreshBodyReferences()
+        {
+            animator = GetComponentInChildren<Animator>();
+
+            // Notify other modular scripts to refresh their references
+            var moveScript = GetComponent<MovementController>();
+            if (moveScript != null) moveScript.RefreshFunctionalComponents();
+
+            var camScript = GetComponent<CameraController>();
+            if (camScript != null) camScript.RefreshFunctionalComponents();
+        }
+
+        private InputAction _moveAction, _lookAction, _jumpAction, _fireAction, _sprintAction, _aimAction, _crouchAction, _reloadAction, _nextWeaponAction;
+
+        private void RefreshInputActions()
+        {
+            if (_playerInput == null || _playerInput.actions == null) return;
+            var actions = _playerInput.actions;
+            _moveAction = actions.FindAction("Move") ?? actions.FindAction("Player/Move");
+            _lookAction = actions.FindAction("Look") ?? actions.FindAction("Player/Look");
+            _jumpAction = actions.FindAction("Jump") ?? actions.FindAction("Player/Jump");
+            _fireAction = actions.FindAction("Fire") ?? actions.FindAction("Player/Fire");
+            _sprintAction = actions.FindAction("Sprint") ?? actions.FindAction("Player/Sprint");
+            _aimAction = actions.FindAction("Aim") ?? actions.FindAction("Player/Aim");
+            _crouchAction = actions.FindAction("Crouch") ?? actions.FindAction("Player/Crouch");
+            _reloadAction = actions.FindAction("Reload") ?? actions.FindAction("Player/Reload");
+            _nextWeaponAction = actions.FindAction("NextWeapon") ?? actions.FindAction("Player/NextWeapon");
         }
 
         private void RefreshLocalCache()
@@ -246,6 +347,9 @@ namespace Crafting.Scripts
         private void Update()
         {
             if (!CanExecuteLocalLogic) return;
+
+            UpdateInputState();
+
             if (Keyboard.current != null && (Keyboard.current.iKey.wasPressedThisFrame || Keyboard.current.tabKey.wasPressedThisFrame))
                 SetOpen(!_open);
 
@@ -257,12 +361,67 @@ namespace Crafting.Scripts
             }
         }
 
+        private void UpdateInputState()
+        {
+            if (_moveAction != null) move = _moveAction.ReadValue<Vector2>();
+
+            if (_lookAction != null)
+            {
+                look = _lookAction.ReadValue<Vector2>();
+            }
+            if (_jumpAction != null)
+            {
+                if (_jumpAction.WasPressedThisFrame()) jump = true;
+                jumpHeld = _jumpAction.IsPressed();
+            }
+
+            sprint = _sprintAction != null && _sprintAction.IsPressed();
+
+            if (_fireAction != null)
+            {
+                if (_fireAction.WasPressedThisFrame()) fire = true;
+                fireHeld = _fireAction.IsPressed();
+                if (_fireAction.WasReleasedThisFrame()) fireReleased = true;
+            }
+
+            aim = _aimAction != null && _aimAction.IsPressed();
+            if (_crouchAction != null && _crouchAction.WasPressedThisFrame()) crouch = true;
+            if (_reloadAction != null && _reloadAction.WasPressedThisFrame()) reload = true;
+
+            if (_nextWeaponAction != null)
+            {
+                float val = _nextWeaponAction.ReadValue<float>();
+                switchWeapon = val > 0 ? 1 : (val < 0 ? -1 : 0);
+            }
+
+            selectWeapon = 0;
+            if (Keyboard.current != null)
+            {
+                for (int i = 1; i <= 9; i++)
+                {
+                    if (Keyboard.current[Key.Digit1 + (i - 1)].wasPressedThisFrame)
+                    {
+                        selectWeapon = i;
+                        break;
+                    }
+                }
+            }
+        }
+
         private void SetOpen(bool open)
         {
             _open = open;
-            if (_playerInput != null) _playerInput.enabled = !open;
+            // No deshabilitamos el PlayerInput por completo, ya que gestiona otras cosas
+            // Solo controlamos el estado del cursor
             Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = open;
+
+            // Si el inventario está abierto, forzamos inputs a cero
+            if (open)
+            {
+                move = Vector2.zero;
+                look = Vector2.zero;
+            }
         }
 
         private void OnGUI()
@@ -391,9 +550,12 @@ namespace Crafting.Scripts
             }
             else
             {
-                if (item.itemPrefab != null)
+                GameObject prefab = item.itemPrefab;
+                if (prefab == null) prefab = GetPrefabFromList(item.itemCode);
+
+                if (prefab != null)
                 {
-                    GameObject instance = Instantiate(item.itemPrefab, transform);
+                    GameObject instance = Instantiate(prefab, transform);
                     _equippedInstances[hash] = instance;
 
                     // New rule: Only show meshes if the prefab has a CostumeController
@@ -465,6 +627,34 @@ namespace Crafting.Scripts
             {
                 InternalRemoveItem(hash, 1);
                 if (_spawnController != null) _spawnController.SpawnDroppedItem(data.itemPrefab, transform.position, data.displayName);
+            }
+        }
+
+        public void RequestFire(ProjectileController prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team)
+        {
+            if (IsNetworkActive)
+            {
+                FireServerRpc(direction, spawnPos, damage, team);
+            }
+            else
+            {
+                ProjectileController projectile = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
+                if (projectile != null) projectile.Launch(gameObject, direction, damage, team);
+            }
+        }
+
+        [Rpc(SendTo.Server)]
+        private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team)
+        {
+            ProjectileController projectilePrefab = null;
+            var shooter = GetComponentInChildren<ShootController>();
+            if (shooter != null) projectilePrefab = shooter.ProjectilePrefab;
+
+            if (projectilePrefab != null)
+            {
+                ProjectileController instance = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
+                instance.Launch(gameObject, direction, damage, team);
+                instance.GetComponent<NetworkObject>().Spawn();
             }
         }
 
