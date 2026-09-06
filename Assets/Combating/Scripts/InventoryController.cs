@@ -311,11 +311,21 @@ namespace Crafting.Scripts
                 bool isEquipped = _equippedInstances.ContainsKey(hash);
                 string actionText = isEquipped ? "QUIT" : "USE";
 
-                if (slot.def.canUse || slot.def.type == ItemType.Equipment)
+                // Dynamic USE button: show for consumables, equipment, key items, or anything marked as usable
+                bool canShowUse = slot.def.canUse ||
+                                 slot.def.type == ItemType.Equipment ||
+                                 slot.def.type == ItemType.Consumable ||
+                                 slot.def.type == ItemType.KeyItem;
+
+                if (canShowUse)
                 {
                     if (GUI.Button(new Rect(btnArea.x, btnArea.y, btnArea.width * 0.5f, 30), actionText, _btnSty)) UseItem(slot.def);
                 }
-                if (GUI.Button(new Rect(btnArea.x + (slot.def.canUse || slot.def.type == ItemType.Equipment ? btnArea.width * 0.5f : 0), btnArea.y, slot.def.canUse || slot.def.type == ItemType.Equipment ? btnArea.width * 0.5f : btnArea.width, 30), "DROP", _btnSty)) DropItem(slot.def);
+
+                float dropBtnWidth = canShowUse ? btnArea.width * 0.5f : btnArea.width;
+                float dropBtnX = canShowUse ? btnArea.x + btnArea.width * 0.5f : btnArea.x;
+
+                if (GUI.Button(new Rect(dropBtnX, btnArea.y, dropBtnWidth, 30), "DROP", _btnSty)) DropItem(slot.def);
 
                 if (isOver && Event.current.type == EventType.MouseDown && Event.current.button == 0) { _draggedItem = slot.def; Event.current.Use(); }
                 i++;
@@ -469,6 +479,7 @@ namespace Crafting.Scripts
         }
 
         public static Dictionary<string, (ItemData def, int qty)> GetBag() => LocalInstance?._localBag ?? new();
+        public Dictionary<string, (ItemData def, int qty)> GetMyBag() => _localBag;
         public static void MarkCountDirty() => s_CountDirty = true;
         public static ItemData GetItemDataByCodeStatic(string code) => LocalInstance?.GetItemDataByCode(code);
     }

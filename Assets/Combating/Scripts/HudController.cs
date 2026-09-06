@@ -33,10 +33,21 @@ public class StatsController : NetworkBehaviour
     public int barWidth = 160;
     public int barHeight = 6;
 
-    public float Attack { get; private set; }
-    public float Defense { get; private set; }
-    public int Level { get; private set; } = 1;
-    public float Exp { get; private set; }
+    // Use NetworkVariables for synchronization
+    public NetworkVariable<float> NetAttack = new NetworkVariable<float>(10, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<float> NetDefense = new NetworkVariable<float>(5, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<int> NetLevel = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<float> NetExp = new NetworkVariable<float>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+    public NetworkVariable<float> NetExpToLevelUp = new NetworkVariable<float>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    public float Attack => IsNetworkActive ? NetAttack.Value : m_OfflineAttack;
+    public float Defense => IsNetworkActive ? NetDefense.Value : m_OfflineDefense;
+    public int Level => IsNetworkActive ? NetLevel.Value : m_OfflineLevel;
+    public float Exp => IsNetworkActive ? NetExp.Value : m_OfflineExp;
+    public float ExpToLevelUp => IsNetworkActive ? NetExpToLevelUp.Value : m_OfflineExpToLevelUp;
+
+    private float m_OfflineAttack = 10, m_OfflineDefense = 5, m_OfflineExp = 0, m_OfflineExpToLevelUp = 100;
+    private int m_OfflineLevel = 1;
 
     private Texture2D _bg, _barBg, _atkFill, _defFill, _expFill, _hpFill, _jetFill;
     private GUIStyle _labelStyle, _valueStyle, _timerStyle;
@@ -104,8 +115,25 @@ public class StatsController : NetworkBehaviour
 
     void InitializeStats()
     {
-        Attack = Random.Range(attackRange.x, attackRange.y);
-        Defense = Random.Range(defenseRange.x, defenseRange.y);
+        float atk = Random.Range(attackRange.x, attackRange.y);
+        float def = Random.Range(defenseRange.x, defenseRange.y);
+
+        if (IsNetworkActive && IsServer)
+        {
+            NetAttack.Value = atk;
+            NetDefense.Value = def;
+            NetLevel.Value = 1;
+            NetExp.Value = 0;
+            NetExpToLevelUp.Value = 100f;
+        }
+        else
+        {
+            m_OfflineAttack = atk;
+            m_OfflineDefense = def;
+            m_OfflineLevel = 1;
+            m_OfflineExp = 0;
+            m_OfflineExpToLevelUp = 100f;
+        }
     }
 
     public void UpdateVisuals()
@@ -187,16 +215,58 @@ public class StatsController : NetworkBehaviour
 
     public void AddExp(float amount)
     {
-        Exp += amount;
-        while (Exp >= expToLevelUp) { Exp -= expToLevelUp; LevelUp(); }
+        if (IsNetworkActive)
+        {
+            if (IsServer) InternalAddExp(amount);
+            else AddExpServerRpc(amount);
+        }
+        else
+        {
+            InternalAddExp(amount);
+        }
+    }
+
+    [Rpc(SendTo.Server)]
+    private void AddExpServerRpc(float amount) => InternalAddExp(amount);
+
+    private void InternalAddExp(float amount)
+    {
+        if (IsNetworkActive)
+        {
+            NetExp.Value += amount;
+            while (NetExp.Value >= NetExpToLevelUp.Value)
+            {
+                NetExp.Value -= NetExpToLevelUp.Value;
+                LevelUp();
+            }
+        }
+        else
+        {
+            m_OfflineExp += amount;
+            while (m_OfflineExp >= m_OfflineExpToLevelUp)
+            {
+                m_OfflineExp -= m_OfflineExpToLevelUp;
+                LevelUp();
+            }
+        }
     }
 
     void LevelUp()
     {
-        Level++;
-        Attack += attackPerLevel;
-        Defense += defensePerLevel;
-        expToLevelUp *= 1.2f;
+        if (IsNetworkActive)
+        {
+            NetLevel.Value++;
+            NetAttack.Value += attackPerLevel;
+            NetDefense.Value += defensePerLevel;
+            NetExpToLevelUp.Value *= 1.2f;
+        }
+        else
+        {
+            m_OfflineLevel++;
+            m_OfflineAttack += attackPerLevel;
+            m_OfflineDefense += defensePerLevel;
+            m_OfflineExpToLevelUp *= 1.2f;
+        }
 
         // Bono de Vida y Jetpack al subir de nivel
         if (m_PlayerHealth != null)

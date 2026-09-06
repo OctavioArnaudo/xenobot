@@ -27,9 +27,15 @@ namespace Combating.Scripts
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
-        void Awake()
+        void Start()
         {
             RefreshReferences();
+            // If attached to root, auto-init fuel if it's zero
+            if (m_Health != null && m_Health.maxJetpack <= 0)
+            {
+                m_Health.maxJetpack = 100f;
+                m_Health.AddFuel(100f);
+            }
         }
 
         public void ApplyEffect(GameObject player)

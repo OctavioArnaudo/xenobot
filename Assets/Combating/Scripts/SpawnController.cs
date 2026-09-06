@@ -92,8 +92,8 @@ namespace Combating.Scripts
         {
             if (prefab == null) return;
 
-            // Offset to the side/forward to avoid immediate re-pickup by the dropper
-            Vector3 offset = transform.right * 1.2f + transform.up * 0.5f;
+            // Offset higher and to the side to avoid immediate re-pickup
+            Vector3 offset = transform.right * 1.2f + transform.up * 1.5f;
             Vector3 spawnPos = origin + offset;
 
             // Impulse away from the center

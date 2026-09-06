@@ -19,6 +19,7 @@ GameObject:
   - component: {fileID: 45379256090239573}
   - component: {fileID: 2530033462702487630}
   - component: {fileID: 6229371320334411257}
+  - component: {fileID: 5597029219857915641}
   m_Layer: 0
   m_Name: PlayerPrefab
   m_TagString: Player
@@ -55,7 +56,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 900052251
+  GlobalObjectIdHash: 2082353490
   InScenePlacedSourceGlobalObjectIdHash: 2082353490
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -509,6 +510,24 @@ MonoBehaviour:
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
   rotationSpeed: 10
+--- !u!114 &5597029219857915641
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1804703078109025515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2a1f0ccf9aa977047af3b55cf76893f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.PropulsionController
+  jetpackForce: 60
+  hoverForce: 25
+  fuelConsumption: 30
+  fuelRegen: 15
+  maxUpwardVelocity: 12
+  hoverThreshold: 0.5
 --- !u!1001 &3012810350307742562
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -523,15 +542,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 31019.643
+      value: 31397.66
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 6.8732834
+      value: 7.58713
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 17825.537
+      value: 18051.016
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -591,15 +610,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 31026.516
+      value: 31397.66
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 6.886263
+      value: 7.58713
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 17829.637
+      value: 18051.016
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

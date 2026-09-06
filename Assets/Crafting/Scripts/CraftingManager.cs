@@ -35,6 +35,8 @@ namespace Crafting.Scripts
         private GUIStyle _titleSty, _recipeSty, _btnSty, _infoSty, _qtySty;
         private bool _stylesReady;
 
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+
         private void Awake()
         {
             if (Instance == null) Instance = this;
@@ -43,8 +45,11 @@ namespace Crafting.Scripts
 
         private void Update()
         {
-            // The UI is now managed by proximity via CraftingController.
-            // Global 'C' key shortcut removed to enforce trigger-based usage.
+            // Toggle UI with 'C' key
+            if (Keyboard.current != null && Keyboard.current.cKey.wasPressedThisFrame)
+            {
+                SetOpen(!_open);
+            }
         }
 
         public void SetOpen(bool open)
@@ -107,9 +112,10 @@ namespace Crafting.Scripts
             float screenW = Screen.width;
             float screenH = Screen.height;
 
-            var allHubs = Object.FindObjectsByType<Testing.Scripts.PlayerController>(FindObjectsSortMode.None);
-            var myHub = Testing.Scripts.PlayerController.LocalInstance;
-            var otherHubs = allHubs.Where(x => x != myHub).ToList();
+            // Use the functional InventoryController instead of Testing
+            var allInvs = Object.FindObjectsByType<InventoryController>(FindObjectsSortMode.None);
+            var myInv = InventoryController.LocalInstance;
+            var otherInvs = allInvs.Where(x => x != myInv).ToList();
 
             float sideW = 400;
             float centerW = panelWidth;
@@ -117,19 +123,17 @@ namespace Crafting.Scripts
             float xStart = (screenW - totalW) / 2f;
             float y0 = (screenH - panelHeight) / 2f;
 
-            if (myHub != null)
+            if (myInv != null)
             {
-                var inv = myHub.GetModule<InventoryController>();
-                if (inv != null) inv.DrawInventoryUI(new Rect(xStart, y0, sideW, panelHeight), "MI INVENTARIO");
+                myInv.DrawInventoryUI(new Rect(xStart, y0, sideW, panelHeight), "MI INVENTARIO");
             }
 
             Rect centerRect = new Rect(xStart + sideW + 20, y0, centerW, panelHeight);
             DrawCraftingPanel(centerRect);
 
-            if (otherHubs.Count > 0)
+            if (otherInvs.Count > 0)
             {
-                var inv = otherHubs[0].GetModule<InventoryController>();
-                if (inv != null) inv.DrawInventoryUI(new Rect(xStart + sideW + centerW + 40, y0, sideW, panelHeight), "INVENTARIO REMOTO");
+                otherInvs[0].DrawInventoryUI(new Rect(xStart + sideW + centerW + 40, y0, sideW, panelHeight), "INVENTARIO COMPAÑERO");
             }
             else
             {
@@ -205,13 +209,18 @@ namespace Crafting.Scripts
 
             if (CanCraft(recipe))
             {
+                // Find if there is a second player to give the item to
+                var allInvs = Object.FindObjectsByType<InventoryController>(FindObjectsSortMode.None);
+                var otherInv = allInvs.FirstOrDefault(x => x != InventoryController.LocalInstance);
+                ulong targetId = (otherInv != null) ? otherInv.OwnerClientId : myId;
+
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient)
                 {
-                    RequestTradeServerRpc(index, myId);
+                    RequestTradeServerRpc(index, myId, targetId);
                 }
                 else
                 {
-                    ExecuteTradeLocal(index, myId);
+                    ExecuteTradeLocal(index, myId, targetId);
                 }
             }
             else
@@ -233,27 +242,45 @@ namespace Crafting.Scripts
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        public void RequestTradeServerRpc(int recipeId, ulong clientId)
+        public void RequestTradeServerRpc(int recipeId, ulong clientId, ulong targetId)
         {
-            ExecuteTradeLocal(recipeId, clientId);
+            ExecuteTradeLocal(recipeId, clientId, targetId);
         }
 
-        public void ExecuteTradeLocal(int recipeId, ulong clientId)
+        public void ExecuteTradeLocal(int recipeId, ulong clientId, ulong targetId)
         {
             if (recipeId < 0 || recipeId >= availableTrades.Count) return;
 
             TradeData recipe = availableTrades[recipeId];
-            Debug.Log($"[Server/Local] Procesando tradeo {recipe.name} para cliente {clientId}");
+            Debug.Log($"[Server/Local] Procesando tradeo {recipe.name}. Crafter: {clientId}, Receptor: {targetId}");
 
-            string inputKey = recipe.InputItem.itemCode.ToLowerInvariant();
-            for (int i = 0; i < recipe.InputAmount; i++)
+            // Find crafter and receiver inventories
+            var allInvs = Object.FindObjectsByType<InventoryController>(FindObjectsSortMode.None);
+            var crafterInv = allInvs.FirstOrDefault(x => x.OwnerClientId == clientId);
+            var receiverInv = allInvs.FirstOrDefault(x => x.OwnerClientId == targetId);
+
+            // Fallback for offline mode where OwnerClientId might be 0 for both
+            if (crafterInv == null) crafterInv = InventoryController.LocalInstance;
+            if (receiverInv == null) receiverInv = crafterInv;
+
+            if (crafterInv != null)
             {
-                InventoryController.RemoveItem(inputKey);
+                string inputKey = recipe.InputItem.itemCode.ToLowerInvariant();
+                for (int i = 0; i < recipe.InputAmount; i++)
+                {
+                    // Use instance-based removal if available, else static
+                    if (IsNetworkActive) crafterInv.RemoveItemServerRpc(recipe.InputItem.GetItemHashCode(), 1);
+                    else crafterInv.InternalAddItem(recipe.InputItem.GetItemHashCode(), -1); // Simulating removal
+                }
             }
 
-            for (int i = 0; i < recipe.OutputAmount; i++)
+            if (receiverInv != null)
             {
-                InventoryController.Add(recipe.OutputItem);
+                for (int i = 0; i < recipe.OutputAmount; i++)
+                {
+                    if (IsNetworkActive) receiverInv.AddItemServerRpc(recipe.OutputItem.GetItemHashCode(), 1);
+                    else receiverInv.InternalAddItem(recipe.OutputItem.GetItemHashCode(), 1);
+                }
             }
 
             InventoryController.MarkCountDirty();
