@@ -43,13 +43,11 @@ namespace Crafting.Scripts
 
         private void Update()
         {
-            if (Keyboard.current != null && Keyboard.current.cKey.wasPressedThisFrame)
-            {
-                SetOpen(!_open);
-            }
+            // The UI is now managed by proximity via CraftingController.
+            // Global 'C' key shortcut removed to enforce trigger-based usage.
         }
 
-        private void SetOpen(bool open)
+        public void SetOpen(bool open)
         {
             _open = open;
             Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
@@ -113,29 +111,30 @@ namespace Crafting.Scripts
             var myHub = PlayerController.LocalInstance;
             var otherHubs = allHubs.Where(x => x != myHub).ToList();
 
-            float panelW = 450;
-            float totalW = panelW * 3 + 40;
+            float sideW = 400;
+            float centerW = panelWidth;
+            float totalW = sideW * 2 + centerW + 40;
             float xStart = (screenW - totalW) / 2f;
             float y0 = (screenH - panelHeight) / 2f;
 
             if (myHub != null)
             {
                 var inv = myHub.GetModule<InventoryController>();
-                if (inv != null) inv.DrawInventoryUI(new Rect(xStart, y0, panelW, panelHeight), "MI INVENTARIO");
+                if (inv != null) inv.DrawInventoryUI(new Rect(xStart, y0, sideW, panelHeight), "MI INVENTARIO", false);
             }
 
-            Rect centerRect = new Rect(xStart + panelW + 20, y0, panelW, panelHeight);
+            Rect centerRect = new Rect(xStart + sideW + 20, y0, centerW, panelHeight);
             DrawCraftingPanel(centerRect);
 
             if (otherHubs.Count > 0)
             {
                 var inv = otherHubs[0].GetModule<InventoryController>();
-                if (inv != null) inv.DrawInventoryUI(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), "INVENTARIO REMOTO");
+                if (inv != null) inv.DrawInventoryUI(new Rect(xStart + sideW + centerW + 40, y0, sideW, panelHeight), "INVENTARIO REMOTO", false);
             }
             else
             {
-                GUI.DrawTexture(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), _texPanel);
-                GUI.Label(new Rect(xStart + (panelW + 20) * 2, y0, panelW, panelHeight), "ESPERANDO A OTRO JUGADOR PARA INTERCAMBIAR...", _infoSty);
+                GUI.DrawTexture(new Rect(xStart + sideW + centerW + 40, y0, sideW, panelHeight), _texPanel);
+                GUI.Label(new Rect(xStart + sideW + centerW + 40, y0, sideW, panelHeight), "ESPERANDO A OTRO JUGADOR...", _infoSty);
             }
 
             if (GUI.Button(new Rect(screenW / 2 + totalW / 2 - 50, y0 + 15, 35, 35), "X", _btnSty)) SetOpen(false);

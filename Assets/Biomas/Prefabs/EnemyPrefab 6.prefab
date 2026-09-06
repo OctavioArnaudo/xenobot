@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4151650437
+  GlobalObjectIdHash: 2784338171
   InScenePlacedSourceGlobalObjectIdHash: 2784338171
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -81,6 +81,9 @@ MonoBehaviour:
   renderRoot: {fileID: 0}
   cameraTarget: {fileID: 0}
   activeModel: {fileID: 0}
+  VerticalVelocity: 0
+  IsGrounded: 0
+  BaseGravity: -35
   networkPrefabs: {fileID: 11400000, guid: 2fe6c7967098a65449bf54e7b56a0963, type: 2}
   enemyModules:
   - {fileID: 2319961470605166441, guid: cd534d2dfda16b84c95843103b60d185, type: 3}
@@ -161,8 +164,23 @@ PrefabInstance:
       propertyPath: m_Name
       value: EnemyRender
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 8741523997422473768, guid: e99b1a06a22852b44a09f2a4317bdd8b, type: 3}
+    - target: {fileID: 9161886899950747783, guid: e99b1a06a22852b44a09f2a4317bdd8b, type: 3}
+      propertyPath: headPoint
+      value: 
+      objectReference: {fileID: 5180505983346119387}
+    - target: {fileID: 9161886899950747783, guid: e99b1a06a22852b44a09f2a4317bdd8b, type: 3}
+      propertyPath: spinePoint
+      value: 
+      objectReference: {fileID: 5180505983346119387}
+    - target: {fileID: 9161886899950747783, guid: e99b1a06a22852b44a09f2a4317bdd8b, type: 3}
+      propertyPath: muzzlePoint
+      value: 
+      objectReference: {fileID: 5180505983346119387}
+    - target: {fileID: 9161886899950747783, guid: e99b1a06a22852b44a09f2a4317bdd8b, type: 3}
+      propertyPath: cameraLookAtPoint
+      value: 
+      objectReference: {fileID: 5180505983346119387}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
@@ -170,5 +188,10 @@ PrefabInstance:
 --- !u!4 &4970241871693938277 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 111681944392620175, guid: e99b1a06a22852b44a09f2a4317bdd8b, type: 3}
+  m_PrefabInstance: {fileID: 5004940117023794922}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &5180505983346119387 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 185144814888530993, guid: e99b1a06a22852b44a09f2a4317bdd8b, type: 3}
   m_PrefabInstance: {fileID: 5004940117023794922}
   m_PrefabAsset: {fileID: 0}
