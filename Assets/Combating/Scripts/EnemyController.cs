@@ -15,8 +15,9 @@ namespace Combating.Scripts
         public NetworkPrefabsList networkPrefabs;
         public List<GameObject> enemyModules;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
             {
                 InitializeComponents();
@@ -25,6 +26,22 @@ namespace Combating.Scripts
 
         public override void OnNetworkSpawn()
         {
+            base.OnNetworkSpawn();
+
+            if (IsServer)
+            {
+                Level.Value = 1;
+                Exp.Value = 0;
+                ExpToLevelUp.Value = 100f;
+                Attack.Value = UnityEngine.Random.Range(5f, 10f);
+                Defense.Value = UnityEngine.Random.Range(2f, 6f);
+
+                int hpBase = UnityEngine.Random.Range(65, 96);
+                if (EnemyCount > 12) hpBase = Mathf.RoundToInt(hpBase * 0.9f);
+                maxHealth.Value = hpBase;
+                currentHealth.Value = maxHealth.Value;
+            }
+
             InitializeComponents();
         }
 
@@ -37,6 +54,18 @@ namespace Combating.Scripts
             if (GetComponent<UnityEngine.AI.NavMeshAgent>() == null)
             {
                 gameObject.AddComponent<UnityEngine.AI.NavMeshAgent>();
+            }
+
+            // Forced Cleaning: Enemies must not have Cameras or AudioListeners in their hierarchy
+            foreach (var cam in GetComponentsInChildren<Camera>(true))
+            {
+                Debug.Log($"[EnemyController] Sanitizing camera found in {gameObject.name} hierarchy.");
+                DestroyImmediate(cam);
+            }
+            foreach (var listener in GetComponentsInChildren<AudioListener>(true))
+            {
+                Debug.Log($"[EnemyController] Sanitizing AudioListener found in {gameObject.name} hierarchy.");
+                DestroyImmediate(listener);
             }
 
             RefreshBodyReferences();
@@ -62,7 +91,8 @@ namespace Combating.Scripts
                 if (prefab == null) continue;
 
                 var moduleType = GetModuleTypeFromPrefab(prefab);
-                if (moduleType != null && GetComponentInChildren(moduleType, true) != null) continue;
+                if (moduleType == null || !IsEnemyModuleAllowed(moduleType)) continue;
+                if (GetComponentInChildren(moduleType, true) != null) continue;
 
                 GameObject instance = Instantiate(prefab, transform);
                 instance.name = prefab.name;
@@ -87,6 +117,20 @@ namespace Combating.Scripts
         {
             var modular = prefab.GetComponentInChildren<IModular>(true);
             return modular?.GetType();
+        }
+
+        private bool IsEnemyModuleAllowed(System.Type moduleType)
+        {
+            return moduleType == typeof(AiController)
+                || moduleType == typeof(ShootController)
+                || moduleType == typeof(SpawnController)
+                || moduleType == typeof(HealthController)
+                || moduleType == typeof(DamageController)
+                || moduleType == typeof(HealController)
+                || moduleType == typeof(DeathController)
+                || moduleType == typeof(MeleeController)
+                || moduleType == typeof(AnimationController)
+                || moduleType == typeof(TankController);
         }
 
         public override GameObject GetPrefabFromList(string prefabName)

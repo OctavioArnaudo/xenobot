@@ -45,7 +45,15 @@ namespace Crafting.Scripts
             transform.localPosition = new Vector3(0, 2.4f, -0.35f);
             transform.localRotation = Quaternion.identity;
 
-            Debug.Log($"[JetpackController] Visuales de jetpack vinculados a {entity.name}.");
+            // Activate Jetpack Module permanently
+            ModularController hub = entity.GetComponent<ModularController>() ?? entity.GetComponentInParent<ModularController>();
+            if (hub != null)
+            {
+                var propulsion = hub.GetModule<PropulsionController>();
+                if (propulsion != null) propulsion.enabled = true;
+            }
+
+            Debug.Log($"[JetpackController] Visuales y sistema de propulsión activados en {entity.name}.");
         }
 
         public void GenerateJetpackMesh()

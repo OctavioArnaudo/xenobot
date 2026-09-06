@@ -12,8 +12,8 @@ namespace Crafting.Scripts
     [RequireComponent(typeof(NetworkObject))]
     public class LifeController : MonoBehaviour, IItemFunctional
     {
-        [Header("Functional Settings")]
-        public int healAmount = 25;
+        // Economy Reliability Constants
+        private const int HEAL_AMOUNT = 30;
 
         [Header("Visual Settings")]
         public Color heartColor = new Color(0.6f, 0f, 0f); // Dark Red
@@ -46,17 +46,16 @@ namespace Crafting.Scripts
 
         public void ApplyEffect(GameObject entity)
         {
-            HealthController health = entity.GetComponent<HealthController>();
-            if (health == null)
+            HealController heal = entity.GetComponent<HealController>();
+            if (heal == null)
             {
-                var hub = entity.GetComponent<ModularController>();
-                if (hub != null) health = hub.GetModule<HealthController>();
+                var hub = entity.GetComponent<ModularController>() ?? entity.GetComponentInParent<ModularController>();
+                if (hub != null) heal = hub.GetModule<HealController>();
             }
 
-            if (health != null)
+            if (heal != null)
             {
-                health.Heal(healAmount);
-                Debug.Log($"[LifeController] Curado {healAmount} HP a {entity.name}.");
+                heal.Heal(HEAL_AMOUNT);
             }
         }
 

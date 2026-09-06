@@ -11,7 +11,7 @@ namespace Crafting.Scripts
     [ExecuteAlways]
     [RequireComponent(typeof(NetworkObject))]
     [RequireComponent(typeof(PickupController))]
-    public class IronController : MonoBehaviour
+    public class IronController : MonoBehaviour, IItemFunctional
     {
         [Header("Visual Settings")]
         public Color ironColor = new Color(0.75f, 0.75f, 0.8f); // Shiny Metallic Gray
@@ -102,6 +102,12 @@ namespace Crafting.Scripts
             else if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", smoothness);
 
             mr.sharedMaterial = mat;
+        }
+
+        public void ApplyEffect(GameObject entity)
+        {
+            // Iron is a material, but we implement IItemFunctional as requested.
+            Debug.Log($"[IronController] Iron item {gameObject.name} handled by inventory.");
         }
     }
 }

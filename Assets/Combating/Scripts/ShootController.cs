@@ -27,40 +27,20 @@ namespace Combating.Scripts
         public float TracerLifetime = 0.05f;
         public float rotationSpeed = 10f;
 
-        [Header("Animation")]
-        public Animator animator;
-
         private ModularController _hub;
         private HealthController m_Health;
+        private AnimationController _anim;
         private float m_NextFireTime;
-
-        private static readonly int _animIDShoot = Animator.StringToHash("shoot");
-        private bool _hasAnimator;
-        private bool _hasAnimIDShoot;
-
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
         void Awake()
         {
-            _hub = GetComponentInParent<ModularController>();
-            if (_hub != null) Bind(_hub);
-            else
-            {
-                if (m_Health == null) m_Health = GetComponentInParent<HealthController>();
-                if (Muzzle == null)
-                {
-                    Transform foundMuzzle = transform.Find("Muzzle") ?? transform.Find("FirePoint");
-                    Muzzle = foundMuzzle != null ? foundMuzzle : transform;
-                }
-            }
-            RefreshAnimatorReference();
+            if (_hub == null) _hub = GetComponentInParent<ModularController>();
         }
 
         public void ApplyEffect(GameObject player)
         {
             _hub = player.GetComponent<ModularController>();
             if (_hub != null) Bind(_hub);
-            RefreshAnimatorReference();
         }
 
         public void Bind(ModularController hub)
@@ -69,6 +49,19 @@ namespace Combating.Scripts
             if (_hub != null)
             {
                 _hub.RegisterModule(this);
+
+                // Module Locking: Players start with shooting disabled
+                if (_hub is PlayerController)
+                {
+                    Damage = Random.Range(35f, 51f);
+                    enabled = false;
+                }
+                else if (_hub is EnemyController)
+                {
+                    Damage = Random.Range(15f, 26f);
+                    enabled = true;
+                }
+
                 OnRefreshModule();
             }
         }
@@ -78,45 +71,31 @@ namespace Combating.Scripts
             if (_hub != null)
             {
                 m_Health = _hub.GetModule<HealthController>();
+                _anim = _hub.GetModule<AnimationController>();
 
-                // Safe access to camera - Enemies don't strictly need it
-                if (_hub.mainCamera != null)
-                {
-                    AimCamera = _hub.mainCamera.GetComponent<Camera>();
-                }
+                if (_hub.mainCamera != null) AimCamera = _hub.mainCamera.GetComponent<Camera>();
+                if (AimCamera == null) AimCamera = _hub.GetComponentInChildren<Camera>();
 
-                if (AimCamera == null)
+                if (_hub.MuzzlePoint != null) Muzzle = _hub.MuzzlePoint;
+                else if (_hub.activeModel != null)
                 {
-                    AimCamera = _hub.GetComponentInChildren<Camera>();
-                }
-
-                if (_hub.MuzzlePoint != null)
-                {
-                    Muzzle = _hub.MuzzlePoint;
+                    _hub.activeModel.EnsurePoints();
+                    if (_hub.activeModel.muzzlePoint != null) Muzzle = _hub.activeModel.muzzlePoint;
                 }
             }
-            RefreshAnimatorReference();
-        }
 
-        private void RefreshAnimatorReference()
-        {
-            if (animator == null)
+            if (Muzzle == null || Muzzle == transform)
             {
-                animator = (_hub != null) ? _hub.animator : GetComponentInChildren<Animator>();
+                Muzzle = transform.Find("Muzzle") ?? transform.Find("FirePoint") ?? transform.Find("muzzlePoint") ?? transform;
             }
-
-            _hasAnimator = animator != null;
-            if (_hasAnimator) _hasAnimIDShoot = HasParameter(animator, _animIDShoot);
         }
 
         void Update()
         {
-            if (!UsePlayerInput || _hub == null || !(_hub is PlayerController)) return;
+            if (!UsePlayerInput || _hub == null || !(_hub is PlayerController player)) return;
 
-            PlayerController player = (PlayerController)_hub;
-
-            bool canHandleInput = IsNetworkActive ? player.IsOwner : true;
-            if (!canHandleInput) return;
+            bool isOwner = (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
+            if (!isOwner) return;
 
             if (WantsToFire(player))
             {
@@ -173,33 +152,23 @@ namespace Combating.Scripts
         private void ExecuteFire(Vector3 direction, Vector3 spawnPos)
         {
             float finalDamage = Damage;
-            HudController stats = (_hub != null) ? _hub.GetModule<HudController>() : GetComponentInParent<HudController>();
-            if (stats != null) finalDamage = Damage * (stats.Attack / 10f);
+            if (_hub != null) finalDamage = Damage * (_hub.Attack.Value / 10f);
 
-            Team team = m_Health != null ? m_Health.team : Team.Neutral;
+            Team team = _hub != null ? _hub.MyTeam : Team.Neutral;
 
-            if (_hub != null && _hub is PlayerController player && IsNetworkActive)
+            if (_hub != null && _hub is PlayerController player && (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening))
             {
                 player.RequestFire(ProjectilePrefab, direction, spawnPos, finalDamage, team);
             }
             else
             {
-                SpawnProjectileLocally(direction, spawnPos, finalDamage, team, IsNetworkActive && NetworkManager.Singleton.IsServer);
+                SpawnProjectileLocally(direction, spawnPos, finalDamage, team, _hub != null && _hub.IsServer);
             }
 
             if (MuzzleFlash != null && !MuzzleFlash.isPlaying) MuzzleFlash.Play();
             SpawnTracer(spawnPos, spawnPos + direction * AimDistance);
-            TriggerShootAnimation();
-        }
 
-        private void TriggerShootAnimation()
-        {
-            if (!_hasAnimator || animator == null)
-            {
-                RefreshAnimatorReference();
-                if (!_hasAnimator || animator == null) return;
-            }
-            if (_hasAnimIDShoot) animator.SetTrigger(_animIDShoot);
+            if (_anim != null) _anim.TriggerShoot();
         }
 
         private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool shouldNetSpawn)
@@ -247,14 +216,6 @@ namespace Combating.Scripts
             tracer.SetPosition(0, start);
             tracer.SetPosition(1, end);
             Destroy(tracer.gameObject, TracerLifetime);
-        }
-
-        private bool HasParameter(Animator anim, int paramHash)
-        {
-            if (anim == null) return false;
-            foreach (AnimatorControllerParameter param in anim.parameters)
-                if (param.nameHash == paramHash) return true;
-            return false;
         }
     }
 }

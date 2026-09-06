@@ -103,22 +103,32 @@ namespace Combating.Scripts
 
         private void OnTriggerEnter(Collider other)
         {
-            if (m_HasHit || other.isTrigger) return;
+            if (m_HasHit) return;
+
+            // Ignore our own owner and their children
             if (m_Owner != null && (other.gameObject == m_Owner || other.transform.IsChildOf(m_Owner.transform))) return;
 
+            // Check if target has health
             var targetHealth = other.GetComponentInParent<HealthController>();
+
+            // If it's a trigger but has no health, ignore it (it's likely a zone or another projectile)
+            if (other.isTrigger && targetHealth == null) return;
+
             if (targetHealth != null)
             {
+                // Friendly fire check
                 if (targetHealth.team == m_OwnerTeam && m_OwnerTeam != Team.Neutral) return;
+
                 m_HasHit = true;
 
                 var damageCtrl = targetHealth.GetComponent<DamageController>();
-                if (damageCtrl != null) damageCtrl.TakeDamage((int)damage);
+                if (damageCtrl != null) damageCtrl.TakeDamage((int)damage, m_OwnerTeam);
                 else targetHealth.ApplyDirectHealthChange(-(int)damage);
             }
             else
             {
-                m_HasHit = true;
+                // Hit a non-trigger solid object
+                if (!other.isTrigger) m_HasHit = true;
             }
 
             if (m_HasHit) FinalizeImpact();

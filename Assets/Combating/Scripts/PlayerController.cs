@@ -45,8 +45,9 @@ namespace Crafting.Scripts
 
         PlayerInput _playerInput;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
             {
                 LocalInstance = this;
@@ -56,7 +57,30 @@ namespace Crafting.Scripts
 
         public override void OnNetworkSpawn()
         {
+            base.OnNetworkSpawn();
             if (IsOwner) LocalInstance = this;
+
+            if (IsServer)
+            {
+                Level.Value = 1;
+                Exp.Value = 0;
+                ExpToLevelUp.Value = 100f;
+                Attack.Value = UnityEngine.Random.Range(12f, 18f);
+                Defense.Value = UnityEngine.Random.Range(8f, 12f);
+
+                maxHealth.Value = UnityEngine.Random.Range(110, 136) + (IsOwner ? 15 : 0);
+                currentHealth.Value = maxHealth.Value;
+
+                maxFuel.Value = 100f;
+                currentFuel.Value = maxFuel.Value;
+            }
+
+            if (IsOwner)
+            {
+                if (LocalUserConfig.UserName != null) playerName.Value = LocalUserConfig.UserName;
+                playerColor.Value = LocalUserConfig.UserColor;
+            }
+
             InitializeComponents();
         }
 
@@ -65,6 +89,7 @@ namespace Crafting.Scripts
             _playerInput = GetComponent<PlayerInput>();
 
             if (controller == null) controller = GetComponent<CharacterController>();
+            if (controller == null) controller = gameObject.AddComponent<CharacterController>();
             if (controller != null)
             {
                 controller.height = 1.8f;
@@ -103,12 +128,14 @@ namespace Crafting.Scripts
 
             System.Type[] coreComponentTypes = {
                 typeof(MovementController), typeof(CameraController), typeof(CursorController),
-                typeof(RespawnController), typeof(HudController), typeof(UiController),
+                typeof(RespawnController), typeof(HudController), typeof(GuiController),
                 typeof(LevelingController), typeof(HealthController), typeof(DamageController),
-                typeof(DeathController), typeof(FuelController), typeof(SpawnController),
+                typeof(HealController),
+                typeof(DeathController), typeof(TankController), typeof(SpawnController),
                 typeof(SprintController), typeof(SingleJumpController), typeof(DoubleJumpController),
-                typeof(GroundController),                typeof(LandingController), typeof(MeleeController),
-                typeof(ShootController), typeof(InventoryController), typeof(CostumeController)
+                typeof(GroundController), typeof(LandingController), typeof(MeleeController),
+                typeof(ShootController), typeof(InventoryController), typeof(CostumeController),
+                typeof(AnimationController)
             };
 
             foreach (var type in coreComponentTypes)

@@ -9,6 +9,8 @@ namespace Combating.Scripts
         [Header("Audio Settings")]
         public AudioClip LandingAudioClip;
         [Range(0, 1)] public float LandingAudioVolume = 0.5f;
+        public AudioClip[] FootstepAudioClips;
+        [Range(0, 1)] public float FootstepAudioVolume = 0.5f;
 
         private CharacterController _controller;
         private ModularController _hub;
@@ -42,6 +44,16 @@ namespace Combating.Scripts
             if (_controller == null) return;
             if (animationEvent.animatorClipInfo.weight > 0.5f && LandingAudioClip != null)
                 AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), LandingAudioVolume);
+        }
+
+        private void OnFootstep(AnimationEvent animationEvent)
+        {
+            if (_controller == null) return;
+            if (animationEvent.animatorClipInfo.weight > 0.5f && FootstepAudioClips != null && FootstepAudioClips.Length > 0)
+            {
+                var index = Random.Range(0, FootstepAudioClips.Length);
+                AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(_controller.center), FootstepAudioVolume);
+            }
         }
     }
 }
