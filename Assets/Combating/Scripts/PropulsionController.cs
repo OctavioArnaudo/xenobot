@@ -84,7 +84,24 @@ namespace Combating.Scripts
             }
             else m_Health.AddFuel((fuelRegen * 0.2f) * Time.deltaTime);
 
+            // Report flight state to Animator safely
+            Animator anim = m_Player != null ? m_Player.GetComponentInChildren<Animator>() : GetComponentInChildren<Animator>();
+            if (anim != null)
+            {
+                if (HasParameter(anim, "isFlying"))
+                {
+                    anim.SetBool("isFlying", m_IsUsingJetpack);
+                }
+            }
+
             return m_IsUsingJetpack;
+        }
+
+        private bool HasParameter(Animator animator, string paramName)
+        {
+            foreach (AnimatorControllerParameter param in animator.parameters)
+                if (param.name == paramName) return true;
+            return false;
         }
 
         public bool IsFlying => m_IsUsingJetpack;

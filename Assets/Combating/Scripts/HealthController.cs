@@ -33,6 +33,10 @@ namespace Combating.Scripts
         private float m_Jetpack;
         private float m_DamageFlashTimer;
 
+        private Animator m_Animator;
+        private static readonly int _animIDTakeDamage = Animator.StringToHash("takeDamage");
+        private bool _hasAnimDamage;
+
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
         public int CurrentHP => IsNetworkActive ? currentHealth.Value : m_OfflineHealth;
         public float JetpackFuel => m_Jetpack;
@@ -42,9 +46,22 @@ namespace Combating.Scripts
             m_OfflineHealth = maxHealth;
             m_Jetpack = maxJetpack;
 
+            m_Animator = GetComponentInChildren<Animator>();
+            if (m_Animator != null)
+            {
+                _hasAnimDamage = HasParameter(m_Animator, _animIDTakeDamage);
+            }
+
             // Auto-detect visuals if not assigned
             if (visualsToFlash == null || visualsToFlash.Length == 0)
                 visualsToFlash = GetComponentsInChildren<Renderer>();
+        }
+
+        private bool HasParameter(Animator animator, int paramHash)
+        {
+            foreach (AnimatorControllerParameter param in animator.parameters)
+                if (param.nameHash == paramHash) return true;
+            return false;
         }
 
         public override void OnNetworkSpawn()
@@ -64,8 +81,9 @@ namespace Combating.Scripts
 
             int finalDamage = damage;
 
-            // Integracion con StatsController: Defensa
-            if (TryGetComponent<StatsController>(out var stats))
+            // Integracion con StatsController: Defensa (Intento robusto de encontrar el script en la raiz)
+            var stats = GetComponent<StatsController>() ?? GetComponentInParent<StatsController>();
+            if (stats != null)
             {
                 finalDamage = Mathf.RoundToInt(damage * (10f / (10f + stats.Defense)));
                 if (finalDamage < 1) finalDamage = 1;
@@ -77,6 +95,9 @@ namespace Combating.Scripts
             // Flash de dano (HUD si es player, Body si es enemigo/objeto)
             if (IsOwner && team == Team.Player) m_DamageFlashTimer = 0.6f;
             PlayHitFlash();
+
+            // Trigger Animator Damage
+            if (_hasAnimDamage) m_Animator.SetTrigger(_animIDTakeDamage);
 
             OnTakeDamage?.Invoke(finalDamage);
             if (CurrentHP <= 0) Die();

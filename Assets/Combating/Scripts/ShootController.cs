@@ -70,10 +70,24 @@ namespace Combating.Scripts
                 if (Muzzle == null)
                 {
                     Transform t = transform.Find("WeaponRender/MuzzlePoint");
+                    if (t == null) t = transform.Find("Render/MuzzlePoint");
+                    if (t == null) t = transform.Find("MuzzlePoint");
                     if (t != null) Muzzle = t;
                 }
+            }
 
-                if (Muzzle == null) Muzzle = transform;
+            // Fallback: If still no Muzzle, or it is at the feet, create a virtual point
+            if (Muzzle == null || Muzzle == transform || Muzzle.localPosition.y < 0.2f)
+            {
+                Transform virtualMuzzle = transform.Find("VirtualMuzzle");
+                if (virtualMuzzle == null)
+                {
+                    GameObject go = new GameObject("VirtualMuzzle");
+                    go.transform.SetParent(transform);
+                    go.transform.localPosition = new Vector3(0, 1.4f, 0.7f); // Higher and more forward
+                    virtualMuzzle = go.transform;
+                }
+                Muzzle = virtualMuzzle;
             }
 
             if (visualsToRotate == null || visualsToRotate.Length == 0)
@@ -169,9 +183,26 @@ namespace Combating.Scripts
                 SpawnProjectileLocally(direction, spawnPos, finalDamage, team, IsNetworkActive && NetworkManager.Singleton.IsServer);
             }
 
+            // Trigger shoot animation safely
+            Animator anim = GetComponentInChildren<Animator>();
+            if (anim != null)
+            {
+                if (HasParameter(anim, "shoot"))
+                {
+                    anim.SetTrigger("shoot");
+                }
+            }
+
             // Local Visual Feedback (Immediate)
             if (MuzzleFlash != null && !MuzzleFlash.isPlaying) MuzzleFlash.Play();
             SpawnTracer(spawnPos, spawnPos + direction * AimDistance);
+        }
+
+        private bool HasParameter(Animator animator, string paramName)
+        {
+            foreach (AnimatorControllerParameter param in animator.parameters)
+                if (param.name == paramName) return true;
+            return false;
         }
 
         private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool shouldNetSpawn)

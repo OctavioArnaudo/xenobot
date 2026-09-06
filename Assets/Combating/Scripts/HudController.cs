@@ -214,7 +214,9 @@ public class StatsController : NetworkBehaviour
     {
         if (Event.current.type != EventType.Repaint) return; // Optimization: only run on repaint
         if (SceneManager.GetActiveScene().name != "BiomaScene") return;
-        if (!CanExecuteLocalLogic) return;
+
+        // Pure functional check: Only draw for the owner of the local player prefab
+        if (!IsOwner) return;
 
         EnsureAssets();
 

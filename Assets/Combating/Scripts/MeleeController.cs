@@ -90,7 +90,10 @@ namespace Combating.Scripts
         private void ExecuteMelee()
         {
             float finalDamage = attackDamage;
-            if (TryGetComponent<StatsController>(out var stats))
+
+            // Stats integration robust check
+            var stats = GetComponent<StatsController>() ?? GetComponentInParent<StatsController>();
+            if (stats != null)
             {
                 finalDamage = attackDamage * (stats.Attack / 10f);
             }
@@ -109,12 +112,29 @@ namespace Combating.Scripts
                 }
             }
 
-            // 2. Visual Effects
+            // 2. Animator Trigger safely
+            Animator anim = GetComponentInChildren<Animator>();
+            if (anim != null)
+            {
+                if (HasParameter(anim, "meleeAttack"))
+                {
+                    anim.SetTrigger("meleeAttack");
+                }
+            }
+
+            // 3. Visual Effects
             if (swingVfxPrefab != null)
             {
                 ProjectileController vfx = Instantiate(swingVfxPrefab, transform.position + transform.forward, transform.rotation);
                 vfx.Launch(gameObject, transform.forward, 0f, m_Health != null ? m_Health.team : Team.Neutral);
             }
+        }
+
+        private bool HasParameter(Animator animator, string paramName)
+        {
+            foreach (AnimatorControllerParameter param in animator.parameters)
+                if (param.name == paramName) return true;
+            return false;
         }
 
         private void OnDrawGizmosSelected()

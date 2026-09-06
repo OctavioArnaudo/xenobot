@@ -42,6 +42,12 @@ namespace Combating.Scripts
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
         private bool CanExecuteLogic => !IsNetworkActive || IsServer;
 
+        private Animator m_Animator;
+        private static readonly int _animIDSpeed = Animator.StringToHash("Speed");
+        private static readonly int _animIDIsGrounded = Animator.StringToHash("isGrounded");
+        private bool _hasAnimSpeed;
+        private bool _hasAnimGrounded;
+
         void Awake()
         {
             _startPosition = transform.position;
@@ -53,6 +59,13 @@ namespace Combating.Scripts
                 m_Agent.updateRotation = false;
             }
 
+            m_Animator = GetComponentInChildren<Animator>();
+            if (m_Animator != null)
+            {
+                _hasAnimSpeed = HasParameter(m_Animator, _animIDSpeed);
+                _hasAnimGrounded = HasParameter(m_Animator, _animIDIsGrounded);
+            }
+
             // Auto-detección opcional de módulos
             if (m_Shooter == null) m_Shooter = GetComponent<ShootController>();
             if (m_Melee == null) m_Melee = GetComponent<MeleeController>();
@@ -60,6 +73,13 @@ namespace Combating.Scripts
             if (m_Spawn == null) m_Spawn = GetComponent<SpawnController>();
 
             if (m_Shooter != null) m_Shooter.UsePlayerInput = false;
+        }
+
+        private bool HasParameter(Animator animator, int paramHash)
+        {
+            foreach (AnimatorControllerParameter param in animator.parameters)
+                if (param.nameHash == paramHash) return true;
+            return false;
         }
 
         public override void OnNetworkSpawn()
@@ -74,18 +94,46 @@ namespace Combating.Scripts
             if (m_Health != null && m_Health.CurrentHP <= 0)
             {
                 StopMoving();
+                UpdateAnimator(0, true);
                 return;
             }
 
             FindTarget();
             UpdateAIState();
+
+            float speed = m_Agent != null ? m_Agent.velocity.magnitude : 0;
+            UpdateAnimator(speed, true);
+        }
+
+        void UpdateAnimator(float speed, bool grounded)
+        {
+            if (m_Animator == null || !m_Animator.gameObject.activeInHierarchy)
+            {
+                m_Animator = GetComponentInChildren<Animator>(true);
+                if (m_Animator != null)
+                {
+                    m_Animator.enabled = true;
+                    _hasAnimSpeed = HasParameter(m_Animator, _animIDSpeed);
+                    _hasAnimGrounded = HasParameter(m_Animator, _animIDIsGrounded);
+                }
+            }
+
+            if (m_Animator == null) return;
+            if (!m_Animator.enabled) m_Animator.enabled = true;
+
+            // Normalize speed (0 to 1 based on chaseSpeed)
+            float speedParam = speed / Mathf.Max(0.1f, chaseSpeed);
+            if (speed > 0.05f && speedParam < 0.3f) speedParam = 0.3f;
+
+            if (_hasAnimSpeed) m_Animator.SetFloat(_animIDSpeed, speedParam);
+            if (_hasAnimGrounded) m_Animator.SetBool(_animIDIsGrounded, grounded);
         }
 
         void FindTarget()
         {
             if (m_Target != null)
             {
-                if (Vector3.Distance(transform.position, m_Target.position) > detectionRange)
+                if (Vector3.Distance(transform.position, m_Target.position) > detectionRange * 1.5f)
                     m_Target = null;
             }
 
@@ -162,12 +210,12 @@ namespace Combating.Scripts
             RotateBaseTowards(m_Target.position);
 
             // Delegación directa: Cada controlador sabe qué hacer
-            if (canMelee)
+            if (canMelee && m_Melee != null)
             {
                 m_Melee.PerformMeleeAction(m_Target.position);
             }
 
-            if (canShoot)
+            if (canShoot && m_Shooter != null)
             {
                 m_Shooter.FireAt(m_Target.position + Vector3.up);
             }

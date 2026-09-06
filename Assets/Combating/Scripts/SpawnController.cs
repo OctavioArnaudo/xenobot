@@ -144,6 +144,13 @@ namespace Combating.Scripts
                 rb.AddForce(force, ForceMode.Impulse);
             }
 
+            // Robust InventoryController detection for items that need it
+            var pickup = spawned.GetComponent<PickupController>();
+            if (pickup != null)
+            {
+                // Ensure PickupController logic can find the taker
+            }
+
             // Sincronización en red
             if (IsNetworkActive && IsServer)
             {

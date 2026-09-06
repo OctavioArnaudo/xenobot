@@ -39,7 +39,7 @@ namespace Combating.Scripts
         [Header("Ground Check")]
         public bool Grounded = true;
         public float GroundedOffset = -0.14f;
-        public float GroundedRadius = 0.28f;
+        public float GroundedRadius = 0.15f;
         public LayerMask GroundLayers;
         #endregion
 
@@ -111,9 +111,11 @@ namespace Combating.Scripts
         // Animator Parameter Hashes (match Animator Controller exactly)
         private static readonly int _animIDSpeed = Animator.StringToHash("Speed");
         private static readonly int _animIDIsGrounded = Animator.StringToHash("isGrounded");
+        private static readonly int _animIDJump = Animator.StringToHash("Jump");
 
         private bool _hasAnimIDSpeed;
         private bool _hasAnimIDIsGrounded;
+        private bool _hasAnimIDJump;
 
 #if ENABLE_INPUT_SYSTEM
         private PlayerInput _playerInput;
@@ -151,6 +153,12 @@ namespace Combating.Scripts
             _controller = GetComponent<CharacterController>();
             _health = GetComponent<HealthController>();
             _inventory = GetComponent<InventoryController>();
+
+            // Force settings if they are broken in prefab
+            EnableDoubleJump = true;
+            if (JumpHeight < 1f) JumpHeight = 1.2f;
+            if (DoubleJumpHeight < 1f) DoubleJumpHeight = 1.2f;
+
             RefreshFunctionalComponents();
 
 #if ENABLE_INPUT_SYSTEM
@@ -417,9 +425,18 @@ namespace Combating.Scripts
         public void RefreshFunctionalComponents()
         {
             _jetpack = GetComponentInChildren<PropulsionController>();
-            _animator = GetComponentInChildren<Animator>();
+
+            // Extreme animator discovery
+            _animator = GetComponentInChildren<Animator>(true);
+            if (_animator == null) _animator = GetComponentInParent<Animator>();
+            if (_animator == null) _animator = GetComponent<Animator>();
+
             _hasAnimator = _animator != null;
-            AssignAnimationIDs();
+            if (_hasAnimator)
+            {
+                _animator.enabled = true;
+                AssignAnimationIDs();
+            }
             SetupCamera();
         }
 
@@ -530,8 +547,27 @@ namespace Combating.Scripts
         #region Movement Logic
         private void GroundedCheck()
         {
-            Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
-            Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
+            // If we are moving upwards with speed (jumping), we are NOT grounded
+            // This prevents the jump from being canceled by a "false" raycast hit
+            if (_verticalVelocity > 0.1f)
+            {
+                Grounded = false;
+                return;
+            }
+
+            // Start the ray exactly at the bottom of the capsule
+            Vector3 rayOrigin = transform.position + Vector3.up * 0.05f;
+            float rayDistance = 0.15f;
+
+            LayerMask mask = GroundLayers;
+            if (mask == 0) mask = ~((1 << 3) | (1 << 2));
+
+            // Use the Raycast and the Controller's own detection for stability
+            bool rayHit = Physics.Raycast(rayOrigin, Vector3.down, rayDistance, mask, QueryTriggerInteraction.Ignore);
+            Grounded = rayHit || (_controller != null && _controller.isGrounded);
+
+            // Visual debug
+            Debug.DrawRay(rayOrigin, Vector3.down * rayDistance, Grounded ? Color.green : Color.red);
         }
 
         private void CameraRotation()
@@ -571,35 +607,20 @@ namespace Combating.Scripts
             float targetSpeed = sprint ? SprintSpeed : MoveSpeed;
             if (move == Vector2.zero) targetSpeed = 0.0f;
 
-            float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;
-            float speedOffset = 0.1f;
-            float inputMagnitude = analogMovement ? move.magnitude : 1f;
-
-            if (currentHorizontalSpeed < targetSpeed - speedOffset || currentHorizontalSpeed > targetSpeed + speedOffset)
-            {
-                _speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude, Time.deltaTime * SpeedChangeRate);
-                _speed = Mathf.Round(_speed * 1000f) / 1000f;
-            }
-            else
-            {
-                _speed = targetSpeed;
-            }
-
+            // Simple speed lerp
+            _speed = Mathf.Lerp(_speed, targetSpeed, Time.deltaTime * SpeedChangeRate);
             _animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, Time.deltaTime * SpeedChangeRate);
-            if (_animationBlend < 0.01f) _animationBlend = 0f;
-
-            Vector3 inputDirection = new Vector3(move.x, 0.0f, move.y).normalized;
 
             if (move != Vector2.zero)
             {
                 if (_mainCamera == null) _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+                float camYaw = (_mainCamera != null) ? _mainCamera.transform.eulerAngles.y : 0f;
 
-                if (_mainCamera != null)
-                {
-                    _targetRotation = Mathf.Atan2(inputDirection.x, inputDirection.z) * Mathf.Rad2Deg + _mainCamera.transform.eulerAngles.y;
-                    float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
-                    transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
-                }
+                // CAMERA-RELATIVE MOVEMENT: Combine input angle with camera yaw
+                _targetRotation = Mathf.Atan2(move.x, move.y) * Mathf.Rad2Deg + camYaw;
+
+                float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
+                transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
             }
 
             Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
@@ -608,54 +629,49 @@ namespace Combating.Scripts
 
         private void JumpAndGravity()
         {
-            bool isUsingJetpack = false;
-            if (_jetpack != null)
+            if (_jetpack != null && _jetpack.ProcessFlight(_isJumpHeld, Grounded, ref _verticalVelocity))
             {
-                isUsingJetpack = _jetpack.ProcessFlight(_isJumpHeld, Grounded, ref _verticalVelocity);
-                if (isUsingJetpack) jump = false;
+                jump = false;
+                return;
             }
-
-            if (isUsingJetpack) return;
 
             if (Grounded)
             {
                 _fallTimeoutDelta = FallTimeout;
 
-                // Solo reinicia saltos cuando realmente está cayendo o reposando en el suelo
-                if (_verticalVelocity <= 0.0f)
+                if (_verticalVelocity < 0.0f)
                 {
                     _verticalVelocity = -2f;
                     _jumpsRemaining = EnableDoubleJump ? 2 : 1;
                 }
 
-                if (jump && _jumpTimeoutDelta <= 0.0f && _jumpsRemaining > 0)
+                // Simple Jump
+                if (jump && _jumpsRemaining > 0)
                 {
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
                     _jumpsRemaining--;
-                    _jumpTimeoutDelta = JumpTimeout;
+                    if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
                     jump = false;
                 }
-
-                if (_jumpTimeoutDelta >= 0.0f) _jumpTimeoutDelta -= Time.deltaTime;
             }
             else
             {
-                _jumpTimeoutDelta = JumpTimeout;
-                if (_fallTimeoutDelta >= 0.0f) _fallTimeoutDelta -= Time.deltaTime;
-
-                // Doble salto en el aire
+                // Air Jump (Double Jump)
                 if (jump && EnableDoubleJump && _jumpsRemaining > 0)
                 {
                     _verticalVelocity = Mathf.Sqrt(DoubleJumpHeight * -2f * Gravity);
                     _jumpsRemaining--;
+                    if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
                     jump = false;
                 }
-
-                if (_verticalVelocity > -_terminalVelocity)
-                    _verticalVelocity += Gravity * Time.deltaTime;
-
-                jump = false;
             }
+
+            // Always apply gravity
+            if (_verticalVelocity > -_terminalVelocity)
+                _verticalVelocity += Gravity * Time.deltaTime;
+
+            // CRITICAL: Always clear jump input at the end of the frame
+            jump = false;
         }
         #endregion
 
@@ -695,14 +711,26 @@ namespace Combating.Scripts
             {
                 _hasAnimIDSpeed = HasParameter(_animator, _animIDSpeed);
                 _hasAnimIDIsGrounded = HasParameter(_animator, _animIDIsGrounded);
+                _hasAnimIDJump = HasParameter(_animator, _animIDJump);
             }
         }
 
         private void UpdateAnimatorParameters()
         {
-            if (!_hasAnimator) return;
+            if (!_hasAnimator || _animator == null || !_animator.gameObject.activeInHierarchy)
+            {
+                RefreshFunctionalComponents();
+                if (!_hasAnimator) return;
+            }
 
-            if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, _animationBlend);
+            // Forced Activation
+            if (!_animator.enabled) _animator.enabled = true;
+
+            // Normalized Speed (0 to 1)
+            float speedFactor = _animationBlend / Mathf.Max(0.1f, SprintSpeed);
+            if (_animationBlend > 0.05f && speedFactor < 0.3f) speedFactor = 0.3f;
+
+            if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, speedFactor);
             if (_hasAnimIDIsGrounded) _animator.SetBool(_animIDIsGrounded, Grounded);
         }
 
