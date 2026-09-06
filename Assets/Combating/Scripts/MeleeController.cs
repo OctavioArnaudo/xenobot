@@ -17,7 +17,6 @@ namespace Combating.Scripts
         public Renderer[] visualsToRotate;
         public float rotationSpeed = 10f;
 
-        private HealthController m_Health;
         private ModularController _hub;
         private AnimationController _anim;
         private float m_NextAttackTime;
@@ -48,7 +47,6 @@ namespace Combating.Scripts
         {
             if (_hub != null)
             {
-                m_Health = _hub.GetModule<HealthController>();
                 _anim = _hub.GetModule<AnimationController>();
                 visualsToRotate = _hub.renderRoot?.GetComponentsInChildren<Renderer>() ?? GetComponentsInChildren<Renderer>();
             }
@@ -114,10 +112,10 @@ namespace Combating.Scripts
 
             foreach (Collider hit in hits)
             {
-                var targetHealth = hit.GetComponentInParent<HealthController>();
+                var targetHealth = hit.GetComponentInParent<PlayerController>();
                 if (targetHealth != null)
                 {
-                    if (targetHealth.team == _hub.MyTeam && _hub.MyTeam != Team.Neutral) continue;
+                    if (targetHealth.MyTeam == _hub.MyTeam && _hub.MyTeam != Team.Neutral) continue;
                     var targetDamage = hit.GetComponentInParent<DamageController>();
                     if (targetDamage != null) targetDamage.TakeDamage((int)finalDamage, _hub.MyTeam);
                 }

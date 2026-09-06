@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
@@ -109,7 +110,7 @@ namespace Combating.Scripts
             if (m_Owner != null && (other.gameObject == m_Owner || other.transform.IsChildOf(m_Owner.transform))) return;
 
             // Check if target has health
-            var targetHealth = other.GetComponentInParent<HealthController>();
+            var targetHealth = other.GetComponentInParent<PlayerController>();
 
             // If it's a trigger but has no health, ignore it (it's likely a zone or another projectile)
             if (other.isTrigger && targetHealth == null) return;
@@ -117,13 +118,13 @@ namespace Combating.Scripts
             if (targetHealth != null)
             {
                 // Friendly fire check
-                if (targetHealth.team == m_OwnerTeam && m_OwnerTeam != Team.Neutral) return;
+                if (targetHealth.MyTeam == m_OwnerTeam && m_OwnerTeam != Team.Neutral) return;
 
                 m_HasHit = true;
 
                 var damageCtrl = targetHealth.GetComponent<DamageController>();
                 if (damageCtrl != null) damageCtrl.TakeDamage((int)damage, m_OwnerTeam);
-                else targetHealth.ApplyDirectHealthChange(-(int)damage);
+                else targetHealth.ApplyHealthChangeServerRpc(-(int)damage);
             }
             else
             {
