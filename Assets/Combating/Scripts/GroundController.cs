@@ -7,11 +7,12 @@ namespace Combating.Scripts
     [DefaultExecutionOrder(-50)]
     public class GroundController : MonoBehaviour, IModular
     {
-        // Physical Reliability Constants (Hardcoded to prevent inspector tampering)
-        private const float GroundedOffset = 0.14f;
-        private const float GroundedRadius = 0.28f;
-        private const float GroundStickVelocity = -2f;
-        private const int GroundLayers = ~0; // Everything
+    // Physical Reliability Constants (Hardcoded to prevent inspector tampering)
+    private const float GroundedOffset = 0.14f;
+    private const float GroundedRadius = 0.28f;
+    // Smaller stick velocity to avoid forcing the CharacterController deep into the ground
+    private const float GroundStickVelocity = -0.5f;
+    private const int GroundLayers = ~0; // Everything
 
         [Header("Audio Settings")]
         public AudioClip[] FootstepAudioClips;
@@ -20,6 +21,9 @@ namespace Combating.Scripts
         private CharacterController _controller;
         private ModularController _hub;
         private Collider[] _groundHits = new Collider[8];
+
+        [Header("Debug")]
+        public bool debugGroundChecks = false;
 
         private bool HasPhysicsAuthority => _hub != null && (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
 
@@ -55,16 +59,13 @@ namespace Combating.Scripts
             ApplyGravity();
         }
 
-        private void UpdateGroundedState()
-        {
-            // Position the check sphere slightly above the feet, extending downwards
-            Vector3 checkPos = _hub.transform.position + Vector3.up * GroundedOffset;
-            _hub.IsGrounded = _controller.isGrounded || HasExternalGroundHit(checkPos);
-        }
+
 
         private bool HasExternalGroundHit(Vector3 checkPos)
         {
-            int layerMask = GroundLayers & ~(1 << _hub.gameObject.layer);
+            // Use full layers mask; ignore self-colliders later by IsChildOf checks.
+            // Excluding the hub layer can hide valid ground colliders when player and ground share a layer.
+            int layerMask = GroundLayers;
             int hitCount = Physics.OverlapSphereNonAlloc(checkPos, GroundedRadius, _groundHits, layerMask, QueryTriggerInteraction.Ignore);
 
             for (int i = 0; i < hitCount; i++)
@@ -77,6 +78,19 @@ namespace Combating.Scripts
             }
 
             return false;
+        }
+
+        private void UpdateGroundedState()
+        {
+            // Position the check sphere slightly above the feet, extending downwards
+            Vector3 checkPos = _hub.transform.position + Vector3.up * GroundedOffset;
+            _hub.IsGrounded = _controller.isGrounded || HasExternalGroundHit(checkPos);
+
+            if (debugGroundChecks)
+            {
+                // Visual debug: draw a line and sphere representation
+                Debug.DrawLine(checkPos, checkPos - Vector3.up * (GroundedRadius + 0.1f), Color.yellow);
+            }
         }
 
         private void ApplyGravity()

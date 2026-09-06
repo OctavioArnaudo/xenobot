@@ -96,7 +96,8 @@ namespace Crafting.Scripts
                 controller.height = 1.8f;
                 controller.radius = 0.35f;
                 controller.center = new Vector3(0, 0.9f, 0);
-                controller.skinWidth = 0.02f;
+                // Increase skinWidth for more stable collision detection and to avoid sinking into geometry
+                controller.skinWidth = 0.08f;
                 controller.stepOffset = 0.3f;
                 controller.slopeLimit = 45f;
             }
@@ -141,7 +142,20 @@ namespace Crafting.Scripts
 
             foreach (var type in coreComponentTypes)
             {
-                if (GetComponentInChildren(type, true) != null) continue;
+                // If an existing module of this type is already present in children, ensure it is bound
+                var existing = GetComponentInChildren(type, true);
+                if (existing != null)
+                {
+                    foreach (var module in GetComponentsInChildren<IModular>(true))
+                    {
+                        if (module is MonoBehaviour mb && type.IsAssignableFrom(mb.GetType()))
+                        {
+                            module.Bind(this);
+                        }
+                    }
+
+                    continue;
+                }
 
                 GameObject prefab = null;
                 foreach (var item in allPrefabs)

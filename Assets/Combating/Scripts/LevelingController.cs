@@ -22,8 +22,14 @@ namespace Combating.Scripts
             {
                 _hub.RegisterModule(this);
 
-                // ONLY if strictly offline, initialize stats here.
-                if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+                // Initialize stats immediately only when strictly offline (no NetworkManager)
+                // or when the hub is already spawned on the server. Avoid writing NetworkVariables
+                // before the NetworkBehaviour/NetworkObject is spawned to prevent Netcode warnings.
+                bool networkManagerExists = NetworkManager.Singleton != null;
+                // Only initialize now if there is no NetworkManager at all (fully offline)
+                // OR the hub is already spawned and we're the server. This prevents writing
+                // NetworkVariables when a NetworkBehaviour hasn't been associated yet.
+                if (!networkManagerExists || (_hub.IsSpawned && _hub.IsServer))
                 {
                     InitializeStats();
                 }
