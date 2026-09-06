@@ -107,8 +107,8 @@ namespace Crafting.Scripts
             float screenW = Screen.width;
             float screenH = Screen.height;
 
-            var allHubs = Object.FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
-            var myHub = PlayerController.LocalInstance;
+            var allHubs = Object.FindObjectsByType<Testing.Scripts.PlayerController>(FindObjectsSortMode.None);
+            var myHub = Testing.Scripts.PlayerController.LocalInstance;
             var otherHubs = allHubs.Where(x => x != myHub).ToList();
 
             float sideW = 400;

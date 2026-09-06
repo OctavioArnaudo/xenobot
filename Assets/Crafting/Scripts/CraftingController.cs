@@ -20,10 +20,10 @@ namespace Crafting.Scripts
         private void OnTriggerEnter(Collider other)
         {
             // Try to find a PlayerController in the object or its parents
-            var player = other.GetComponentInParent<PlayerController>();
+            var player = other.GetComponentInParent<Testing.Scripts.PlayerController>();
 
             // We only want to open the UI for the local player (the one who actually entered on this machine)
-            if (player != null && player == PlayerController.LocalInstance)
+            if (player != null && player == Testing.Scripts.PlayerController.LocalInstance)
             {
                 if (CraftingManager.Instance != null)
                 {
@@ -35,9 +35,9 @@ namespace Crafting.Scripts
 
         private void OnTriggerExit(Collider other)
         {
-            var player = other.GetComponentInParent<PlayerController>();
+            var player = other.GetComponentInParent<Testing.Scripts.PlayerController>();
 
-            if (player != null && player == PlayerController.LocalInstance)
+            if (player != null && player == Testing.Scripts.PlayerController.LocalInstance)
             {
                 if (CraftingManager.Instance != null)
                 {

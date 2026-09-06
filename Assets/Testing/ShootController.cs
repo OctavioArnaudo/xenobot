@@ -2,15 +2,11 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Crafting.Scripts;
+using Combating.Scripts;
 
-namespace Combating.Scripts
+namespace Testing.Scripts
 {
-    /// <summary>
-    /// Logic controller for shooting mechanics.
-    /// Handles firing projectiles, cooldowns, and input.
-    /// Works for both Players (via bridge) and AI (direct server spawning).
-    /// </summary>
-    public class ShootController : MonoBehaviour, IItemFunctional
+    public class ShootController : MonoBehaviour, IItemFunctional, IModular
     {
         [Header("References")]
         public Camera AimCamera;
@@ -32,85 +28,89 @@ namespace Combating.Scripts
         public float TracerLifetime = 0.05f;
         public float rotationSpeed = 10f;
 
-        private PlayerController m_Player;
+        private ModularController _hub;
         private HealthController m_Health;
+        private AnimationController _anim;
         private float m_NextFireTime;
-
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
         void Awake()
         {
-            RefreshReferences();
+            if (_hub == null) _hub = GetComponentInParent<ModularController>();
         }
 
         public void ApplyEffect(GameObject player)
         {
-            m_Player = player.GetComponent<PlayerController>();
-            m_Health = player.GetComponent<HealthController>();
-            RefreshReferences();
-            Debug.Log($"[ShootController] Vinculado a {player.name}. Player detected: {m_Player != null}");
+            _hub = player.GetComponent<ModularController>();
+            if (_hub != null) Bind(_hub);
         }
 
-        private void RefreshReferences()
+        public void Bind(ModularController hub)
         {
-            if (m_Player == null) m_Player = GetComponentInParent<PlayerController>();
-            if (m_Health == null) m_Health = GetComponentInParent<HealthController>();
-
-            // Critical: Search camera in parent player
-            if (AimCamera == null && m_Player != null)
-                AimCamera = m_Player.GetComponentInChildren<Camera>();
-
-            if (AimCamera == null) AimCamera = Camera.main;
-
-            if (Muzzle == null)
+            _hub = hub;
+            if (_hub != null)
             {
-                var wc = GetComponent<WeaponController>();
-                if (wc != null) Muzzle = wc.muzzlePoint;
+                _hub.RegisterModule(this);
 
-                if (Muzzle == null)
+                // Module Locking: Players start with shooting disabled
+                if (_hub is PlayerController)
                 {
-                    Transform t = transform.Find("WeaponRender/MuzzlePoint");
-                    if (t != null) Muzzle = t;
+                    Damage = Random.Range(35f, 51f);
+                    enabled = false;
+                }
+                else if (_hub is EnemyController)
+                {
+                    Damage = Random.Range(15f, 26f);
+                    enabled = true;
                 }
 
-                if (Muzzle == null) Muzzle = transform;
+                OnRefreshModule();
+            }
+        }
+
+        public void OnRefreshModule()
+        {
+            if (_hub != null)
+            {
+                m_Health = _hub.GetModule<HealthController>();
+                _anim = _hub.GetModule<AnimationController>();
+
+                if (_hub.mainCamera != null) AimCamera = _hub.mainCamera.GetComponent<Camera>();
+                if (AimCamera == null) AimCamera = _hub.GetComponentInChildren<Camera>();
+
+                if (_hub.MuzzlePoint != null) Muzzle = _hub.MuzzlePoint;
+                else if (_hub.activeModel != null)
+                {
+                    _hub.activeModel.EnsurePoints();
+                    if (_hub.activeModel.muzzlePoint != null) Muzzle = _hub.activeModel.muzzlePoint;
+                }
             }
 
-            if (visualsToRotate == null || visualsToRotate.Length == 0)
+            if (Muzzle == null || Muzzle == transform)
             {
-                var mr = GetComponentInChildren<MeshRenderer>();
-                if (mr != null) visualsToRotate = new Renderer[] { mr };
+                Muzzle = transform.Find("Muzzle") ?? transform.Find("FirePoint") ?? transform.Find("muzzlePoint") ?? transform;
             }
         }
 
         void Update()
         {
-            if (!UsePlayerInput) return;
+            if (!UsePlayerInput || _hub == null || !(_hub is PlayerController player)) return;
 
-            // Only the owner of the player should process input and trigger shots
-            bool canHandleInput = (m_Player != null) ? (IsNetworkActive ? m_Player.IsOwner : true) : true;
-            if (!canHandleInput) return;
+            bool isOwner = (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
+            if (!isOwner) return;
 
-            if (m_Player == null) RefreshReferences();
-
-            if (m_Player != null && WantsToFire())
+            if (WantsToFire(player))
             {
                 TryFire();
             }
         }
 
-        bool WantsToFire()
+        bool WantsToFire(PlayerController player)
         {
-            if (m_Player == null) return false;
-
-            bool inputActive = HoldToFire ? m_Player.fireHeld : m_Player.fire;
-
-            // Mouse fallback for robustness
+            bool inputActive = HoldToFire ? player.fireHeld : player.fire;
             if (!inputActive && Mouse.current != null)
             {
                 inputActive = HoldToFire ? Mouse.current.leftButton.isPressed : Mouse.current.leftButton.wasPressedThisFrame;
             }
-
             return inputActive;
         }
 
@@ -118,7 +118,7 @@ namespace Combating.Scripts
         {
             if (ProjectilePrefab == null || Muzzle == null)
             {
-                RefreshReferences();
+                if (_hub != null) OnRefreshModule();
                 if (ProjectilePrefab == null || Muzzle == null) return false;
             }
 
@@ -135,14 +135,14 @@ namespace Combating.Scripts
         {
             if (ProjectilePrefab == null || Muzzle == null)
             {
-                RefreshReferences();
+                if (_hub != null) OnRefreshModule();
                 if (ProjectilePrefab == null || Muzzle == null) return false;
             }
 
+            RotateVisualsTowards(targetPosition);
+
             if (Time.time < m_NextFireTime) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
-
-            RotateVisualsTowards(targetPosition);
 
             Vector3 originPos = Muzzle.position;
             Vector3 direction = (targetPosition - originPos).normalized;
@@ -153,25 +153,23 @@ namespace Combating.Scripts
         private void ExecuteFire(Vector3 direction, Vector3 spawnPos)
         {
             float finalDamage = Damage;
-            StatsController stats = (m_Player != null) ? m_Player.GetComponent<StatsController>() : GetComponentInParent<StatsController>();
-            if (stats != null) finalDamage = Damage * (stats.Attack / 10f);
+            if (_hub != null) finalDamage = Damage * (_hub.Attack.Value / 10f);
 
-            Team team = m_Health != null ? m_Health.team : Team.Neutral;
+            Team team = _hub != null ? _hub.MyTeam : Team.Neutral;
 
-            if (m_Player != null && IsNetworkActive)
+            if (_hub != null && _hub is PlayerController player && (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening))
             {
-                // PLAYER NETWORK MODE
-                m_Player.RequestFire(ProjectilePrefab, direction, spawnPos, finalDamage, team);
+                player.RequestFire(ProjectilePrefab, direction, spawnPos, finalDamage, team);
             }
             else
             {
-                // LOCAL MODE OR AI
-                SpawnProjectileLocally(direction, spawnPos, finalDamage, team, IsNetworkActive && NetworkManager.Singleton.IsServer);
+                SpawnProjectileLocally(direction, spawnPos, finalDamage, team, _hub != null && _hub.IsServer);
             }
 
-            // Local Visual Feedback (Immediate)
             if (MuzzleFlash != null && !MuzzleFlash.isPlaying) MuzzleFlash.Play();
             SpawnTracer(spawnPos, spawnPos + direction * AimDistance);
+
+            if (_anim != null) _anim.TriggerShoot();
         }
 
         private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool shouldNetSpawn)
@@ -179,7 +177,7 @@ namespace Combating.Scripts
             ProjectileController projectile = Instantiate(ProjectilePrefab, spawnPos, Quaternion.LookRotation(direction));
             if (projectile != null)
             {
-                projectile.Launch(m_Player != null ? m_Player.gameObject : gameObject, direction, damage, team);
+                projectile.Launch(_hub != null ? _hub.gameObject : gameObject, direction, damage, team);
                 if (shouldNetSpawn && projectile.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
             }
         }
@@ -203,7 +201,7 @@ namespace Combating.Scripts
         {
             if (AimCamera == null) return transform.forward;
             Ray ray = new Ray(AimCamera.transform.position, AimCamera.transform.forward);
-            int layerMask = ~((1 << 3) | (1 << 2)); // Ignore player and ignore raycast layers
+            int layerMask = ~((1 << 3) | (1 << 2));
 
             if (Physics.Raycast(ray, out RaycastHit hit, AimDistance, layerMask, QueryTriggerInteraction.Ignore))
                 return (hit.point - fromPosition).normalized;

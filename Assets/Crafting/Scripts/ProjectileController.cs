@@ -110,7 +110,7 @@ namespace Combating.Scripts
             if (m_Owner != null && (other.gameObject == m_Owner || other.transform.IsChildOf(m_Owner.transform))) return;
 
             // Check if target has health
-            var targetHealth = other.GetComponentInParent<PlayerController>();
+            var targetHealth = other.GetComponentInParent<Testing.Scripts.PlayerController>();
 
             // If it's a trigger but has no health, ignore it (it's likely a zone or another projectile)
             if (other.isTrigger && targetHealth == null) return;

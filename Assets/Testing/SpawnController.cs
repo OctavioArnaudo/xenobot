@@ -2,9 +2,11 @@ using UnityEngine;
 using Unity.Netcode;
 using TMPro;
 using System.Collections.Generic;
+using System.Linq;
 using Crafting.Scripts;
+using Combating.Scripts;
 
-namespace Combating.Scripts
+namespace Testing.Scripts
 {
     [System.Serializable]
     public struct SpawnableItem
@@ -13,40 +15,46 @@ namespace Combating.Scripts
         public string message;
     }
 
-    /// <summary>
-    /// Handles visual death effects and loot spawning.
-    /// Triggered by HealthController upon death.
-    /// </summary>
-    public class SpawnController : NetworkBehaviour
+    public class SpawnController : NetworkBehaviour, IModular
     {
+        // Spawning Reliability Constants
+        private const float DropForwardOffset = 1.2f;
+        private const float DropUpOffset = 0.5f;
+        private const float DropImpulseForce = 3.0f;
+
         [Header("Spawn Settings")]
         public List<ItemData> lootTable = new List<ItemData>();
         public List<SpawnableItem> itemsToSpawn = new List<SpawnableItem>();
         public float explosionForce = 10f;
         public float spreadRadius = 2.5f;
 
+        private ModularController _hub;
+
+        private void Awake()
+        {
+            _hub = GetComponentInParent<ModularController>();
+            if (_hub != null) Bind(_hub);
+        }
+
+        public void Bind(ModularController hub)
+        {
+            _hub = hub;
+            if (_hub != null) _hub.RegisterModule(this);
+        }
+
+        public void OnRefreshModule() { }
+
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
-        /// <summary>
-        /// Called by HealthController when HP reaches zero.
-        /// </summary>
         public void TriggerDeath()
         {
-            // Solo el servidor o modo offline procesan la muerte real y el loot
             if (IsNetworkActive && !IsServer) return;
 
-            Debug.Log($"[SpawnController] {gameObject.name} death triggered.");
-
-            // 1. Efectos Visuales
             CreateDeathVisuals();
-
-            // 2. Spawneo de Items
             SpawnItems();
 
-            // 3. Limpieza de red o local
             if (IsNetworkActive && NetworkObject.IsSpawned)
             {
-                // Para objetos colocados en escena, Despawn(false) evita el warning y luego destruimos localmente
                 NetworkObject.Despawn(false);
                 Destroy(gameObject);
             }
@@ -58,7 +66,6 @@ namespace Combating.Scripts
 
         private void CreateDeathVisuals()
         {
-            // Flash de muerte (esfera blanca temporal)
             GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.transform.position = transform.position;
             sphere.transform.localScale = Vector3.one * 0.5f;
@@ -71,33 +78,26 @@ namespace Combating.Scripts
             mr.material = mat;
             Destroy(sphere, 0.15f);
 
-            // Explosión de escombros (cubos)
             for (int i = 0; i < 8; i++)
             {
                 GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
                 cube.transform.position = transform.position + (Random.insideUnitSphere * 0.3f);
                 cube.transform.localScale = Vector3.one * Random.Range(0.1f, 0.25f);
-
                 var rb = cube.AddComponent<Rigidbody>();
                 rb.AddExplosionForce(explosionForce, transform.position, spreadRadius);
-
                 var r = cube.GetComponent<Renderer>();
                 r.material.color = Color.Lerp(Color.red, Color.black, Random.value);
-
                 Destroy(cube, 1.0f);
             }
         }
 
-        public void SpawnDroppedItem(GameObject prefab, Vector3 origin, string message = "")
+        public void SpawnDroppedItem(GameObject prefab, string message = "")
         {
             if (prefab == null) return;
 
-            // Offset to the side/forward to avoid immediate re-pickup by the dropper
-            Vector3 offset = transform.right * 1.2f + transform.up * 0.5f;
-            Vector3 spawnPos = origin + offset;
-
-            // Impulse away from the center
-            Vector3 impulse = (transform.right + transform.up).normalized * 3f;
+            // Calculate centralized spawn position
+            Vector3 spawnPos = transform.position + transform.forward * DropForwardOffset + transform.up * DropUpOffset;
+            Vector3 impulse = (transform.forward + transform.up).normalized * DropImpulseForce;
 
             SpawnSingleItem(prefab, spawnPos, message, impulse);
         }
@@ -105,16 +105,12 @@ namespace Combating.Scripts
         public void SpawnSingleItem(GameObject prefab, Vector3 position, string message = "", Vector3? impulse = null)
         {
             if (prefab == null) return;
-
             GameObject spawned = Instantiate(prefab, position, Quaternion.identity);
-
-            // Mensaje flotante de loot
             if (!string.IsNullOrEmpty(message))
             {
                 GameObject msgGo = new GameObject("LootMsg");
                 msgGo.transform.SetParent(spawned.transform);
                 msgGo.transform.localPosition = Vector3.up * 1.0f;
-
                 var tmp = msgGo.AddComponent<TextMeshPro>();
                 tmp.text = message;
                 tmp.fontSize = 3;
@@ -122,53 +118,59 @@ namespace Combating.Scripts
                 tmp.color = Color.yellow;
                 msgGo.AddComponent<SimpleBillboard>();
             }
-
-            // Física para el item spawneado
             Rigidbody rb = spawned.GetComponent<Rigidbody>();
             if (rb == null) rb = spawned.AddComponent<Rigidbody>();
-
             if (rb != null)
             {
-                // Fix: Concave Mesh Colliders are not supported with non-kinematic Rigidbodies
                 var meshColliders = spawned.GetComponentsInChildren<MeshCollider>();
-                foreach (var mc in meshColliders)
-                {
-                    mc.convex = true;
-                }
-
-                // Asegurar que no sea kinematico para que el impulso y la gravedad funcionen
+                foreach (var mc in meshColliders) mc.convex = true;
                 rb.isKinematic = false;
                 rb.useGravity = true;
-
                 Vector3 force = impulse ?? (transform.forward * 2f + Random.insideUnitSphere * 0.5f);
                 rb.AddForce(force, ForceMode.Impulse);
             }
-
-            // Sincronización en red
             if (IsNetworkActive && IsServer)
             {
-                if (spawned.TryGetComponent<NetworkObject>(out var netObj))
-                {
-                    netObj.Spawn();
-                }
+                if (spawned.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
             }
         }
 
         private void SpawnItems()
         {
-            // 1. Spawn items from the lootTable (ItemData)
+            // 1. Priority: Manual Loot from Inspector
             foreach (var item in lootTable)
             {
-                if (item != null)
-                {
-                    SpawnDroppedItem(item.itemPrefab, transform.position, item.displayName);
-                }
+                if (item != null) SpawnDroppedItem(item.itemPrefab, item.displayName);
             }
 
-            // 2. Spawn items from the legacy itemsToSpawn list
             foreach (var item in itemsToSpawn)
             {
-                SpawnDroppedItem(item.prefab, transform.position, item.message);
+                if (item.prefab != null) SpawnDroppedItem(item.prefab, item.message);
+            }
+
+            // 2. Dynamic Enemy Loot (Always EXP, Randomized Fuel/Life)
+            if (_hub is EnemyController)
+            {
+                // Load items from Resources
+                var allItems = Resources.LoadAll<ItemData>("");
+
+                // Always EXP (search by type or common names)
+                var expData = allItems.FirstOrDefault(x => x.type == ItemType.Experience || x.itemCode.ToLower() == "exp" || x.displayName.ToLower().Contains("exp"));
+                if (expData != null) SpawnDroppedItem(expData.itemPrefab, expData.displayName);
+
+                // Randomized Fuel (30%)
+                if (Random.value <= 0.3f)
+                {
+                    var fuelData = allItems.FirstOrDefault(x => x.itemCode.ToLower() == "fuel" || x.displayName.ToLower().Contains("fuel"));
+                    if (fuelData != null) SpawnDroppedItem(fuelData.itemPrefab, fuelData.displayName);
+                }
+
+                // Randomized Life (15%)
+                if (Random.value <= 0.15f)
+                {
+                    var lifeData = allItems.FirstOrDefault(x => x.itemCode.ToLower() == "life" || x.displayName.ToLower().Contains("life"));
+                    if (lifeData != null) SpawnDroppedItem(lifeData.itemPrefab, lifeData.displayName);
+                }
             }
         }
     }

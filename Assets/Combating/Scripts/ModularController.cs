@@ -7,7 +7,10 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    public enum Team { Neutral, Player, Enemy }
+    /// <summary>
+    /// Represents the team affiliation of an entity.
+    /// </summary>
+    //public enum Team { Neutral, Player, Enemy }
 
     /// <summary>
     /// Base interface for all modules that are part of the Modular Ecosystem.
@@ -226,7 +229,7 @@ namespace Combating.Scripts
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void RequestMeleeServerRpc()
         {
-            var melee = GetModule<MeleeController>();
+            var melee = GetModule<Testing.Scripts.MeleeController>();
             if (melee != null) melee.ExecuteMeleeServerSide();
         }
 

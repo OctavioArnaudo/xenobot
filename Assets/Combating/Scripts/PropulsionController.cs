@@ -4,7 +4,12 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    public class PropulsionController : MonoBehaviour, IItemFunctional, IModular
+    /// <summary>
+    /// Logic controller for jetpack flight.
+    /// Handles fuel consumption and vertical movement.
+    /// Modified to work as a modular component on the player.
+    /// </summary>
+    public class PropulsionController : MonoBehaviour, IItemFunctional
     {
         [Header("Flight Settings")]
         public float jetpackForce = 60f;
@@ -14,74 +19,70 @@ namespace Combating.Scripts
         public float maxUpwardVelocity = 12f;
         public float hoverThreshold = 0.5f;
 
-        private TankController m_Tank;
+        private HealthController m_Health;
         private CharacterController m_CharController;
-        private ModularController _hub;
+        private PlayerController m_Player;
         private bool m_IsUsingJetpack = false;
         private bool m_JetpackDepleted = false;
 
-        private void Awake()
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+
+        void Awake()
         {
-            if (_hub == null) _hub = GetComponentInParent<ModularController>();
+            RefreshReferences();
         }
 
         public void ApplyEffect(GameObject player)
         {
-            _hub = player.GetComponent<ModularController>();
-            if (_hub != null) Bind(_hub);
+            m_Player = player.GetComponent<PlayerController>();
+            m_Health = player.GetComponent<HealthController>();
+            m_CharController = player.GetComponent<CharacterController>();
+
+            if (m_Health != null && m_Health.maxJetpack <= 0)
+            {
+                m_Health.maxJetpack = 100f;
+                m_Health.AddFuel(100f);
+            }
+            Debug.Log("[PropulsionController] Lógica de vuelo activada para el jugador.");
         }
 
-        public void Bind(ModularController hub)
+        private void RefreshReferences()
         {
-            _hub = hub;
-            if (_hub != null)
-            {
-                _hub.RegisterModule(this);
-
-                if (_hub is PlayerController) enabled = false;
-                else if (_hub is EnemyController) enabled = true;
-
-                OnRefreshModule();
-            }
-        }
-
-        public void OnRefreshModule()
-        {
-            if (_hub != null)
-            {
-                m_Tank = _hub.GetModule<TankController>();
-                m_CharController = _hub.controller ?? _hub.GetComponent<CharacterController>();
-            }
+            if (m_Player == null) m_Player = GetComponentInParent<PlayerController>();
+            if (m_Health == null) m_Health = GetComponentInParent<HealthController>();
+            if (m_CharController == null) m_CharController = GetComponentInParent<CharacterController>();
         }
 
         public bool ProcessFlight(bool isJumpHeld, bool isGrounded, ref float verticalVelocity)
         {
-            if (_hub == null) return false;
+            if (m_Health == null || m_Player == null) RefreshReferences();
+            if (m_Health == null || m_Player == null) return false;
 
-            bool isOwner = (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
+            // Only the owner processes flight logic (Safely check NetworkManager)
+            bool isOwner = IsNetworkActive ? m_Player.IsOwner : true;
             if (!isOwner) return false;
 
             m_IsUsingJetpack = false;
             if (isGrounded)
             {
                 m_JetpackDepleted = false;
-                if (m_Tank != null) m_Tank.AddFuel(fuelRegen * Time.deltaTime);
+                m_Health.AddFuel(fuelRegen * Time.deltaTime);
                 return false;
             }
 
             if (!isJumpHeld) m_JetpackDepleted = false;
-            if (m_Tank != null && m_Tank.JetpackFuel <= 0) m_JetpackDepleted = true;
+            if (m_Health.JetpackFuel <= 0) m_JetpackDepleted = true;
 
-            if (isJumpHeld && !m_JetpackDepleted && m_Tank != null && m_Tank.JetpackFuel > 0)
+            if (isJumpHeld && !m_JetpackDepleted && m_Health.JetpackFuel > 0)
             {
                 m_IsUsingJetpack = true;
                 if (verticalVelocity < -2f) verticalVelocity = Mathf.MoveTowards(verticalVelocity, 0, Time.deltaTime * 20f);
                 float currentForce = (verticalVelocity > hoverThreshold) ? hoverForce : jetpackForce;
                 verticalVelocity += currentForce * Time.deltaTime;
                 if (verticalVelocity > maxUpwardVelocity) verticalVelocity = maxUpwardVelocity;
-                m_Tank.UseFuel(fuelConsumption * Time.deltaTime);
+                m_Health.UseFuel(fuelConsumption * Time.deltaTime);
             }
-            else if (m_Tank != null) m_Tank.AddFuel((fuelRegen * 0.2f) * Time.deltaTime);
+            else m_Health.AddFuel((fuelRegen * 0.2f) * Time.deltaTime);
 
             return m_IsUsingJetpack;
         }

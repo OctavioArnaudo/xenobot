@@ -43,7 +43,7 @@ namespace Combating.Scripts
 
         private void Start()
         {
-            if (_hub == null) _hub = PlayerController.LocalInstance;
+            if (_hub == null) _hub = Testing.Scripts.PlayerController.LocalInstance;
 
             if (_hub != null)
             {
@@ -89,7 +89,7 @@ namespace Combating.Scripts
 
         public bool TeleportToSceneSpawn(string sceneName)
         {
-            if (_hub == null) _hub = PlayerController.LocalInstance;
+            if (_hub == null) _hub = Testing.Scripts.PlayerController.LocalInstance;
             if (_hub == null) return false;
 
             string targetTag = "Respawn";

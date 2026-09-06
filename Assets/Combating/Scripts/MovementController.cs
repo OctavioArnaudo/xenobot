@@ -49,7 +49,7 @@ namespace Combating.Scripts
 
         private void Start()
         {
-            if (_hub == null) _hub = PlayerController.LocalInstance;
+            if (_hub == null) _hub = Testing.Scripts.PlayerController.LocalInstance;
             if (_hub != null && _renderTransform == null) _renderTransform = _hub.renderRoot;
         }
 
@@ -66,7 +66,7 @@ namespace Combating.Scripts
             bool isGrounded = _hub.IsGrounded;
 
             // Handle combined movement
-            if (_hub is PlayerController playerHub)
+            if (_hub is Testing.Scripts.PlayerController playerHub)
             {
                 var propulsion = _hub.GetModule<PropulsionController>();
                 if (propulsion != null)
@@ -84,7 +84,7 @@ namespace Combating.Scripts
             }
         }
 
-        private void ApplyMovement(PlayerController player, float verticalVelocity, bool isGrounded)
+        private void ApplyMovement(Testing.Scripts.PlayerController player, float verticalVelocity, bool isGrounded)
         {
             float targetSpeed = player.sprint ? MoveSpeed * 2.5f : MoveSpeed;
             if (player.move == Vector2.zero) targetSpeed = 0.0f;

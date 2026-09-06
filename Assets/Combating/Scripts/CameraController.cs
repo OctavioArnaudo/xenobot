@@ -56,7 +56,7 @@ namespace Combating.Scripts
 
             if (_vcam == null || _vcam.LookAt == null) RefreshCameraLink();
 
-            if (_hub is PlayerController playerHub)
+            if (_hub is Testing.Scripts.PlayerController playerHub)
             {
                 if (playerHub.look.sqrMagnitude > 0.001f)
                 {

@@ -72,7 +72,7 @@ namespace Combating.Scripts
             if (_hasAnimIDVerticalVelocity) _animator.SetFloat(_animIDVerticalVelocity, _hub.VerticalVelocity);
 
             // Handle Jump trigger if Hub is Player and jump was just pressed
-            if (_hub is PlayerController player && player.jump && _hasAnimIDJump)
+            if (_hub is Testing.Scripts.PlayerController player && player.jump && _hasAnimIDJump)
             {
                 _animator.SetBool(_animIDJump, true);
             }

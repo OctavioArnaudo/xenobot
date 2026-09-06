@@ -1,151 +1,203 @@
 using UnityEngine;
+using UnityEngine.AI;
 using Unity.Netcode;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace Combating.Scripts
 {
     /// <summary>
-    /// Hardware Hub for Enemy Entities.
-    /// Manages modules and physical references for AI.
+    /// AI Logic Controller.
+    /// Manages Patrol, Pursuit, and Decision Making.
+    /// Delegates Combat to ShootController and/or MeleeController if they exist.
     /// </summary>
-    public class EnemyController : ModularController
+    public class EnemyController : NetworkBehaviour
     {
-        [Header("Enemy Library")]
-        public NetworkPrefabsList networkPrefabs;
-        public List<GameObject> enemyModules;
+        public enum AIState { Patrol, Chase, Attack }
 
-        protected override void Awake()
+        [Header("AI Config")]
+        public AIState currentState = AIState.Patrol;
+        [SerializeField] private string playerTag = "Player";
+
+        [Header("Movement")]
+        public float hoverHeight = 3.5f;
+        public float wanderSpeed = 2f;
+        public float chaseSpeed = 5f;
+        public float turnSpeed = 10f;
+        public float wanderRadius = 15f;
+
+        [Header("AI Perception & Ranges")]
+        public float detectionRange = 20f;
+        public float shootRange = 12f;
+        public float meleeRange = 2.5f;
+
+        [Header("Combat (Optional Controllers)")]
+        public ShootController m_Shooter;
+        public MeleeController m_Melee;
+        public HealthController m_Health;
+        public SpawnController m_Spawn;
+
+        private NavMeshAgent m_Agent;
+        private Transform m_Target;
+        private Vector3 _startPosition;
+
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        private bool CanExecuteLogic => !IsNetworkActive || IsServer;
+
+        void Awake()
         {
-            base.Awake();
-            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+            _startPosition = transform.position;
+            m_Agent = GetComponentInChildren<NavMeshAgent>() ?? gameObject.AddComponent<NavMeshAgent>();
+
+            if (m_Agent != null)
             {
-                InitializeComponents();
+                m_Agent.baseOffset = hoverHeight;
+                m_Agent.updateRotation = false;
             }
+
+            // Auto-detección opcional de módulos
+            if (m_Shooter == null) m_Shooter = GetComponent<ShootController>();
+            if (m_Melee == null) m_Melee = GetComponent<MeleeController>();
+            if (m_Health == null) m_Health = GetComponent<HealthController>();
+            if (m_Spawn == null) m_Spawn = GetComponent<SpawnController>();
+
+            if (m_Shooter != null) m_Shooter.UsePlayerInput = false;
         }
 
         public override void OnNetworkSpawn()
         {
-            base.OnNetworkSpawn();
-
-            if (IsServer)
-            {
-                Level.Value = 1;
-                Exp.Value = 0;
-                ExpToLevelUp.Value = 100f;
-                Attack.Value = UnityEngine.Random.Range(5f, 10f);
-                Defense.Value = UnityEngine.Random.Range(2f, 6f);
-
-                int hpBase = UnityEngine.Random.Range(65, 96);
-                if (EnemyCount > 12) hpBase = Mathf.RoundToInt(hpBase * 0.9f);
-                maxHealth.Value = hpBase;
-                currentHealth.Value = maxHealth.Value;
-            }
-
-            InitializeComponents();
+            if (!IsServer) enabled = false;
         }
 
-        private void InitializeComponents()
+        void Update()
         {
-            if (controller == null) controller = GetComponent<CharacterController>();
-            if (animator == null) animator = GetComponentInChildren<Animator>();
+            if (!CanExecuteLogic) return;
 
-            // Nos aseguramos de que el Hardware Hub tenga el NavMeshAgent si no existe
-            if (GetComponent<UnityEngine.AI.NavMeshAgent>() == null)
+            if (m_Health != null && m_Health.CurrentHP <= 0)
             {
-                gameObject.AddComponent<UnityEngine.AI.NavMeshAgent>();
+                StopMoving();
+                return;
             }
 
-            // Forced Cleaning: Enemies must not have Cameras or AudioListeners in their hierarchy
-            foreach (var cam in GetComponentsInChildren<Camera>(true))
-            {
-                Debug.Log($"[EnemyController] Sanitizing camera found in {gameObject.name} hierarchy.");
-                DestroyImmediate(cam);
-            }
-            foreach (var listener in GetComponentsInChildren<AudioListener>(true))
-            {
-                Debug.Log($"[EnemyController] Sanitizing AudioListener found in {gameObject.name} hierarchy.");
-                DestroyImmediate(listener);
-            }
-
-            RefreshBodyReferences();
-            EnsureEnemyModules();
+            FindTarget();
+            UpdateAIState();
         }
 
-        private void EnsureEnemyModules()
+        void FindTarget()
         {
-            List<GameObject> allPrefabs = new List<GameObject>();
-            if (enemyModules != null) allPrefabs.AddRange(enemyModules);
-            if (networkPrefabs != null)
+            if (m_Target != null)
             {
-                foreach (var item in networkPrefabs.PrefabList)
-                {
-                    if (item.Prefab != null) allPrefabs.Add(item.Prefab);
-                }
+                if (Vector3.Distance(transform.position, m_Target.position) > detectionRange)
+                    m_Target = null;
             }
 
-            if (allPrefabs.Count == 0) return;
-
-            foreach (var prefab in allPrefabs)
+            if (m_Target == null)
             {
-                if (prefab == null) continue;
-
-                var moduleType = GetModuleTypeFromPrefab(prefab);
-                if (moduleType == null || !IsEnemyModuleAllowed(moduleType)) continue;
-                if (GetComponentInChildren(moduleType, true) != null) continue;
-
-                GameObject instance = Instantiate(prefab, transform);
-                instance.name = prefab.name;
-
-                // Apply Hardware Sanitization
-                SanitizeModuleInstance(instance);
-
-                foreach (var module in instance.GetComponentsInChildren<IModular>(true))
+                var players = GameObject.FindGameObjectsWithTag(playerTag);
+                float closest = detectionRange;
+                foreach (var p in players)
                 {
-                    if (module is MonoBehaviour mb && !mb.enabled) continue;
-                    module.Bind(this);
-                }
-
-                if (IsServer && IsSpawned && instance.TryGetComponent<NetworkObject>(out var netObj))
-                {
-                    if (netObj.enabled) netObj.Spawn(true);
+                    float d = Vector3.Distance(transform.position, p.transform.position);
+                    if (d <= closest)
+                    {
+                        closest = d;
+                        m_Target = p.transform;
+                    }
                 }
             }
         }
 
-        private System.Type GetModuleTypeFromPrefab(GameObject prefab)
+        void UpdateAIState()
         {
-            var modular = prefab.GetComponentInChildren<IModular>(true);
-            return modular?.GetType();
+            if (m_Target != null)
+            {
+                float distance = Vector3.Distance(transform.position, m_Target.position);
+
+                // Determinamos si el enemigo puede atacar basándonos en los controladores presentes
+                bool canShoot = m_Shooter != null && distance <= shootRange;
+                bool canMelee = m_Melee != null && distance <= meleeRange;
+
+                if (canShoot || canMelee)
+                {
+                    currentState = AIState.Attack;
+                    ExecuteCombat(canShoot, canMelee);
+
+                    // Si solo puede disparar pero está lejos de melee, seguimos moviéndonos si es necesario
+                    // o nos detenemos según la lógica de ataque.
+                    // Por ahora, el ataque detiene el movimiento de navegación para precisión.
+                    StopMoving();
+                }
+                else
+                {
+                    currentState = AIState.Chase;
+                    MoveTo(m_Target.position, chaseSpeed);
+                    RotateBaseTowards(m_Target.position);
+                }
+            }
+            else
+            {
+                currentState = AIState.Patrol;
+                Wander();
+            }
         }
 
-        private bool IsEnemyModuleAllowed(System.Type moduleType)
+        void Wander()
         {
-            return moduleType == typeof(AiController)
-                || moduleType == typeof(ShootController)
-                || moduleType == typeof(SpawnController)
-                || moduleType == typeof(HealthController)
-                || moduleType == typeof(DamageController)
-                || moduleType == typeof(HealController)
-                || moduleType == typeof(DeathController)
-                || moduleType == typeof(MeleeController)
-                || moduleType == typeof(AnimationController)
-                || moduleType == typeof(TankController);
+            if (m_Agent == null || !m_Agent.isOnNavMesh || m_Agent.pathPending || m_Agent.remainingDistance > 1f) return;
+
+            Vector3 randomPos = _startPosition + Random.insideUnitSphere * wanderRadius;
+            if (NavMesh.SamplePosition(randomPos, out NavMeshHit hit, wanderRadius, 1))
+            {
+                MoveTo(hit.position, wanderSpeed);
+            }
+
+            if (m_Agent.velocity.sqrMagnitude > 0.1f)
+            {
+                RotateBaseTowards(transform.position + m_Agent.velocity);
+            }
         }
 
-        public override GameObject GetPrefabFromList(string prefabName)
+        void ExecuteCombat(bool canShoot, bool canMelee)
         {
-            if (enemyModules != null)
+            if (m_Target == null) return;
+
+            RotateBaseTowards(m_Target.position);
+
+            // Delegación directa: Cada controlador sabe qué hacer
+            if (canMelee)
             {
-                var p = enemyModules.FirstOrDefault(x => x != null && x.name == prefabName);
-                if (p != null) return p;
+                m_Melee.PerformMeleeAction(m_Target.position);
             }
-            if (networkPrefabs != null)
+
+            if (canShoot)
             {
-                var p = networkPrefabs.PrefabList.FirstOrDefault(x => x.Prefab != null && x.Prefab.name == prefabName);
-                if (p.Prefab != null) return p.Prefab;
+                m_Shooter.FireAt(m_Target.position + Vector3.up);
             }
-            return null;
+        }
+
+        void MoveTo(Vector3 position, float speed)
+        {
+            if (m_Agent != null && m_Agent.isOnNavMesh)
+            {
+                m_Agent.speed = speed;
+                m_Agent.isStopped = false;
+                m_Agent.SetDestination(position);
+            }
+        }
+
+        void StopMoving()
+        {
+            if (m_Agent != null && m_Agent.isOnNavMesh) m_Agent.isStopped = true;
+        }
+
+        void RotateBaseTowards(Vector3 position)
+        {
+            Vector3 direction = (position - transform.position);
+            direction.y = 0;
+
+            if (direction.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetYaw = Quaternion.LookRotation(direction.normalized);
+                transform.rotation = Quaternion.Slerp(transform.rotation, targetYaw, turnSpeed * Time.deltaTime);
+            }
         }
     }
 }

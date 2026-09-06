@@ -130,19 +130,19 @@ namespace Combating.Scripts
                 }
 
                 // 2. Fallback to LocalInstance if still not found
-                if (m_Target == null && PlayerController.LocalInstance != null)
+                if (m_Target == null && Testing.Scripts.PlayerController.LocalInstance != null)
                 {
-                    float d = Vector3.Distance(transform.position, PlayerController.LocalInstance.transform.position);
+                    float d = Vector3.Distance(transform.position, Testing.Scripts.PlayerController.LocalInstance.transform.position);
                     if (d <= detectionRange)
                     {
-                        m_Target = PlayerController.LocalInstance.transform;
+                        m_Target = Testing.Scripts.PlayerController.LocalInstance.transform;
                     }
                 }
 
                 // 3. Fallback: Search for any PlayerController in range if online
                 if (m_Target == null)
                 {
-                    var allPlayers = Object.FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
+                    var allPlayers = Object.FindObjectsByType<Testing.Scripts.PlayerController>(FindObjectsSortMode.None);
                     foreach (var p in allPlayers)
                     {
                         float d = Vector3.Distance(transform.position, p.transform.position);

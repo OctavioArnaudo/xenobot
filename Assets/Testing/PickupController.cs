@@ -1,8 +1,9 @@
 using UnityEngine;
 using Unity.Netcode;
 using Combating.Scripts;
+using Crafting.Scripts;
 
-namespace Crafting.Scripts
+namespace Testing.Scripts
 {
     /// <summary>
     /// Universal Pickup Controller for Xenobot.
@@ -38,13 +39,11 @@ namespace Crafting.Scripts
 
         private void CreateMasterTrigger()
         {
-            // 1. Force a trigger for player detection
             SphereCollider sc = GetComponent<SphereCollider>();
             if (sc == null) sc = gameObject.AddComponent<SphereCollider>();
             sc.isTrigger = true;
             sc.radius = 1.2f;
 
-            // 2. Ensure a solid collider for ground collision
             BoxCollider bc = GetComponent<BoxCollider>();
             if (bc == null)
             {
@@ -53,7 +52,6 @@ namespace Crafting.Scripts
                 bc.isTrigger = false;
             }
 
-            // 3. Ensure a Rigidbody for trigger detection
             Rigidbody rb = GetComponent<Rigidbody>();
             if (rb == null)
             {
@@ -105,12 +103,11 @@ namespace Crafting.Scripts
         {
             if (_taken || Time.time < _spawnTime + PICKUP_DELAY) return;
 
-            // Robust player detection: Check root and parent hierarchy
             Transform root = other.transform.root;
-            InventoryController inv = root.GetComponentInChildren<InventoryController>();
-            bool isPlayer = root.CompareTag("Player") || other.CompareTag("Player") || inv != null;
+            ModularController hub = root.GetComponentInChildren<ModularController>();
+            bool isTarget = root.CompareTag("Player") || other.CompareTag("Player") || hub != null;
 
-            if (isPlayer)
+            if (isTarget)
             {
                 if (item == null)
                 {
@@ -119,16 +116,16 @@ namespace Crafting.Scripts
                 }
 
                 _taken = true;
-                if (IsNetworkActive) ProcessPickupAuthoritative(inv, root.gameObject);
-                else ProcessPickupLocal(inv, root.gameObject);
+                if (IsNetworkActive) ProcessPickupAuthoritative(hub, root.gameObject);
+                else ProcessPickupLocal(hub, root.gameObject);
             }
         }
 
-        private void ProcessPickupAuthoritative(InventoryController inv, GameObject player)
+        private void ProcessPickupAuthoritative(ModularController hub, GameObject entity)
         {
             if (IsServer)
             {
-                ApplyReward(inv, player);
+                ApplyReward(hub, entity);
                 SpawnPickupEffectClientRpc();
 
                 NetworkObject netObj = GetComponent<NetworkObject>();
@@ -140,14 +137,14 @@ namespace Crafting.Scripts
             }
         }
 
-        private void ProcessPickupLocal(InventoryController inv, GameObject player)
+        private void ProcessPickupLocal(ModularController hub, GameObject entity)
         {
-            ApplyReward(inv, player);
+            ApplyReward(hub, entity);
             SpawnHardcodedEffect();
             Destroy(gameObject);
         }
 
-        private void ApplyReward(InventoryController inv, GameObject player)
+        private void ApplyReward(ModularController hub, GameObject entity)
         {
             if (item == null) return;
 
@@ -155,13 +152,21 @@ namespace Crafting.Scripts
             {
                 foreach(var func in GetComponentsInChildren<IItemFunctional>())
                 {
-                    func.ApplyEffect(player);
+                    func.ApplyEffect(entity);
                 }
             }
             else
             {
-                // In Red mode, inv will handle the ServerRpc call
-                InventoryController.Add(item);
+                if (hub != null)
+                {
+                    var items = hub.GetModule<InventoryController>();
+                    if (items != null) items.AddItem(item);
+                    else InventoryController.Add(item);
+                }
+                else
+                {
+                    InventoryController.Add(item);
+                }
             }
         }
 

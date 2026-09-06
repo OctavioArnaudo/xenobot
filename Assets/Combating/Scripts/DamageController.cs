@@ -15,7 +15,7 @@ namespace Combating.Scripts
         [Header("Events")]
         public UnityEvent<int> OnTakeDamage;
 
-        private HealthController _health;
+        private Testing.Scripts.HealthController _health;
         private ModularController _hub;
         private float _damageFlashTimer;
 
@@ -41,7 +41,7 @@ namespace Combating.Scripts
         {
             if (_hub != null)
             {
-                _health = _hub.GetModule<HealthController>();
+                _health = _hub.GetModule<Testing.Scripts.HealthController>();
                 visualsToFlash = _hub.renderRoot?.GetComponentsInChildren<Renderer>() ?? GetComponentsInChildren<Renderer>();
             }
         }
