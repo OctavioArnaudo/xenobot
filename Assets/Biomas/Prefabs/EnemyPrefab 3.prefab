@@ -47,14 +47,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 660682974
+  GlobalObjectIdHash: 540316229
   InScenePlacedSourceGlobalObjectIdHash: 660682974
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -82,6 +82,7 @@ MonoBehaviour:
   cameraTarget: {fileID: 0}
   activeModel: {fileID: 0}
   VerticalVelocity: 0
+  HorizontalSpeed: 0
   IsGrounded: 0
   BaseGravity: -35
   networkPrefabs: {fileID: 11400000, guid: 2fe6c7967098a65449bf54e7b56a0963, type: 2}
@@ -90,6 +91,11 @@ MonoBehaviour:
   - {fileID: 117791641144016130, guid: f0b006941ceecd545bd10deeda288d7d, type: 3}
   - {fileID: 5040821937642077840, guid: 4061e74eca20022439cb1d41afe509a4, type: 3}
   - {fileID: 6084437705818728493, guid: 876bf25b46cfb39438b05315b3bc0bc6, type: 3}
+  - {fileID: 1890924843361000837, guid: 1a606fb4eaa27074c84dc764bf5fb7e0, type: 3}
+  - {fileID: 5528267425490342881, guid: d504fe620858f8e4aa3a546e3a20857d, type: 3}
+  - {fileID: 7996806937844690050, guid: ab2f01d44bf316f49bee7017d5d33775, type: 3}
+  - {fileID: 5040821937642077841, guid: c742a2c02107a564b934378c46635cf4, type: 3}
+  - {fileID: 6861230597911714321, guid: 20352fba120d6894f891be23ffdc2c0c, type: 3}
 --- !u!195 &264542494595070658
 NavMeshAgent:
   m_ObjectHideFlags: 0

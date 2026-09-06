@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using Combating.Scripts;
 
 namespace Crafting.Scripts
 {
@@ -9,14 +10,15 @@ namespace Crafting.Scripts
     /// Requires NetworkObject and PickupController (pre-configured with Item_Key).
     /// </summary>
     [ExecuteAlways]
-    [RequireComponent(typeof(NetworkObject))]
-    [RequireComponent(typeof(PickupController))]
-    public class KeyController : MonoBehaviour
+    public class KeyController : MonoBehaviour, IItemFunctional
     {
         [Header("Visual Settings")]
         public Color keyColor = new Color(0.1f, 0.4f, 1f); // Bright Blue
         public float metallic = 0.8f;
         public float smoothness = 0.9f;
+
+        [Header("Door/Wall System")]
+        public string targetTag = "UndergroundBase";
 
         void Awake()
         {
@@ -90,6 +92,29 @@ namespace Crafting.Scripts
                 if (Application.isPlaying) Destroy(c);
                 else DestroyImmediate(c);
             }
+        }
+
+        public void ApplyEffect(GameObject entity)
+        {
+            ModularController hub = entity.GetComponent<ModularController>() ?? entity.GetComponentInParent<ModularController>();
+
+            // Only execute if this is the local player or owner
+            bool isLocal = hub != null && (!hub.IsSpawned || hub.IsOwner);
+            if (!isLocal) return;
+
+            GameObject[] walls = GameObject.FindGameObjectsWithTag(targetTag);
+            int count = 0;
+            foreach (var wall in walls)
+            {
+                var colliders = wall.GetComponentsInChildren<BoxCollider>(true);
+                foreach (var col in colliders)
+                {
+                    col.enabled = false;
+                    count++;
+                }
+            }
+
+            Debug.Log($"[KeyController] Llave usada por {entity.name}. Se han desactivado {count} colisionadores con el Tag '{targetTag}' localmente.");
         }
     }
 }

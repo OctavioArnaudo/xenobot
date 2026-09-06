@@ -4,6 +4,7 @@ using FMOD.Studio;
 using System.Collections.Generic;
 using System.Linq;
 using Combating.Scripts;
+using Crafting.Scripts;
 
 public class FmodController : MonoBehaviour
 {
@@ -80,7 +81,7 @@ public class FmodController : MonoBehaviour
     private bool EsJugadorLocal(Collider other)
     {
         if (!other.CompareTag("Player")) return false;
-        var pc = other.GetComponent<MovementController>();
+        var pc = other.GetComponent<PlayerController>();
         return pc != null ? pc.IsOwner : true;
     }
     #endregion

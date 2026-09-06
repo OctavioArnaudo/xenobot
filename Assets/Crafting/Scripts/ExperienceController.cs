@@ -10,8 +10,8 @@ namespace Crafting.Scripts
     [ExecuteAlways]
     public class ExperienceController : MonoBehaviour, IItemFunctional
     {
-        [Header("Functional Settings")]
-        public float expAmount = 20f;
+        // Economy Reliability Constants
+        private const float EXP_AMOUNT = 25f;
 
         [Header("Orb Settings")]
         public float sphereRadius = 0.5f;
@@ -26,17 +26,17 @@ namespace Crafting.Scripts
 
         public void ApplyEffect(GameObject entity)
         {
-            HudController stats = entity.GetComponent<HudController>();
-            if (stats == null)
+            LevelingController leveling = entity.GetComponent<LevelingController>();
+            if (leveling == null)
             {
-                var hub = entity.GetComponent<ModularController>();
-                if (hub != null) stats = hub.GetModule<HudController>();
+                var hub = entity.GetComponent<ModularController>() ?? entity.GetComponentInParent<ModularController>();
+                if (hub != null) leveling = hub.GetModule<LevelingController>();
             }
 
-            if (stats != null)
+            if (leveling != null)
             {
-                stats.AddExp(expAmount);
-                Debug.Log($"[ExperienceController] Otorgados {expAmount} EXP a {entity.name}.");
+                leveling.AddExp(EXP_AMOUNT);
+                Debug.Log($"[ExperienceController] Otorgados {EXP_AMOUNT} EXP a {entity.name}.");
             }
         }
 

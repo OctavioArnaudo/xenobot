@@ -5,7 +5,7 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    public class DamageController : NetworkBehaviour, IModular
+    public class DamageController : MonoBehaviour, IModular
     {
         [Header("Visual Feedback")]
         public Renderer[] visualsToFlash;
@@ -16,14 +16,12 @@ namespace Combating.Scripts
         public UnityEvent<int> OnTakeDamage;
 
         private HealthController _health;
-        private HudController _stats;
         private ModularController _hub;
         private float _damageFlashTimer;
 
         void Awake()
         {
-            _hub = GetComponentInParent<ModularController>();
-            if (_hub != null) Bind(_hub);
+            if (_hub == null) _hub = GetComponentInParent<ModularController>();
 
             if (visualsToFlash == null || visualsToFlash.Length == 0)
                 visualsToFlash = GetComponentsInChildren<Renderer>();
@@ -44,7 +42,6 @@ namespace Combating.Scripts
             if (_hub != null)
             {
                 _health = _hub.GetModule<HealthController>();
-                _stats = _hub.GetModule<HudController>();
                 visualsToFlash = _hub.renderRoot?.GetComponentsInChildren<Renderer>() ?? GetComponentsInChildren<Renderer>();
             }
         }
@@ -54,30 +51,23 @@ namespace Combating.Scripts
             if (_damageFlashTimer > 0) _damageFlashTimer -= Time.deltaTime;
         }
 
-        public void TakeDamage(int damage)
+        public void TakeDamage(int damage, Team attackerTeam = Team.Neutral)
         {
-            if (damage <= 0 || _health == null) return;
+            if (damage <= 0 || _health == null || _hub == null) return;
+
+            // Friendly fire protection
+            if (attackerTeam != Team.Neutral && _hub.MyTeam == attackerTeam) return;
 
             int finalDamage = damage;
-            if (_stats != null)
-            {
-                finalDamage = Mathf.RoundToInt(damage * (10f / (10f + _stats.Defense)));
-                if (finalDamage < 1) finalDamage = 1;
-            }
+            finalDamage = Mathf.RoundToInt(damage * (10f / (10f + _hub.Defense.Value)));
+            if (finalDamage < 1) finalDamage = 1;
 
             _health.ApplyDirectHealthChange(-finalDamage);
 
-            if (IsOwner && _health.team == Team.Player) _damageFlashTimer = 0.6f;
+            if (_hub.IsOwner && _hub.MyTeam == Team.Player) _damageFlashTimer = 0.6f;
             PlayHitFlash();
 
             OnTakeDamage?.Invoke(finalDamage);
-
-            if (_health.CurrentHP <= 0)
-            {
-                var death = GetComponent<DeathController>();
-                if (death == null && _hub != null) death = _hub.GetModule<DeathController>();
-                if (death != null) death.Die();
-            }
         }
 
         private void PlayHitFlash()
@@ -109,7 +99,7 @@ namespace Combating.Scripts
         private void OnGUI()
         {
             if (Event.current.type != EventType.Repaint) return;
-            if (!IsOwner || _health == null || _health.team != Team.Player) return;
+            if (_hub == null || !_hub.IsOwner || _hub.MyTeam != Team.Player) return;
 
             if (_damageFlashTimer > 0)
             {

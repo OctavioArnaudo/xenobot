@@ -2,10 +2,13 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using Unity.Netcode;
+using Unity.Collections;
 using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
+    public enum Team { Neutral, Player, Enemy }
+
     /// <summary>
     /// Base interface for all modules that are part of the Modular Ecosystem.
     /// Allows explicit binding with a central ModularController (Hub).
@@ -31,6 +34,27 @@ namespace Combating.Scripts
     {
         protected Dictionary<System.Type, MonoBehaviour> _registeredModules = new();
 
+        // Population Counters for Dynamic Scaling
+        public static int PlayerCount { get; private set; }
+        public static int EnemyCount { get; private set; }
+
+        public Team MyTeam { get; protected set; } = Team.Neutral;
+
+        [Header("Centralized Network State")]
+        public NetworkVariable<FixedString32Bytes> playerName = new NetworkVariable<FixedString32Bytes>(new FixedString32Bytes(""), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        public NetworkVariable<Color> playerColor = new NetworkVariable<Color>(Color.white, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+        public NetworkVariable<int> Level = new NetworkVariable<int>(1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        public NetworkVariable<float> Exp = new NetworkVariable<float>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        public NetworkVariable<float> Attack = new NetworkVariable<float>(10, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        public NetworkVariable<float> Defense = new NetworkVariable<float>(5, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        public NetworkVariable<float> ExpToLevelUp = new NetworkVariable<float>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        public NetworkVariable<int> currentHealth = new NetworkVariable<int>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        public NetworkVariable<int> maxHealth = new NetworkVariable<int>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        public NetworkVariable<float> currentFuel = new NetworkVariable<float>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        public NetworkVariable<float> maxFuel = new NetworkVariable<float>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
         [Header("Core References (Hardware)")]
         public CharacterController controller;
         public Animator animator;
@@ -49,8 +73,9 @@ namespace Combating.Scripts
 
         [Header("Shared Physical State")]
         public float VerticalVelocity;
+        public float HorizontalSpeed;
         public bool IsGrounded;
-        public float BaseGravity = -35f;
+        [HideInInspector] public float BaseGravity = -15f;
 
         public T GetModule<T>() where T : MonoBehaviour
         {
@@ -71,6 +96,28 @@ namespace Combating.Scripts
             }
         }
 
+        protected virtual void Awake()
+        {
+            DetermineMyTeam();
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            DetermineMyTeam();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (this is PlayerController) PlayerCount--;
+            else if (this is EnemyController) EnemyCount--;
+        }
+
+        protected void DetermineMyTeam()
+        {
+            if (this is PlayerController) { if (IsSpawned) PlayerCount++; MyTeam = Team.Player; }
+            else if (this is EnemyController) { if (IsSpawned) EnemyCount++; MyTeam = Team.Enemy; }
+        }
+
         public virtual void RefreshBodyReferences()
         {
             // 1. Auto-discovery of Render Root via Tag "Render"
@@ -83,7 +130,7 @@ namespace Combating.Scripts
             }
 
             // Legacy Fallbacks
-            if (renderRoot == null) renderRoot = transform.Find("PlayerRender") ?? transform.Find("Render");
+            if (renderRoot == null) renderRoot = transform.Find("PlayerRender") ?? transform.Find("EnemyRender") ?? transform.Find("Render");
 
             // Auto-discovery of Camera Target
             if (cameraTarget == null) cameraTarget = transform.Find("PlayerTarget")?.gameObject ?? transform.Find("Target")?.gameObject;
@@ -98,6 +145,11 @@ namespace Combating.Scripts
                 activeModel = renderRoot.GetComponentsInChildren<RenderController>(true)
                     .FirstOrDefault(rc => rc.transform != renderRoot)
                     ?? renderRoot.GetComponent<RenderController>();
+
+                if (activeModel == null)
+                {
+                    activeModel = renderRoot.gameObject.AddComponent<RenderController>();
+                }
 
                 if (activeModel != null)
                 {
@@ -137,6 +189,47 @@ namespace Combating.Scripts
 
         public abstract GameObject GetPrefabFromList(string prefabName);
 
+        // --- Centralized Actions (RPCs) ---
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void ApplyHealthChangeServerRpc(int amount)
+        {
+            currentHealth.Value = Mathf.Clamp(currentHealth.Value + amount, 0, maxHealth.Value);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void AddExpServerRpc(float amount)
+        {
+            var leveling = GetModule<LevelingController>();
+            if (leveling != null)
+            {
+                // Leveling logic is server-side authoritative over Hub variables
+                Exp.Value += amount;
+                while (Exp.Value >= ExpToLevelUp.Value)
+                {
+                    Exp.Value -= ExpToLevelUp.Value;
+                    Level.Value++;
+                    // Basic scaling here or call leveling module
+                    Attack.Value += 2.0f;
+                    Defense.Value += 1.5f;
+                    ExpToLevelUp.Value *= 1.2f;
+
+                    maxHealth.Value += 15;
+                    currentHealth.Value = maxHealth.Value; // Full heal on level up
+
+                    maxFuel.Value += 20f;
+                    currentFuel.Value = maxFuel.Value;
+                }
+            }
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void RequestMeleeServerRpc()
+        {
+            var melee = GetModule<MeleeController>();
+            if (melee != null) melee.ExecuteMeleeServerSide();
+        }
+
         /// <summary>
         /// Cleans up an instantiated module or equipment to prevent interference.
         /// </summary>
@@ -144,13 +237,21 @@ namespace Combating.Scripts
         {
             if (instance == null) return;
 
-            // 1. Network Safety
-            if (instance.TryGetComponent<NetworkObject>(out var netObj))
+            // 1. Remove World Interaction components that depend on NetworkObject first
+            foreach (var p in instance.GetComponentsInChildren<PickupController>(true))
             {
-                netObj.enabled = false;
+                DestroyImmediate(p);
             }
 
-            // 2. Physics Safety
+            // 2. Network Safety: Embedded modules should NOT have their own NetworkObject
+            // they should rely on the Hub's NetworkObject.
+            var netObjs = instance.GetComponentsInChildren<NetworkObject>(true);
+            foreach (var netObj in netObjs)
+            {
+                DestroyImmediate(netObj);
+            }
+
+            // 3. Physics Safety
             if (instance.TryGetComponent<Rigidbody>(out var rb))
             {
                 rb.isKinematic = true;
@@ -160,6 +261,13 @@ namespace Combating.Scripts
             foreach (var col in instance.GetComponentsInChildren<Collider>(true))
             {
                 col.isTrigger = true;
+            }
+
+            // 4. Enemy Hardware Safety: Ensure modules don't bring cameras or listeners
+            if (this is EnemyController)
+            {
+                foreach (var cam in instance.GetComponentsInChildren<Camera>(true)) DestroyImmediate(cam);
+                foreach (var listener in instance.GetComponentsInChildren<AudioListener>(true)) DestroyImmediate(listener);
             }
         }
     }

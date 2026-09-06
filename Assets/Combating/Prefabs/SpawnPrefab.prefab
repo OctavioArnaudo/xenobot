@@ -73,7 +73,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SpawnController
   ShowTopMostFoldoutHeaderGroup: 1
-  lootTable: []
+  lootTable:
+  - {fileID: 11400000, guid: d9ea5b9e700da844c9c2a3f7dd94e4a1, type: 2}
+  - {fileID: 11400000, guid: cc730feca3d9438aa9e28397df2e6fe4, type: 2}
+  - {fileID: 11400000, guid: 9c17cf8896f842ca89037bfc4f46889c, type: 2}
+  - {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
   itemsToSpawn: []
   explosionForce: 10
   spreadRadius: 2.5

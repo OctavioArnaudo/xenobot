@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.AI;
 using Unity.Netcode;
+using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
@@ -104,21 +105,52 @@ namespace Combating.Scripts
         {
             if (m_Target != null)
             {
-                if (Vector3.Distance(transform.position, m_Target.position) > detectionRange)
+                // Check if target is still valid (alive and in range)
+                var health = m_Target.GetComponentInParent<HealthController>();
+                if ((health != null && health.CurrentHP <= 0) || Vector3.Distance(transform.position, m_Target.position) > detectionRange * 1.5f)
+                {
                     m_Target = null;
+                }
             }
 
             if (m_Target == null)
             {
-                var players = GameObject.FindGameObjectsWithTag(playerTag);
-                float closest = detectionRange;
-                foreach (var p in players)
+                // 1. Try finding by tag
+                var taggedPlayers = GameObject.FindGameObjectsWithTag(playerTag);
+                float closestDist = detectionRange;
+
+                foreach (var p in taggedPlayers)
                 {
                     float d = Vector3.Distance(transform.position, p.transform.position);
-                    if (d <= closest)
+                    if (d <= closestDist)
                     {
-                        closest = d;
+                        closestDist = d;
                         m_Target = p.transform;
+                    }
+                }
+
+                // 2. Fallback to LocalInstance if still not found
+                if (m_Target == null && PlayerController.LocalInstance != null)
+                {
+                    float d = Vector3.Distance(transform.position, PlayerController.LocalInstance.transform.position);
+                    if (d <= detectionRange)
+                    {
+                        m_Target = PlayerController.LocalInstance.transform;
+                    }
+                }
+
+                // 3. Fallback: Search for any PlayerController in range if online
+                if (m_Target == null)
+                {
+                    var allPlayers = Object.FindObjectsByType<PlayerController>(FindObjectsSortMode.None);
+                    foreach (var p in allPlayers)
+                    {
+                        float d = Vector3.Distance(transform.position, p.transform.position);
+                        if (d <= detectionRange)
+                        {
+                            m_Target = p.transform;
+                            break;
+                        }
                     }
                 }
             }

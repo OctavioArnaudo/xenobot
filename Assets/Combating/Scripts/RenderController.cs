@@ -46,6 +46,11 @@ namespace Crafting.Scripts
                 if (spinePoint == null) spinePoint = FindDeepChild(transform, "Spine") ?? FindDeepChild(transform, "Chest") ?? FindDeepChild(transform, "Cuerpo");
             }
 
+            if (muzzlePoint == null)
+            {
+                muzzlePoint = FindDeepChild(transform, "Muzzle") ?? FindDeepChild(transform, "FirePoint") ?? FindDeepChild(transform, "LaunchPoint") ?? FindDeepChild(transform, "Arm_R_End");
+            }
+
             if (cameraLookAtPoint == null) cameraLookAtPoint = headPoint;
 
             // Si después de todo no hay cabeza, creamos un punto virtual a 1.6m para salvar la cámara

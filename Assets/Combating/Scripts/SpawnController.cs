@@ -2,6 +2,7 @@ using UnityEngine;
 using Unity.Netcode;
 using TMPro;
 using System.Collections.Generic;
+using System.Linq;
 using Crafting.Scripts;
 
 namespace Combating.Scripts
@@ -15,6 +16,11 @@ namespace Combating.Scripts
 
     public class SpawnController : NetworkBehaviour, IModular
     {
+        // Spawning Reliability Constants
+        private const float DropForwardOffset = 1.2f;
+        private const float DropUpOffset = 0.5f;
+        private const float DropImpulseForce = 3.0f;
+
         [Header("Spawn Settings")]
         public List<ItemData> lootTable = new List<ItemData>();
         public List<SpawnableItem> itemsToSpawn = new List<SpawnableItem>();
@@ -84,12 +90,14 @@ namespace Combating.Scripts
             }
         }
 
-        public void SpawnDroppedItem(GameObject prefab, Vector3 origin, string message = "")
+        public void SpawnDroppedItem(GameObject prefab, string message = "")
         {
             if (prefab == null) return;
-            Vector3 offset = transform.right * 1.2f + transform.up * 0.5f;
-            Vector3 spawnPos = origin + offset;
-            Vector3 impulse = (transform.right + transform.up).normalized * 3f;
+
+            // Calculate centralized spawn position
+            Vector3 spawnPos = transform.position + transform.forward * DropForwardOffset + transform.up * DropUpOffset;
+            Vector3 impulse = (transform.forward + transform.up).normalized * DropImpulseForce;
+
             SpawnSingleItem(prefab, spawnPos, message, impulse);
         }
 
@@ -128,13 +136,40 @@ namespace Combating.Scripts
 
         private void SpawnItems()
         {
+            // 1. Priority: Manual Loot from Inspector
             foreach (var item in lootTable)
             {
-                if (item != null) SpawnDroppedItem(item.itemPrefab, transform.position, item.displayName);
+                if (item != null) SpawnDroppedItem(item.itemPrefab, item.displayName);
             }
+
             foreach (var item in itemsToSpawn)
             {
-                SpawnDroppedItem(item.prefab, transform.position, item.message);
+                if (item.prefab != null) SpawnDroppedItem(item.prefab, item.message);
+            }
+
+            // 2. Dynamic Enemy Loot (Always EXP, Randomized Fuel/Life)
+            if (_hub is EnemyController)
+            {
+                // Load items from Resources
+                var allItems = Resources.LoadAll<ItemData>("");
+
+                // Always EXP (search by type or common names)
+                var expData = allItems.FirstOrDefault(x => x.type == ItemType.Experience || x.itemCode.ToLower() == "exp" || x.displayName.ToLower().Contains("exp"));
+                if (expData != null) SpawnDroppedItem(expData.itemPrefab, expData.displayName);
+
+                // Randomized Fuel (30%)
+                if (Random.value <= 0.3f)
+                {
+                    var fuelData = allItems.FirstOrDefault(x => x.itemCode.ToLower() == "fuel" || x.displayName.ToLower().Contains("fuel"));
+                    if (fuelData != null) SpawnDroppedItem(fuelData.itemPrefab, fuelData.displayName);
+                }
+
+                // Randomized Life (15%)
+                if (Random.value <= 0.15f)
+                {
+                    var lifeData = allItems.FirstOrDefault(x => x.itemCode.ToLower() == "life" || x.displayName.ToLower().Contains("life"));
+                    if (lifeData != null) SpawnDroppedItem(lifeData.itemPrefab, lifeData.displayName);
+                }
             }
         }
     }

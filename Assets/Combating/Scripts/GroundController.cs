@@ -4,12 +4,15 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    public class GroundController : NetworkBehaviour, IModular
+    [DefaultExecutionOrder(-50)]
+    public class GroundController : MonoBehaviour, IModular
     {
-        [Header("Settings")]
-        public LayerMask GroundLayers = 1;
-        public float GroundedOffset = 0.15f;
-        public float GroundedRadius = 0.25f;
+    // Physical Reliability Constants (Hardcoded to prevent inspector tampering)
+    private const float GroundedOffset = 0.14f;
+    private const float GroundedRadius = 0.28f;
+    // Smaller stick velocity to avoid forcing the CharacterController deep into the ground
+    private const float GroundStickVelocity = -0.5f;
+    private const int GroundLayers = ~0; // Everything
 
         [Header("Audio Settings")]
         public AudioClip[] FootstepAudioClips;
@@ -17,9 +20,18 @@ namespace Combating.Scripts
 
         private CharacterController _controller;
         private ModularController _hub;
+        private Collider[] _groundHits = new Collider[8];
 
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-        private bool HasPhysicsAuthority => _hub != null && (!IsNetworkActive || _hub.IsOwner);
+        [Header("Debug")]
+        public bool debugGroundChecks = false;
+
+        private bool HasPhysicsAuthority => _hub != null && (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
+
+        private void Awake()
+        {
+            // Hub will call Bind() during assembly.
+            if (_hub == null) _hub = GetComponentInParent<ModularController>();
+        }
 
         public void Bind(ModularController hub)
         {
@@ -47,18 +59,45 @@ namespace Combating.Scripts
             ApplyGravity();
         }
 
+
+
+        private bool HasExternalGroundHit(Vector3 checkPos)
+        {
+            // Use full layers mask; ignore self-colliders later by IsChildOf checks.
+            // Excluding the hub layer can hide valid ground colliders when player and ground share a layer.
+            int layerMask = GroundLayers;
+            int hitCount = Physics.OverlapSphereNonAlloc(checkPos, GroundedRadius, _groundHits, layerMask, QueryTriggerInteraction.Ignore);
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                Collider hit = _groundHits[i];
+                _groundHits[i] = null;
+
+                if (hit == null || hit.transform.IsChildOf(_hub.transform)) continue;
+                return true;
+            }
+
+            return false;
+        }
+
         private void UpdateGroundedState()
         {
+            // Position the check sphere slightly above the feet, extending downwards
             Vector3 checkPos = _hub.transform.position + Vector3.up * GroundedOffset;
-            int layerMask = GroundLayers.value & ~(1 << 3); // Ignore Player Layer
-            _hub.IsGrounded = _controller.isGrounded || Physics.CheckSphere(checkPos, GroundedRadius, layerMask, QueryTriggerInteraction.Ignore);
+            _hub.IsGrounded = _controller.isGrounded || HasExternalGroundHit(checkPos);
+
+            if (debugGroundChecks)
+            {
+                // Visual debug: draw a line and sphere representation
+                Debug.DrawLine(checkPos, checkPos - Vector3.up * (GroundedRadius + 0.1f), Color.yellow);
+            }
         }
 
         private void ApplyGravity()
         {
             if (_hub.IsGrounded)
             {
-                if (_hub.VerticalVelocity < 0) _hub.VerticalVelocity = -2f;
+                if (_hub.VerticalVelocity < 0) _hub.VerticalVelocity = GroundStickVelocity;
             }
             else
             {

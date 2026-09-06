@@ -10,6 +10,8 @@ namespace Menus.Scripts
 {
     public class VictoryMenu : MonoBehaviour
     {
+        public static VictoryMenu Instance { get; private set; }
+
         [Header("Settings")]
         public string levelsMenuScene = "LevelsMenuScene";
         public Color winColor = new Color(0f, 0.8f, 0.2f, 0.9f);
@@ -17,6 +19,12 @@ namespace Menus.Scripts
 
         private GameObject _canvasRoot;
         private bool _isDisplayed = false;
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+            Instance = this;
+        }
 
         private void Start()
         {

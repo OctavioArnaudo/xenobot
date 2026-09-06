@@ -4,21 +4,21 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    public class DoubleJumpController : NetworkBehaviour, IModular
+    public class DoubleJumpController : MonoBehaviour, IModular
     {
-        [Header("Settings")]
-        public float JumpHeight = 1.0f;
-
+        private const float JumpHeight = 1.0f;
         private ModularController _hub;
         private bool _canDoubleJump;
+
+        void Awake()
+        {
+            if (_hub == null) _hub = GetComponentInParent<ModularController>();
+        }
 
         public void Bind(ModularController hub)
         {
             _hub = hub;
-            if (_hub != null)
-            {
-                _hub.RegisterModule(this);
-            }
+            if (_hub != null) _hub.RegisterModule(this);
         }
 
         public void OnRefreshModule() { }
@@ -27,8 +27,8 @@ namespace Combating.Scripts
         {
             if (_hub == null || !(_hub is PlayerController player)) return;
 
-            bool isNetworkActive = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-            if (isNetworkActive && !player.IsOwner) return;
+            bool isOwner = (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
+            if (!isOwner) return;
 
             if (_hub.IsGrounded)
             {

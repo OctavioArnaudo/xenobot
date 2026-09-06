@@ -46,6 +46,16 @@ namespace Crafting.Scripts
         {
             transform.localPosition = new Vector3(0.4f, 1.2f, 0.2f);
             transform.localRotation = Quaternion.identity;
+
+            // Activate Shoot Module permanently
+            ModularController hub = entity.GetComponent<ModularController>() ?? entity.GetComponentInParent<ModularController>();
+            if (hub != null)
+            {
+                var shooter = hub.GetModule<ShootController>();
+                if (shooter != null) shooter.enabled = true;
+            }
+
+            Debug.Log($"[WeaponController] Sistema de disparo activado en {entity.name}.");
         }
 
         public void GenerateWeaponMesh()
