@@ -9,15 +9,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e8663d82d9e81, type: 3}
+  m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
   m_Name: Mission_03_UrbanCleanup
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   missionId: mission_03
-  title: "3. Cosecha de Energía"
-  description: "Elimina enemigos para extraer Combustible de sus restos."
+  title: "3. Cosecha de Energ\xEDa"
+  description: Elimina enemigos para extraer Combustible de sus restos.
   mode: 2
   isFinalMission: 0
-  requiredLocation: "Ciudad"
+  requiredLocation: Ciudad
   requiredMissionIds:
   - mission_02
   gatheringRequirements:
@@ -25,4 +25,4 @@ MonoBehaviour:
     amount: 3
   craftingRequirements: []
   requiredSkillIds: []
-  missionPrefab: {fileID: 0}
+  missionPrefab: {fileID: 300001, guid: 08809094878a481d9df81595cff85401, type: 3}

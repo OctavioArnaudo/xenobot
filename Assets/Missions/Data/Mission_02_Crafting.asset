@@ -13,14 +13,14 @@ MonoBehaviour:
   m_Name: Mission_02_Crafting
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   missionId: mission_02
-  title: "2. Elección Tecnológica"
-  description: "Ve al laboratorio. Usa el Hierro para craftear el Arma O el Jetpack."
+  title: "2. Elecci\xF3n Tecnol\xF3gica"
+  description: Ve al laboratorio. Usa el Hierro para craftear el Arma O el Jetpack.
   mode: 2
   isFinalMission: 0
-  requiredLocation: "Laboratorio"
+  requiredLocation: Laboratorio
   requiredMissionIds:
   - mission_01
   gatheringRequirements: []
   craftingRequirements: []
   requiredSkillIds: []
-  missionPrefab: {fileID: 0}
+  missionPrefab: {fileID: 200001, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}

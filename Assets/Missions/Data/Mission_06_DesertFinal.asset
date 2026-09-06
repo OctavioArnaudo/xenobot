@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: Mission_06_DesertFinal
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   missionId: mission_06
-  title: "6. Preparación Final"
-  description: "Busca la Llave en la ciudad. Recoge 5 Estrellas para craftear la Fuente de Energía."
+  title: "6. Preparaci\xF3n Final"
+  description: "Busca la Llave en la ciudad. Recoge 5 Estrellas para craftear la
+    Fuente de Energ\xEDa."
   mode: 2
   isFinalMission: 0
-  requiredLocation: "Centro Ciudad"
+  requiredLocation: Centro Ciudad
   requiredMissionIds:
   - mission_05
   gatheringRequirements:
@@ -29,4 +30,4 @@ MonoBehaviour:
   - item: {fileID: 11400000, guid: 9f41a1c295b64338a231ce89c6aa91e6, type: 2}
     amount: 1
   requiredSkillIds: []
-  missionPrefab: {fileID: 0}
+  missionPrefab: {fileID: 600001, guid: 956e200413c54fcba7ca946c3c670ff5, type: 3}
