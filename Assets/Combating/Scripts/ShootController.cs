@@ -117,6 +117,9 @@ namespace Combating.Scripts
         {
             if (m_Player == null) return false;
 
+            // Block firing if inventory or crafting is open
+            if (InventoryController.LocalInstance != null && Cursor.visible) return false;
+
             bool inputActive = HoldToFire ? m_Player.fireHeld : m_Player.fire;
 
             // Mouse fallback for robustness

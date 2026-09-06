@@ -37,6 +37,10 @@ namespace Combating.Scripts
         public void OnAttack(InputValue value)
         {
             if (!value.isPressed || Time.time < m_NextAttackTime) return;
+
+            // Block melee if inventory or menus are open
+            if (Cursor.visible) return;
+
             PerformMeleeAction();
         }
 

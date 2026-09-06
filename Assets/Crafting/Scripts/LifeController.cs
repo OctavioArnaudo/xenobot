@@ -46,16 +46,17 @@ namespace Crafting.Scripts
 
         public void ApplyEffect(GameObject entity)
         {
-            HealController heal = entity.GetComponent<HealController>();
-            if (heal == null)
-            {
-                var hub = entity.GetComponent<ModularController>() ?? entity.GetComponentInParent<ModularController>();
-                if (hub != null) heal = hub.GetModule<HealController>();
-            }
+            // Pure functionality: use HealthController directly
+            HealthController health = entity.GetComponent<HealthController>() ?? entity.GetComponentInParent<HealthController>();
 
-            if (heal != null)
+            if (health != null)
             {
-                heal.Heal(HEAL_AMOUNT);
+                health.Heal(HEAL_AMOUNT);
+                Debug.Log($"[LifeController] Healed {HEAL_AMOUNT} HP to {entity.name}.");
+            }
+            else
+            {
+                Debug.LogWarning($"[LifeController] No HealthController found on {entity.name}");
             }
         }
 

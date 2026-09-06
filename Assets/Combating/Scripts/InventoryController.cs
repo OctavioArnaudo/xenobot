@@ -260,7 +260,8 @@ namespace Crafting.Scripts
         private void SetOpen(bool open)
         {
             _open = open;
-            if (_playerInput != null) _playerInput.enabled = !open;
+            // Keep PlayerInput enabled to maintain mouse focus,
+            // Combat scripts now block themselves via Cursor.visible check
             Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = open;
         }
@@ -375,11 +376,16 @@ namespace Crafting.Scripts
         {
             if (item == null) return;
 
+            // Use item if it's explicitly marked as usable OR if it belongs to functional types
+            bool isUsableType = item.canUse ||
+                               item.type == ItemType.Consumable ||
+                               item.type == ItemType.KeyItem;
+
             if (item.type == ItemType.Equipment)
             {
                 ToggleEquipment(item);
             }
-            else if (item.canUse)
+            else if (isUsableType)
             {
                 ApplyConsumableEffect(item);
                 int hash = item.GetItemHashCode();

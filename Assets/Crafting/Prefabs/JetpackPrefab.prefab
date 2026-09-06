@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 8852671808814816536}
   - component: {fileID: 4151111184668260186}
   - component: {fileID: 8801186986259429418}
-  - component: {fileID: 8488407997443907914}
   m_Layer: 0
   m_Name: JetpackPrefab
   m_TagString: Untagged
@@ -94,24 +93,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.JetpackController
   jetpackColor: {r: 0.3, g: 0.3, b: 0.4, a: 1}
   jetpackScale: 1
---- !u!114 &8488407997443907914
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4811940099931562289}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2a1f0ccf9aa977047af3b55cf76893f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.PropulsionController
-  jetpackForce: 60
-  hoverForce: 25
-  fuelConsumption: 30
-  fuelRegen: 15
-  maxUpwardVelocity: 12
-  hoverThreshold: 0.5
 --- !u!1 &5510095078141222907
 GameObject:
   m_ObjectHideFlags: 0
