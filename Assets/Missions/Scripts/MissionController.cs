@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
+using Crafting.Scripts;
 
 namespace Missions.Scripts
 {
@@ -12,34 +13,29 @@ namespace Missions.Scripts
     {
         public enum TriggerMode { StartMission, CompleteMission }
 
-        [Header("Configuración")]
-        public TriggerMode mode = TriggerMode.StartMission;
-        public string targetNameOrId;
+        [Header("Override Message (Optional)")]
+        public string customTitle;
+        [TextArea] public string customDescription;
 
         private void OnTriggerEnter(Collider other)
         {
             if (!other.CompareTag("Player")) return;
 
-            // Verificamos si es el jugador local o si estamos en modo offline
             var networkObj = other.GetComponent<NetworkObject>();
             bool isLocalPlayer = (networkObj == null) || networkObj.IsLocalPlayer;
 
             if (isLocalPlayer)
             {
-                if (MissionsManager.Instance == null)
+                if (MissionsManager.Instance != null)
                 {
-                    Debug.LogWarning("[MissionsComponent] No se encontró MissionsManager en la escena.");
-                    return;
-                }
+                    // If we have a custom message, show it
+                    if (!string.IsNullOrEmpty(customTitle))
+                    {
+                        MissionsManager.Instance.ShowMessage(customTitle, customDescription);
+                    }
 
-                if (mode == TriggerMode.StartMission)
-                {
-                    MissionsManager.Instance.CheckLocation(targetNameOrId);
-                }
-                else
-                {
-                    // Usa el método híbrido del Manager
-                    MissionsManager.Instance.CompleteMission(targetNameOrId);
+                    // Force a flow update
+                    // MissionsManager will automatically determine the next mission based on inventory
                 }
             }
         }
