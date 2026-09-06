@@ -7,7 +7,7 @@ using Unity.Netcode;
 using Combating.Scripts;
 using Crafting.Scripts;
 
-namespace Crafting.Scripts
+namespace Testing.Scripts
 {
     public struct NetworkInventorySlot : INetworkSerializable, IEquatable<NetworkInventorySlot>
     {
@@ -25,10 +25,30 @@ namespace Crafting.Scripts
         public override int GetHashCode() => HashCode.Combine(itemHash, quantity);
     }
 
-    [RequireComponent(typeof(SpawnController))]
-    public class InventoryController : NetworkBehaviour
+    public class InventoryController : NetworkBehaviour, IModular
     {
         public static InventoryController LocalInstance { get; private set; }
+
+        private ModularController _hub;
+
+        public void Bind(ModularController hub)
+        {
+            _hub = hub;
+            if (_hub != null)
+            {
+                _hub.RegisterModule(this);
+                OnRefreshModule();
+            }
+        }
+
+        public void OnRefreshModule()
+        {
+            if (_hub != null)
+            {
+                _playerInput = _hub.GetComponent<PlayerInput>();
+                _spawnController = _hub.GetModule<SpawnController>();
+            }
+        }
 
         [Header("Network Data")]
         public NetworkList<NetworkInventorySlot> NetworkBag;
@@ -54,7 +74,6 @@ namespace Crafting.Scripts
 
         [Header("Database & Settings")]
         public List<ItemData> itemDatabase;
-        public float dropDistance = 3.5f;
 
         private static int s_CollectiblesRemaining = 0;
         private static bool s_CountDirty = true;
@@ -69,7 +88,6 @@ namespace Crafting.Scripts
 
         PlayerInput _playerInput;
         SpawnController _spawnController;
-        HealthController _health;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
         private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
@@ -80,23 +98,24 @@ namespace Crafting.Scripts
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
             {
                 LocalInstance = this;
-                InitializeComponents();
             }
         }
 
         public override void OnNetworkSpawn()
         {
-            InitializeComponents();
             if (IsOwner) LocalInstance = this;
+
+            _hub = GetComponentInParent<ModularController>();
+            if (_hub != null) Bind(_hub);
+
             NetworkBag.OnListChanged += (changeEvent) => RefreshLocalCache();
             RefreshLocalCache();
         }
 
-        private void InitializeComponents()
+        public GameObject GetPrefabFromList(string prefabName)
         {
-            _playerInput = GetComponent<PlayerInput>();
-            _spawnController = GetComponent<SpawnController>();
-            _health = GetComponent<HealthController>();
+            if (_hub == null) return null;
+            return _hub.GetPrefabFromList(prefabName);
         }
 
         private void RefreshLocalCache()
@@ -224,12 +243,23 @@ namespace Crafting.Scripts
             }
         }
 
+        public void AddItem(ItemData def)
+        {
+            int hash = def.GetItemHashCode();
+            if (IsNetworkActive)
+            {
+                if (IsOwner) AddItemServerRpc(hash, 1);
+                else if (IsServer) InternalAddItem(hash, 1);
+            }
+            else
+            {
+                InternalAddItem(hash, 1);
+            }
+        }
+
         public static void Add(ItemData def)
         {
-            if (LocalInstance == null) return;
-            int hash = def.GetItemHashCode();
-            if (LocalInstance.IsNetworkActive) LocalInstance.AddItemServerRpc(hash, 1);
-            else LocalInstance.InternalAddItem(hash, 1);
+            if (LocalInstance != null) LocalInstance.AddItem(def);
         }
 
         public static void RemoveItem(string key)
@@ -287,19 +317,22 @@ namespace Crafting.Scripts
             }
         }
 
-        public void DrawInventoryUI(Rect panel, string title)
+        public void DrawInventoryUI(Rect panel, string title, bool showCloseButton = true)
         {
             EnsureStyles();
             GUI.DrawTexture(panel, _texPanel);
             GUI.Label(new Rect(panel.x, panel.y + 10, panel.width, titleH), title, _titleSty);
-            if (GUI.Button(new Rect(panel.xMax - 50, panel.y + 15, 35, 35), "X", _btnSty)) SetOpen(false);
+            if (showCloseButton && GUI.Button(new Rect(panel.xMax - 50, panel.y + 15, 35, 35), "X", _btnSty)) SetOpen(false);
+
+            // Dynamic columns calculation based on provided width
+            int cols = Mathf.Max(1, Mathf.FloorToInt((panel.width - (padding * 2)) / (cellSize + 10)));
 
             int i = 0;
             foreach (var key in _localKeys.ToArray())
             {
                 if (!_localBag.TryGetValue(key, out var slot)) continue;
-                Rect cell = new Rect(panel.x + padding + (i % columns) * (cellSize + 10),
-                                     panel.y + titleH + (i / columns) * (cellSize + 40), cellSize, cellSize);
+                Rect cell = new Rect(panel.x + padding + (i % cols) * (cellSize + 10),
+                                     panel.y + titleH + (i / cols) * (cellSize + 40), cellSize, cellSize);
 
                 bool isOver = cell.Contains(Event.current.mousePosition);
                 GUI.DrawTexture(cell, isOver ? _texSelected : _texNormal);
@@ -309,13 +342,19 @@ namespace Crafting.Scripts
                 Rect btnArea = new Rect(cell.x, cell.yMax + 2, cell.width, 35);
                 int hash = slot.def.GetItemHashCode();
                 bool isEquipped = _equippedInstances.ContainsKey(hash);
+
+                string code = slot.def.itemCode.ToLowerInvariant();
+                bool isConsumable = slot.def.canUse || slot.def.type == ItemType.Consumable || slot.def.type == ItemType.Experience || code == "life" || code == "fuel";
+                bool isMaterial = slot.def.type == ItemType.Resource || code == "iron" || code == "key";
+
                 string actionText = isEquipped ? "QUIT" : "USE";
 
-                if (slot.def.canUse || slot.def.type == ItemType.Equipment)
+                if (slot.def.type == ItemType.Equipment || isConsumable || isMaterial)
                 {
                     if (GUI.Button(new Rect(btnArea.x, btnArea.y, btnArea.width * 0.5f, 30), actionText, _btnSty)) UseItem(slot.def);
                 }
-                if (GUI.Button(new Rect(btnArea.x + (slot.def.canUse || slot.def.type == ItemType.Equipment ? btnArea.width * 0.5f : 0), btnArea.y, slot.def.canUse || slot.def.type == ItemType.Equipment ? btnArea.width * 0.5f : btnArea.width, 30), "DROP", _btnSty)) DropItem(slot.def);
+                if (GUI.Button(new Rect(btnArea.x + (slot.def.type == ItemType.Equipment || isConsumable || isMaterial ? btnArea.width * 0.5f : 0), btnArea.y, slot.def.type == ItemType.Equipment || isConsumable || isMaterial ? btnArea.width * 0.5f : btnArea.width, 30), "DROP", _btnSty)) DropItem(slot.def);
+
 
                 if (isOver && Event.current.type == EventType.MouseDown && Event.current.button == 0) { _draggedItem = slot.def; Event.current.Use(); }
                 i++;
@@ -365,16 +404,25 @@ namespace Crafting.Scripts
         {
             if (item == null) return;
 
+            string code = item.itemCode.ToLowerInvariant();
+            bool isConsumable = item.type == ItemType.Consumable || item.type == ItemType.Experience || code == "life" || code == "fuel";
+            bool isMaterial = item.type == ItemType.Resource || code == "iron" || code == "key";
+
             if (item.type == ItemType.Equipment)
             {
                 ToggleEquipment(item);
             }
-            else if (item.canUse)
+            else if (item.canUse || isConsumable || isMaterial)
             {
                 ApplyConsumableEffect(item);
-                int hash = item.GetItemHashCode();
-                if (IsNetworkActive) RemoveItemServerRpc(hash, 1);
-                else InternalRemoveItem(hash, 1);
+
+                // Consumables are removed on use, materials just run their "ADD" logic if any
+                if (isConsumable)
+                {
+                    int hash = item.GetItemHashCode();
+                    if (IsNetworkActive) RemoveItemServerRpc(hash, 1);
+                    else InternalRemoveItem(hash, 1);
+                }
             }
         }
 
@@ -391,28 +439,21 @@ namespace Crafting.Scripts
             }
             else
             {
-                if (item.itemPrefab != null)
+                GameObject prefab = item.itemPrefab;
+                if (prefab == null) prefab = GetPrefabFromList(item.itemCode);
+
+                if (prefab != null)
                 {
-                    GameObject instance = Instantiate(item.itemPrefab, transform);
+                    Transform attachRoot = _hub != null ? _hub.transform : transform;
+                    GameObject instance = Instantiate(prefab, attachRoot);
                     _equippedInstances[hash] = instance;
 
-                    // New rule: Only show meshes if the prefab has a CostumeController
-                    bool hasVisualModule = instance.GetComponentInChildren<CostumeController>() != null;
-                    if (!hasVisualModule)
-                    {
-                        foreach(var r in instance.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
-                    }
-
-                    if (instance.TryGetComponent<PickupController>(out var p)) DestroyImmediate(p);
-                    if (instance.TryGetComponent<Rigidbody>(out var rb)) DestroyImmediate(rb);
-                    if (instance.TryGetComponent<NetworkObject>(out var no)) DestroyImmediate(no);
-
-                    // Always disable colliders on equipment to avoid player physics glitches
-                    foreach (var c in instance.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+                    // Use Hub Sanitization to remove NetworkObject, PickupController and fix physics
+                    if (_hub != null) _hub.SanitizeModuleInstance(instance);
 
                     foreach (var func in instance.GetComponentsInChildren<IItemFunctional>())
                     {
-                        func.ApplyEffect(gameObject);
+                        func.ApplyEffect(attachRoot.gameObject);
                     }
 
                     if (IsOwner && item.itemCode.ToLower().Contains("weapon"))
@@ -420,7 +461,7 @@ namespace Crafting.Scripts
                 }
             }
 
-            GetComponent<PlayerController>()?.RefreshFunctionalComponents();
+            (_hub != null ? _hub.GetModule<MovementController>() : GetComponent<MovementController>())?.RefreshFunctionalComponents();
         }
 
         private void ApplyConsumableEffect(ItemData item)
@@ -429,9 +470,11 @@ namespace Crafting.Scripts
             {
                 GameObject temp = Instantiate(item.itemPrefab);
                 temp.SetActive(false);
+
+                // Execute all functional effects defined on the item prefab
                 foreach (var func in temp.GetComponentsInChildren<IItemFunctional>())
                 {
-                    func.ApplyEffect(gameObject);
+                    func.ApplyEffect(_hub != null ? _hub.gameObject : gameObject);
                 }
                 Destroy(temp);
             }
@@ -447,24 +490,22 @@ namespace Crafting.Scripts
                 ToggleEquipment(item);
             }
 
-            Vector3 dropPos = transform.position + transform.right * 1.5f + transform.up * 0.5f;
-
-            if (IsNetworkActive) DropItemServerRpc(hash, dropPos);
+            if (IsNetworkActive) DropItemServerRpc(hash);
             else
             {
                 InternalRemoveItem(hash, 1);
-                if (_spawnController != null) _spawnController.SpawnDroppedItem(item.itemPrefab, transform.position, item.displayName);
+                if (_spawnController != null) _spawnController.SpawnDroppedItem(item.itemPrefab, item.displayName);
             }
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        public void DropItemServerRpc(int hash, Vector3 position)
+        public void DropItemServerRpc(int hash)
         {
             ItemData data = GetItemDataByHash(hash);
             if (data != null)
             {
                 InternalRemoveItem(hash, 1);
-                if (_spawnController != null) _spawnController.SpawnDroppedItem(data.itemPrefab, transform.position, data.displayName);
+                if (_spawnController != null) _spawnController.SpawnDroppedItem(data.itemPrefab, data.displayName);
             }
         }
 

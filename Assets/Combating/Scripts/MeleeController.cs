@@ -1,70 +1,54 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Unity.Netcode;
-using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    public class MeleeController : MonoBehaviour, IModular
+    /// <summary>
+    /// Melee attack system.
+    /// Manages its own rotation and execution logic.
+    /// Works for both Players and AI Enemies.
+    /// </summary>
+    public class MeleeController : NetworkBehaviour
     {
         [Header("Settings")]
         public float attackRange = 2.5f;
         public float attackDamage = 35f;
         public float attackCooldown = 1f;
-        public LayerMask targetLayers = 72; // Default to Player (3) and Enemy (6)
+        public LayerMask targetLayers;
 
         [Header("Visuals")]
         public ProjectileController swingVfxPrefab;
         public Renderer[] visualsToRotate;
         public float rotationSpeed = 10f;
 
-        private ModularController _hub;
-        private AnimationController _anim;
+        private HealthController m_Health;
         private float m_NextAttackTime;
+
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
         void Awake()
         {
-            if (_hub == null) _hub = GetComponentInParent<ModularController>();
-
+            m_Health = GetComponent<HealthController>();
             if (visualsToRotate == null || visualsToRotate.Length == 0)
                 visualsToRotate = GetComponentsInChildren<Renderer>();
         }
 
-        public void Bind(ModularController hub)
+        public void OnAttack(InputValue value)
         {
-            _hub = hub;
-            if (_hub != null)
-            {
-                _hub.RegisterModule(this);
-
-                if (_hub is PlayerController) attackDamage = Random.Range(35f, 51f);
-                else if (_hub is EnemyController) attackDamage = Random.Range(15f, 26f);
-
-                OnRefreshModule();
-            }
+            if (!value.isPressed || Time.time < m_NextAttackTime) return;
+            PerformMeleeAction();
         }
 
-        public void OnRefreshModule()
-        {
-            if (_hub != null)
-            {
-                _anim = _hub.GetModule<AnimationController>();
-                visualsToRotate = _hub.renderRoot?.GetComponentsInChildren<Renderer>() ?? GetComponentsInChildren<Renderer>();
-            }
-        }
-
-        private void Update()
-        {
-            if (_hub != null && _hub is PlayerController player && player.fire && Time.time >= m_NextAttackTime)
-            {
-                PerformMeleeAction();
-                player.fire = false;
-            }
-        }
-
+        /// <summary>
+        /// Main method to perform the melee action.
+        /// Can optionally look at a target position.
+        /// </summary>
         public void PerformMeleeAction(Vector3? targetPosition = null)
         {
             if (Time.time < m_NextAttackTime) return;
 
+            // How to attack: Rotate + Execute
             if (targetPosition.HasValue)
             {
                 RotateVisualsTowards(targetPosition.Value);
@@ -72,15 +56,13 @@ namespace Combating.Scripts
 
             m_NextAttackTime = Time.time + attackCooldown;
 
-            if (_anim != null) _anim.TriggerMeleeAttack();
-
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            if (IsNetworkActive)
             {
-                if (_hub.IsOwner) _hub.RequestMeleeServerRpc();
+                if (IsOwner) RequestMeleeServerRpc();
             }
             else
             {
-                ExecuteMeleeServerSide();
+                ExecuteMelee();
             }
         }
 
@@ -99,33 +81,67 @@ namespace Combating.Scripts
             }
         }
 
-        public void ExecuteMeleeServerSide()
+        [ServerRpc]
+        private void RequestMeleeServerRpc()
+        {
+            ExecuteMelee();
+        }
+
+        private void ExecuteMelee()
         {
             float finalDamage = attackDamage;
-            if (_hub != null)
+
+            // Stats integration robust check
+            var stats = GetComponent<StatsController>() ?? GetComponentInParent<StatsController>();
+            if (stats != null)
             {
-                finalDamage = attackDamage * (_hub.Attack.Value / 10f);
+                finalDamage = attackDamage * (stats.Attack / 10f);
             }
 
+            // 1. Physical Detection
             Vector3 attackCenter = transform.position + transform.forward * (attackRange * 0.5f);
             Collider[] hits = Physics.OverlapSphere(attackCenter, attackRange, targetLayers);
 
             foreach (Collider hit in hits)
             {
-                var targetHealth = hit.GetComponentInParent<PlayerController>();
+                var targetHealth = hit.GetComponentInParent<HealthController>();
                 if (targetHealth != null)
                 {
-                    if (targetHealth.MyTeam == _hub.MyTeam && _hub.MyTeam != Team.Neutral) continue;
-                    var targetDamage = hit.GetComponentInParent<DamageController>();
-                    if (targetDamage != null) targetDamage.TakeDamage((int)finalDamage, _hub.MyTeam);
+                    if (m_Health != null && targetHealth.team == m_Health.team) continue;
+                    targetHealth.TakeDamage((int)finalDamage);
                 }
             }
 
+            // 2. Animator Trigger safely
+            Animator anim = GetComponentInChildren<Animator>();
+            if (anim != null)
+            {
+                if (HasParameter(anim, "meleeAttack"))
+                {
+                    anim.SetTrigger("meleeAttack");
+                }
+            }
+
+            // 3. Visual Effects
             if (swingVfxPrefab != null)
             {
                 ProjectileController vfx = Instantiate(swingVfxPrefab, transform.position + transform.forward, transform.rotation);
-                vfx.Launch(_hub.gameObject, transform.forward, 0f, _hub.MyTeam);
+                vfx.Launch(gameObject, transform.forward, 0f, m_Health != null ? m_Health.team : Team.Neutral);
             }
+        }
+
+        private bool HasParameter(Animator animator, string paramName)
+        {
+            foreach (AnimatorControllerParameter param in animator.parameters)
+                if (param.name == paramName) return true;
+            return false;
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            Gizmos.color = Color.red;
+            Vector3 attackCenter = transform.position + transform.forward * (attackRange * 0.5f);
+            Gizmos.DrawWireSphere(attackCenter, attackRange);
         }
     }
 }

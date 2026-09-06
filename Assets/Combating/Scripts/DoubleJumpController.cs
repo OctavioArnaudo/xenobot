@@ -1,6 +1,5 @@
 using UnityEngine;
 using Unity.Netcode;
-using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
@@ -25,7 +24,7 @@ namespace Combating.Scripts
 
         private void Update()
         {
-            if (_hub == null || !(_hub is PlayerController player)) return;
+            if (_hub == null || !(_hub is Testing.Scripts.PlayerController player)) return;
 
             bool isOwner = (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
             if (!isOwner) return;
