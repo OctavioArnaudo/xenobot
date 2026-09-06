@@ -24,45 +24,7 @@ ModelImporter:
       that will be discarded.\n\nClip 'Cannon_shot_v4 (bigger missile) 24f. ' has
       import animation warnings that might lower retargeting quality:\n\t'upper_arm.L'
       has scale animation that will be discarded.\n"
-    animationRetargetingWarnings: "\nRetargeting quality report for clip 'Walk 15f':\n\tLeftFoot
-      average position error 0.1 mm and maximum position error 1.7 mm at time 0:
-      0 (0.0%) Frame 0\n\tLeftHand average position error 0.6 mm and maximum position
-      error 1.9 mm at time 0: 2 (13.3%) Frame 2\n\tRightHand average position error
-      0.4 mm and maximum position error 1.9 mm at time 0: 8 (53.3%) Frame 8\n\nRetargeting
-      quality report for clip 'Jump_front 28f':\n\tRightFoot average position error
-      0.2 mm and maximum position error 1.0 mm at time 1: 4 (100.0%) Frame 28\n\nRetargeting
-      quality report for clip 'Mele 18f':\n\tLeftFoot average position error 0.4
-      mm and maximum position error 6.6 mm at time 0: 0 (0.0%) Frame 0\n\tRightFoot
-      average position error 4.0 mm and maximum position error 7.6 mm at time 0:
-      3 (16.7%) Frame 3\n\tRightHand average position error 0.3 mm and maximum position
-      error 1.4 mm at time 0:11 (61.1%) Frame 11\n\nRetargeting quality report for
-      clip 'Cannon_shot 24f':\n\tLeftFoot average position error 4.2 mm and maximum
-      position error 6.6 mm at time 1: 2 (100.0%) Frame 26\n\tRightFoot average position
-      error 2.8 mm and maximum position error 7.6 mm at time 0: 5 (19.2%) Frame 5\n\tLeftHand
-      average position error 1.0 mm and maximum position error 9.2 mm at time 0:
-      4 (15.4%) Frame 4\n\nRetargeting quality report for clip 'Cannon_shot_v2 24f':\n\tLeftFoot
-      average position error 4.2 mm and maximum position error 6.6 mm at time 1:
-      2 (100.0%) Frame 26\n\tRightFoot average position error 2.8 mm and maximum
-      position error 7.6 mm at time 0: 5 (19.2%) Frame 5\n\tLeftLowerArm average
-      position error 43.0 mm and maximum position error 289.5 mm at time 0:20 (76.9%)
-      Frame 20\n\tLeftHand average position error 91.7 mm and maximum position error
-      611.7 mm at time 0:20 (76.9%) Frame 20\n\nRetargeting quality report for clip
-      'Cannon_shot_v3 24f':\n\tLeftFoot average position error 4.2 mm and maximum
-      position error 6.6 mm at time 1: 2 (100.0%) Frame 26\n\tRightFoot average position
-      error 2.8 mm and maximum position error 7.6 mm at time 0: 5 (19.2%) Frame 5\n\tLeftLowerArm
-      average position error 104.8 mm and maximum position error 310.1 mm at time
-      0:15 (57.7%) Frame 15\n\tLeftHand average position error 222.2 mm and maximum
-      position error 655.3 mm at time 0:15 (57.7%) Frame 15\n\nRetargeting quality
-      report for clip 'Cannon_shot_v4 (bigger missile) 24f. ':\n\tLeftFoot average
-      position error 4.2 mm and maximum position error 6.6 mm at time 1: 2 (100.0%)
-      Frame 26\n\tRightFoot average position error 2.8 mm and maximum position error
-      7.6 mm at time 0: 5 (19.2%) Frame 5\n\tLeftLowerArm average position error
-      157.6 mm and maximum position error 507.7 mm at time 0:15 (57.7%) Frame 15\n\tLeftHand
-      average position error 333.8 mm and maximum position error 1072.8 mm at time
-      0:15 (57.7%) Frame 15\n\nRetargeting quality report for clip 'Stun x Hit 23f':\n\tLeftFoot
-      average position error 0.3 mm and maximum position error 6.6 mm at time 0:
-      0 (0.0%) Frame 0\n\tRightFoot average position error 0.8 mm and maximum position
-      error 7.6 mm at time 0: 0 (0.0%) Frame 0\n"
+    animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
     importConstraints: 0
@@ -165,7 +127,7 @@ ModelImporter:
       name: Cannon_shot 24f
       takeName: Cannon_shot 24f
       internalID: 7515849041465806901
-      firstFrame: 0
+      firstFrame: 10
       lastFrame: 26
       wrapMode: 0
       orientationOffsetY: 0
