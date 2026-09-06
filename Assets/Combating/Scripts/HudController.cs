@@ -111,8 +111,24 @@ public class StatsController : NetworkBehaviour
     public void UpdateVisuals()
     {
         ValidateVisualComponents();
-        if (_aureoleRoot != null) _aureoleRoot.gameObject.SetActive(IsNetworkActive);
-        if (nameTagText != null) nameTagText.text = playerName.Value.ToString();
+        // Allow aureole in both online and offline mode for testing/single player
+        if (_aureoleRoot != null) _aureoleRoot.gameObject.SetActive(true);
+
+        string dName = "";
+
+        if (IsNetworkActive)
+        {
+            dName = playerName.Value.ToString();
+        }
+        else
+        {
+            // Offline/Local mode: Try config first, then default
+            dName = LocalUserConfig.UserName;
+        }
+
+        if (string.IsNullOrEmpty(dName)) dName = "PLAYER";
+
+        if (nameTagText != null) nameTagText.text = dName;
     }
 
     private void ValidateVisualComponents()
@@ -212,11 +228,11 @@ public class StatsController : NetworkBehaviour
 
     void OnGUI()
     {
-        if (Event.current.type != EventType.Repaint) return; // Optimization: only run on repaint
+        if (Event.current.type != EventType.Repaint) return;
         if (SceneManager.GetActiveScene().name != "BiomaScene") return;
 
-        // Pure functional check: Only draw for the owner of the local player prefab
-        if (!IsOwner) return;
+        // Use CanExecuteLocalLogic to allow HUD in offline mode or as owner
+        if (!CanExecuteLocalLogic) return;
 
         EnsureAssets();
 

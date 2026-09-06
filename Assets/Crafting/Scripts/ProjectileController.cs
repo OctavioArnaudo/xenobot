@@ -109,8 +109,8 @@ namespace Combating.Scripts
             // Ignore our own owner and their children
             if (m_Owner != null && (other.gameObject == m_Owner || other.transform.IsChildOf(m_Owner.transform))) return;
 
-            // Check if target has health
-            var targetHealth = other.GetComponentInParent<Testing.Scripts.PlayerController>();
+            // Robust Health detection
+            HealthController targetHealth = other.GetComponentInParent<HealthController>() ?? other.GetComponent<HealthController>();
 
             // If it's a trigger but has no health, ignore it (it's likely a zone or another projectile)
             if (other.isTrigger && targetHealth == null) return;
@@ -118,13 +118,14 @@ namespace Combating.Scripts
             if (targetHealth != null)
             {
                 // Friendly fire check
-                if (targetHealth.MyTeam == m_OwnerTeam && m_OwnerTeam != Team.Neutral) return;
+                if (targetHealth.team == m_OwnerTeam && m_OwnerTeam != Team.Neutral) return;
 
                 m_HasHit = true;
 
+                // Priority: Use DamageController if exists, else HealthController directly
                 var damageCtrl = targetHealth.GetComponent<DamageController>();
                 if (damageCtrl != null) damageCtrl.TakeDamage((int)damage, m_OwnerTeam);
-                else targetHealth.ApplyHealthChangeServerRpc(-(int)damage);
+                else targetHealth.TakeDamage((int)damage);
             }
             else
             {
