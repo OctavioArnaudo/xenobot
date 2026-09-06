@@ -256,13 +256,13 @@ MonoBehaviour:
   SprintSpeed: 20.335
   RotationSmoothTime: 0.12
   SpeedChangeRate: 10
-  LandingAudioClip: {fileID: 0}
+  LandingAudioClip: {fileID: 8300000, guid: ef980d09b569380459e609fe90ef1db2, type: 3}
   FootstepAudioClips: []
   FootstepAudioVolume: 0.5
   JumpHeight: 3
   EnableDoubleJump: 1
   DoubleJumpHeight: 6
-  Gravity: -15
+  Gravity: -20
   JumpTimeout: 0.5
   FallTimeout: 0.15
   Grounded: 1
@@ -284,7 +284,7 @@ MonoBehaviour:
   - SceneName: LobbyScene
     SpawnPointTag: Respawn
   yThreshold: -5
-  respawnSound: {fileID: 0}
+  respawnSound: {fileID: 8300000, guid: 55462452cb80442b6acf85f10b161e13, type: 3}
   move: {x: 0, y: 0}
   look: {x: 0, y: 0}
   jump: 0
@@ -314,7 +314,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
-  team: 0
+  team: 1
   maxHealth: 100
   maxJetpack: 0
   visualsToFlash: []
@@ -405,7 +405,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SpawnController
   ShowTopMostFoldoutHeaderGroup: 1
   lootTable: []
-  itemsToSpawn: []
+  itemsToSpawn:
+  - prefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}
+    message: EXP
+  - prefab: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
+    message: OIL
+  - prefab: {fileID: 4565876727797725469, guid: 79cf1ecc78b30454c856d973bbd7b7de, type: 3}
+    message: IRON
   explosionForce: 10
   spreadRadius: 2.5
 --- !u!114 &2530033462702487630
@@ -440,7 +446,14 @@ MonoBehaviour:
   cornerRadius: 15
   panelColor: {r: 0.05, g: 0.05, b: 0.05, a: 0.95}
   accentColor: {r: 1, g: 0.85, b: 0, a: 1}
-  itemDatabase: []
+  itemDatabase:
+  - {fileID: 11400000, guid: 6ac606d832f14c4fa3466276ffe3c0b4, type: 2}
+  - {fileID: 11400000, guid: d9ea5b9e700da844c9c2a3f7dd94e4a1, type: 2}
+  - {fileID: 11400000, guid: bb42e76d6f734c5091156f6de5048962, type: 2}
+  - {fileID: 11400000, guid: 9c17cf8896f842ca89037bfc4f46889c, type: 2}
+  - {fileID: 11400000, guid: 75b6b99d3e052724095a1f53dea46401, type: 2}
+  - {fileID: 11400000, guid: d7c9c3ed602c45bda00bb8572b645ef1, type: 2}
+  - {fileID: 11400000, guid: cc730feca3d9438aa9e28397df2e6fe4, type: 2}
   dropDistance: 3.5
 --- !u!114 &6229371320334411257
 MonoBehaviour:
@@ -455,8 +468,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
   AimCamera: {fileID: 0}
-  Muzzle: {fileID: 0}
-  ProjectilePrefab: {fileID: 0}
+  Muzzle: {fileID: 2241270816149792883}
+  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
   Damage: 25
   FireRate: 6
@@ -484,15 +497,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 4656.2383
+      value: 15376.668
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -42.912807
+      value: -22.667288
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 2098.2651
+      value: 8494.826
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -552,15 +565,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 4656.2383
+      value: 15383.54
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -42.912807
+      value: -22.654308
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 2098.2651
+      value: 8498.926
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
