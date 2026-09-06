@@ -4,34 +4,19 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    public enum Team { Neutral, Player, Enemy }
-
-    public class HealthController : NetworkBehaviour, IModular
+    public class HealthController : MonoBehaviour, IModular
     {
-        [Header("Identity & Team")]
-        public Team team = Team.Neutral;
-        public int maxHealth = 100;
-
-        [Header("Animation")]
-        public Animator animator;
-
-        private NetworkVariable<int> currentHealth = new NetworkVariable<int>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        private int m_OfflineHealth;
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
-        public int CurrentHP => IsNetworkActive ? currentHealth.Value : m_OfflineHealth;
-
-        private static readonly int _animIDTakeDamage = Animator.StringToHash("takeDamage");
-        private bool _hasAnimator;
-        private bool _hasAnimIDTakeDamage;
-
         private ModularController _hub;
+        private AnimationController _anim;
+
+        private int m_OfflineHealth;
+
+        public int CurrentHP => (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening) ? _hub.currentHealth.Value : m_OfflineHealth;
+        public int maxHealth => (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening) ? _hub.maxHealth.Value : m_OfflineHealth;
 
         void Awake()
         {
-            m_OfflineHealth = maxHealth;
-            _hub = GetComponentInParent<ModularController>();
-            if (_hub != null) Bind(_hub);
-            RefreshAnimatorReference();
+            if (_hub == null) _hub = GetComponentInParent<ModularController>();
         }
 
         public void Bind(ModularController hub)
@@ -40,70 +25,64 @@ namespace Combating.Scripts
             if (_hub != null)
             {
                 _hub.RegisterModule(this);
+
+                // Initialize health immediately if offline
+                if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+                {
+                    RandomizeHealthOffline();
+                }
+
                 OnRefreshModule();
             }
         }
 
         public void OnRefreshModule()
         {
-            RefreshAnimatorReference();
+            if (_hub != null)
+            {
+                _anim = _hub.GetModule<AnimationController>();
+            }
         }
 
-        private void RefreshAnimatorReference()
+        public void RandomizeHealthOffline()
         {
-            if (animator == null) animator = (_hub != null) ? _hub.animator : GetComponentInChildren<Animator>();
-            _hasAnimator = animator != null;
-            if (_hasAnimator) _hasAnimIDTakeDamage = HasParameter(animator, _animIDTakeDamage);
-        }
-
-        public override void OnNetworkSpawn()
-        {
-            if (IsServer) currentHealth.Value = maxHealth;
+            if (_hub is PlayerController)
+            {
+                m_OfflineHealth = Random.Range(110, 136);
+                if (_hub.IsOwner) m_OfflineHealth += 15;
+            }
+            else if (_hub is EnemyController)
+            {
+                m_OfflineHealth = Random.Range(65, 96);
+            }
         }
 
         public void ApplyDirectHealthChange(int amount)
         {
-            if (IsNetworkActive)
+            if (_hub == null) return;
+
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
-                if (IsServer) currentHealth.Value = Mathf.Clamp(currentHealth.Value + amount, 0, maxHealth);
+                _hub.ApplyHealthChangeServerRpc(amount);
             }
             else
             {
-                m_OfflineHealth = Mathf.Clamp(m_OfflineHealth + amount, 0, maxHealth);
+                m_OfflineHealth = Mathf.Clamp(m_OfflineHealth + amount, 0, 999);
             }
 
-            if (amount < 0) TriggerTakeDamageAnimation();
-        }
-
-        private void TriggerTakeDamageAnimation()
-        {
-            if (!_hasAnimator || animator == null)
-            {
-                RefreshAnimatorReference();
-                if (!_hasAnimator || animator == null) return;
-            }
-
-            if (_hasAnimIDTakeDamage) animator.SetTrigger(_animIDTakeDamage);
-        }
-
-        public void Heal(int amount)
-        {
-            if (amount <= 0) return;
-            ApplyDirectHealthChange(amount);
+            if (amount < 0 && _anim != null) _anim.TriggerTakeDamage();
         }
 
         public void UpgradeMaxHealth(int bonus)
         {
-            maxHealth += bonus;
-            ApplyDirectHealthChange(bonus);
-        }
-
-        private bool HasParameter(Animator anim, int paramHash)
-        {
-            if (anim == null) return false;
-            foreach (AnimatorControllerParameter param in anim.parameters)
-                if (param.nameHash == paramHash) return true;
-            return false;
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                // Managed by Hub on LevelUp RPC
+            }
+            else
+            {
+                m_OfflineHealth += bonus;
+            }
         }
     }
 }

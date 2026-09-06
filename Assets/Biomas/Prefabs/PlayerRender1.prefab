@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &4942300412505095240
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4266148392444164780}
+  m_Layer: 3
+  m_Name: Feet
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4266148392444164780
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4942300412505095240}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.12, y: 0.12, z: -5.25}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6200255932903970055}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &5872978235884745452
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -298,7 +329,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4266148392444164780}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
       insertIndex: -1
@@ -315,6 +349,11 @@ Transform:
 --- !u!4 &2781766785629762155 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8582682977320009863, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
+  m_PrefabInstance: {fileID: 5872978235884745452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &6200255932903970055 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
   m_PrefabInstance: {fileID: 5872978235884745452}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &6719488597655785405 stripped
@@ -336,6 +375,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.RenderController
   headPoint: {fileID: 8577516068843709065}
   spinePoint: {fileID: 2781766785629762155}
+  feetPoint: {fileID: 4266148392444164780}
   muzzlePoint: {fileID: 1580260158610495192}
   cameraLookAtPoint: {fileID: 1580260158610495192}
 --- !u!64 &6869875211158617871

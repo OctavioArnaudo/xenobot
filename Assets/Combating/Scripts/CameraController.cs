@@ -5,7 +5,7 @@ using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
-    public class CameraController : NetworkBehaviour, IModular
+    public class CameraController : MonoBehaviour, IModular
     {
         [Header("Settings")]
         public Vector2 LookSensitivity = new Vector2(1.0f, 0.8f);
@@ -22,13 +22,11 @@ namespace Combating.Scripts
         private GameObject _target;
         private CinemachineCamera _vcam;
 
-        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-        private bool HasInputAuthority => _hub != null && (!IsNetworkActive || _hub.IsOwner);
+        private bool HasInputAuthority => _hub != null && _hub is PlayerController && (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
 
-        private void Awake()
+        void Awake()
         {
             if (_hub == null) _hub = GetComponentInParent<ModularController>();
-            if (_hub != null) Bind(_hub);
         }
 
         public void Bind(ModularController hub)
@@ -50,23 +48,14 @@ namespace Combating.Scripts
             }
         }
 
-        private void Start()
-        {
-            if (_hub == null) _hub = PlayerController.LocalInstance;
-            if (_hub != null) _yaw = _hub.transform.eulerAngles.y;
-            RefreshCameraLink();
-        }
-
         private void LateUpdate()
         {
-            if (_hub == null) return;
-            if (!HasInputAuthority) return;
+            if (_hub == null || !HasInputAuthority) return;
 
             UpdateTargetState();
 
             if (_vcam == null || _vcam.LookAt == null) RefreshCameraLink();
 
-            // Input is only on PlayerController
             if (_hub is PlayerController playerHub)
             {
                 if (playerHub.look.sqrMagnitude > 0.001f)
@@ -92,14 +81,8 @@ namespace Combating.Scripts
 
             Transform lookPoint = _hub.CameraLookAtPoint ?? _hub.HeadPoint;
 
-            if (lookPoint != null)
-            {
-                _target.transform.position = lookPoint.position;
-            }
-            else
-            {
-                _target.transform.position = _hub.transform.position + Vector3.up * 1.6f;
-            }
+            if (lookPoint != null) _target.transform.position = lookPoint.position;
+            else _target.transform.position = _hub.transform.position + Vector3.up * 1.6f;
 
             float minY = _hub.transform.position.y + MinLookAtHeight;
             if (_target.transform.position.y < minY)
@@ -128,7 +111,7 @@ namespace Combating.Scripts
                 _vcam.LookAt = _target.transform;
 
                 var cam = GetComponentInChildren<Camera>(true);
-                if (cam != null) cam.tag = "MainCamera";
+                if (cam != null && HasInputAuthority) cam.tag = "MainCamera";
             }
         }
 
