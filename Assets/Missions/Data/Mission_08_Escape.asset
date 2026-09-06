@@ -12,17 +12,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
   m_Name: Mission_08_Escape
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  missionId: mission_08
-  title: "8. El Escape Final"
-  description: "Entra a la base con la Fuente de Energía para ganar."
+  missionId: mission_8
+  title: 8. El Escape Final
+  description: Entra a la base con la Fuente de Energia para ganar.
   mode: 2
   isFinalMission: 1
-  requiredLocation: "Centro Base"
+  requiredLocation: Centro Base
   requiredMissionIds:
-  - mission_07
+  - mission_7
   gatheringRequirements:
   - item: {fileID: 11400000, guid: 9f41a1c295b64338a231ce89c6aa91e6, type: 2}
     amount: 1
   craftingRequirements: []
   requiredSkillIds: []
-  missionPrefab: {fileID: 0}
+  missionPrefab: {fileID: 7690778578472770116, guid: ac458b5116867cc4699f7ee89d919e5c, type: 3}

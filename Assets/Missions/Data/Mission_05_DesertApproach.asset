@@ -13,14 +13,14 @@ MonoBehaviour:
   m_Name: Mission_05_DesertApproach
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   missionId: mission_05
-  title: "5. Horizonte Árido"
-  description: "Avanza por el desierto hacia la ciudad abandonada."
+  title: "5. Horizonte \xC1rido"
+  description: Avanza por el desierto hacia la ciudad abandonada.
   mode: 2
   isFinalMission: 0
-  requiredLocation: "Entrada Ciudad"
+  requiredLocation: Entrada Ciudad
   requiredMissionIds:
   - mission_04
   gatheringRequirements: []
   craftingRequirements: []
   requiredSkillIds: []
-  missionPrefab: {fileID: 0}
+  missionPrefab: {fileID: 500001, guid: a3ce08dcf0c947aebf0d759f6a2fdc73, type: 3}
