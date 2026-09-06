@@ -121,6 +121,7 @@ namespace Combating.Scripts
         private PlayerInput _playerInput;
 #endif
         private Animator _animator;
+        private Transform _renderTransform;
         private CharacterController _controller;
         private GameObject _mainCamera;
 
@@ -426,8 +427,17 @@ namespace Combating.Scripts
         {
             _jetpack = GetComponentInChildren<PropulsionController>();
 
-            // Extreme animator discovery
-            _animator = GetComponentInChildren<Animator>(true);
+            // Improved animator discovery: Prioritize main render children
+            // to prevent locking onto equipment or dropped items.
+            _animator = null;
+            _renderTransform = transform.Find("PlayerRender") ?? transform.Find("Render") ?? transform.Find("EnemyRender");
+
+            if (_renderTransform != null)
+            {
+                _animator = _renderTransform.GetComponentInChildren<Animator>(true);
+            }
+
+            if (_animator == null) _animator = GetComponentInChildren<Animator>(true);
             if (_animator == null) _animator = GetComponentInParent<Animator>();
             if (_animator == null) _animator = GetComponent<Animator>();
 
@@ -435,6 +445,7 @@ namespace Combating.Scripts
             if (_hasAnimator)
             {
                 _animator.enabled = true;
+                _animator.applyRootMotion = false; // Disable root motion via code
                 AssignAnimationIDs();
             }
             SetupCamera();
@@ -547,27 +558,19 @@ namespace Combating.Scripts
         #region Movement Logic
         private void GroundedCheck()
         {
-            // If we are moving upwards with speed (jumping), we are NOT grounded
-            // This prevents the jump from being canceled by a "false" raycast hit
-            if (_verticalVelocity > 0.1f)
-            {
-                Grounded = false;
-                return;
-            }
+            // If moving up fast, we're definitely not grounded
+            if (_verticalVelocity > 0.1f) { Grounded = false; return; }
 
-            // Start the ray exactly at the bottom of the capsule
-            Vector3 rayOrigin = transform.position + Vector3.up * 0.05f;
-            float rayDistance = 0.15f;
+            // USE A SPHERE AT THE BASE: This is the most un-breakable check.
+            // Even if the mesh/animator goes crazy, transform.position is the physical truth.
+            Vector3 spherePos = transform.position + Vector3.up * GroundedRadius;
 
             LayerMask mask = GroundLayers;
             if (mask == 0) mask = ~((1 << 3) | (1 << 2));
 
-            // Use the Raycast and the Controller's own detection for stability
-            bool rayHit = Physics.Raycast(rayOrigin, Vector3.down, rayDistance, mask, QueryTriggerInteraction.Ignore);
-            Grounded = rayHit || (_controller != null && _controller.isGrounded);
-
-            // Visual debug
-            Debug.DrawRay(rayOrigin, Vector3.down * rayDistance, Grounded ? Color.green : Color.red);
+            // Absolute check using physics sphere + controller's internal state
+            Grounded = Physics.CheckSphere(spherePos, GroundedRadius * 1.1f, mask, QueryTriggerInteraction.Ignore)
+                       || (_controller != null && _controller.isGrounded);
         }
 
         private void CameraRotation()
@@ -641,7 +644,8 @@ namespace Combating.Scripts
 
                 if (_verticalVelocity < 0.0f)
                 {
-                    _verticalVelocity = -2f;
+                    // AGGRESSIVE GLUE: Higher negative force to keep character flush with floor
+                    _verticalVelocity = -8f;
                     _jumpsRemaining = EnableDoubleJump ? 2 : 1;
                 }
 
@@ -725,6 +729,15 @@ namespace Combating.Scripts
 
             // Forced Activation
             if (!_animator.enabled) _animator.enabled = true;
+            _animator.applyRootMotion = false; // Disable root motion to prevent wandering
+
+            // SNAP MESH TO BASE: If the animator moves the mesh away, force it back
+            // and apply a tiny negative offset to hide the Unity "Skin Width" gap
+            if (_renderTransform != null)
+            {
+                _renderTransform.localPosition = new Vector3(0, -0.05f, 0);
+                _renderTransform.localRotation = Quaternion.identity;
+            }
 
             // Normalized Speed (0 to 1)
             float speedFactor = _animationBlend / Mathf.Max(0.1f, SprintSpeed);
