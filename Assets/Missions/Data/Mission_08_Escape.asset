@@ -10,17 +10,19 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
-  m_Name: Mission_05_DesertApproach
+  m_Name: Mission_08_Escape
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  missionId: mission_05
-  title: "5. Horizonte Árido"
-  description: "Avanza por el desierto hacia la ciudad abandonada."
+  missionId: mission_08
+  title: "8. El Escape Final"
+  description: "Entra a la base con la Fuente de Energía para ganar."
   mode: 2
-  isFinalMission: 0
-  requiredLocation: "Entrada Ciudad"
+  isFinalMission: 1
+  requiredLocation: "Centro Base"
   requiredMissionIds:
-  - mission_04
-  gatheringRequirements: []
+  - mission_07
+  gatheringRequirements:
+  - item: {fileID: 11400000, guid: 9f41a1c295b64338a231ce89c6aa91e6, type: 2}
+    amount: 1
   craftingRequirements: []
   requiredSkillIds: []
   missionPrefab: {fileID: 0}

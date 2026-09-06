@@ -12,17 +12,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
   m_Name: Mission_01_Gathering
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  missionId: gather_iron_01
-  title: "Supervivencia Silvestre"
-  description: "Has despertado en un mini bosque. Recolecta 5 unidades de Hierro de los restos y encuentra la Llave del Laboratorio oculta entre los árboles."
+  missionId: mission_01
+  title: "1. Recolección Silvestre"
+  description: "Recolecta 5 unidades de Hierro. Evita enemigos o combátelos cuerpo a cuerpo."
   mode: 2
+  isFinalMission: 0
   requiredLocation: "Bosque Inicio"
   requiredMissionIds: []
   gatheringRequirements:
   - item: {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
     amount: 5
-  - item: {fileID: 11400000, guid: 6ac606d832f14c4fa3466276ffe3c0b4, type: 2}
-    amount: 1
   craftingRequirements: []
   requiredSkillIds: []
-  missionPrefab: {fileID: 100001, guid: bcb98aa31a1346ba8e6efc43685bb56f, type: 3}
+  missionPrefab: {fileID: 0}

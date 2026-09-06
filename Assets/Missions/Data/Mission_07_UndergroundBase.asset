@@ -10,16 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
-  m_Name: Mission_05_DesertApproach
+  m_Name: Mission_07_UndergroundBase
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  missionId: mission_05
-  title: "5. Horizonte Árido"
-  description: "Avanza por el desierto hacia la ciudad abandonada."
+  missionId: mission_07
+  title: "7. Infiltración"
+  description: "Usa la Llave (clic en USE) para entrar a la base subterránea."
   mode: 2
   isFinalMission: 0
-  requiredLocation: "Entrada Ciudad"
+  requiredLocation: "Acceso Base"
   requiredMissionIds:
-  - mission_04
+  - mission_06
   gatheringRequirements: []
   craftingRequirements: []
   requiredSkillIds: []

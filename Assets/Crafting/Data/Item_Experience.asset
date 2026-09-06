@@ -12,14 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
   m_Name: Item_Experience
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
-  itemId: 5
-  itemCode: 
-  displayName: Exp Orb A
-  icon: {fileID: 0}
+  itemCode: experince
+  displayName: Orb Exp
+  itemSprite: {fileID: 1488804721, guid: 8fba84cdeb8d18f41a34affaaa980eec, type: 3}
   type: 3
-  isUsable: 0
   isStackable: 0
   maxStack: 0
+  canUse: 0
+  autoUse: 0
   description: 
-  expValue: 25
-  worldPrefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}
+  itemPrefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}

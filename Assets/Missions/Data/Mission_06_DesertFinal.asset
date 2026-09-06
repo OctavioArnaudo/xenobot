@@ -12,19 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
   m_Name: Mission_06_DesertFinal
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  missionId: desert_final_01
-  title: "La Llave Estelar"
-  description: "Recolecta 5 Estrellas en el desierto infectado y forja la Fuente de Energía Estelar para abrir el edificio y completar tu escape."
+  missionId: mission_06
+  title: "6. Preparación Final"
+  description: "Busca la Llave en la ciudad. Recoge 5 Estrellas para craftear la Fuente de Energía."
   mode: 2
-  isFinalMission: 1
-  requiredLocation: "Interior Edificio Misterioso"
+  isFinalMission: 0
+  requiredLocation: "Centro Ciudad"
   requiredMissionIds:
-  - desert_approach_01
+  - mission_05
   gatheringRequirements:
+  - item: {fileID: 11400000, guid: 6ac606d832f14c4fa3466276ffe3c0b4, type: 2}
+    amount: 1
   - item: {fileID: 11400000, guid: 75b6b99d3e052724095a1f53dea46401, type: 2}
     amount: 5
   craftingRequirements:
   - item: {fileID: 11400000, guid: 9f41a1c295b64338a231ce89c6aa91e6, type: 2}
     amount: 1
   requiredSkillIds: []
-  missionPrefab: {fileID: 600001, guid: 956e200413c54fcba7ca946c3c670ff5, type: 3}
+  missionPrefab: {fileID: 0}
