@@ -25,17 +25,17 @@ namespace Crafting.Scripts
 
         public void ApplyEffect(GameObject entity)
         {
-            TankController tank = entity.GetComponent<TankController>();
-            if (tank == null)
-            {
-                var hub = entity.GetComponent<ModularController>() ?? entity.GetComponentInParent<ModularController>();
-                if (hub != null) tank = hub.GetModule<TankController>();
-            }
+            // Pure functionality: use HealthController (which manages Jetpack Fuel) directly
+            HealthController health = entity.GetComponent<HealthController>() ?? entity.GetComponentInParent<HealthController>();
 
-            if (tank != null)
+            if (health != null)
             {
-                tank.AddFuel(FUEL_AMOUNT);
+                health.AddFuel(FUEL_AMOUNT);
                 Debug.Log($"[FuelController] Restored {FUEL_AMOUNT} fuel to {entity.name}.");
+            }
+            else
+            {
+                Debug.LogWarning($"[FuelController] No HealthController found on {entity.name}");
             }
         }
 

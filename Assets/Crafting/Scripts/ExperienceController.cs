@@ -27,7 +27,10 @@ namespace Crafting.Scripts
         public void ApplyEffect(GameObject entity)
         {
             // 1. Try finding the pure functionality StatsController (HUD)
-            StatsController stats = entity.GetComponent<StatsController>() ?? entity.GetComponentInParent<StatsController>();
+            StatsController stats = entity.GetComponent<StatsController>() ??
+                                    entity.GetComponentInParent<StatsController>() ??
+                                    entity.GetComponentInChildren<StatsController>();
+
             if (stats != null)
             {
                 stats.AddExp(EXP_AMOUNT);
@@ -36,7 +39,9 @@ namespace Crafting.Scripts
             }
 
             // 2. Fallback to modular LevelingController
-            LevelingController leveling = entity.GetComponent<LevelingController>();
+            LevelingController leveling = entity.GetComponent<LevelingController>() ??
+                                          entity.GetComponentInParent<LevelingController>() ??
+                                          entity.GetComponentInChildren<LevelingController>();
             if (leveling == null)
             {
                 var hub = entity.GetComponent<ModularController>() ?? entity.GetComponentInParent<ModularController>();

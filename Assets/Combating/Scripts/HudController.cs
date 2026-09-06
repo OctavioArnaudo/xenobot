@@ -118,13 +118,16 @@ public class StatsController : NetworkBehaviour
         float atk = Random.Range(attackRange.x, attackRange.y);
         float def = Random.Range(defenseRange.x, defenseRange.y);
 
-        if (IsNetworkActive && IsServer)
+        if (IsNetworkActive)
         {
-            NetAttack.Value = atk;
-            NetDefense.Value = def;
-            NetLevel.Value = 1;
-            NetExp.Value = 0;
-            NetExpToLevelUp.Value = 100f;
+            if (IsServer)
+            {
+                NetAttack.Value = atk;
+                NetDefense.Value = def;
+                NetLevel.Value = 1;
+                NetExp.Value = 0;
+                NetExpToLevelUp.Value = 100f;
+            }
         }
         else
         {
@@ -226,7 +229,7 @@ public class StatsController : NetworkBehaviour
         }
     }
 
-    [Rpc(SendTo.Server)]
+    [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
     private void AddExpServerRpc(float amount) => InternalAddExp(amount);
 
     private void InternalAddExp(float amount)
