@@ -120,7 +120,7 @@ namespace Crafting.Scripts
             if (myHub != null)
             {
                 var inv = myHub.GetModule<InventoryController>();
-                if (inv != null) inv.DrawInventoryUI(new Rect(xStart, y0, sideW, panelHeight), "MI INVENTARIO", false);
+                if (inv != null) inv.DrawInventoryUI(new Rect(xStart, y0, sideW, panelHeight), "MI INVENTARIO");
             }
 
             Rect centerRect = new Rect(xStart + sideW + 20, y0, centerW, panelHeight);
@@ -129,7 +129,7 @@ namespace Crafting.Scripts
             if (otherHubs.Count > 0)
             {
                 var inv = otherHubs[0].GetModule<InventoryController>();
-                if (inv != null) inv.DrawInventoryUI(new Rect(xStart + sideW + centerW + 40, y0, sideW, panelHeight), "INVENTARIO REMOTO", false);
+                if (inv != null) inv.DrawInventoryUI(new Rect(xStart + sideW + centerW + 40, y0, sideW, panelHeight), "INVENTARIO REMOTO");
             }
             else
             {
