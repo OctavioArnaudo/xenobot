@@ -254,7 +254,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_Name
-      value: EnemyRender 1
+      value: EnemyRender 6
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_Layer
@@ -378,18 +378,18 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 247605395190036705}
+      addedObject: {fileID: 6284096952043489367}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 8741523997422473768}
+      addedObject: {fileID: 9161886899950747783}
   m_SourcePrefab: {fileID: 100100000, guid: 08915c9897caf254f962383e322fc3be, type: 3}
 --- !u!1 &776614261595603509 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
   m_PrefabInstance: {fileID: 434174462265769828}
   m_PrefabAsset: {fileID: 0}
---- !u!65 &247605395190036705
-BoxCollider:
+--- !u!64 &6284096952043489367
+MeshCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -404,30 +404,25 @@ BoxCollider:
     m_Bits: 0
   m_LayerOverridePriority: 0
   m_IsTrigger: 0
-  m_ProvidesContacts: 1
+  m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 1.8734885, y: 2.0087783, z: 1.8786772}
-  m_Center: {x: -0.010861099, y: 0.0150153935, z: 0.032897793}
---- !u!195 &8741523997422473768
-NavMeshAgent:
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 0}
+--- !u!114 &9161886899950747783
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 776614261595603509}
   m_Enabled: 1
-  m_AgentTypeID: 0
-  m_Radius: 0.5
-  m_Speed: 3.5
-  m_Acceleration: 8
-  avoidancePriority: 50
-  m_AngularSpeed: 120
-  m_StoppingDistance: 0
-  m_AutoTraverseOffMeshLink: 1
-  m_AutoBraking: 1
-  m_AutoRepath: 1
-  m_Height: 2
-  m_BaseOffset: 0
-  m_WalkableMask: 4294967295
-  m_ObstacleAvoidanceType: 4
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1aa9ee72c6c61454792e57ad9faddac9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.RenderController
+  headPoint: {fileID: 0}
+  spinePoint: {fileID: 0}
+  muzzlePoint: {fileID: 0}
+  cameraLookAtPoint: {fileID: 0}

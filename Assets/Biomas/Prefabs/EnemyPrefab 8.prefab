@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 967451216
+  GlobalObjectIdHash: 503916767
   InScenePlacedSourceGlobalObjectIdHash: 503916767
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -81,6 +81,9 @@ MonoBehaviour:
   renderRoot: {fileID: 0}
   cameraTarget: {fileID: 0}
   activeModel: {fileID: 0}
+  VerticalVelocity: 0
+  IsGrounded: 0
+  BaseGravity: -35
   networkPrefabs: {fileID: 11400000, guid: 2fe6c7967098a65449bf54e7b56a0963, type: 2}
   enemyModules:
   - {fileID: 2319961470605166441, guid: cd534d2dfda16b84c95843103b60d185, type: 3}
@@ -161,8 +164,7 @@ PrefabInstance:
       propertyPath: m_Name
       value: EnemyRender
       objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 3706374097496830692, guid: 998c97b0d92170d4ebf982b845c091e2, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
