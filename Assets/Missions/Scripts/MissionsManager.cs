@@ -6,6 +6,7 @@ using TMPro;
 using UnityEngine.UI;
 using Missions.Data;
 using Crafting.Scripts;
+using Menus.Scripts;
 
 namespace Missions.Scripts
 {
@@ -135,126 +136,127 @@ namespace Missions.Scripts
             return tmp;
         }
 
-        public void CheckLocation(string location)
+        private void Update()
         {
-            Debug.Log("[MissionsManager] Checking location: " + location);
-
-            // Permitir funcionar en local si no hay networking activo
-            bool isLocalOnly = !IsSpawned;
-
-            foreach (var m in allMissions)
+            // Toggle HUD with M key
+            if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.mKey.wasPressedThisFrame)
             {
-                if (m == null) continue;
-                if (IsMissionCompleted(m.missionId)) continue;
-
-                if (m.requiredLocation == location)
+                if (_hudPanel != null)
                 {
-                    if (AreRequirementsMet(m))
-                    {
-                        ShowMissionHUD(m);
-                    }
-                }
-            }
-        }
-
-        public bool IsMissionCompleted(string id)
-        {
-            return _localCompletedMissions.Contains(id);
-        }
-
-        private bool AreRequirementsMet(MissionData mission)
-        {
-            if (mission.requiredMissionIds == null || mission.requiredMissionIds.Count == 0) return true;
-            foreach (var reqId in mission.requiredMissionIds)
-            {
-                if (!IsMissionCompleted(reqId)) return false;
-            }
-            return true;
-        }
-
-        private bool HasRequiredItems(MissionData mission)
-        {
-            var bag = Testing.Scripts.PlayerController.GetBag();
-
-            // Validar requerimientos de recolección
-            if (mission.gatheringRequirements != null)
-            {
-                foreach (var req in mission.gatheringRequirements)
-                {
-                    if (req.item == null) continue;
-                    string key = req.item.itemCode.ToLowerInvariant();
-                    if (!bag.TryGetValue(key, out var slot) || slot.qty < req.amount) return false;
+                    _hudPanel.SetActive(!_hudPanel.activeSelf);
                 }
             }
 
-            // Validar requerimientos de crafteo
-            if (mission.craftingRequirements != null)
+            // If victory or defeat menus are active, hide mission HUD and stop processing
+            if (IsMenuBlockingUI())
             {
-                foreach (var req in mission.craftingRequirements)
-                {
-                    if (req.item == null) continue;
-                    string key = req.item.itemCode.ToLowerInvariant();
-                    if (!bag.TryGetValue(key, out var slot) || slot.qty < req.amount) return false;
-                }
-            }
-
-            return true;
-        }
-
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        public void CompleteMissionServerRpc(string missionId)
-        {
-            if (!IsMissionCompleted(missionId))
-            {
-                // El servidor también valida items antes de añadir a la lista sincronizada
-                MissionData m = allMissions.Find(x => x.missionId == missionId);
-                if (m != null && HasRequiredItems(m))
-                {
-                    _completedMissions.Add(missionId);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Versión híbrida para completar misiones (Local o Red).
-        /// </summary>
-        public void CompleteMission(string missionId)
-        {
-            MissionData mission = allMissions.Find(m => m.missionId == missionId);
-
-            if (mission != null && !HasRequiredItems(mission))
-            {
-                Debug.LogWarning($"[MissionsManager] Requisitos de ítems no cumplidos para: {mission.title}");
+                if (_hudPanel != null && _hudPanel.activeSelf) _hudPanel.SetActive(false);
                 return;
             }
 
-            if (IsSpawned)
+            // Periodic inventory check (every 0.5s to save CPU)
+            if (Time.time % 0.5f < Time.deltaTime)
             {
-                CompleteMissionServerRpc(missionId);
+                UpdateMissionFlow();
             }
-            else
+        }
+
+        private bool IsMenuBlockingUI()
+        {
+            // Check Victory Menu
+            if (VictoryMenu.Instance != null)
             {
-                // Fallback Local
-                if (!_localCompletedMissions.Contains(missionId))
+                // Accessing private field via reflection or checking if canvas exists
+                // Since I can't change VictoryMenu easily, I'll check if the canvas name exists
+                if (GameObject.Find("VictoryMenu_Canvas") != null) return true;
+            }
+
+            // Check Defeat Menu
+            if (GameObject.Find("DefeatMenu_Canvas") != null) return true;
+
+            return false;
+        }
+
+        private void UpdateMissionFlow()
+        {
+            var bag = InventoryController.GetBag();
+            MissionData nextMission = null;
+
+            // Iterate through missions in the list order
+            foreach (var mission in allMissions)
+            {
+                if (mission == null) continue;
+
+                // Check if this specific mission's requirements are met by inventory
+                bool requirementsMet = true;
+
+                // 1. Check Gathering Requirements
+                if (mission.gatheringRequirements != null)
                 {
-                    _localCompletedMissions.Add(missionId);
-                    if (missionId == _currentVisibleMissionId) HideMissionHUD();
-                    Debug.Log("[MissionsManager] Mission completed LOCALLY: " + missionId);
+                    foreach (var req in mission.gatheringRequirements)
+                    {
+                        if (req.item == null) continue;
+                        string key = req.item.itemCode.ToLowerInvariant();
+                        if (!bag.TryGetValue(key, out var slot) || slot.qty < req.amount)
+                        {
+                            requirementsMet = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (!requirementsMet)
+                {
+                    // This is the first mission in the list whose requirements are NOT met.
+                    // Therefore, this is the current active objective.
+                    nextMission = mission;
+                    break;
+                }
+                else
+                {
+                    // If requirements ARE met, this mission is considered "Completed" in the flow.
+                    // We continue to the next one.
                 }
             }
+
+            if (nextMission != null)
+            {
+                if (_currentVisibleMissionId != nextMission.missionId)
+                {
+                    ShowMissionHUD(nextMission);
+                }
+            }
+            else if (allMissions.Count > 0)
+            {
+                // All missions in the list are satisfied
+                ShowMessage("MISIÓN FINAL", "Has recolectado todo. ¡Busca la salida!");
+            }
         }
 
-        private void ShowMissionHUD(MissionData mission)
+        public void ShowMissionHUD(MissionData mission)
         {
-            Debug.Log("[MissionsManager] Showing HUD for mission: " + mission.title);
-            if (_hudPanel == null) { Debug.LogError("[MissionsManager] _hudPanel is NULL! UI creation might have failed."); return; }
+            if (mission == null) return;
+
+            if (_hudPanel == null) CreateUI();
+            if (_hudPanel == null) return;
+
             _currentVisibleMissionId = mission.missionId;
             _hudPanel.SetActive(true);
-            _titleTMP.text = mission.title;
-            _descTMP.text = mission.description;
+            if (_titleTMP != null) _titleTMP.text = mission.title;
+            if (_descTMP != null) _descTMP.text = mission.description;
         }
 
-        private void HideMissionHUD()
+        public void ShowMessage(string title, string description)
+        {
+            if (_hudPanel == null) CreateUI();
+            if (_hudPanel == null) return;
+
+            _hudPanel.SetActive(true);
+            if (_titleTMP != null) _titleTMP.text = title;
+            if (_descTMP != null) _descTMP.text = description;
+        }
+
+        public void HideMissionHUD()
         {
             if (_hudPanel != null) _hudPanel.SetActive(false);
             _currentVisibleMissionId = "";

@@ -25,16 +25,16 @@ namespace Combating.Scripts
         {
             if (_victoryTriggered) return;
 
-            // Detect if a Player entered the zone
-            var player = other.GetComponentInParent<PlayerController>();
-            if (player != null)
+            // Detect if a Player entered the zone and get THEIR inventory
+            var inv = other.GetComponentInParent<InventoryController>() ?? other.GetComponentInChildren<InventoryController>();
+            if (inv != null)
             {
-                // Victory Condition: Must have Energy Source in inventory
-                bool hasEnergy = InventoryController.GetBag().ContainsKey("energy_source");
+                // Victory Condition: Must have Energy Source in THAT player's inventory
+                bool hasEnergy = inv.GetMyBag().ContainsKey("energy_source");
 
                 if (!hasEnergy)
                 {
-                    Debug.Log("[VictoryController] Player entered but lacks Energy Source.");
+                    Debug.Log($"[VictoryController] {other.gameObject.name} entered but lacks Energy Source.");
                     return;
                 }
 
