@@ -56,7 +56,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 900052251
+  GlobalObjectIdHash: 2082353490
   InScenePlacedSourceGlobalObjectIdHash: 2082353490
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -539,18 +539,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: CameraPrefab
       objectReference: {fileID: 0}
-    - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 165896.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 261.70145
-      objectReference: {fileID: 0}
-    - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 98340.06
-      objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
       value: -0.5905762
@@ -590,34 +578,6 @@ PrefabInstance:
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6282489463953198927, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
-      propertyPath: m_InScenePlaced
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6282489463953198927, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
-      propertyPath: GlobalObjectIdHash
-      value: 1268330498
-      objectReference: {fileID: 0}
-    - target: {fileID: 6282489463953198927, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
-      propertyPath: SceneMigrationSynchronization
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6282489463953198927, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
-      propertyPath: InScenePlacedSourceGlobalObjectIdHash
-      value: 2082353490
-      objectReference: {fileID: 0}
-    - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 165896.1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 261.70145
-      objectReference: {fileID: 0}
-    - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 98340.06
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
