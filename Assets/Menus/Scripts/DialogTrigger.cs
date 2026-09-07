@@ -53,6 +53,9 @@ namespace Dialogs.Scripts
             if (!_playerInside) return;
             if (_used && onlyOnce) return;
 
+            // Si ya hay un diálogo abierto, esa E le pertenece al DialogManager (avanzar/cerrar), no a nosotros
+            if (DialogManager.Instance != null && DialogManager.Instance.IsOpen) return;
+
             if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
             {
                 TryOpenDialog();
@@ -77,6 +80,7 @@ namespace Dialogs.Scripts
         private void ShowPrompt()
         {
             if (!showPrompt || (_used && onlyOnce)) return;
+            if (DialogManager.Instance != null && DialogManager.Instance.IsOpen) return;
 
             if (_promptGO == null)
             {

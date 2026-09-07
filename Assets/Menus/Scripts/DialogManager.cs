@@ -14,10 +14,6 @@ namespace Dialogs.Scripts
         [TextArea(2, 5)] public string[] lines;
     }
 
-    /// <summary>
-    /// Manager único de diálogos. UI generada por código (sin prefabs).
-    /// Se llama con DialogManager.Instance.ShowDialog("id").
-    /// </summary>
     public class DialogManager : MonoBehaviour
     {
         public static DialogManager Instance { get; private set; }
@@ -31,7 +27,9 @@ namespace Dialogs.Scripts
 
         private DialogEntry _current;
         private int _lineIndex;
-        private bool IsOpen => _panel != null && _panel.activeSelf;
+        private int _openedOnFrame = -1;
+
+        public bool IsOpen => _panel != null && _panel.activeSelf;
 
         private void Awake()
         {
@@ -44,6 +42,8 @@ namespace Dialogs.Scripts
         private void Update()
         {
             if (!IsOpen) return;
+            if (Time.frameCount == _openedOnFrame) return;
+
             if (Keyboard.current != null &&
                 (Keyboard.current.eKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame))
             {
@@ -62,6 +62,7 @@ namespace Dialogs.Scripts
 
             _current = entry;
             _lineIndex = 0;
+            _openedOnFrame = Time.frameCount;
             OpenPanel();
             RenderLine();
         }
@@ -98,7 +99,7 @@ namespace Dialogs.Scripts
             Cursor.lockState = CursorLockMode.Locked;
         }
 
-        // --- UI Hardcoded (mismo enfoque que MissionsManager) ---
+        // --- UI Hardcoded (panel chico, centrado) ---
 
         private void BuildUI()
         {
@@ -111,21 +112,19 @@ namespace Dialogs.Scripts
 
             _panel = new GameObject("DialogPanel");
             _panel.transform.SetParent(canvasObj.transform, false);
-            _panel.AddComponent<Image>().color = new Color(0, 0, 0, 0.85f);
+            _panel.AddComponent<Image>().color = new Color(0, 0, 0, 0.88f);
 
             RectTransform rt = _panel.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0.5f, 0);
-            rt.anchorMax = new Vector2(0.5f, 0);
-            rt.pivot = new Vector2(0.5f, 0);
-            rt.anchoredPosition = new Vector2(0, 40);
-            rt.sizeDelta = new Vector2(900, 180);
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(520, 160);
 
-            _speakerTMP = CreateText("Speaker", 24, Color.yellow, new Vector2(0, 1), new Vector2(1, 1), TextAlignmentOptions.TopLeft, new Vector2(20, -15), new Vector2(-20, 45));
+            _speakerTMP = CreateText("Speaker", 20, Color.yellow, new Vector2(0, 1), new Vector2(1, 1), TextAlignmentOptions.Center, new Vector2(15, -12), new Vector2(-15, 34));
             _speakerTMP.fontStyle = FontStyles.Bold;
 
-            _bodyTMP = CreateText("Body", 22, Color.white, Vector2.zero, Vector2.one, TextAlignmentOptions.TopLeft, new Vector2(20, 15), new Vector2(-20, -50));
+            _bodyTMP = CreateText("Body", 18, Color.white, Vector2.zero, Vector2.one, TextAlignmentOptions.Center, new Vector2(15, 12), new Vector2(-15, -40));
 
-            CreateText("Hint", 16, new Color(1, 1, 1, 0.6f), new Vector2(1, 0), new Vector2(1, 0), TextAlignmentOptions.BottomRight, new Vector2(-160, 8), new Vector2(-15, 30)).text = "[E] Continuar";
+            CreateText("Hint", 13, new Color(1, 1, 1, 0.55f), new Vector2(0.5f, 0), new Vector2(0.5f, 0), TextAlignmentOptions.Center, new Vector2(-70, 6), new Vector2(70, 26)).text = "[E] Continuar";
 
             _panel.SetActive(false);
         }
