@@ -101,10 +101,13 @@ public class StatsController : NetworkBehaviour
     public override void OnNetworkSpawn()
     {
         m_PlayerHealth = GetComponent<HealthController>();
+
+        // SERVER: Initialize stats for EVERY player spawned
+        if (IsServer) InitializeStats();
+
         if (IsOwner)
         {
             Instance = this;
-            InitializeStats();
             playerName.Value = LocalUserConfig.UserName;
             playerColor.Value = LocalUserConfig.UserColor;
         }

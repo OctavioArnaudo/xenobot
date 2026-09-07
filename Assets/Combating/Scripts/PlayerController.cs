@@ -740,8 +740,22 @@ namespace Combating.Scripts
             }
 
             // Normalized Speed (0 to 1)
-            float speedFactor = _animationBlend / Mathf.Max(0.1f, SprintSpeed);
-            if (_animationBlend > 0.05f && speedFactor < 0.3f) speedFactor = 0.3f;
+            // We ensure that moving at MoveSpeed already shows a clear walking animation (0.5)
+            // and SprintSpeed reaches the full running intensity (1.0)
+            float speedFactor = 0f;
+            if (_animationBlend > 0.01f)
+            {
+                if (sprint)
+                {
+                    // Map from MoveSpeed to SprintSpeed -> 0.5 to 1.0
+                    speedFactor = Mathf.Lerp(0.5f, 1.0f, (_animationBlend - MoveSpeed) / Mathf.Max(0.1f, SprintSpeed - MoveSpeed));
+                }
+                else
+                {
+                    // Map from 0 to MoveSpeed -> 0.1 to 0.5
+                    speedFactor = Mathf.Lerp(0.1f, 0.5f, _animationBlend / MoveSpeed);
+                }
+            }
 
             if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, speedFactor);
             if (_hasAnimIDIsGrounded) _animator.SetBool(_animIDIsGrounded, Grounded);

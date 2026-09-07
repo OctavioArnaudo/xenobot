@@ -121,9 +121,23 @@ namespace Combating.Scripts
             if (m_Animator == null) return;
             if (!m_Animator.enabled) m_Animator.enabled = true;
 
-            // Normalize speed (0 to 1 based on chaseSpeed)
-            float speedParam = speed / Mathf.Max(0.1f, chaseSpeed);
-            if (speed > 0.05f && speedParam < 0.3f) speedParam = 0.3f;
+            // Normalize speed (0 to 1) for the Animator
+            // Ensures walking (Patrol) shows a clear animation and Chase reaches full intensity
+            float speedParam = 0f;
+            if (speed > 0.01f)
+            {
+                if (currentState == AIState.Chase)
+                {
+                    // Mapping Chase speed to 0.5 - 1.0 range
+                    speedParam = Mathf.Lerp(0.5f, 1.0f, speed / Mathf.Max(0.1f, chaseSpeed));
+                }
+                else
+                {
+                    // Mapping Wander speed to 0.1 - 0.5 range
+                    speedParam = Mathf.Lerp(0.1f, 0.5f, speed / Mathf.Max(0.1f, wanderSpeed));
+                }
+            }
+            speedParam = Mathf.Clamp01(speedParam);
 
             if (_hasAnimSpeed) m_Animator.SetFloat(_animIDSpeed, speedParam);
             if (_hasAnimGrounded) m_Animator.SetBool(_animIDIsGrounded, grounded);

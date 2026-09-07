@@ -82,14 +82,27 @@ namespace Combating.Scripts
 
         private void UpdateGroundedState()
         {
-            // Position the check sphere slightly above the feet, extending downwards
-            Vector3 checkPos = _hub.transform.position + Vector3.up * GroundedOffset;
-            _hub.IsGrounded = _controller.isGrounded || HasExternalGroundHit(checkPos);
+            // AGGRESSIVE FIX: Ignore ground check if moving upwards significantly
+            if (_hub.VerticalVelocity > 0.1f)
+            {
+                _hub.IsGrounded = false;
+                return;
+            }
+
+            // UNBREAKABLE SPHERE: Position exactly at the base
+            Vector3 spherePos = _hub.transform.position + Vector3.up * GroundedRadius;
+
+            LayerMask mask = GroundLayers;
+            // Robust fallback if layers are not configured
+            if (mask == 0) mask = ~((1 << 3) | (1 << 2));
+
+            // Combine Physics Sphere with Controller's own state for maximum reliability
+            _hub.IsGrounded = Physics.CheckSphere(spherePos, GroundedRadius * 1.1f, mask, QueryTriggerInteraction.Ignore)
+                             || (_controller != null && _controller.isGrounded);
 
             if (debugGroundChecks)
             {
-                // Visual debug: draw a line and sphere representation
-                Debug.DrawLine(checkPos, checkPos - Vector3.up * (GroundedRadius + 0.1f), Color.yellow);
+                Debug.DrawLine(spherePos, spherePos + Vector3.down * GroundedRadius, _hub.IsGrounded ? Color.green : Color.red);
             }
         }
 
@@ -97,10 +110,15 @@ namespace Combating.Scripts
         {
             if (_hub.IsGrounded)
             {
-                if (_hub.VerticalVelocity < 0) _hub.VerticalVelocity = GroundStickVelocity;
+                if (_hub.VerticalVelocity <= 0.01f)
+                {
+                    // AGGRESSIVE GLUE: Strong negative force to prevent floating and keep entity grounded
+                    _hub.VerticalVelocity = -8.0f;
+                }
             }
             else
             {
+                // Apply normal gravity when in air
                 _hub.VerticalVelocity += _hub.BaseGravity * Time.deltaTime;
             }
         }

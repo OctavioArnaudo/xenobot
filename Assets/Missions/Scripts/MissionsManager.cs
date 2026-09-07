@@ -182,40 +182,47 @@ namespace Missions.Scripts
             var bag = InventoryController.GetBag();
             MissionData nextMission = null;
 
-            // Iterate through missions in the list order
             foreach (var mission in allMissions)
             {
                 if (mission == null) continue;
 
-                // Check if this specific mission's requirements are met by inventory
-                bool requirementsMet = true;
+                // A mission is satisfied if it was manually completed OR if its inventory requirements are met
+                bool manuallyDone = IsMissionCompleted(mission.missionId);
+                bool inventoryDone = false;
 
-                // 1. Check Gathering Requirements
-                if (mission.gatheringRequirements != null)
+                // Check Inventory Requirements
+                if (mission.gatheringRequirements != null && mission.gatheringRequirements.Count > 0)
                 {
+                    bool allItemsInBag = true;
                     foreach (var req in mission.gatheringRequirements)
                     {
                         if (req.item == null) continue;
                         string key = req.item.itemCode.ToLowerInvariant();
                         if (!bag.TryGetValue(key, out var slot) || slot.qty < req.amount)
                         {
-                            requirementsMet = false;
+                            allItemsInBag = false;
                             break;
                         }
                     }
+                    inventoryDone = allItemsInBag;
+
+                    // AUTO-COMPLETE: If inventory is satisfied, mark it as completed to move the flow
+                    if (inventoryDone && !manuallyDone)
+                    {
+                        CompleteMission(mission.missionId);
+                    }
+                }
+                else if (manuallyDone)
+                {
+                    // If it has NO items, it MUST be manually completed via trigger
+                    inventoryDone = true;
                 }
 
-                if (!requirementsMet)
+                if (!manuallyDone && !inventoryDone)
                 {
-                    // This is the first mission in the list whose requirements are NOT met.
-                    // Therefore, this is the current active objective.
+                    // This is the first mission that is NOT finished.
                     nextMission = mission;
                     break;
-                }
-                else
-                {
-                    // If requirements ARE met, this mission is considered "Completed" in the flow.
-                    // We continue to the next one.
                 }
             }
 
@@ -230,6 +237,44 @@ namespace Missions.Scripts
             {
                 // All missions in the list are satisfied
                 ShowMessage("MISIÓN FINAL", "Has recolectado todo. ¡Busca la salida!");
+            }
+        }
+
+        public bool IsMissionCompleted(string id)
+        {
+            return _localCompletedMissions.Contains(id);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void CompleteMissionServerRpc(string missionId)
+        {
+            if (!IsMissionCompleted(missionId))
+            {
+                _completedMissions.Add(missionId);
+            }
+        }
+
+        /// <summary>
+        /// Hybrid version to complete missions (Local or Network).
+        /// </summary>
+        public void CompleteMission(string missionId, InventoryController inv = null)
+        {
+            // Fallback hardcoded messages for specific IDs
+            if (missionId.ToLower().Contains("iron")) ShowMessage("RECURSO ENCONTRADO", "Has obtenido Hierro para la construcción.");
+            if (missionId.ToLower().Contains("key")) ShowMessage("ACCESO CONCEDIDO", "Llave de seguridad obtenida.");
+            if (missionId.ToLower().Contains("fuel")) ShowMessage("COMBUSTIBLE", "Celdas de energía cargadas.");
+
+            if (IsSpawned)
+            {
+                CompleteMissionServerRpc(missionId);
+            }
+            else
+            {
+                if (!_localCompletedMissions.Contains(missionId))
+                {
+                    _localCompletedMissions.Add(missionId);
+                    if (missionId == _currentVisibleMissionId) HideMissionHUD();
+                }
             }
         }
 

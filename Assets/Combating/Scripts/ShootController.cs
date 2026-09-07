@@ -76,15 +76,24 @@ namespace Combating.Scripts
                 }
             }
 
-            // Fallback: If still no Muzzle, or it is at the feet, create a virtual point
-            if (Muzzle == null || Muzzle == transform || Muzzle.localPosition.y < 0.2f)
+            // FORCE CHEST POSITION: Always ensure the Muzzle is at robot's chest height.
+            // We check the relative height to the root transform to avoid "feet shooting".
+            bool muzzleTooLow = false;
+            if (Muzzle != null)
             {
-                Transform virtualMuzzle = transform.Find("VirtualMuzzle");
+                float relativeY = transform.InverseTransformPoint(Muzzle.position).y;
+                if (relativeY < 0.8f) muzzleTooLow = true;
+            }
+
+            if (Muzzle == null || Muzzle == transform || muzzleTooLow)
+            {
+                Transform virtualMuzzle = transform.Find("VirtualMuzzle_Chest");
                 if (virtualMuzzle == null)
                 {
-                    GameObject go = new GameObject("VirtualMuzzle");
+                    GameObject go = new GameObject("VirtualMuzzle_Chest");
                     go.transform.SetParent(transform);
-                    go.transform.localPosition = new Vector3(0, 1.4f, 0.7f); // Higher and more forward
+                    // Force position relative to the root of the player/enemy
+                    go.transform.localPosition = new Vector3(0, 1.4f, 0.7f);
                     virtualMuzzle = go.transform;
                 }
                 Muzzle = virtualMuzzle;
@@ -133,16 +142,24 @@ namespace Combating.Scripts
 
         public bool TryFire()
         {
-            if (ProjectilePrefab == null || Muzzle == null)
-            {
-                RefreshReferences();
-                if (ProjectilePrefab == null || Muzzle == null) return false;
-            }
+            if (ProjectilePrefab == null) return false;
 
             if (Time.time < m_NextFireTime) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
 
-            Vector3 originPos = Muzzle.position;
+            // FORCE CHEST POSITION: Always calculate origin relative to the root position
+            // to avoid shooting from the floor/feet.
+            Vector3 rootPos = transform.root.position;
+            Vector3 originPos = (Muzzle != null) ? Muzzle.position : rootPos + Vector3.up * 1.4f;
+
+            // If the muzzle is too low (below 1m from root), force it to chest height
+            if (originPos.y < rootPos.y + 1.0f)
+            {
+                originPos.y = rootPos.y + 1.4f;
+                // Offset forward so it doesn't hit our own collider
+                originPos += transform.root.forward * 0.5f;
+            }
+
             Vector3 direction = GetAimDirection(originPos);
             ExecuteFire(direction, originPos);
             return true;
@@ -150,18 +167,22 @@ namespace Combating.Scripts
 
         public bool FireAt(Vector3 targetPosition)
         {
-            if (ProjectilePrefab == null || Muzzle == null)
-            {
-                RefreshReferences();
-                if (ProjectilePrefab == null || Muzzle == null) return false;
-            }
+            if (ProjectilePrefab == null) return false;
 
             if (Time.time < m_NextFireTime) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
 
             RotateVisualsTowards(targetPosition);
 
-            Vector3 originPos = Muzzle.position;
+            Vector3 rootPos = transform.root.position;
+            Vector3 originPos = (Muzzle != null) ? Muzzle.position : rootPos + Vector3.up * 1.4f;
+
+            if (originPos.y < rootPos.y + 1.0f)
+            {
+                originPos.y = rootPos.y + 1.4f;
+                originPos += transform.root.forward * 0.5f;
+            }
+
             Vector3 direction = (targetPosition - originPos).normalized;
             ExecuteFire(direction, originPos);
             return true;

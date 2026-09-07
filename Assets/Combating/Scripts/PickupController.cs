@@ -149,9 +149,12 @@ namespace Crafting.Scripts
 
         private void ApplyReward(InventoryController inv, GameObject player)
         {
-            if (item == null) return;
+            if (item == null || inv == null) return;
 
-            if (item.autoUse)
+            // FORCE AUTO-USE for Experience: Orbs should never sit in the inventory
+            bool forceAutoUse = (item.type == ItemType.Experience);
+
+            if (item.autoUse || forceAutoUse)
             {
                 foreach(var func in GetComponentsInChildren<IItemFunctional>())
                 {
@@ -160,8 +163,10 @@ namespace Crafting.Scripts
             }
             else
             {
-                // In Red mode, inv will handle the ServerRpc call
-                InventoryController.Add(item);
+                // Normal items go to the specific player inventory
+                int hash = item.GetItemHashCode();
+                if (IsNetworkActive) inv.AddItemServerRpc(hash, 1);
+                else inv.InternalAddItem(hash, 1);
             }
         }
 

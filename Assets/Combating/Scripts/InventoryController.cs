@@ -375,22 +375,41 @@ namespace Crafting.Scripts
         public void UseItem(ItemData item)
         {
             if (item == null) return;
+            int hash = item.GetItemHashCode();
 
-            // Use item if it's explicitly marked as usable OR if it belongs to functional types
+            if (item.type == ItemType.Equipment)
+            {
+                // Equipment is still handled locally for immediate visual feedback,
+                // but its effects (like ShootController) handle their own network logic.
+                ToggleEquipment(item);
+            }
+            else
+            {
+                // CONSUMABLES: Must be processed by the server to be real
+                if (IsNetworkActive) UseItemServerRpc(hash);
+                else InternalUseItem(hash);
+            }
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void UseItemServerRpc(int hash)
+        {
+            InternalUseItem(hash);
+        }
+
+        private void InternalUseItem(int hash)
+        {
+            ItemData item = GetItemDataByHash(hash);
+            if (item == null) return;
+
             bool isUsableType = item.canUse ||
                                item.type == ItemType.Consumable ||
                                item.type == ItemType.KeyItem;
 
-            if (item.type == ItemType.Equipment)
-            {
-                ToggleEquipment(item);
-            }
-            else if (isUsableType)
+            if (isUsableType)
             {
                 ApplyConsumableEffect(item);
-                int hash = item.GetItemHashCode();
-                if (IsNetworkActive) RemoveItemServerRpc(hash, 1);
-                else InternalRemoveItem(hash, 1);
+                InternalRemoveItem(hash, 1);
             }
         }
 
