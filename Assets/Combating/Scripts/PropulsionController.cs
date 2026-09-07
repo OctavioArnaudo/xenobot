@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Crafting.Scripts;
 
@@ -68,6 +69,9 @@ namespace Combating.Scripts
             bool isOwner = IsNetworkActive ? m_Player.IsOwner : true;
             if (!isOwner) return false;
 
+            // Detección directa de la tecla B
+            bool isBPressed = Keyboard.current != null && Keyboard.current.bKey.isPressed;
+
             m_IsUsingJetpack = false;
             if (isGrounded)
             {
@@ -76,10 +80,10 @@ namespace Combating.Scripts
                 return false;
             }
 
-            if (!isJumpHeld) m_JetpackDepleted = false;
+            if (!isBPressed) m_JetpackDepleted = false;
             if (m_Health.JetpackFuel <= 0) m_JetpackDepleted = true;
 
-            if (isJumpHeld && !m_JetpackDepleted && m_Health.JetpackFuel > 0)
+            if (isBPressed && !m_JetpackDepleted && m_Health.JetpackFuel > 0)
             {
                 m_IsUsingJetpack = true;
                 if (verticalVelocity < -2f) verticalVelocity = Mathf.MoveTowards(verticalVelocity, 0, Time.deltaTime * 20f);
