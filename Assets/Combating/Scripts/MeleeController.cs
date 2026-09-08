@@ -34,11 +34,24 @@ namespace Combating.Scripts
                 visualsToRotate = GetComponentsInChildren<Renderer>();
         }
 
+        void Update()
+        {
+            // Solo el cliente dueño del personaje lee el input local
+            if (IsNetworkActive && !IsOwner) return;
+
+            // Bloquear el ataque si el inventario o menú están abiertos
+            if (Cursor.visible) return;
+
+            // Detección directa del Clic Izquierdo del ratón
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                PerformMeleeAction();
+            }
+        }
+
         public void OnAttack(InputValue value)
         {
             if (!value.isPressed || Time.time < m_NextAttackTime) return;
-
-            // Block melee if inventory or menus are open
             if (Cursor.visible) return;
 
             PerformMeleeAction();
