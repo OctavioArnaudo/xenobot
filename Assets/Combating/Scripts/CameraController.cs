@@ -15,8 +15,8 @@ namespace Combating.Scripts
         public float MinLookAtHeight = 0.5f;
 
         [Header("Over-The-Shoulder Settings")]
-        public Vector3 DefaultShoulderOffset = new Vector3(0.65f, 0.1f, -2.5f); // X: Derecha/Izquierda, Y: Altura, Z: Distancia
-        public Vector3 AimShoulderOffset = new Vector3(0.45f, 0.05f, -1.5f);
+        public Vector3 DefaultShoulderOffset = new Vector3(0.75f, 0.2f, -2.5f);
+        public Vector3 AimShoulderOffset = new Vector3(0.5f, 0.1f, -1.5f);
         public float NormalFOV = 60f;
         public float AimFOV = 45f;
         public float TransitionSpeed = 10f;
@@ -30,17 +30,22 @@ namespace Combating.Scripts
 
         private float _yaw;
         private float _pitch;
-        private float _shoulderSide = 1f; // 1 = Hombro derecho, -1 = Hombro izquierdo
+        private float _shoulderSide = 1f;
         private ModularController _hub;
         private GameObject _target;
         private CinemachineCamera _vcam;
-        private CinemachineThirdPersonFollow _thirdPersonFollow;
+        private CinemachineBrain _brain;
+        private Vector3 _currentOffset;
 
-        private bool HasInputAuthority => _hub != null && _hub is PlayerController && (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
+        // Verificación con namespace correcto
+        private bool HasInputAuthority => _hub != null &&
+            (_hub is Testing.Scripts.PlayerController) &&
+            (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
 
         void Awake()
         {
             if (_hub == null) _hub = GetComponentInParent<ModularController>();
+            _currentOffset = DefaultShoulderOffset;
         }
 
         public void Bind(ModularController hub)
@@ -66,9 +71,7 @@ namespace Combating.Scripts
         {
             if (_hub == null || !HasInputAuthority) return;
 
-            UpdateTargetState();
-
-            if (_vcam == null || _vcam.LookAt == null) RefreshCameraLink();
+            if (_vcam == null) RefreshCameraLink();
 
             bool isAiming = false;
 
@@ -80,11 +83,10 @@ namespace Combating.Scripts
                     _pitch -= playerHub.look.y * LookSensitivity.y;
                 }
 
-                // Detectar si el jugador está apuntando (vía variable 'aim' o clic derecho)
                 isAiming = playerHub.aim || (Mouse.current != null && Mouse.current.rightButton.isPressed);
 
-                // Opcional: Cambiar de hombro presionando el botón central del mouse (MMB) o la tecla C
-                if (Keyboard.current != null && Keyboard.current.cKey.wasPressedThisFrame)
+                // Alternar hombro con Alt Izquierdo
+                if (Keyboard.current != null && Keyboard.current.leftAltKey.wasPressedThisFrame)
                 {
                     _shoulderSide *= -1f;
                 }
@@ -92,40 +94,22 @@ namespace Combating.Scripts
 
             _pitch = Mathf.Clamp(_pitch, BottomClamp, TopClamp);
 
-            if (_target != null)
-            {
-                _target.transform.rotation = Quaternion.Euler(_pitch, _yaw, 0.0f);
-            }
+            UpdateTargetState(isAiming);
 
-            // Orientar la rotación del cuerpo del personaje hacia la mirada de la cámara
             if (AlignPlayerWithCamera && _hub != null)
             {
                 Quaternion targetBodyRot = Quaternion.Euler(0f, _yaw, 0f);
                 _hub.transform.rotation = Quaternion.Slerp(_hub.transform.rotation, targetBodyRot, Time.deltaTime * PlayerRotationSpeed);
             }
 
-            UpdateShoulderCameraState(isAiming);
-        }
-
-        private void UpdateShoulderCameraState(bool isAiming)
-        {
-            if (_vcam == null) return;
-
-            // Transición de FOV (Zoom al apuntar)
-            float targetFOV = isAiming ? AimFOV : NormalFOV;
-            _vcam.Lens.FieldOfView = Mathf.Lerp(_vcam.Lens.FieldOfView, targetFOV, Time.deltaTime * TransitionSpeed);
-
-            // Ajustar el offset en CinemachineThirdPersonFollow si está configurado en la VCam
-            if (_thirdPersonFollow != null)
+            if (_vcam != null)
             {
-                Vector3 targetOffset = isAiming ? AimShoulderOffset : DefaultShoulderOffset;
-                targetOffset.x *= _shoulderSide; // Invertir si se cambia de hombro
-
-                _thirdPersonFollow.ShoulderOffset = Vector3.Lerp(_thirdPersonFollow.ShoulderOffset, targetOffset, Time.deltaTime * TransitionSpeed);
+                float targetFOV = isAiming ? AimFOV : NormalFOV;
+                _vcam.Lens.FieldOfView = Mathf.Lerp(_vcam.Lens.FieldOfView, targetFOV, Time.deltaTime * TransitionSpeed);
             }
         }
 
-        private void UpdateTargetState()
+        private void UpdateTargetState(bool isAiming)
         {
             if (_hub == null) return;
 
@@ -133,37 +117,44 @@ namespace Combating.Scripts
 
             Transform lookPoint = _hub.CameraLookAtPoint ?? _hub.HeadPoint;
 
-            if (lookPoint != null) _target.transform.position = lookPoint.position;
-            else _target.transform.position = _hub.transform.position + Vector3.up * 1.6f;
+            Vector3 basePosition = (lookPoint != null)
+                ? lookPoint.position
+                : _hub.transform.position + Vector3.up * 1.6f;
 
             float minY = _hub.transform.position.y + MinLookAtHeight;
-            if (_target.transform.position.y < minY)
-            {
-                Vector3 safePos = _target.transform.position;
-                safePos.y = minY;
-                _target.transform.position = safePos;
-            }
+            if (basePosition.y < minY) basePosition.y = minY;
 
-            _target.transform.rotation = Quaternion.Euler(_pitch, _yaw, 0.0f);
+            Quaternion cameraRotation = Quaternion.Euler(_pitch, _yaw, 0.0f);
+            _target.transform.rotation = cameraRotation;
+
+            Vector3 targetOffset = isAiming ? AimShoulderOffset : DefaultShoulderOffset;
+            targetOffset.x *= _shoulderSide;
+
+            _currentOffset = Vector3.Lerp(_currentOffset, targetOffset, Time.deltaTime * TransitionSpeed);
+
+            // Posicionamiento final del objetivo
+            Vector3 finalTargetPos = basePosition + (cameraRotation * _currentOffset);
+            _target.transform.position = finalTargetPos;
+
+            // Dibuja una línea roja en la ventana Scene desde la cabeza hacia el objetivo de la cámara
+            Debug.DrawLine(basePosition, finalTargetPos, Color.red);
         }
 
         private void RefreshCameraLink()
         {
             if (_hub == null) return;
 
+            _brain = GetComponentInChildren<CinemachineBrain>(true);
             _vcam = GetComponentInChildren<CinemachineCamera>(true);
 
             if (_vcam != null)
             {
                 _vcam.enabled = HasInputAuthority;
 
-                if (_target == null) UpdateTargetState();
+                if (_target == null) UpdateTargetState(false);
 
                 _vcam.Follow = _target.transform;
-                _vcam.LookAt = _target.transform;
-
-                // Obtener el componente de tercera persona de Cinemachine 3.x
-                _thirdPersonFollow = _vcam.GetComponent<CinemachineThirdPersonFollow>();
+                _vcam.LookAt = null;
 
                 var cam = GetComponentInChildren<Camera>(true);
                 if (cam != null && HasInputAuthority) cam.tag = "MainCamera";
