@@ -4,11 +4,6 @@ using Unity.Netcode;
 
 namespace Combating.Scripts
 {
-    /// <summary>
-    /// Melee attack system with Ground Slam functionality.
-    /// Manages its own rotation, melee attacks, and air slams.
-    /// Works for both Players and AI Enemies.
-    /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class MeleeController : NetworkBehaviour
     {
@@ -19,6 +14,7 @@ namespace Combating.Scripts
         public LayerMask targetLayers;
 
         [Header("Ground Slam Settings")]
+        public float slamHoldDuration = 0.25f; // Tiempo en segundos manteniendo el clic (250 ms)
         public float slamDamage = 50f;
         public float slamRadius = 5f;
         public float slamSpeed = 35f;
@@ -36,6 +32,10 @@ namespace Combating.Scripts
         private float m_NextAttackTime;
         private bool m_IsSlamming;
 
+        // Control de tiempo para el ataque cargado
+        private float m_HoldTimer = 0f;
+        private bool m_IsHoldingClick = false;
+
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
         void Awake()
@@ -49,23 +49,69 @@ namespace Combating.Scripts
 
         void Update()
         {
-            // Solo el cliente dueño del personaje lee el input local
             if (IsNetworkActive && !IsOwner) return;
 
-            // Procesar descenso rápido si el personaje está en medio de un Ground Slam
             if (m_IsSlamming)
             {
                 HandleGroundSlamMovement();
                 return;
             }
 
-            // Bloquear el ataque si el inventario o menú están abiertos
             if (Cursor.visible) return;
 
-            // Detección directa del Clic Izquierdo del ratón
-            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            HandleInput();
+        }
+
+        private void HandleInput()
+        {
+            if (Mouse.current == null) return;
+
+            // 1. Al presionar el clic, iniciamos el conteo
+            if (Mouse.current.leftButton.wasPressedThisFrame)
             {
-                PerformMeleeAction();
+                m_IsHoldingClick = true;
+                m_HoldTimer = 0f;
+            }
+
+            // 2. Mientras se mantenga presionado el clic
+            if (Mouse.current.leftButton.isPressed && m_IsHoldingClick)
+            {
+                m_HoldTimer += Time.deltaTime;
+
+                bool isAirborne = m_CharacterController != null && !m_CharacterController.isGrounded;
+
+                // Si está en el aire y mantuvo presionado el tiempo necesario -> Detonar Ground Slam
+                if (isAirborne && m_HoldTimer >= slamHoldDuration && Time.time >= m_NextAttackTime)
+                {
+                    m_IsHoldingClick = false;
+                    StartGroundSlam();
+                }
+            }
+
+            // 3. Al soltar el clic
+            if (Mouse.current.leftButton.wasReleasedThisFrame)
+            {
+                // Si soltó rápido (clic corto) o estaba en el suelo -> Ataque Melee normal
+                if (m_IsHoldingClick)
+                {
+                    m_IsHoldingClick = false;
+                    if (Time.time >= m_NextAttackTime)
+                    {
+                        PerformMeleeAction();
+                    }
+                }
+            }
+        }
+
+        private void StartGroundSlam()
+        {
+            m_NextAttackTime = Time.time + attackCooldown;
+            m_IsSlamming = true;
+
+            Animator anim = GetComponentInChildren<Animator>();
+            if (anim != null && HasParameter(anim, "groundSlamStart"))
+            {
+                anim.SetTrigger("groundSlamStart");
             }
         }
 
@@ -73,10 +119,8 @@ namespace Combating.Scripts
         {
             if (m_CharacterController != null)
             {
-                // Forzar caída rápida en picado
                 m_CharacterController.Move(Vector3.down * (slamSpeed * Time.deltaTime));
 
-                // Detectar colisión con el suelo para detonar el impacto
                 if (m_CharacterController.isGrounded)
                 {
                     m_IsSlamming = false;
@@ -89,39 +133,8 @@ namespace Combating.Scripts
             }
         }
 
-        public void OnAttack(InputValue value)
-        {
-            if (!value.isPressed || Time.time < m_NextAttackTime || m_IsSlamming) return;
-            if (Cursor.visible) return;
-
-            PerformMeleeAction();
-        }
-
-        /// <summary>
-        /// Main method to perform melee or slam action based on grounded state.
-        /// </summary>
         public void PerformMeleeAction(Vector3? targetPosition = null)
         {
-            if (Time.time < m_NextAttackTime || m_IsSlamming) return;
-
-            // Detección de estado en el aire
-            bool isAirborne = m_CharacterController != null && !m_CharacterController.isGrounded;
-
-            if (isAirborne)
-            {
-                // Iniciar Ground Slam
-                m_NextAttackTime = Time.time + attackCooldown;
-                m_IsSlamming = true;
-
-                Animator anim = GetComponentInChildren<Animator>();
-                if (anim != null && HasParameter(anim, "groundSlamStart"))
-                {
-                    anim.SetTrigger("groundSlamStart");
-                }
-                return;
-            }
-
-            // Ataque Melee normal (Suelo)
             if (targetPosition.HasValue)
             {
                 RotateVisualsTowards(targetPosition.Value);
@@ -161,14 +174,12 @@ namespace Combating.Scripts
         {
             float finalDamage = slamDamage;
 
-            // Integración con StatsController
             var stats = GetComponent<StatsController>() ?? GetComponentInParent<StatsController>();
             if (stats != null)
             {
                 finalDamage = slamDamage * (stats.Attack / 10f);
             }
 
-            // 1. Detección física en área (AOE)
             Collider[] hits = Physics.OverlapSphere(impactPosition, slamRadius, targetLayers);
 
             foreach (Collider hit in hits)
@@ -182,7 +193,6 @@ namespace Combating.Scripts
                     targetHealth.TakeDamage((int)finalDamage);
                 }
 
-                // Empuje físico con Rigidbody
                 Rigidbody rb = hit.GetComponent<Rigidbody>();
                 if (rb != null)
                 {
@@ -190,14 +200,12 @@ namespace Combating.Scripts
                 }
             }
 
-            // 2. Animación de impacto
             Animator anim = GetComponentInChildren<Animator>();
             if (anim != null && HasParameter(anim, "groundSlamImpact"))
             {
                 anim.SetTrigger("groundSlamImpact");
             }
 
-            // 3. Efecto visual EFX y Sonido
             if (slamVfxPrefab != null)
             {
                 Instantiate(slamVfxPrefab, impactPosition, Quaternion.identity);
@@ -275,12 +283,10 @@ namespace Combating.Scripts
 
         private void OnDrawGizmosSelected()
         {
-            // Gizmo del ataque cuerpo a cuerpo normal (Rojo)
             Gizmos.color = Color.red;
             Vector3 attackCenter = transform.position + transform.forward * (attackRange * 0.5f);
             Gizmos.DrawWireSphere(attackCenter, attackRange);
 
-            // Gizmo del radio del Ground Slam (Amarillo)
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(transform.position, slamRadius);
         }
