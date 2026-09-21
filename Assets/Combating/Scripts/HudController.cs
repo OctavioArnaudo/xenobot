@@ -342,13 +342,13 @@ public class HudController : NetworkBehaviour
 
     private void DrawBottomLeftHUD()
     {
-        bool hasJet = m_PlayerHealth.maxJetpack > 0;
+        bool hasJet = m_PlayerHealth.MaxJetpack > 0;
         int rowH = fontSize + barHeight + 2;
         int totalH = rowH * (hasJet ? 2 : 1) + 4;
         float y = Screen.height - totalH;
         GUI.DrawTexture(new Rect(0, y, barWidth, totalH), _bg);
         float curY = y + 2;
-        if (hasJet) DrawRow(0, ref curY, " JET", m_PlayerHealth.JetpackFuel, m_PlayerHealth.maxJetpack, _jetFill);
+        if (hasJet) DrawRow(0, ref curY, " JET", m_PlayerHealth.JetpackFuel, m_PlayerHealth.MaxJetpack, _jetFill);
         DrawRow(0, ref curY, " HP", m_PlayerHealth.CurrentHP, m_PlayerHealth.maxHealth, _hpFill);
     }
 

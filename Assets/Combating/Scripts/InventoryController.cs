@@ -315,7 +315,7 @@ namespace Crafting.Scripts
                 bool isEquipped = _equippedInstances.ContainsKey(hash);
                 string actionText = isEquipped ? "QUIT" : "USE";
 
-                // Dynamic USE button: show for consumables, equipment, key items, or anything marked as usable
+                // Botón dinámico USE: se muestra si el ítem está marcado como 'canUse' o es un equipo/consumible/llave
                 bool canShowUse = slot.def.canUse ||
                                  slot.def.type == ItemType.Equipment ||
                                  slot.def.type == ItemType.Consumable ||
@@ -487,12 +487,33 @@ namespace Crafting.Scripts
         {
             if (item.itemPrefab != null)
             {
+                // Instanciar el prefab para extraer su lógica
                 GameObject temp = Instantiate(item.itemPrefab);
-                temp.SetActive(false);
-                foreach (var func in temp.GetComponentsInChildren<IItemFunctional>())
+                temp.SetActive(false); // Lo mantenemos oculto
+
+                // CAMBIO CRÍTICO: Usar 'true' para encontrar componentes en objetos desactivados
+                var effects = temp.GetComponentsInChildren<IItemFunctional>(true);
+
+                if (effects.Length == 0)
+                {
+                    // AUTO-REPARACIÓN: Si el ítem se llama fuel/combustible, intentamos añadir el controlador
+                    if (item.itemCode.ToLower().Contains("fuel") || item.displayName.ToLower().Contains("combustible"))
+                    {
+                        Debug.Log($"<color=orange>[Inventory]</color> Añadiendo FuelController automáticamente a {item.displayName}...");
+                        var autoFuel = temp.AddComponent<FuelController>();
+                        effects = new IItemFunctional[] { autoFuel };
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[Inventory] El ítem {item.displayName} no tiene componentes de efecto (IItemFunctional).");
+                    }
+                }
+
+                foreach (var func in effects)
                 {
                     func.ApplyEffect(gameObject);
                 }
+
                 Destroy(temp);
             }
         }

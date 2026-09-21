@@ -17,7 +17,8 @@ namespace Combating.Scripts
         public int maxHealth = 100;
 
         [Header("Jetpack Settings")]
-        public float maxJetpack = 0f;
+        public NetworkVariable<float> maxJetpackFuel = new NetworkVariable<float>(100f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        public NetworkVariable<float> currentJetpackFuel = new NetworkVariable<float>(100f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         [Header("Visual Feedback (Optional)")]
         public Renderer[] visualsToFlash;
@@ -30,7 +31,7 @@ namespace Combating.Scripts
 
         private NetworkVariable<int> currentHealth = new NetworkVariable<int>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         private int m_OfflineHealth;
-        private float m_Jetpack;
+        private float m_OfflineJetpack;
         private float m_DamageFlashTimer;
 
         private Animator m_Animator;
@@ -39,12 +40,14 @@ namespace Combating.Scripts
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
         public int CurrentHP => IsNetworkActive ? currentHealth.Value : m_OfflineHealth;
-        public float JetpackFuel => m_Jetpack;
+        public float JetpackFuel => IsNetworkActive ? currentJetpackFuel.Value : m_OfflineJetpack;
+        public float MaxJetpack => IsNetworkActive ? maxJetpackFuel.Value : m_OfflineJetpackMax;
+        private float m_OfflineJetpackMax = 100f;
 
         void Awake()
         {
             m_OfflineHealth = maxHealth;
-            m_Jetpack = maxJetpack;
+            m_OfflineJetpack = m_OfflineJetpackMax;
 
             m_Animator = GetComponentInChildren<Animator>();
             if (m_Animator != null)
@@ -66,8 +69,12 @@ namespace Combating.Scripts
 
         public override void OnNetworkSpawn()
         {
-            if (IsServer) currentHealth.Value = maxHealth;
-            m_Jetpack = maxJetpack;
+            if (IsServer)
+            {
+                currentHealth.Value = maxHealth;
+                if (maxJetpackFuel.Value <= 0) maxJetpackFuel.Value = 100f;
+                currentJetpackFuel.Value = maxJetpackFuel.Value;
+            }
         }
 
         void Update()
@@ -148,22 +155,49 @@ namespace Combating.Scripts
         public void UpgradeMaxStats(int healthBonus, float jetpackBonus)
         {
             maxHealth += healthBonus;
-            maxJetpack += jetpackBonus;
 
             if (IsNetworkActive)
             {
-                if (IsServer) currentHealth.Value = Mathf.Min(maxHealth, currentHealth.Value + healthBonus);
+                if (IsServer)
+                {
+                    currentHealth.Value = Mathf.Min(maxHealth, currentHealth.Value + healthBonus);
+                    maxJetpackFuel.Value += jetpackBonus;
+                    currentJetpackFuel.Value = Mathf.Min(maxJetpackFuel.Value, currentJetpackFuel.Value + jetpackBonus);
+                }
             }
             else
             {
                 m_OfflineHealth = Mathf.Min(maxHealth, m_OfflineHealth + healthBonus);
+                m_OfflineJetpackMax += jetpackBonus;
+                m_OfflineJetpack = Mathf.Min(m_OfflineJetpackMax, m_OfflineJetpack + jetpackBonus);
             }
-
-            AddFuel(jetpackBonus);
         }
 
-        public void UseFuel(float amount) => m_Jetpack = Mathf.Max(0f, m_Jetpack - amount);
-        public void AddFuel(float amount) => m_Jetpack = Mathf.Min(maxJetpack, m_Jetpack + amount);
+        public void UseFuel(float amount)
+        {
+            if (IsNetworkActive)
+            {
+                if (IsServer) currentJetpackFuel.Value = Mathf.Max(0f, currentJetpackFuel.Value - amount);
+                else UseFuelServerRpc(amount);
+            }
+            else m_OfflineJetpack = Mathf.Max(0f, m_OfflineJetpack - amount);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void UseFuelServerRpc(float amount) => UseFuel(amount);
+
+        public void AddFuel(float amount)
+        {
+            if (IsNetworkActive)
+            {
+                if (IsServer) currentJetpackFuel.Value = Mathf.Min(maxJetpackFuel.Value, currentJetpackFuel.Value + amount);
+                else AddFuelServerRpc(amount);
+            }
+            else m_OfflineJetpack = Mathf.Min(m_OfflineJetpackMax, m_OfflineJetpack + amount);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void AddFuelServerRpc(float amount) => AddFuel(amount);
 
         private void Die()
         {

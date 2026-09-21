@@ -33,12 +33,7 @@ namespace Combating.Scripts
         void Start()
         {
             RefreshReferences();
-            // If attached to root, auto-init fuel if it's zero
-            if (m_Health != null && m_Health.maxJetpack <= 0)
-            {
-                m_Health.maxJetpack = 100f;
-                m_Health.AddFuel(100f);
-            }
+            // La inicialización ahora se maneja dentro de HealthController.OnNetworkSpawn
         }
 
         public void ApplyEffect(GameObject player)
@@ -47,11 +42,6 @@ namespace Combating.Scripts
             m_Health = player.GetComponent<HealthController>();
             m_CharController = player.GetComponent<CharacterController>();
 
-            if (m_Health != null && m_Health.maxJetpack <= 0)
-            {
-                m_Health.maxJetpack = 100f;
-                m_Health.AddFuel(100f);
-            }
             Debug.Log("[PropulsionController] Lógica de vuelo activada para el jugador.");
         }
 

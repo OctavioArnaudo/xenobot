@@ -25,17 +25,19 @@ namespace Crafting.Scripts
 
         public void ApplyEffect(GameObject entity)
         {
-            // Pure functionality: use HealthController (which manages Jetpack Fuel) directly
-            HealthController health = entity.GetComponent<HealthController>() ?? entity.GetComponentInParent<HealthController>();
+            HealthController health = entity.GetComponent<HealthController>() ??
+                                     entity.GetComponentInParent<HealthController>() ??
+                                     entity.GetComponentInChildren<HealthController>();
 
             if (health != null)
             {
-                health.AddFuel(FUEL_AMOUNT);
-                Debug.Log($"[FuelController] Restored {FUEL_AMOUNT} fuel to {entity.name}.");
+                // Cantidad de recarga aumentada a 50 para que se note más
+                health.AddFuel(50f);
+                Debug.Log($"<color=cyan>[FuelItem]</color> Combustible restaurado en {entity.name}.");
             }
             else
             {
-                Debug.LogWarning($"[FuelController] No HealthController found on {entity.name}");
+                Debug.LogWarning("[FuelItem] No se encontró HealthController para recargar.");
             }
         }
 
