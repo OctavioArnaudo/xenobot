@@ -45,16 +45,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2930775493
-  InScenePlacedSourceGlobalObjectIdHash: 0
+  GlobalObjectIdHash: 279229449
+  InScenePlacedSourceGlobalObjectIdHash: 2930775493
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 1
+  SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
@@ -75,6 +75,9 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   availableTrades:
   - {fileID: 11400000, guid: bfde781f12e749369c22641020b9df41, type: 2}
+  - {fileID: 11400000, guid: 7b76efe4ffc7424f8b030a2e804f39d6, type: 2}
+  - {fileID: 11400000, guid: 0ccc0bb9781340c4a4d829b342a9ed8f, type: 2}
+  - {fileID: 11400000, guid: c73dfdf4058e4f13b973f9ef61b0a184, type: 2}
   panelWidth: 700
   panelHeight: 550
   titleH: 60

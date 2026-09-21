@@ -295,12 +295,15 @@ namespace Crafting.Scripts
             GUI.Label(new Rect(panel.x, panel.y + 10, panel.width, titleH), title, _titleSty);
             if (GUI.Button(new Rect(panel.xMax - 50, panel.y + 15, 35, 35), "X", _btnSty)) SetOpen(false);
 
+            // Cálculo dinámico de columnas para que quepan en el ancho del panel recibido
+            int effectiveColumns = Mathf.Max(1, (int)((panel.width - (padding * 2)) / (cellSize + 10)));
+
             int i = 0;
             foreach (var key in _localKeys.ToArray())
             {
                 if (!_localBag.TryGetValue(key, out var slot)) continue;
-                Rect cell = new Rect(panel.x + padding + (i % columns) * (cellSize + 10),
-                                     panel.y + titleH + (i / columns) * (cellSize + 40), cellSize, cellSize);
+                Rect cell = new Rect(panel.x + padding + (i % effectiveColumns) * (cellSize + 10),
+                                     panel.y + titleH + (i / effectiveColumns) * (cellSize + 40), cellSize, cellSize);
 
                 bool isOver = cell.Contains(Event.current.mousePosition);
                 GUI.DrawTexture(cell, isOver ? _texSelected : _texNormal);
