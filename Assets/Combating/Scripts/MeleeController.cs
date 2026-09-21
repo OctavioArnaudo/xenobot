@@ -174,7 +174,7 @@ namespace Combating.Scripts
         {
             float finalDamage = slamDamage;
 
-            var stats = GetComponent<StatsController>() ?? GetComponentInParent<StatsController>();
+            var stats = GetComponent<HudController>() ?? GetComponentInParent<HudController>();
             if (stats != null)
             {
                 finalDamage = slamDamage * (stats.Attack / 10f);
@@ -242,7 +242,7 @@ namespace Combating.Scripts
         {
             float finalDamage = attackDamage;
 
-            var stats = GetComponent<StatsController>() ?? GetComponentInParent<StatsController>();
+            var stats = GetComponent<HudController>() ?? GetComponentInParent<HudController>();
             if (stats != null)
             {
                 finalDamage = attackDamage * (stats.Attack / 10f);

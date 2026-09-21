@@ -9,9 +9,9 @@ using NGO.Networking;
 /// Unified controller for character progression, HUD and Identity.
 /// Optimized to reduce CPU overhead and audio starvation.
 /// </summary>
-public class StatsController : NetworkBehaviour
+public class HudController : NetworkBehaviour
 {
-    public static StatsController Instance { get; private set; }
+    public static HudController Instance { get; private set; }
 
     [Header("Identity & Visuals")]
     public NetworkVariable<FixedString32Bytes> playerName = new NetworkVariable<FixedString32Bytes>(new FixedString32Bytes(""), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);

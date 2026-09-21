@@ -38,8 +38,8 @@ namespace Combating.Scripts
         protected Dictionary<System.Type, MonoBehaviour> _registeredModules = new();
 
         // Population Counters for Dynamic Scaling
-        public static int PlayerCount { get; private set; }
-        public static int EnemyCount { get; private set; }
+        public static int PlayerCount { get; protected set; }
+        public static int EnemyCount { get; protected set; }
 
         public Team MyTeam { get; protected set; } = Team.Neutral;
 
@@ -111,14 +111,13 @@ namespace Combating.Scripts
 
         public override void OnNetworkDespawn()
         {
-            if (this is PlayerController) PlayerCount--;
-            else if (this is EnemyController) EnemyCount--;
+            if (MyTeam == Team.Player) PlayerCount--;
+            else if (MyTeam == Team.Enemy) EnemyCount--;
         }
 
-        protected void DetermineMyTeam()
+        protected virtual void DetermineMyTeam()
         {
-            if (this is PlayerController) { if (IsSpawned) PlayerCount++; MyTeam = Team.Player; }
-            else if (this is EnemyController) { if (IsSpawned) EnemyCount++; MyTeam = Team.Enemy; }
+            // Las subclases deben identificar su equipo y manejar los contadores si es necesario
         }
 
         public virtual void RefreshBodyReferences()
@@ -267,7 +266,7 @@ namespace Combating.Scripts
             }
 
             // 4. Enemy Hardware Safety: Ensure modules don't bring cameras or listeners
-            if (this is EnemyController)
+            if (MyTeam == Team.Enemy)
             {
                 foreach (var cam in instance.GetComponentsInChildren<Camera>(true)) DestroyImmediate(cam);
                 foreach (var listener in instance.GetComponentsInChildren<AudioListener>(true)) DestroyImmediate(listener);

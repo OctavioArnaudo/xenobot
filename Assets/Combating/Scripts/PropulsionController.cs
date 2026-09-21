@@ -13,6 +13,8 @@ namespace Combating.Scripts
     public class PropulsionController : MonoBehaviour, IItemFunctional
     {
         [Header("Flight Settings")]
+        public bool infiniteFuel = false; // Checkbox para combustible infinito
+        public bool allowRegen = true;    // Checkbox para permitir recarga automática
         public float jetpackForce = 60f;
         public float hoverForce = 25f;
         public float fuelConsumption = 30f;
@@ -76,23 +78,24 @@ namespace Combating.Scripts
             if (isGrounded)
             {
                 m_JetpackDepleted = false;
-                m_Health.AddFuel(fuelRegen * Time.deltaTime);
+                if (allowRegen) m_Health.AddFuel(fuelRegen * Time.deltaTime);
                 return false;
             }
 
             if (!isBPressed) m_JetpackDepleted = false;
-            if (m_Health.JetpackFuel <= 0) m_JetpackDepleted = true;
+            if (!infiniteFuel && m_Health.JetpackFuel <= 0) m_JetpackDepleted = true;
 
-            if (isBPressed && !m_JetpackDepleted && m_Health.JetpackFuel > 0)
+            if (isBPressed && (infiniteFuel || (!m_JetpackDepleted && m_Health.JetpackFuel > 0)))
             {
                 m_IsUsingJetpack = true;
                 if (verticalVelocity < -2f) verticalVelocity = Mathf.MoveTowards(verticalVelocity, 0, Time.deltaTime * 20f);
                 float currentForce = (verticalVelocity > hoverThreshold) ? hoverForce : jetpackForce;
                 verticalVelocity += currentForce * Time.deltaTime;
                 if (verticalVelocity > maxUpwardVelocity) verticalVelocity = maxUpwardVelocity;
-                m_Health.UseFuel(fuelConsumption * Time.deltaTime);
+
+                if (!infiniteFuel) m_Health.UseFuel(fuelConsumption * Time.deltaTime);
             }
-            else m_Health.AddFuel((fuelRegen * 0.2f) * Time.deltaTime);
+            else if (allowRegen) m_Health.AddFuel((fuelRegen * 0.2f) * Time.deltaTime);
 
             // Report flight state to Animator safely
             Animator anim = m_Player != null ? m_Player.GetComponentInChildren<Animator>() : GetComponentInChildren<Animator>();

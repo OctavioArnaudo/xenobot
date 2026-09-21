@@ -47,6 +47,12 @@ namespace Testing.Scripts
             InitializeComponents();
         }
 
+        protected override void DetermineMyTeam()
+        {
+            MyTeam = Team.Enemy;
+            if (IsSpawned) EnemyCount++;
+        }
+
         private void InitializeComponents()
         {
             if (controller == null) controller = GetComponent<CharacterController>();

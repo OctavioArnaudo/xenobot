@@ -193,6 +193,12 @@ namespace Testing.Scripts
             }
         }
 
+        protected override void DetermineMyTeam()
+        {
+            MyTeam = Team.Player;
+            if (IsSpawned) PlayerCount++;
+        }
+
         public override void RefreshBodyReferences()
         {
             base.RefreshBodyReferences();

@@ -82,7 +82,7 @@ namespace Combating.Scripts
             int finalDamage = damage;
 
             // Integracion con StatsController: Defensa (Intento robusto de encontrar el script en la raiz)
-            var stats = GetComponent<StatsController>() ?? GetComponentInParent<StatsController>();
+            var stats = GetComponent<HudController>() ?? GetComponentInParent<HudController>();
             if (stats != null)
             {
                 finalDamage = Mathf.RoundToInt(damage * (10f / (10f + stats.Defense)));

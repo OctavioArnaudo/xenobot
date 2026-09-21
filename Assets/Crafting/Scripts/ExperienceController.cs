@@ -27,9 +27,9 @@ namespace Crafting.Scripts
         public void ApplyEffect(GameObject entity)
         {
             // 1. Try finding the pure functionality StatsController (HUD)
-            StatsController stats = entity.GetComponent<StatsController>() ??
-                                    entity.GetComponentInParent<StatsController>() ??
-                                    entity.GetComponentInChildren<StatsController>();
+            HudController stats = entity.GetComponent<HudController>() ??
+                                    entity.GetComponentInParent<HudController>() ??
+                                    entity.GetComponentInChildren<HudController>();
 
             if (stats != null)
             {
