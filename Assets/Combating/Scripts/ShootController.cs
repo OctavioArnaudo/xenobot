@@ -14,9 +14,8 @@ namespace Combating.Scripts
     {
         [Header("References")]
         public Camera AimCamera;
-        public Transform Muzzle;
-        public Vector3 VirtualMuzzleOffset = new Vector3(0, 1.4f, 0.7f);
-        public ProjectileController ProjectilePrefab;
+        public GameObject Muzzle; // Único punto de disparo (asignar manualmente en el inspector)
+        public GameObject Projectile; // Prefab del proyectil
         public Renderer[] visualsToRotate;
 
         [Header("Shooting")]
@@ -57,7 +56,7 @@ namespace Combating.Scripts
             if (m_Player == null) m_Player = GetComponentInParent<PlayerController>();
             if (m_Health == null) m_Health = GetComponentInParent<HealthController>();
 
-            // Critical: Search camera in parent player
+            // Búsqueda de cámara en el jugador
             if (AimCamera == null && m_Player != null)
                 AimCamera = m_Player.GetComponentInChildren<Camera>();
 
@@ -65,30 +64,7 @@ namespace Combating.Scripts
 
             if (Muzzle == null)
             {
-                var wc = GetComponent<WeaponController>();
-                if (wc != null) Muzzle = wc.muzzlePoint;
-
-                if (Muzzle == null)
-                {
-                    Transform t = transform.Find("WeaponRender/MuzzlePoint");
-                    if (t == null) t = transform.Find("Render/MuzzlePoint");
-                    if (t == null) t = transform.Find("MuzzlePoint");
-                    if (t != null) Muzzle = t;
-                }
-            }
-
-            // Fallback: Si no hay Muzzle asignado o detectado, usar el punto virtual personalizable
-            if (Muzzle == null || Muzzle == transform || Muzzle.localPosition.y < 0.2f)
-            {
-                Transform vm = transform.Find("VirtualMuzzle");
-                if (vm == null)
-                {
-                    GameObject go = new GameObject("VirtualMuzzle");
-                    go.transform.SetParent(transform);
-                    vm = go.transform;
-                }
-                vm.localPosition = VirtualMuzzleOffset;
-                Muzzle = vm;
+                Debug.LogWarning($"[ShootController] Muzzle no asignado en {gameObject.name}. El disparo fallará.");
             }
 
             if (visualsToRotate == null || visualsToRotate.Length == 0)
@@ -142,16 +118,16 @@ namespace Combating.Scripts
 
         public bool TryFire()
         {
-            if (ProjectilePrefab == null || Muzzle == null)
+            if (Projectile == null || Muzzle == null)
             {
                 RefreshReferences();
-                if (ProjectilePrefab == null || Muzzle == null) return false;
+                if (Projectile == null || Muzzle == null) return false;
             }
 
             if (Time.time < m_NextFireTime) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
 
-            Vector3 originPos = Muzzle.position;
+            Vector3 originPos = Muzzle.transform.position;
             Vector3 direction = GetAimDirection(originPos);
             ExecuteFire(direction, originPos);
             return true;
@@ -159,10 +135,10 @@ namespace Combating.Scripts
 
         public bool FireAt(Vector3 targetPosition)
         {
-            if (ProjectilePrefab == null || Muzzle == null)
+            if (Projectile == null || Muzzle == null)
             {
                 RefreshReferences();
-                if (ProjectilePrefab == null || Muzzle == null) return false;
+                if (Projectile == null || Muzzle == null) return false;
             }
 
             if (Time.time < m_NextFireTime) return false;
@@ -170,7 +146,7 @@ namespace Combating.Scripts
 
             RotateVisualsTowards(targetPosition);
 
-            Vector3 originPos = Muzzle.position;
+            Vector3 originPos = Muzzle.transform.position;
             Vector3 direction = (targetPosition - originPos).normalized;
             ExecuteFire(direction, originPos);
             return true;
@@ -179,15 +155,15 @@ namespace Combating.Scripts
         private void ExecuteFire(Vector3 direction, Vector3 spawnPos)
         {
             float finalDamage = Damage;
-            StatsController stats = (m_Player != null) ? m_Player.GetComponent<StatsController>() : GetComponentInParent<StatsController>();
-            if (stats != null) finalDamage = Damage * (stats.Attack / 10f);
+            // StatsController check...
+            var pc = (m_Player != null) ? m_Player : GetComponentInParent<PlayerController>();
 
             Team team = m_Health != null ? m_Health.team : Team.Neutral;
 
             if (m_Player != null && IsNetworkActive)
             {
                 // PLAYER NETWORK MODE
-                m_Player.RequestFire(ProjectilePrefab, direction, spawnPos, finalDamage, team);
+                m_Player.RequestFire(Projectile, direction, spawnPos, finalDamage, team);
             }
             else
             {
@@ -219,11 +195,16 @@ namespace Combating.Scripts
 
         private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool shouldNetSpawn)
         {
-            ProjectileController projectile = Instantiate(ProjectilePrefab, spawnPos, Quaternion.LookRotation(direction));
-            if (projectile != null)
+            GameObject projObj = Instantiate(Projectile, spawnPos, Quaternion.LookRotation(direction));
+            if (projObj != null)
             {
-                projectile.Launch(m_Player != null ? m_Player.gameObject : gameObject, direction, damage, team);
-                if (shouldNetSpawn && projectile.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
+                ProjectileController projectile = projObj.GetComponent<ProjectileController>();
+                if (projectile != null)
+                {
+                    projectile.Launch(m_Player != null ? m_Player.gameObject : gameObject, direction, damage, team);
+                }
+
+                if (shouldNetSpawn && projObj.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
             }
         }
 

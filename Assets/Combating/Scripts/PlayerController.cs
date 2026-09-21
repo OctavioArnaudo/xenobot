@@ -518,7 +518,7 @@ namespace Combating.Scripts
         #endregion
 
         #region Network Shooting Bridge
-        public void RequestFire(ProjectileController prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team)
+        public void RequestFire(GameObject prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team)
         {
             if (IsNetworkActive)
             {
@@ -526,27 +526,36 @@ namespace Combating.Scripts
             }
             else
             {
-                ProjectileController projectile = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
-                projectile.Launch(gameObject, direction, damage, team);
+                GameObject projObj = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
+                ProjectileController projectile = projObj.GetComponent<ProjectileController>();
+                if (projectile != null)
+                {
+                    projectile.Launch(gameObject, direction, damage, team);
+                }
             }
         }
 
         [ServerRpc]
         private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team)
         {
-            ProjectileController projectilePrefab = null;
+            GameObject projectilePrefab = null;
 
             var shooter = GetComponentInChildren<ShootController>();
             if (shooter != null)
             {
-                projectilePrefab = shooter.ProjectilePrefab;
+                projectilePrefab = shooter.Projectile;
             }
 
             if (projectilePrefab != null)
             {
-                ProjectileController instance = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
-                instance.Launch(gameObject, direction, damage, team);
-                instance.GetComponent<NetworkObject>().Spawn();
+                GameObject projObj = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
+                ProjectileController projectile = projObj.GetComponent<ProjectileController>();
+                if (projectile != null)
+                {
+                    projectile.Launch(gameObject, direction, damage, team);
+                }
+
+                if (projObj.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
             }
             else
             {
