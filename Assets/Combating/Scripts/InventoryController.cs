@@ -482,13 +482,14 @@ namespace Crafting.Scripts
                 ToggleEquipment(item);
             }
 
-            Vector3 dropPos = transform.position + transform.right * 1.5f + transform.up * 0.5f;
+            // Usar dropDistance para el desplazamiento lateral y asegurar altura
+            Vector3 dropPos = transform.position + transform.right * dropDistance + transform.up * 1.8f;
 
             if (IsNetworkActive) DropItemServerRpc(hash, dropPos);
             else
             {
                 InternalRemoveItem(hash, 1);
-                if (_spawnController != null) _spawnController.SpawnDroppedItem(item.itemPrefab, transform.position, item.displayName);
+                if (_spawnController != null) _spawnController.SpawnDroppedItem(item.itemPrefab, dropPos, item.displayName);
             }
         }
 
@@ -499,7 +500,7 @@ namespace Crafting.Scripts
             if (data != null)
             {
                 InternalRemoveItem(hash, 1);
-                if (_spawnController != null) _spawnController.SpawnDroppedItem(data.itemPrefab, transform.position, data.displayName);
+                if (_spawnController != null) _spawnController.SpawnDroppedItem(data.itemPrefab, position, data.displayName);
             }
         }
 
