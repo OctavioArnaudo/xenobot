@@ -33,49 +33,65 @@ namespace Crafting.Scripts
 
             if (_hub == null) _hub = player.GetComponent<ModularController>();
 
-            // 1. Find the target render root
-            GameObject renderRoot = (_hub != null && _hub.renderRoot != null)
-                ? _hub.renderRoot.gameObject
+            // 1. Identificar el cuerpo original del Player (el objeto con tag Render)
+            // Priorizamos el activeModel del hub si existe, si no buscamos por tag
+            GameObject playerOriginalBody = (_hub != null && _hub.activeModel != null)
+                ? _hub.activeModel.gameObject
                 : FindChildWithTag(player, renderTag);
 
-            if (renderRoot == null)
+            // 2. Identificar mi propio cuerpo (el FBX del costume con tag Render)
+            GameObject myCostumeBody = FindChildWithTag(gameObject, renderTag);
+
+            if (playerOriginalBody == null)
             {
-                Debug.LogWarning($"[CostumeController] Render root with tag '{renderTag}' not found on {player.name}. Using player root.");
-                renderRoot = player;
+                Debug.LogWarning($"[CostumeController] No se encontró el cuerpo original con tag '{renderTag}' en el Player.");
+                return;
             }
 
-            // 2. HIDE the previous model if it exists
-            if (_hub != null && _hub.activeModel != null)
-            {
-                _modelHiddenByMe = _hub.activeModel.gameObject;
-                _modelHiddenByMe.SetActive(false);
-            }
+            // 3. OCULTAR el cuerpo original y guardar referencia para restaurar
+            _modelHiddenByMe = playerOriginalBody;
+            _modelHiddenByMe.SetActive(false);
 
-            // 3. Attach and Show myself
-            transform.SetParent(renderRoot.transform);
-            transform.localPosition = Vector3.zero; // Corregido de Vector3.one a Vector3.zero
+            // 4. ACOPLAR mi cuerpo al Player
+            // Nos ponemos como hijos del padre del cuerpo original para mantener la jerarquía
+            transform.SetParent(playerOriginalBody.transform.parent);
+            transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
             transform.localScale = Vector3.one;
+
+            // Asegurarnos de que el visual del costume esté activo
+            if (myCostumeBody != null)
+            {
+                myCostumeBody.SetActive(true);
+            }
 
             gameObject.SetActive(true);
             _isEquipped = true;
 
-            // 4. Cleanup modular components
+            // 5. Limpiar componentes de mundo
             if (TryGetComponent<PickupController>(out var p)) Destroy(p);
             if (TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
             foreach (var c in GetComponentsInChildren<Collider>(true)) c.enabled = false;
 
-            if (_hub != null) _hub.RefreshBodyReferences();
+            // 6. REFRESCAR SISTEMAS: Crucial para que el Animator y el Muzzle apunten al nuevo FBX
+            if (_hub != null)
+            {
+                _hub.RefreshBodyReferences();
+            }
         }
 
         private void OnDestroy()
         {
-            if (!_isEquipped) return;
+            // Evitar errores al cerrar el juego o si el objeto ya no es válido
+            if (!_isEquipped || _modelHiddenByMe == null) return;
 
-            // RESTORE exactly what this specific costume hid
-            if (_modelHiddenByMe != null)
+            // Si el objeto que escondimos aún existe y la escena sigue cargada, lo restauramos
+            if (_modelHiddenByMe.gameObject != null && _modelHiddenByMe.scene.isLoaded)
             {
                 _modelHiddenByMe.SetActive(true);
+
+                // Notificar al hub si aún existe
+                if (_hub != null) _hub.RefreshBodyReferences();
             }
         }
 

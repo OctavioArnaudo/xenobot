@@ -419,8 +419,11 @@ namespace Crafting.Scripts
         private void ToggleEquipment(ItemData item)
         {
             int hash = item.GetItemHashCode();
+            bool isCostume = item.itemPrefab != null && item.itemPrefab.GetComponentInChildren<CostumeController>() != null;
+
             if (_equippedInstances.TryGetValue(hash, out GameObject existing))
             {
+                // DESEQUIPAR: Si ya está puesto, lo quitamos
                 Destroy(existing);
                 _equippedInstances.Remove(hash);
 
@@ -429,25 +432,42 @@ namespace Crafting.Scripts
             }
             else
             {
+                // EQUIPAR NUEVO:
                 if (item.itemPrefab != null)
                 {
+                    // Si es un Costume, desequipamos cualquier otro costume activo para evitar solapamientos
+                    if (isCostume)
+                    {
+                        var activeCostumes = _equippedInstances.Where(x => x.Value != null && x.Value.GetComponentInChildren<CostumeController>() != null).ToList();
+                        foreach (var active in activeCostumes)
+                        {
+                            Destroy(active.Value);
+                            _equippedInstances.Remove(active.Key);
+                        }
+                    }
+
                     GameObject instance = Instantiate(item.itemPrefab, transform);
                     _equippedInstances[hash] = instance;
 
-                    // New rule: Only show meshes if the prefab has a CostumeController
-                    bool hasVisualModule = instance.GetComponentInChildren<CostumeController>() != null;
+                    // Regla visual: Solo ocultamos si es un objeto de pura lógica (sin Costume ni Weapon Controller)
+                    bool hasVisualModule = instance.GetComponentInChildren<CostumeController>() != null ||
+                                         instance.GetComponentInChildren<WeaponController>() != null;
+
                     if (!hasVisualModule)
                     {
+                        // Si no tiene controladores visuales, asumimos que es un booster invisible
                         foreach(var r in instance.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
                     }
 
+                    // Quitar componentes de mundo para que no interfieran con el player
                     if (instance.TryGetComponent<PickupController>(out var p)) DestroyImmediate(p);
                     if (instance.TryGetComponent<Rigidbody>(out var rb)) DestroyImmediate(rb);
                     if (instance.TryGetComponent<NetworkObject>(out var no)) DestroyImmediate(no);
 
-                    // Always disable colliders on equipment to avoid player physics glitches
+                    // Desactivar colisionadores para evitar que el player salga volando
                     foreach (var c in instance.GetComponentsInChildren<Collider>(true)) c.enabled = false;
 
+                    // Aplicar efectos funcionales (Stats, disparos, etc)
                     foreach (var func in instance.GetComponentsInChildren<IItemFunctional>())
                     {
                         func.ApplyEffect(gameObject);
@@ -458,7 +478,9 @@ namespace Crafting.Scripts
                 }
             }
 
+            // Refrescar referencias del robot (muzzle, cámara, etc)
             GetComponent<PlayerController>()?.RefreshFunctionalComponents();
+            GetComponent<ModularController>()?.RefreshBodyReferences();
         }
 
         private void ApplyConsumableEffect(ItemData item)
