@@ -15,6 +15,7 @@ namespace Combating.Scripts
         [Header("References")]
         public Camera AimCamera;
         public Transform Muzzle;
+        public Vector3 VirtualMuzzleOffset = new Vector3(0, 1.4f, 0.7f);
         public ProjectileController ProjectilePrefab;
         public Renderer[] visualsToRotate;
 
@@ -76,18 +77,18 @@ namespace Combating.Scripts
                 }
             }
 
-            // Fallback: If still no Muzzle, or it is at the feet, create a virtual point
+            // Fallback: Si no hay Muzzle asignado o detectado, usar el punto virtual personalizable
             if (Muzzle == null || Muzzle == transform || Muzzle.localPosition.y < 0.2f)
             {
-                Transform virtualMuzzle = transform.Find("VirtualMuzzle");
-                if (virtualMuzzle == null)
+                Transform vm = transform.Find("VirtualMuzzle");
+                if (vm == null)
                 {
                     GameObject go = new GameObject("VirtualMuzzle");
                     go.transform.SetParent(transform);
-                    go.transform.localPosition = new Vector3(0, 1.4f, 0.7f); // Higher and more forward
-                    virtualMuzzle = go.transform;
+                    vm = go.transform;
                 }
-                Muzzle = virtualMuzzle;
+                vm.localPosition = VirtualMuzzleOffset;
+                Muzzle = vm;
             }
 
             if (visualsToRotate == null || visualsToRotate.Length == 0)
