@@ -109,12 +109,23 @@ public class SettingsMenu : MonoBehaviour
 
     private GameObject SetupControlesPanel()
     {
-        GameObject panel = CreateBasePanel("Panel_Controles", "CONFIG. DE INPUT");
-        CreateControlLabel(panel.transform, "AVANZAR", "W", 0.75f);
-        CreateControlLabel(panel.transform, "IZQUIERDA", "A", 0.65f);
-        CreateControlLabel(panel.transform, "RETROCEDER", "S", 0.55f);
-        CreateControlLabel(panel.transform, "DERECHA", "D", 0.45f);
-        CreateControlLabel(panel.transform, "SALTAR", "ESPACIO", 0.35f);
+        GameObject panel = CreateBasePanel("Panel_Controles", "MAPEO DE TECLAS");
+
+        // Columna de Controles compacta (Lista oficial para el usuario)
+        CreateControlLabel(panel.transform, "MOVIMIENTO", "W A S D", 0.80f);
+        CreateControlLabel(panel.transform, "SALTAR", "ESPACIO", 0.75f);
+        CreateControlLabel(panel.transform, "ESPRINTAR", "MAYÚS IZQ", 0.70f);
+        CreateControlLabel(panel.transform, "JETPACK (VUELO)", "B", 0.65f);
+        CreateControlLabel(panel.transform, "DASH (IMPULSO)", "WASD (x2)", 0.60f);
+        CreateControlLabel(panel.transform, "AGACHARSE", "C", 0.55f);
+        CreateControlLabel(panel.transform, "RECARGAR", "R", 0.50f);
+        CreateControlLabel(panel.transform, "DISPARAR", "CLIC IZQ", 0.45f);
+        CreateControlLabel(panel.transform, "APUNTAR", "CLIC DER", 0.40f);
+        CreateControlLabel(panel.transform, "CAMBIO RÁPIDO", "1 - 9", 0.35f);
+        CreateControlLabel(panel.transform, "INVENTARIO", "TAB / I", 0.30f);
+        CreateControlLabel(panel.transform, "MISIONES (HUD)", "M", 0.25f);
+        CreateControlLabel(panel.transform, "MENÚ / PAUSA", "ESC", 0.20f);
+
         return panel;
     }
 
@@ -194,13 +205,13 @@ public class SettingsMenu : MonoBehaviour
         container.transform.SetParent(parent);
         container.layer = LayerMask.NameToLayer("UI");
         RectTransform rt = container.AddComponent<RectTransform>();
-        rt.anchorMin = new Vector2(0.05f, yAnchor - 0.04f);
-        rt.anchorMax = new Vector2(0.95f, yAnchor + 0.04f);
+        rt.anchorMin = new Vector2(0.05f, yAnchor - 0.02f); // Altura reducida para que quepan todas
+        rt.anchorMax = new Vector2(0.95f, yAnchor + 0.02f);
         rt.offsetMin = rt.offsetMax = Vector2.zero;
         rt.anchoredPosition3D = Vector3.zero; rt.localScale = Vector3.one;
 
-        CreateSubText(container.transform, action, new Vector2(0, 0), new Vector2(0.5f, 1), TextAlignmentOptions.Left, colorTexto, 30);
-        CreateSubText(container.transform, key, new Vector2(0.55f, 0), new Vector2(1f, 1), TextAlignmentOptions.Right, colorAccent, 30);
+        CreateSubText(container.transform, action, new Vector2(0, 0), new Vector2(0.5f, 1), TextAlignmentOptions.Left, colorTexto, 28);
+        CreateSubText(container.transform, key, new Vector2(0.55f, 0), new Vector2(1f, 1), TextAlignmentOptions.Right, colorAccent, 28);
     }
 
     private void CreateSettingToggle(Transform parent, string labelText, bool initialState, float yAnchor)
