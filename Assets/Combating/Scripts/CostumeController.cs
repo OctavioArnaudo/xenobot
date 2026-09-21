@@ -50,6 +50,31 @@ namespace Crafting.Scripts
 
             // 3. OCULTAR el cuerpo original y guardar referencia para restaurar
             _modelHiddenByMe = playerOriginalBody;
+
+            // --- Sincronización de Animaciones ---
+            Animator oldAnim = playerOriginalBody.GetComponentInChildren<Animator>();
+            Animator newAnim = (myCostumeBody != null) ? myCostumeBody.GetComponentInChildren<Animator>() : GetComponentInChildren<Animator>();
+
+            if (oldAnim != null && newAnim != null)
+            {
+                // Copiar el controlador para que el nuevo FBX use la misma lógica de estados
+                newAnim.runtimeAnimatorController = oldAnim.runtimeAnimatorController;
+
+                // Sincronizar el estado actual de la capa base para que no haya salto visual
+                var stateInfo = oldAnim.GetCurrentAnimatorStateInfo(0);
+                newAnim.Play(stateInfo.fullPathHash, 0, stateInfo.normalizedTime);
+
+                // Copiar parámetros básicos (Speed, Grounded, etc)
+                foreach (var param in oldAnim.parameters)
+                {
+                    if (param.type == AnimatorControllerParameterType.Float)
+                        newAnim.SetFloat(param.nameHash, oldAnim.GetFloat(param.nameHash));
+                    else if (param.type == AnimatorControllerParameterType.Bool)
+                        newAnim.SetBool(param.nameHash, oldAnim.GetBool(param.nameHash));
+                }
+            }
+            // --------------------------------------
+
             _modelHiddenByMe.SetActive(false);
 
             // 4. ACOPLAR mi cuerpo al Player
