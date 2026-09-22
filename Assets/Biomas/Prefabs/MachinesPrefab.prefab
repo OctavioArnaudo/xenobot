@@ -83,7 +83,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1057034087845507034, guid: 42bbb6a10270c46428671012518910fe, type: 3}
       propertyPath: m_Name
-      value: CraftingRender (1)
+      value: MachineRender (1)
       objectReference: {fileID: 0}
     - target: {fileID: 2367879338353373473, guid: 42bbb6a10270c46428671012518910fe, type: 3}
       propertyPath: m_Color.b
@@ -106,7 +106,13 @@ PrefabInstance:
       addedObject: {fileID: 8241054310232950519}
     - targetCorrespondingSourceObject: {fileID: 1057034087845507034, guid: 42bbb6a10270c46428671012518910fe, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7377642737980155131}
+      addedObject: {fileID: 57323682532933240}
+    - targetCorrespondingSourceObject: {fileID: 1057034087845507034, guid: 42bbb6a10270c46428671012518910fe, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5308535782008848558}
+    - targetCorrespondingSourceObject: {fileID: 1057034087845507034, guid: 42bbb6a10270c46428671012518910fe, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1727028532082068401}
   m_SourcePrefab: {fileID: 100100000, guid: 42bbb6a10270c46428671012518910fe, type: 3}
 --- !u!1 &5004131071284578338 stripped
 GameObject:
@@ -134,7 +140,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 3.7016203, y: 1, z: 4.352911}
   m_Center: {x: -0.09649077, y: 0, z: 0.08442304}
---- !u!114 &7377642737980155131
+--- !u!114 &57323682532933240
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -143,9 +149,79 @@ MonoBehaviour:
   m_GameObject: {fileID: 5004131071284578338}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f595310835280a048b3de203d8f29eb5, type: 3}
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.CraftingController
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2522583104
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &5308535782008848558
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5004131071284578338}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1f2e3b4c5a69876543210fedcba9876, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  availableTrades:
+  - {fileID: 11400000, guid: bfde781f12e749369c22641020b9df41, type: 2}
+  - {fileID: 11400000, guid: 7b76efe4ffc7424f8b030a2e804f39d6, type: 2}
+  - {fileID: 11400000, guid: 0ccc0bb9781340c4a4d829b342a9ed8f, type: 2}
+  - {fileID: 11400000, guid: c73dfdf4058e4f13b973f9ef61b0a184, type: 2}
+  requireProximity: 1
+  panelWidth: 700
+  panelHeight: 550
+  titleH: 60
+  padding: 20
+  cornerRadius: 15
+  panelColor: {r: 0.1, g: 0.1, b: 0.12, a: 0.95}
+  accentColor: {r: 1, g: 0.85, b: 0, a: 1}
+  minWidth: 250
+  minHeight: 40
+--- !u!54 &1727028532082068401
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5004131071284578338}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!4 &5636798224935801496 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 423486024123086176, guid: 42bbb6a10270c46428671012518910fe, type: 3}
@@ -201,7 +277,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1057034087845507034, guid: 42bbb6a10270c46428671012518910fe, type: 3}
       propertyPath: m_Name
-      value: CraftingRender (2)
+      value: MachineRender (2)
       objectReference: {fileID: 0}
     - target: {fileID: 2367879338353373473, guid: 42bbb6a10270c46428671012518910fe, type: 3}
       propertyPath: m_Color.b
@@ -224,7 +300,13 @@ PrefabInstance:
       addedObject: {fileID: 8889193395173257562}
     - targetCorrespondingSourceObject: {fileID: 1057034087845507034, guid: 42bbb6a10270c46428671012518910fe, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 2218603622153741708}
+      addedObject: {fileID: 2394903135283018135}
+    - targetCorrespondingSourceObject: {fileID: 1057034087845507034, guid: 42bbb6a10270c46428671012518910fe, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7968434650765750164}
+    - targetCorrespondingSourceObject: {fileID: 1057034087845507034, guid: 42bbb6a10270c46428671012518910fe, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8699738626384327014}
   m_SourcePrefab: {fileID: 100100000, guid: 42bbb6a10270c46428671012518910fe, type: 3}
 --- !u!1 &8214143744006871353 stripped
 GameObject:
@@ -252,7 +334,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 3.7016203, y: 1, z: 4.352911}
   m_Center: {x: -0.09649077, y: 0, z: 0.08442304}
---- !u!114 &2218603622153741708
+--- !u!114 &2394903135283018135
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -261,9 +343,79 @@ MonoBehaviour:
   m_GameObject: {fileID: 8214143744006871353}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f595310835280a048b3de203d8f29eb5, type: 3}
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.CraftingController
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1517708460
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &7968434650765750164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8214143744006871353}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1f2e3b4c5a69876543210fedcba9876, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  availableTrades:
+  - {fileID: 11400000, guid: bfde781f12e749369c22641020b9df41, type: 2}
+  - {fileID: 11400000, guid: 7b76efe4ffc7424f8b030a2e804f39d6, type: 2}
+  - {fileID: 11400000, guid: 0ccc0bb9781340c4a4d829b342a9ed8f, type: 2}
+  - {fileID: 11400000, guid: c73dfdf4058e4f13b973f9ef61b0a184, type: 2}
+  requireProximity: 1
+  panelWidth: 700
+  panelHeight: 550
+  titleH: 60
+  padding: 20
+  cornerRadius: 15
+  panelColor: {r: 0.1, g: 0.1, b: 0.12, a: 0.95}
+  accentColor: {r: 1, g: 0.85, b: 0, a: 1}
+  minWidth: 250
+  minHeight: 40
+--- !u!54 &8699738626384327014
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8214143744006871353}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!4 &8842062067397985155 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 423486024123086176, guid: 42bbb6a10270c46428671012518910fe, type: 3}

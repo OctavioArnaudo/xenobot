@@ -298,7 +298,7 @@ namespace Testing.Scripts
         private void OnGUI()
         {
             if (!CanExecuteLocalLogic || !_open) return;
-            if (CraftingManager.Instance != null && CraftingManager.Instance.IsUIOpen) return;
+            if (CraftingController.Instance != null && CraftingController.Instance.IsUIOpen) return;
 
             EnsureStyles();
             Rect panelRect = new Rect((Screen.width - panelWidth) / 2f, (Screen.height - panelHeight) / 2f, panelWidth, panelHeight);
