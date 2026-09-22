@@ -1,6 +1,7 @@
 using UnityEngine;
 using Combating.Scripts;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Crafting.Scripts
 {
@@ -40,20 +41,41 @@ namespace Crafting.Scripts
             #endif
         }
 
+        [Header("Settings")]
+        public bool lockOnUnequip = true; // Si es true, se vuelve a bloquear la habilidad al quitar el item
+
+        private PropulsionController _targetPropulsion;
+
         public void ApplyEffect(GameObject entity)
         {
             transform.localPosition = new Vector3(0, 2.4f, -0.35f);
             transform.localRotation = Quaternion.identity;
 
-            // Activate Jetpack Module permanently
-            ModularController hub = entity.GetComponent<ModularController>() ?? entity.GetComponentInParent<ModularController>();
-            if (hub != null)
-            {
-                var propulsion = hub.GetModule<PropulsionController>();
-                if (propulsion != null) propulsion.enabled = true;
-            }
+            // Activate Jetpack Module: Robust search for both Modular and Standard Players
+            _targetPropulsion = entity.GetComponentInChildren<PropulsionController>(true) ??
+                               entity.GetComponentInParent<PropulsionController>() ??
+                               GameObject.FindObjectsByType<PropulsionController>(FindObjectsSortMode.None)
+                               .FirstOrDefault(p => p.gameObject.transform.root == entity.transform.root);
 
-            Debug.Log($"[JetpackController] Visuales y sistema de propulsión activados en {entity.name}.");
+            if (_targetPropulsion != null)
+            {
+                _targetPropulsion.isUnlocked = true;
+                Debug.Log($"[JetpackController] Sistema de propulsión ACTIVADO en {entity.name}.");
+            }
+            else
+            {
+                Debug.LogWarning($"[JetpackController] No se encontró PropulsionController en la jerarquía de {entity.name}.");
+            }
+        }
+
+        private void OnDestroy()
+        {
+            // Si el ítem se destruye (QUIT/DROP), volvemos a bloquear la habilidad si así está configurado
+            if (lockOnUnequip && _targetPropulsion != null)
+            {
+                _targetPropulsion.isUnlocked = false;
+                Debug.Log($"[JetpackController] Sistema de propulsión BLOQUEADO (ítem retirado).");
+            }
         }
 
         public void GenerateJetpackMesh()

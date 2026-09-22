@@ -1,6 +1,7 @@
 using UnityEngine;
 using Combating.Scripts;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Crafting.Scripts
 {
@@ -17,6 +18,9 @@ namespace Crafting.Scripts
 
         [Header("Runtime Info")]
         public Transform muzzlePoint;
+        public bool lockOnUnequip = true; // Si es true, se vuelve a bloquear la habilidad al quitar el item
+
+        private ShootController _targetShooter;
 
         void Awake()
         {
@@ -47,15 +51,31 @@ namespace Crafting.Scripts
             transform.localPosition = new Vector3(0.4f, 1.2f, 0.2f);
             transform.localRotation = Quaternion.identity;
 
-            // Activate Shoot Module permanently
-            ModularController hub = entity.GetComponent<ModularController>() ?? entity.GetComponentInParent<ModularController>();
-            if (hub != null)
-            {
-                var shooter = hub.GetModule<ShootController>();
-                if (shooter != null) shooter.enabled = true;
-            }
+            // Activate Shoot Module: Robust search for both Modular and Standard Players
+            _targetShooter = entity.GetComponentInChildren<ShootController>(true) ??
+                            entity.GetComponentInParent<ShootController>() ??
+                            GameObject.FindObjectsByType<ShootController>(FindObjectsSortMode.None)
+                            .FirstOrDefault(s => s.gameObject.transform.root == entity.transform.root);
 
-            Debug.Log($"[WeaponController] Sistema de disparo activado en {entity.name}.");
+            if (_targetShooter != null)
+            {
+                _targetShooter.isUnlocked = true;
+                Debug.Log($"[WeaponController] Sistema de disparo ACTIVADO en {entity.name}.");
+            }
+            else
+            {
+                Debug.LogWarning($"[WeaponController] No se encontró ShootController en la jerarquía de {entity.name}.");
+            }
+        }
+
+        private void OnDestroy()
+        {
+            // Si el ítem se destruye (QUIT/DROP), volvemos a bloquear la habilidad si así está configurado
+            if (lockOnUnequip && _targetShooter != null)
+            {
+                _targetShooter.isUnlocked = false;
+                Debug.Log($"[WeaponController] Sistema de disparo BLOQUEADO (ítem retirado).");
+            }
         }
 
         public void GenerateWeaponMesh()

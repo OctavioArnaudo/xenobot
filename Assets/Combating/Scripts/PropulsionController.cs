@@ -13,6 +13,7 @@ namespace Combating.Scripts
     public class PropulsionController : MonoBehaviour, IItemFunctional
     {
         [Header("Flight Settings")]
+        public bool isUnlocked = false; // Si está marcado, vuela desde el inicio. Si no, requiere jetpack.
         public bool infiniteFuel = false; // Checkbox para combustible infinito
         public bool allowRegen = true;    // Checkbox para permitir recarga automática
         public float jetpackForce = 60f;
@@ -54,6 +55,7 @@ namespace Combating.Scripts
 
         public bool ProcessFlight(bool isJumpHeld, bool isGrounded, ref float verticalVelocity)
         {
+            if (!isUnlocked) return false;
             if (m_Health == null || m_Player == null) RefreshReferences();
             if (m_Health == null || m_Player == null) return false;
 

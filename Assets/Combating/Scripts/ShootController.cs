@@ -13,6 +13,7 @@ namespace Combating.Scripts
     public class ShootController : MonoBehaviour, IItemFunctional
     {
         [Header("References")]
+        public bool isUnlocked = false; // Si está marcado, dispara desde el inicio. Si no, requiere arma.
         public Camera AimCamera;
         public GameObject Muzzle; // Único punto de disparo (asignar manualmente en el inspector)
         public GameObject Projectile; // Prefab del proyectil
@@ -76,7 +77,7 @@ namespace Combating.Scripts
 
         void Update()
         {
-            if (!UsePlayerInput) return;
+            if (!isUnlocked || !UsePlayerInput) return;
 
             // Only the owner of the player should process input and trigger shots
             bool canHandleInput = (m_Player != null) ? (IsNetworkActive ? m_Player.IsOwner : true) : true;
