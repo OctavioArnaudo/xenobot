@@ -151,6 +151,21 @@ namespace Combating.Scripts
         #region Lifecycle
         private void Awake()
         {
+            // --- LÓGICA DE AUTO-LIMPIEZA RADICAL ---
+            // Si el NetworkManager ya está escuchando (Host/Client activo)
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                var nObj = GetComponent<NetworkObject>();
+                // Si yo soy un objeto puesto a mano en la escena (InScenePlaced)
+                // O si ni siquiera tengo NetworkObject, me autodestruyo para dejar paso al spawn oficial.
+                if (nObj == null || nObj.InScenePlaced == true)
+                {
+                    Debug.Log($"<color=orange>[Network]</color> Autodestruyendo instancia offline '{gameObject.name}' para evitar duplicados.");
+                    Destroy(gameObject);
+                    return;
+                }
+            }
+
             _controller = GetComponent<CharacterController>();
             _health = GetComponent<HealthController>();
             _inventory = GetComponent<InventoryController>();
@@ -205,9 +220,33 @@ namespace Combating.Scripts
         {
             if (IsOwner)
             {
-                NetworkObject netObj = GetComponentInParent<NetworkObject>();
-                if (netObj == null) netObj = GetComponent<NetworkObject>();
-                if (netObj != null) netObj.transform.SetParent(null);
+                // --- LÓGICA DE SUPLANTACIÓN DEFINITIVA ---
+                // Buscamos todos los objetos con el tag "Player"
+                GameObject[] playersInScene = GameObject.FindGameObjectsWithTag("Player");
+                foreach (var p in playersInScene)
+                {
+                    if (p == gameObject) continue; // No nos borramos a nosotros mismos
+
+                    NetworkObject nObj = p.GetComponent<NetworkObject>();
+
+                    // Si el objeto NO tiene NetworkObject, o si lo tiene pero fue puesto en escena manualmente (InScenePlaced),
+                    // es el impostor de debug.
+                    if (nObj == null || nObj.InScenePlaced == true)
+                    {
+                        Debug.Log($"<color=cyan>[Network]</color> Suplantando player de escena '{p.name}'.");
+
+                        // Desactivar visuales y cámaras para que no estorben ni un frame
+                        foreach(var cam in p.GetComponentsInChildren<Camera>()) cam.enabled = false;
+                        var vcam = p.GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
+                        if (vcam != null) vcam.enabled = false;
+
+                        Destroy(p);
+                    }
+                }
+
+                NetworkObject myNetObj = GetComponentInParent<NetworkObject>();
+                if (myNetObj == null) myNetObj = GetComponent<NetworkObject>();
+                if (myNetObj != null) myNetObj.transform.SetParent(null);
 
                 SetupPlayerLocal();
                 TeleportToSceneSpawn(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
