@@ -459,10 +459,10 @@ namespace Crafting.Scripts
                         foreach(var r in instance.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
                     }
 
-                    // Quitar componentes de mundo para que no interfieran con el player
-                    if (instance.TryGetComponent<PickupController>(out var p)) DestroyImmediate(p);
-                    if (instance.TryGetComponent<Rigidbody>(out var rb)) DestroyImmediate(rb);
-                    if (instance.TryGetComponent<NetworkObject>(out var no)) DestroyImmediate(no);
+                    // Quitar componentes de mundo para que no interfieran con el player (Uso de Destroy seguro)
+                    if (instance.TryGetComponent<PickupController>(out var p)) Destroy(p);
+                    if (instance.TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
+                    if (instance.TryGetComponent<NetworkObject>(out var no)) Destroy(no);
 
                     // Desactivar colisionadores para evitar que el player salga volando
                     foreach (var c in instance.GetComponentsInChildren<Collider>(true)) c.enabled = false;
@@ -487,34 +487,33 @@ namespace Crafting.Scripts
         {
             if (item.itemPrefab != null)
             {
-                // Instanciar el prefab para extraer su lógica
-                GameObject temp = Instantiate(item.itemPrefab);
-                temp.SetActive(false); // Lo mantenemos oculto
+                // INTENTO 1: Obtener el efecto directamente del prefab (Sin instanciar)
+                // Esto es mucho más seguro para el Inspector de Unity.
+                var prefabEffects = item.itemPrefab.GetComponentsInChildren<IItemFunctional>(true);
 
-                // CAMBIO CRÍTICO: Usar 'true' para encontrar componentes en objetos desactivados
-                var effects = temp.GetComponentsInChildren<IItemFunctional>(true);
-
-                if (effects.Length == 0)
+                if (prefabEffects.Length > 0)
                 {
-                    // AUTO-REPARACIÓN: Si el ítem se llama fuel/combustible, intentamos añadir el controlador
-                    if (item.itemCode.ToLower().Contains("fuel") || item.displayName.ToLower().Contains("combustible"))
+                    foreach (var func in prefabEffects)
                     {
-                        Debug.Log($"<color=orange>[Inventory]</color> Añadiendo FuelController automáticamente a {item.displayName}...");
-                        var autoFuel = temp.AddComponent<FuelController>();
-                        effects = new IItemFunctional[] { autoFuel };
+                        func.ApplyEffect(gameObject);
                     }
-                    else
-                    {
-                        Debug.LogWarning($"[Inventory] El ítem {item.displayName} no tiene componentes de efecto (IItemFunctional).");
-                    }
+                    return; // Si funcionó desde el prefab, no instanciamos nada
                 }
 
-                foreach (var func in effects)
+                // INTENTO 2: Si el prefab no tiene los scripts pero es fuel, auto-reparación
+                if (item.itemCode.ToLower().Contains("fuel") || item.displayName.ToLower().Contains("combustible"))
                 {
-                    func.ApplyEffect(gameObject);
+                    // En este caso sí instanciamos uno temporal para añadirle el script
+                    GameObject temp = Instantiate(item.itemPrefab);
+                    temp.name = "Temp_Fuel_Process";
+                    temp.SetActive(false);
+                    var autoFuel = temp.AddComponent<FuelController>();
+                    autoFuel.ApplyEffect(gameObject);
+                    Destroy(temp); // Destroy seguro al final del frame
+                    return;
                 }
 
-                Destroy(temp);
+                Debug.LogWarning($"[Inventory] El ítem {item.displayName} no tiene componentes de efecto válidos.");
             }
         }
 

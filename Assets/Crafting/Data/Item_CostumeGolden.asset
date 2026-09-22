@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
-  m_Name: Item_Costume
+  m_Name: Item_CostumeGolden
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
-  itemCode: costume_walking
-  displayName: Traje de Explorador
+  itemCode: costume_golden
+  displayName: Chasis
   itemSprite: {fileID: 21300000, guid: 52709b32aa114154aa3f42f22d4d225c, type: 3}
   type: 2
   isStackable: 0
@@ -21,4 +21,4 @@ MonoBehaviour:
   canUse: 0
   autoUse: 0
   description: Un nuevo chasis para tu robot.
-  itemPrefab: {fileID: 7206365576661330795, guid: d8529ec5a0caeae45892ee25cf647f8c, type: 2}
+  itemPrefab: {fileID: 7206365576661330795, guid: d8529ec5a0caeae45892ee25cf647f8c, type: 3}

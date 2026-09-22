@@ -122,7 +122,7 @@ namespace Crafting.Scripts
             {
                 Mesh oldMesh = mf.sharedMesh;
                 mf.sharedMesh = null;
-                DestroyImmediate(oldMesh);
+                DestroyImmediate(oldMesh, true);
             }
 
             mf.sharedMesh = mesh;

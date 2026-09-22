@@ -81,7 +81,7 @@ namespace Crafting.Scripts
             if (go.TryGetComponent<Collider>(out var c))
             {
                 if (Application.isPlaying) Destroy(c);
-                else DestroyImmediate(c);
+                else DestroyImmediate(c, true);
             }
         }
     }

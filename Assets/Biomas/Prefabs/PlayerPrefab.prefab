@@ -59,7 +59,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2082353490
+  GlobalObjectIdHash: 900052251
   InScenePlacedSourceGlobalObjectIdHash: 2082353490
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -320,7 +320,16 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   team: 1
   maxHealth: 100
-  maxJetpack: 0
+  maxJetpackFuel:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 100
+  currentJetpackFuel:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 100
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -484,6 +493,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: cc730feca3d9438aa9e28397df2e6fe4, type: 2}
   - {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
   - {fileID: 11400000, guid: efd5d0a0c9077794ebff867795e6eea0, type: 2}
+  - {fileID: 11400000, guid: 255df1421f3a00a4ebd8665f47c31710, type: 2}
   - {fileID: 11400000, guid: 9f41a1c295b64338a231ce89c6aa91e6, type: 2}
   - {fileID: 11400000, guid: d9ea5b9e700da844c9c2a3f7dd94e4a1, type: 2}
   - {fileID: 11400000, guid: 82f936139cf00f24fbb2382cd48dd828, type: 2}
@@ -500,6 +510,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
+  isUnlocked: 0
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 3596114446979786384}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
@@ -528,6 +539,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a1f0ccf9aa977047af3b55cf76893f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.PropulsionController
+  isUnlocked: 0
+  infiniteFuel: 0
+  allowRegen: 0
   jetpackForce: 60
   hoverForce: 25
   fuelConsumption: 30
@@ -629,7 +643,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &2125070918313791366
 Transform:
   m_ObjectHideFlags: 0
@@ -5462,15 +5476,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 318220.28
+      value: 400728.84
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 523.3877
+      value: 653.6426
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 189485.05
+      value: 238994.69
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5518,15 +5532,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 318220.28
+      value: 400735.72
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 523.3877
+      value: 653.6556
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 189485.05
+      value: 238998.78
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

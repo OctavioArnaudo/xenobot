@@ -93,7 +93,7 @@ namespace Crafting.Scripts
             gameObject.SetActive(true);
             _isEquipped = true;
 
-            // 5. Limpiar componentes de mundo
+            // 5. Limpiar componentes de mundo (Uso de Destroy seguro)
             if (TryGetComponent<PickupController>(out var p)) Destroy(p);
             if (TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
             foreach (var c in GetComponentsInChildren<Collider>(true)) c.enabled = false;

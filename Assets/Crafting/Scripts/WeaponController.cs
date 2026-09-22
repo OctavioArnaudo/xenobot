@@ -102,7 +102,11 @@ namespace Crafting.Scripts
             mesh.triangles = tris.ToArray();
             mesh.RecalculateNormals();
 
-            if (!Application.isPlaying && mf.sharedMesh != null) DestroyImmediate(mf.sharedMesh);
+            if (!Application.isPlaying && mf.sharedMesh != null)
+            {
+                // Uso de Destroy con delay para evitar errores de Inspector en el Editor
+                if (mf.sharedMesh != null) DestroyImmediate(mf.sharedMesh, true);
+            }
             mf.sharedMesh = mesh;
 
             Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
