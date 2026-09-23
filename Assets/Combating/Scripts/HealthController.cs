@@ -9,6 +9,7 @@ namespace Combating.Scripts
     /// <summary>
     /// Universal controller for Health and Team.
     /// Handles life, damage, status and visual feedback.
+    /// Integrated with ShieldController for damage mitigation.
     /// </summary>
     public class HealthController : NetworkBehaviour
     {
@@ -88,18 +89,35 @@ namespace Combating.Scripts
 
             int finalDamage = damage;
 
-            // Integracion con StatsController: Defensa (Intento robusto de encontrar el script en la raiz)
+            // 1. Integración con ShieldController (Mitigación de daño si el escudo está activo)
+            var shield = GetComponent<ShieldController>() ?? GetComponentInParent<ShieldController>();
+            if (shield != null && shield.IsShieldActive)
+            {
+                finalDamage = Mathf.RoundToInt(shield.ProcessIncomingDamage(finalDamage));
+            }
+
+            // Si el escudo bloqueó el 100% del daño, salimos
+            if (finalDamage <= 0) return;
+
+            // 2. Integración con HudController (Defensa)
             var stats = GetComponent<HudController>() ?? GetComponentInParent<HudController>();
             if (stats != null)
             {
-                finalDamage = Mathf.RoundToInt(damage * (10f / (10f + stats.Defense)));
+                finalDamage = Mathf.RoundToInt(finalDamage * (10f / (10f + stats.Defense)));
                 if (finalDamage < 1) finalDamage = 1;
             }
 
-            if (IsNetworkActive) { if (IsServer) currentHealth.Value = Mathf.Max(0, currentHealth.Value - finalDamage); }
-            else m_OfflineHealth = Mathf.Max(0, m_OfflineHealth - finalDamage);
+            // Aplicar daño
+            if (IsNetworkActive)
+            {
+                if (IsServer) currentHealth.Value = Mathf.Max(0, currentHealth.Value - finalDamage);
+            }
+            else
+            {
+                m_OfflineHealth = Mathf.Max(0, m_OfflineHealth - finalDamage);
+            }
 
-            // Flash de dano (HUD si es player, Body si es enemigo/objeto)
+            // Flash de daño (HUD si es player, Body si es enemigo/objeto)
             if (IsOwner && team == Team.Player) m_DamageFlashTimer = 0.6f;
             PlayHitFlash();
 
