@@ -112,9 +112,10 @@ namespace Crafting.Scripts
 
             if (isPlayer)
             {
-                if (item == null)
+                var sc = GetComponent<SpawnController>();
+                if (item == null && sc == null)
                 {
-                    Debug.LogWarning($"[Pickup] {gameObject.name} no tiene ItemData asignado.");
+                    Debug.LogWarning($"[Pickup] {gameObject.name} no tiene ItemData ni SpawnController asignado.");
                     return;
                 }
 
@@ -149,26 +150,36 @@ namespace Crafting.Scripts
 
         private void ApplyReward(InventoryController inv, GameObject player)
         {
-            if (item == null || inv == null) return;
-
-            // COMPATIBILIDAD CON SPAWNCONTROLLER:
-            // Si el objeto tiene un SpawnController, lo activamos antes de ser destruido
+            // 1. Si el objeto tiene un SpawnController con loot o itemsToSpawn, activamos el spawneo al interactuar/recoger la primera vez
             var sc = GetComponent<SpawnController>();
             if (sc != null)
             {
                 sc.TriggerDeath();
-                // Si el SpawnController ya destruyó el objeto, evitamos procesar más recompensas directas
+                // Si el SpawnController ya destruyó el objeto contenedor, terminamos la recompensa
                 if (this == null) return;
             }
+
+            if (item == null || inv == null) return;
 
             // FORCE AUTO-USE for Experience: Orbs should never sit in the inventory
             bool forceAutoUse = (item.type == ItemType.Experience);
 
             if (item.autoUse || forceAutoUse)
             {
-                foreach(var func in GetComponentsInChildren<IItemFunctional>())
+                // 1. Ejecutar acciones PICKUP dedicadas
+                var pickupActions = GetComponentsInChildren<IItemPickupAction>(true);
+                if (pickupActions.Length > 0)
                 {
-                    func.ApplyEffect(player);
+                    foreach (var act in pickupActions) act.OnPickupItem(player);
+                }
+                else
+                {
+                    // Fallback a IItemFunctional (excluyendo SpawnController)
+                    foreach (var func in GetComponentsInChildren<IItemFunctional>(true))
+                    {
+                        if (func is SpawnController) continue;
+                        func.ApplyEffect(player);
+                    }
                 }
             }
             else

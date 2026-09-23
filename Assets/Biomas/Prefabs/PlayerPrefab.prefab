@@ -700,8 +700,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShieldController
   ShowTopMostFoldoutHeaderGroup: 1
+  isUnlocked: 1
   damageReduction: 1
+  inputMode: 1
+  autoUnlockOnStart: 1
+  autoActivateOnStart: 0
+  toggleOnUse: 1
+  generateDefaultVisuals: 0
   shieldVisualObject: {fileID: 617122001239242324}
+  shieldColor: {r: 0, g: 0.5, b: 1, a: 0.3}
+  shieldRadius: 1.5
   shieldActivateSound: {fileID: 8300000, guid: 0cacf9e8e361eb24e9101b28422f7c08, type: 3}
   shieldBlockSound: {fileID: 8300000, guid: 93331a7c9fe98494a84f18effb358899, type: 3}
   shieldAnimBool: isShieldActive
@@ -5586,15 +5594,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 522557.22
+      value: 550552.2
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 832.4833
+      value: 885.42126
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 312676.34
+      value: 329473.34
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5642,15 +5650,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 522564.1
+      value: 550552.2
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 832.4963
+      value: 885.42126
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 312680.47
+      value: 329473.34
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
