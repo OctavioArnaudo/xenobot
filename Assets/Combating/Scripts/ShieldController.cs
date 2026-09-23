@@ -14,10 +14,11 @@ namespace Combating.Scripts
 
     /// <summary>
     /// Sistema de escudo de energía con soporte para Input (Enter), Red (Netcode),
-    /// uso desde inventario (IItemFunctional), mitigación de daño y visuales personalizables/autogenerados.
+    /// uso desde inventario (IItemFunctional, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction),
+    /// mitigación de daño y visuales personalizables/autogenerados.
     /// </summary>
     [ExecuteAlways]
-    public class ShieldController : NetworkBehaviour, IItemFunctional
+    public class ShieldController : NetworkBehaviour, IItemFunctional, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
     {
         [Header("Shield Settings")]
         public bool isUnlocked = true; // Permiso para usar el escudo
@@ -262,6 +263,31 @@ namespace Combating.Scripts
             {
                 m_Animator.SetBool(shieldAnimBool, newValue);
             }
+        }
+
+        // --- ACCIONES DEDICADAS DE INVENTARIO ---
+
+        public void OnUseItem(GameObject player)
+        {
+            ApplyEffect(player);
+        }
+
+        public void OnQuitItem(GameObject player)
+        {
+            SetShieldState(false);
+            Debug.Log($"<color=blue>[Shield]</color> Sistema de defensa DESACTIVADO vía QUIT en {player.name}.");
+        }
+
+        public void OnDropItem(GameObject player, GameObject droppedInstance)
+        {
+            SetShieldState(false);
+            Debug.Log($"<color=blue>[Shield]</color> Sistema de defensa DESACTIVADO vía DROP en {player.name}.");
+        }
+
+        public void OnPickupItem(GameObject player)
+        {
+            isUnlocked = true;
+            Debug.Log($"<color=blue>[Shield]</color> Sistema de defensa DESBLOQUEADO vía PICKUP en {player.name}.");
         }
 
         /// <summary>

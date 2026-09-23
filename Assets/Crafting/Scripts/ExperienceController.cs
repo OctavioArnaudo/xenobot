@@ -5,10 +5,10 @@ namespace Crafting.Scripts
 {
     /// <summary>
     /// Specialized script to handle experience orb visuals and logic.
-    /// Implements IItemFunctional to add EXP to the player.
+    /// Implements IItemFunctional, IItemUseAction, and IItemPickupAction to add EXP to the player.
     /// </summary>
     [ExecuteAlways]
-    public class ExperienceController : MonoBehaviour, IItemFunctional
+    public class ExperienceController : MonoBehaviour, IItemFunctional, IItemUseAction, IItemPickupAction
     {
         // Economy Reliability Constants
         private const float EXP_AMOUNT = 25f;
@@ -23,6 +23,9 @@ namespace Crafting.Scripts
         {
             GenerateOrbVisuals();
         }
+
+        public void OnUseItem(GameObject entity) => ApplyEffect(entity);
+        public void OnPickupItem(GameObject entity) => ApplyEffect(entity);
 
         public void ApplyEffect(GameObject entity)
         {
