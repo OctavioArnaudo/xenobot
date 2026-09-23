@@ -166,10 +166,20 @@ namespace Crafting.Scripts
 
             if (item.autoUse || forceAutoUse)
             {
-                foreach(var func in GetComponentsInChildren<IItemFunctional>())
+                // 1. Ejecutar acciones PICKUP dedicadas
+                var pickupActions = GetComponentsInChildren<IItemPickupAction>(true);
+                if (pickupActions.Length > 0)
                 {
-                    if (func is SpawnController) continue; // Omitir TriggerDeath al consumir autoUse
-                    func.ApplyEffect(player);
+                    foreach (var act in pickupActions) act.OnPickupItem(player);
+                }
+                else
+                {
+                    // Fallback a IItemFunctional (excluyendo SpawnController)
+                    foreach (var func in GetComponentsInChildren<IItemFunctional>(true))
+                    {
+                        if (func is SpawnController) continue;
+                        func.ApplyEffect(player);
+                    }
                 }
             }
             else

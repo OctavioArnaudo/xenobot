@@ -5,10 +5,10 @@ namespace Crafting.Scripts
 {
     /// <summary>
     /// Specialized script to handle fuel jerrycan visuals and logic.
-    /// Implements IItemFunctional to restore fuel to the entity's tank.
+    /// Implements IItemFunctional, IItemUseAction, and IItemPickupAction to restore fuel to the entity's tank.
     /// </summary>
     [ExecuteAlways]
-    public class FuelController : MonoBehaviour, IItemFunctional
+    public class FuelController : MonoBehaviour, IItemFunctional, IItemUseAction, IItemPickupAction
     {
         // Economy Reliability Constants
         private const float FUEL_AMOUNT = 40f;
@@ -22,6 +22,9 @@ namespace Crafting.Scripts
         {
             if (generateDefaultVisuals) GenerateJerrycanVisuals();
         }
+
+        public void OnUseItem(GameObject entity) => ApplyEffect(entity);
+        public void OnPickupItem(GameObject entity) => ApplyEffect(entity);
 
         public void ApplyEffect(GameObject entity)
         {

@@ -423,7 +423,13 @@ namespace Crafting.Scripts
 
             if (_equippedInstances.TryGetValue(hash, out GameObject existing))
             {
-                // DESEQUIPAR: Si ya está puesto, lo quitamos
+                // DESEQUIPAR (QUIT): Ejecutar interfaz dedicada IItemQuitAction
+                var quitActions = existing.GetComponentsInChildren<IItemQuitAction>(true);
+                foreach (var act in quitActions)
+                {
+                    act.OnQuitItem(gameObject);
+                }
+
                 Destroy(existing);
                 _equippedInstances.Remove(hash);
 
@@ -441,6 +447,9 @@ namespace Crafting.Scripts
                         var activeCostumes = _equippedInstances.Where(x => x.Value != null && x.Value.GetComponentInChildren<CostumeController>() != null).ToList();
                         foreach (var active in activeCostumes)
                         {
+                            var activeQuitActions = active.Value.GetComponentsInChildren<IItemQuitAction>(true);
+                            foreach (var act in activeQuitActions) act.OnQuitItem(gameObject);
+
                             Destroy(active.Value);
                             _equippedInstances.Remove(active.Key);
                         }
@@ -467,11 +476,19 @@ namespace Crafting.Scripts
                     // Desactivar colisionadores para evitar que el player salga volando
                     foreach (var c in instance.GetComponentsInChildren<Collider>(true)) c.enabled = false;
 
-                    // Aplicar efectos funcionales (Stats, disparos, etc)
-                    foreach (var func in instance.GetComponentsInChildren<IItemFunctional>())
+                    // Aplicar acciones dedicadas IItemUseAction o fallback a IItemFunctional
+                    var useActions = instance.GetComponentsInChildren<IItemUseAction>(true);
+                    if (useActions.Length > 0)
                     {
-                        if (func is SpawnController) continue; // Unlink SpawnController/TriggerDeath from equipment/inventory actions
-                        func.ApplyEffect(gameObject);
+                        foreach (var act in useActions) act.OnUseItem(gameObject);
+                    }
+                    else
+                    {
+                        foreach (var func in instance.GetComponentsInChildren<IItemFunctional>(true))
+                        {
+                            if (func is SpawnController) continue;
+                            func.ApplyEffect(gameObject);
+                        }
                     }
 
                     if (IsOwner && item.itemCode.ToLower().Contains("weapon"))
@@ -488,8 +505,15 @@ namespace Crafting.Scripts
         {
             if (item.itemPrefab != null)
             {
-                // INTENTO 1: Obtener el efecto directamente del prefab (Sin instanciar)
-                // Esto es mucho más seguro para el Inspector de Unity.
+                // INTENTO 1: Ejecutar acciones dedicadas IItemUseAction directamente del prefab
+                var useActions = item.itemPrefab.GetComponentsInChildren<IItemUseAction>(true);
+                if (useActions.Length > 0)
+                {
+                    foreach (var act in useActions) act.OnUseItem(gameObject);
+                    return;
+                }
+
+                // INTENTO 2: Fallback a IItemFunctional (excluyendo SpawnController)
                 var prefabEffects = item.itemPrefab.GetComponentsInChildren<IItemFunctional>(true)
                     .Where(f => !(f is SpawnController)).ToArray();
 
@@ -502,7 +526,7 @@ namespace Crafting.Scripts
                     return; // Si funcionó desde el prefab, no instanciamos nada
                 }
 
-                // INTENTO 2: Si el prefab no tiene los scripts pero es fuel, auto-reparación
+                // INTENTO 3: Si el prefab no tiene los scripts pero es fuel, auto-reparación
                 if (item.itemCode.ToLower().Contains("fuel") || item.displayName.ToLower().Contains("combustible"))
                 {
                     // En este caso sí instanciamos uno temporal para añadirle el script
@@ -510,7 +534,7 @@ namespace Crafting.Scripts
                     temp.name = "Temp_Fuel_Process";
                     temp.SetActive(false);
                     var autoFuel = temp.AddComponent<FuelController>();
-                    autoFuel.ApplyEffect(gameObject);
+                    autoFuel.OnUseItem(gameObject);
                     Destroy(temp); // Destroy seguro al final del frame
                     return;
                 }
@@ -524,8 +548,15 @@ namespace Crafting.Scripts
             if (item == null) return;
             int hash = item.GetItemHashCode();
 
-            if (_equippedInstances.ContainsKey(hash))
+            if (_equippedInstances.TryGetValue(hash, out GameObject equippedObj))
             {
+                // Ejecutar acciones DROP dedicadas si las tiene antes de desequipar
+                var dropActions = equippedObj.GetComponentsInChildren<IItemDropAction>(true);
+                foreach (var act in dropActions)
+                {
+                    act.OnDropItem(gameObject, null);
+                }
+
                 ToggleEquipment(item);
             }
 

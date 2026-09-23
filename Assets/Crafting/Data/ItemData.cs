@@ -8,6 +8,38 @@ namespace Crafting.Scripts
         void ApplyEffect(GameObject player);
     }
 
+    /// <summary>
+    /// Acción ejecutada cuando el ítem se usa desde el inventario (Botón USE).
+    /// </summary>
+    public interface IItemUseAction
+    {
+        void OnUseItem(GameObject player);
+    }
+
+    /// <summary>
+    /// Acción ejecutada cuando el ítem se tira al suelo desde el inventario (Botón DROP).
+    /// </summary>
+    public interface IItemDropAction
+    {
+        void OnDropItem(GameObject player, GameObject droppedInstance);
+    }
+
+    /// <summary>
+    /// Acción ejecutada cuando un equipo se desequipa o quita (Botón QUIT).
+    /// </summary>
+    public interface IItemQuitAction
+    {
+        void OnQuitItem(GameObject player);
+    }
+
+    /// <summary>
+    /// Acción ejecutada al recoger el ítem del suelo (PickupController).
+    /// </summary>
+    public interface IItemPickupAction
+    {
+        void OnPickupItem(GameObject player);
+    }
+
     public enum ItemType
     {
         Resource,
