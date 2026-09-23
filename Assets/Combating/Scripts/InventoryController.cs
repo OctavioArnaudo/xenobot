@@ -470,6 +470,7 @@ namespace Crafting.Scripts
                     // Aplicar efectos funcionales (Stats, disparos, etc)
                     foreach (var func in instance.GetComponentsInChildren<IItemFunctional>())
                     {
+                        if (func is SpawnController) continue; // Unlink SpawnController/TriggerDeath from equipment/inventory actions
                         func.ApplyEffect(gameObject);
                     }
 
@@ -489,7 +490,8 @@ namespace Crafting.Scripts
             {
                 // INTENTO 1: Obtener el efecto directamente del prefab (Sin instanciar)
                 // Esto es mucho más seguro para el Inspector de Unity.
-                var prefabEffects = item.itemPrefab.GetComponentsInChildren<IItemFunctional>(true);
+                var prefabEffects = item.itemPrefab.GetComponentsInChildren<IItemFunctional>(true)
+                    .Where(f => !(f is SpawnController)).ToArray();
 
                 if (prefabEffects.Length > 0)
                 {

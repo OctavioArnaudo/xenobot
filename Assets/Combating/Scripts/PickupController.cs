@@ -152,9 +152,9 @@ namespace Crafting.Scripts
             if (item == null || inv == null) return;
 
             // COMPATIBILIDAD CON SPAWNCONTROLLER:
-            // Si el objeto tiene un SpawnController, lo activamos antes de ser destruido
+            // Para pickups con ItemData, evitamos activar TriggerDeath al recoger
             var sc = GetComponent<SpawnController>();
-            if (sc != null)
+            if (sc != null && item == null)
             {
                 sc.TriggerDeath();
                 // Si el SpawnController ya destruyó el objeto, evitamos procesar más recompensas directas
@@ -168,6 +168,7 @@ namespace Crafting.Scripts
             {
                 foreach(var func in GetComponentsInChildren<IItemFunctional>())
                 {
+                    if (func is SpawnController) continue; // Omitir TriggerDeath al consumir autoUse
                     func.ApplyEffect(player);
                 }
             }
