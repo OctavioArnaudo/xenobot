@@ -98,20 +98,12 @@ namespace NGO.Networking
                 return;
             }
 
-            // Abrir/Cerrar menú localmente con la tecla Escape
-#if ENABLE_INPUT_SYSTEM
+            // Abrir/Cerrar menú localmente con la tecla Escape (Usando el nuevo Input System)
             if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
             {
                 m_IsManuallyOpened = !m_IsManuallyOpened;
                 ToggleRoomCanvasLocal(m_IsManuallyOpened);
             }
-#else
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                m_IsManuallyOpened = !m_IsManuallyOpened;
-                ToggleRoomCanvasLocal(m_IsManuallyOpened);
-            }
-#endif
 
             if (IsServer)
             {

@@ -151,6 +151,16 @@ namespace Crafting.Scripts
         {
             if (item == null || inv == null) return;
 
+            // COMPATIBILIDAD CON SPAWNCONTROLLER:
+            // Si el objeto tiene un SpawnController, lo activamos antes de ser destruido
+            var sc = GetComponent<SpawnController>();
+            if (sc != null)
+            {
+                sc.TriggerDeath();
+                // Si el SpawnController ya destruyó el objeto, evitamos procesar más recompensas directas
+                if (this == null) return;
+            }
+
             // FORCE AUTO-USE for Experience: Orbs should never sit in the inventory
             bool forceAutoUse = (item.type == ItemType.Experience);
 

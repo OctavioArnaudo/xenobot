@@ -50,7 +50,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2788336841747114129, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 3527941453
+      value: 3969399168
       objectReference: {fileID: 0}
     - target: {fileID: 2788336841747114129, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: SceneMigrationSynchronization
@@ -111,6 +111,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2520651810455109091}
+    - targetCorrespondingSourceObject: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1963147733550850853}
   m_SourcePrefab: {fileID: 100100000, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
 --- !u!4 &4491610186717836522 stripped
 Transform:
@@ -137,6 +140,25 @@ MonoBehaviour:
   generateDefaultVisuals: 0
   orbScale: 0.6
   fuelColor: {r: 0, g: 0.8, b: 1, a: 1}
+--- !u!114 &1963147733550850853
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8823990339175279967}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83c4428a12005894aa17a2284c133809, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SpawnController
+  ShowTopMostFoldoutHeaderGroup: 1
+  lootTable: []
+  itemsToSpawn:
+  - prefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}
+    message: EXP
+  explosionForce: 10
+  spreadRadius: 2.5
 --- !u!1001 &2980258356334867251
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -151,7 +173,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2788336841747114129, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 3788695008
+      value: 1244821888
       objectReference: {fileID: 0}
     - target: {fileID: 2788336841747114129, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: SceneMigrationSynchronization
@@ -212,6 +234,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5120428849321355791}
+    - targetCorrespondingSourceObject: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4553938819561567141}
   m_SourcePrefab: {fileID: 100100000, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
 --- !u!4 &374462418572427816 stripped
 Transform:
@@ -238,6 +263,25 @@ MonoBehaviour:
   generateDefaultVisuals: 0
   orbScale: 0.6
   fuelColor: {r: 0, g: 0.8, b: 1, a: 1}
+--- !u!114 &4553938819561567141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4688845661635648413}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83c4428a12005894aa17a2284c133809, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SpawnController
+  ShowTopMostFoldoutHeaderGroup: 1
+  lootTable: []
+  itemsToSpawn:
+  - prefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}
+    message: EXP
+  explosionForce: 10
+  spreadRadius: 2.5
 --- !u!1001 &5090286438495428890
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -309,6 +353,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 763166425200530663}
+    - targetCorrespondingSourceObject: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5401729034127447931}
   m_SourcePrefab: {fileID: 100100000, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
 --- !u!1 &3380644134885001652 stripped
 GameObject:
@@ -330,6 +377,25 @@ MonoBehaviour:
   generateDefaultVisuals: 0
   orbScale: 0.6
   fuelColor: {r: 0, g: 0.8, b: 1, a: 1}
+--- !u!114 &5401729034127447931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3380644134885001652}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83c4428a12005894aa17a2284c133809, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SpawnController
+  ShowTopMostFoldoutHeaderGroup: 1
+  lootTable: []
+  itemsToSpawn:
+  - prefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}
+    message: EXP
+  explosionForce: 10
+  spreadRadius: 2.5
 --- !u!4 &7694978518929035265 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3201596142911811867, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
@@ -349,7 +415,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2788336841747114129, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2399186136
+      value: 839336242
       objectReference: {fileID: 0}
     - target: {fileID: 2788336841747114129, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: SceneMigrationSynchronization
@@ -410,6 +476,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4489364566872964934}
+    - targetCorrespondingSourceObject: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7711902510283135095}
   m_SourcePrefab: {fileID: 100100000, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
 --- !u!1 &1075572794113299684 stripped
 GameObject:
@@ -431,6 +500,25 @@ MonoBehaviour:
   generateDefaultVisuals: 0
   orbScale: 0.6
   fuelColor: {r: 0, g: 0.8, b: 1, a: 1}
+--- !u!114 &7711902510283135095
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1075572794113299684}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83c4428a12005894aa17a2284c133809, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SpawnController
+  ShowTopMostFoldoutHeaderGroup: 1
+  lootTable: []
+  itemsToSpawn:
+  - prefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}
+    message: EXP
+  explosionForce: 10
+  spreadRadius: 2.5
 --- !u!4 &5390043620166356305 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3201596142911811867, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
@@ -450,7 +538,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2788336841747114129, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 284339277
+      value: 463154778
       objectReference: {fileID: 0}
     - target: {fileID: 2788336841747114129, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       propertyPath: SceneMigrationSynchronization
@@ -511,6 +599,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1185690121104657189}
+    - targetCorrespondingSourceObject: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3620286473790260935}
   m_SourcePrefab: {fileID: 100100000, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}
 --- !u!1 &1754882832081421485 stripped
 GameObject:
@@ -532,6 +623,25 @@ MonoBehaviour:
   generateDefaultVisuals: 0
   orbScale: 0.6
   fuelColor: {r: 0, g: 0.8, b: 1, a: 1}
+--- !u!114 &3620286473790260935
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1754882832081421485}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83c4428a12005894aa17a2284c133809, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SpawnController
+  ShowTopMostFoldoutHeaderGroup: 1
+  lootTable: []
+  itemsToSpawn:
+  - prefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}
+    message: EXP
+  explosionForce: 10
+  spreadRadius: 2.5
 --- !u!4 &6663888736477502744 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3201596142911811867, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}

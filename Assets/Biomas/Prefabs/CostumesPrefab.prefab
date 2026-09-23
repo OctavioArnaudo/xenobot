@@ -87,7 +87,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6394073736889460860, guid: d8529ec5a0caeae45892ee25cf647f8c, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 1269496993
+      value: 1816553132
       objectReference: {fileID: 0}
     - target: {fileID: 7206365576661330795, guid: d8529ec5a0caeae45892ee25cf647f8c, type: 3}
       propertyPath: m_Name
@@ -96,8 +96,35 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7206365576661330795, guid: d8529ec5a0caeae45892ee25cf647f8c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2731174297936285040}
   m_SourcePrefab: {fileID: 100100000, guid: d8529ec5a0caeae45892ee25cf647f8c, type: 3}
+--- !u!1 &5603169374730257761 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7206365576661330795, guid: d8529ec5a0caeae45892ee25cf647f8c, type: 3}
+  m_PrefabInstance: {fileID: 3008496444520099338}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2731174297936285040
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5603169374730257761}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83c4428a12005894aa17a2284c133809, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SpawnController
+  ShowTopMostFoldoutHeaderGroup: 1
+  lootTable: []
+  itemsToSpawn:
+  - prefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}
+    message: EXP
+  explosionForce: 10
+  spreadRadius: 2.5
 --- !u!4 &7735138027825646295 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4798841169852015837, guid: d8529ec5a0caeae45892ee25cf647f8c, type: 3}
@@ -161,7 +188,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6394073736889460860, guid: 1a5bbacd533cb8a4c89f64b9e3d8f7d1, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 497729378
+      value: 513283679
       objectReference: {fileID: 0}
     - target: {fileID: 7206365576661330795, guid: 1a5bbacd533cb8a4c89f64b9e3d8f7d1, type: 3}
       propertyPath: m_Name
@@ -170,10 +197,37 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 7206365576661330795, guid: 1a5bbacd533cb8a4c89f64b9e3d8f7d1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5237396920351332669}
   m_SourcePrefab: {fileID: 100100000, guid: 1a5bbacd533cb8a4c89f64b9e3d8f7d1, type: 3}
 --- !u!4 &1696669414666663342 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4798841169852015837, guid: 1a5bbacd533cb8a4c89f64b9e3d8f7d1, type: 3}
   m_PrefabInstance: {fileID: 6130295511530688883}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &3535616004903483928 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7206365576661330795, guid: 1a5bbacd533cb8a4c89f64b9e3d8f7d1, type: 3}
+  m_PrefabInstance: {fileID: 6130295511530688883}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5237396920351332669
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3535616004903483928}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83c4428a12005894aa17a2284c133809, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SpawnController
+  ShowTopMostFoldoutHeaderGroup: 1
+  lootTable: []
+  itemsToSpawn:
+  - prefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}
+    message: EXP
+  explosionForce: 10
+  spreadRadius: 2.5

@@ -15,9 +15,9 @@ namespace Combating.Scripts
 
     /// <summary>
     /// Handles visual death effects and loot spawning.
-    /// Triggered by HealthController upon death.
+    /// Triggered by HealthController upon death or PickupController.
     /// </summary>
-    public class SpawnController : NetworkBehaviour
+    public class SpawnController : NetworkBehaviour, IItemFunctional
     {
         [Header("Spawn Settings")]
         public List<ItemData> lootTable = new List<ItemData>();
@@ -26,6 +26,11 @@ namespace Combating.Scripts
         public float spreadRadius = 2.5f;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+
+        public void ApplyEffect(GameObject player)
+        {
+            TriggerDeath();
+        }
 
         /// <summary>
         /// Called by HealthController when HP reaches zero.
@@ -88,7 +93,7 @@ namespace Combating.Scripts
             }
         }
 
-        public void SpawnDroppedItem(GameObject prefab, Vector3 origin, string message = "")
+        public void SpawnDroppedItem(GameObject prefab, Vector3 origin, string message = "", ItemData data = null)
         {
             if (prefab == null) return;
 
@@ -99,14 +104,21 @@ namespace Combating.Scripts
             // Impulse away from the center
             Vector3 impulse = (transform.right + transform.up).normalized * 3f;
 
-            SpawnSingleItem(prefab, spawnPos, message, impulse);
+            SpawnSingleItem(prefab, spawnPos, message, impulse, data);
         }
 
-        public void SpawnSingleItem(GameObject prefab, Vector3 position, string message = "", Vector3? impulse = null)
+        public void SpawnSingleItem(GameObject prefab, Vector3 position, string message = "", Vector3? impulse = null, ItemData data = null)
         {
             if (prefab == null) return;
 
             GameObject spawned = Instantiate(prefab, position, Quaternion.identity);
+
+            // Inyectar datos en el PickupController si se proporcionan
+            var pickup = spawned.GetComponent<PickupController>();
+            if (pickup != null && data != null)
+            {
+                pickup.item = data;
+            }
 
             // Mensaje flotante de loot
             if (!string.IsNullOrEmpty(message))
@@ -144,13 +156,6 @@ namespace Combating.Scripts
                 rb.AddForce(force, ForceMode.Impulse);
             }
 
-            // Robust InventoryController detection for items that need it
-            var pickup = spawned.GetComponent<PickupController>();
-            if (pickup != null)
-            {
-                // Ensure PickupController logic can find the taker
-            }
-
             // Sincronización en red
             if (IsNetworkActive && IsServer)
             {
@@ -168,7 +173,7 @@ namespace Combating.Scripts
             {
                 if (item != null)
                 {
-                    SpawnDroppedItem(item.itemPrefab, transform.position, item.displayName);
+                    SpawnDroppedItem(item.itemPrefab, transform.position, item.displayName, item);
                 }
             }
 
