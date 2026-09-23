@@ -120,9 +120,10 @@ namespace Crafting.Scripts
 
             if (!Application.isPlaying && mf.sharedMesh != null)
             {
-                Mesh oldMesh = mf.sharedMesh;
-                mf.sharedMesh = null;
-                DestroyImmediate(oldMesh, true);
+                if (mf.sharedMesh.name == "Jetpack_Mesh")
+                {
+                    DestroyImmediate(mf.sharedMesh);
+                }
             }
 
             mf.sharedMesh = mesh;

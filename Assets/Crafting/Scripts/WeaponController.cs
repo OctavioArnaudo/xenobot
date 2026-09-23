@@ -104,8 +104,11 @@ namespace Crafting.Scripts
 
             if (!Application.isPlaying && mf.sharedMesh != null)
             {
-                // Uso de Destroy con delay para evitar errores de Inspector en el Editor
-                if (mf.sharedMesh != null) DestroyImmediate(mf.sharedMesh, true);
+                // Solo destruimos si realmente es una malla generada por nosotros para evitar MissingReference
+                if (mf.sharedMesh.name == "Weapon_Mesh")
+                {
+                    DestroyImmediate(mf.sharedMesh);
+                }
             }
             mf.sharedMesh = mesh;
 

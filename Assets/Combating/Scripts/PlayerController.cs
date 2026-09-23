@@ -151,16 +151,22 @@ namespace Combating.Scripts
         #region Lifecycle
         private void Awake()
         {
-            // --- LÓGICA DE AUTO-LIMPIEZA RADICAL ---
-            // Si el NetworkManager ya está escuchando (Host/Client activo)
+            // --- LÓGICA DE AUTO-LIMPIEZA RADICAL SEGURA ---
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
                 var nObj = GetComponent<NetworkObject>();
-                // Si yo soy un objeto puesto a mano en la escena (InScenePlaced)
-                // O si ni siquiera tengo NetworkObject, me autodestruyo para dejar paso al spawn oficial.
                 if (nObj == null || nObj.InScenePlaced == true)
                 {
-                    Debug.Log($"<color=orange>[Network]</color> Autodestruyendo instancia offline '{gameObject.name}' para evitar duplicados.");
+                    #if UNITY_EDITOR
+                    // Evitar que el Inspector de Unity explote al borrar el objeto seleccionado
+                    if (UnityEditor.Selection.activeGameObject == gameObject)
+                        UnityEditor.Selection.activeGameObject = null;
+                    #endif
+
+                    Debug.Log($"<color=orange>[Network]</color> Suplantando instancia offline '{gameObject.name}'.");
+
+                    // Desactivar inmediatamente para que el Inspector deje de procesarlo
+                    gameObject.SetActive(false);
                     Destroy(gameObject);
                     return;
                 }
