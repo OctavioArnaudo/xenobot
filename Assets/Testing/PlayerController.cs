@@ -326,7 +326,6 @@ namespace Testing.Scripts
         {
             ProjectileController projectilePrefab = null;
             var shooter = GetComponentInChildren<ShootController>();
-            if (shooter != null) projectilePrefab = shooter.ProjectilePrefab;
 
             if (projectilePrefab != null)
             {

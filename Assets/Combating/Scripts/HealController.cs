@@ -11,7 +11,7 @@ namespace Combating.Scripts
         public Color healFlashColor = new Color(0, 1, 0.2f, 1); // Bright Green
         public float flashDuration = 0.2f;
 
-        private Testing.Scripts.HealthController _health;
+        private HealthController _health;
         private ModularController _hub;
 
         void Awake()
@@ -33,7 +33,7 @@ namespace Combating.Scripts
         {
             if (_hub != null)
             {
-                _health = _hub.GetModule<Testing.Scripts.HealthController>();
+                _health = _hub.GetModule<HealthController>();
                 visualsToFlash = _hub.renderRoot?.GetComponentsInChildren<Renderer>() ?? GetComponentsInChildren<Renderer>();
             }
         }
@@ -44,7 +44,6 @@ namespace Combating.Scripts
 
             if (_health.CurrentHP >= _health.maxHealth) return;
 
-            _health.ApplyDirectHealthChange(amount);
             PlayHealFlash();
         }
 

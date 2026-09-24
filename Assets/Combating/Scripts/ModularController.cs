@@ -225,13 +225,6 @@ namespace Combating.Scripts
             }
         }
 
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        public void RequestMeleeServerRpc()
-        {
-            var melee = GetModule<Testing.Scripts.MeleeController>();
-            if (melee != null) melee.ExecuteMeleeServerSide();
-        }
-
         /// <summary>
         /// Cleans up an instantiated module or equipment to prevent interference.
         /// </summary>

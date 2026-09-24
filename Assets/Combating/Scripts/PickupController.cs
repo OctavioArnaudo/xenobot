@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using Combating.Scripts;
+using TMPro;
 
 namespace Crafting.Scripts
 {
@@ -26,6 +27,7 @@ namespace Crafting.Scripts
         private bool _taken;
         private float _spawnTime;
         private bool _grounded = false;
+        private string _lastDisplayedText;
         private const float PICKUP_DELAY = 0.2f;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
@@ -69,12 +71,20 @@ namespace Crafting.Scripts
             _spawnTime = Time.time;
             ActiveCount++;
             InventoryController.MarkCountDirty();
+
+            UpdateFloatingName();
         }
 
         void Update()
         {
             _timer += Time.deltaTime;
             transform.localRotation = Quaternion.Euler(0, _timer * rotationSpeed, 0);
+
+            string currentName = GetItemDisplayName();
+            if (_lastDisplayedText != currentName)
+            {
+                UpdateFloatingName();
+            }
 
             if (TryGetComponent<Rigidbody>(out var rb) && !rb.isKinematic)
             {
@@ -85,6 +95,59 @@ namespace Crafting.Scripts
                 float bobbing = Mathf.Sin(Time.time * bobbingSpeed) * bobbingAmount;
                 transform.position = new Vector3(_startPos.x, _startPos.y + bobbing, _startPos.z);
             }
+        }
+
+        private void UpdateFloatingName()
+        {
+            string displayName = GetItemDisplayName();
+            if (string.IsNullOrEmpty(displayName)) return;
+
+            Transform existing = transform.Find("LootMsg");
+            GameObject msgGo;
+            TextMeshPro tmp;
+
+            if (existing != null)
+            {
+                msgGo = existing.gameObject;
+                tmp = msgGo.GetComponent<TextMeshPro>();
+            }
+            else
+            {
+                msgGo = new GameObject("LootMsg");
+                msgGo.transform.SetParent(transform);
+                msgGo.transform.localPosition = Vector3.up * 1.0f;
+                tmp = msgGo.AddComponent<TextMeshPro>();
+                tmp.fontSize = 3;
+                tmp.alignment = TextAlignmentOptions.Center;
+                tmp.color = Color.yellow;
+                msgGo.AddComponent<SimpleBillboard>();
+            }
+
+            if (tmp != null)
+            {
+                tmp.text = displayName;
+            }
+
+            _lastDisplayedText = displayName;
+        }
+
+        private string GetItemDisplayName()
+        {
+            if (item != null && !string.IsNullOrEmpty(item.displayName))
+            {
+                return item.displayName;
+            }
+
+            // Fallback: usar el nombre limpio del gameObject/prefab
+            string cleanName = gameObject.name;
+            int cloneIndex = cleanName.IndexOf("(Clone)", System.StringComparison.OrdinalIgnoreCase);
+            if (cloneIndex > 0)
+            {
+                cleanName = cleanName.Substring(0, cloneIndex);
+            }
+            cleanName = cleanName.Replace("Prefab", "").Replace("Item_", "").Replace("Item", "").Trim();
+            if (string.IsNullOrEmpty(cleanName)) cleanName = gameObject.name;
+            return cleanName;
         }
 
         private void OnCollisionEnter(Collision collision)

@@ -15,7 +15,7 @@ namespace Combating.Scripts
         [Header("Events")]
         public UnityEvent<int> OnTakeDamage;
 
-        private Testing.Scripts.HealthController _health;
+        private HealthController _health;
         private ModularController _hub;
         private float _damageFlashTimer;
 
@@ -41,7 +41,7 @@ namespace Combating.Scripts
         {
             if (_hub != null)
             {
-                _health = _hub.GetModule<Testing.Scripts.HealthController>();
+                _health = _hub.GetModule<HealthController>();
                 visualsToFlash = _hub.renderRoot?.GetComponentsInChildren<Renderer>() ?? GetComponentsInChildren<Renderer>();
             }
         }
@@ -61,8 +61,6 @@ namespace Combating.Scripts
             int finalDamage = damage;
             finalDamage = Mathf.RoundToInt(damage * (10f / (10f + _hub.Defense.Value)));
             if (finalDamage < 1) finalDamage = 1;
-
-            _health.ApplyDirectHealthChange(-finalDamage);
 
             if (_hub.IsOwner && _hub.MyTeam == Team.Player) _damageFlashTimer = 0.6f;
             PlayHitFlash();
