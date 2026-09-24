@@ -33,14 +33,6 @@ namespace Combating.Scripts
             }
         }
 
-        private void OnApplicationFocus(bool hasFocus)
-        {
-            if (_hub != null && _hub is Testing.Scripts.PlayerController player && (IsOwner || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening))
-            {
-                 SetCursorState(player.cursorLocked);
-            }
-        }
-
         public void SetCursorState(bool newState)
         {
             Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;

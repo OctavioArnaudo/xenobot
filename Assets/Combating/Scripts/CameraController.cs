@@ -38,9 +38,8 @@ namespace Combating.Scripts
         private Vector3 _currentOffset;
 
         // Verificación con namespace correcto
-        private bool HasInputAuthority => _hub != null &&
-            (_hub is Testing.Scripts.PlayerController) &&
-            (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
+        private bool HasInputAuthority =>            (_hub.GetComponent<PlayerController>() != null) &&
+                (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
 
         void Awake()
         {
@@ -74,23 +73,6 @@ namespace Combating.Scripts
             if (_vcam == null) RefreshCameraLink();
 
             bool isAiming = false;
-
-            if (_hub is Testing.Scripts.PlayerController playerHub)
-            {
-                if (playerHub.look.sqrMagnitude > 0.001f)
-                {
-                    _yaw += playerHub.look.x * LookSensitivity.x;
-                    _pitch -= playerHub.look.y * LookSensitivity.y;
-                }
-
-                isAiming = playerHub.aim || (Mouse.current != null && Mouse.current.rightButton.isPressed);
-
-                // Alternar hombro con Alt Izquierdo
-                if (Keyboard.current != null && Keyboard.current.leftAltKey.wasPressedThisFrame)
-                {
-                    _shoulderSide *= -1f;
-                }
-            }
 
             _pitch = Mathf.Clamp(_pitch, BottomClamp, TopClamp);
 

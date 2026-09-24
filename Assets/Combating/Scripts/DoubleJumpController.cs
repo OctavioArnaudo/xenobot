@@ -7,7 +7,6 @@ namespace Combating.Scripts
     {
         private const float JumpHeight = 1.0f;
         private ModularController _hub;
-        private bool _canDoubleJump;
 
         void Awake()
         {
@@ -24,22 +23,9 @@ namespace Combating.Scripts
 
         private void Update()
         {
-            if (_hub == null || !(_hub is Testing.Scripts.PlayerController player)) return;
-
             bool isOwner = (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
             if (!isOwner) return;
 
-            if (_hub.IsGrounded)
-            {
-                _canDoubleJump = true;
-            }
-            else if (player.jump && _canDoubleJump)
-            {
-                float jumpForce = Mathf.Sqrt(JumpHeight * -2f * _hub.BaseGravity);
-                _hub.VerticalVelocity = jumpForce;
-                _canDoubleJump = false;
-                player.jump = false; // Consume input
-            }
         }
     }
 }

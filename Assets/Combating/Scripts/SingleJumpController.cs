@@ -24,17 +24,8 @@ namespace Combating.Scripts
 
         private void Update()
         {
-            if (_hub == null || !(_hub is Testing.Scripts.PlayerController player)) return;
-
             bool isOwner = (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
             if (!isOwner) return;
-
-            if (player.jump && _hub.IsGrounded)
-            {
-                float jumpForce = Mathf.Sqrt(JumpHeight * -2f * _hub.BaseGravity);
-                _hub.VerticalVelocity = jumpForce;
-                player.jump = false; // Consume input
-            }
         }
     }
 }

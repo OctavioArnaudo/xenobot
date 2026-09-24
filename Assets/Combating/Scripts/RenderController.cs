@@ -139,8 +139,6 @@ namespace Crafting.Scripts
                     mc.sharedMesh = mf.sharedMesh;
                 }
             }
-
-            Debug.Log($"[RenderController] Optimized Colliders generated for {gameObject.name}");
         }
     }
 }

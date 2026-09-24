@@ -70,12 +70,6 @@ namespace Combating.Scripts
             if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, _hub.HorizontalSpeed);
             if (_hasAnimIDIsGrounded) _animator.SetBool(_animIDIsGrounded, _hub.IsGrounded);
             if (_hasAnimIDVerticalVelocity) _animator.SetFloat(_animIDVerticalVelocity, _hub.VerticalVelocity);
-
-            // Handle Jump trigger if Hub is Player and jump was just pressed
-            if (_hub is Testing.Scripts.PlayerController player && player.jump && _hasAnimIDJump)
-            {
-                _animator.SetBool(_animIDJump, true);
-            }
         }
 
         public void TriggerTakeDamage()

@@ -49,7 +49,6 @@ namespace Combating.Scripts
 
         private void Start()
         {
-            if (_hub == null) _hub = Testing.Scripts.PlayerController.LocalInstance;
             if (_hub != null && _renderTransform == null) _renderTransform = _hub.renderRoot;
         }
 
@@ -60,31 +59,9 @@ namespace Combating.Scripts
 
             if (_controller == null) _controller = _hub.controller ?? _hub.GetComponent<CharacterController>();
             if (_controller == null) return;
-
-            // Physical state is now read directly from Hub
-            float verticalVelocity = _hub.VerticalVelocity;
-            bool isGrounded = _hub.IsGrounded;
-
-            // Handle combined movement
-            if (_hub is Testing.Scripts.PlayerController playerHub)
-            {
-                var propulsion = _hub.GetModule<PropulsionController>();
-                if (propulsion != null)
-                {
-                    propulsion.ProcessFlight(playerHub.jumpHeld, isGrounded, ref verticalVelocity);
-                    _hub.VerticalVelocity = verticalVelocity; // Update Hub state
-                }
-
-                ApplyMovement(playerHub, verticalVelocity, isGrounded);
-            }
-            else
-            {
-                Vector3 motion = Vector3.up * verticalVelocity;
-                _controller.Move(motion * Time.deltaTime);
-            }
         }
 
-        private void ApplyMovement(Testing.Scripts.PlayerController player, float verticalVelocity, bool isGrounded)
+        private void ApplyMovement(PlayerController player, float verticalVelocity, bool isGrounded)
         {
             float targetSpeed = player.sprint ? MoveSpeed * 2.5f : MoveSpeed;
             if (player.move == Vector2.zero) targetSpeed = 0.0f;
