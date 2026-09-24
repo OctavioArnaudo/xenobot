@@ -8,12 +8,12 @@ namespace Combating.Scripts
 {
     public enum ShieldInputMode
     {
-        HoldToActivate, // Mantener Enter para activar, soltar para desactivar
-        TogglePress     // Pulsar Enter para alternar (activar/desactivar)
+        HoldToActivate, // Mantener botón central de la rueda para activar, soltar para desactivar
+        TogglePress     // Pulsar/girar la rueda del mouse para alternar (activar/desactivar)
     }
 
     /// <summary>
-    /// Sistema de escudo de energía con soporte para Input (Enter), Red (Netcode),
+    /// Sistema de escudo de energía con soporte para Input (Rueda del mouse), Red (Netcode),
     /// uso desde inventario (IItemFunctional, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction),
     /// mitigación de daño y visuales personalizables/autogenerados.
     /// </summary>
@@ -27,7 +27,7 @@ namespace Combating.Scripts
         public float damageReduction = 0.5f;
 
         [Header("Activation & Input Settings")]
-        [Tooltip("Modo de entrada de la tecla Enter: HoldToActivate (mantener) o TogglePress (pulsar para encender/apagar)")]
+        [Tooltip("Modo de entrada de la rueda del mouse: HoldToActivate (mantener botón central) o TogglePress (pulsar/girar rueda para encender/apagar)")]
         public ShieldInputMode inputMode = ShieldInputMode.HoldToActivate;
         [Tooltip("Si es true, se desbloquea automáticamente al iniciar la escena.")]
         public bool autoUnlockOnStart = false;
@@ -45,7 +45,7 @@ namespace Combating.Scripts
         public Color shieldColor = new Color(0f, 0.5f, 1f, 0.8f);
 
         [Header("Back Generator Configuration")]
-        [Tooltip("Posición relativa en la espalda del robot (X, Y, Z)")]
+        [Tooltip("Posición relativa en la espalda del robot o hueso (X, Y, Z)")]
         public Vector3 generatorOffset = new Vector3(0f, 0.8f, -0.35f);
         [Tooltip("Tamaño del cilindro fuente de energía (Ancho, Alto, Profundidad)")]
         public Vector3 generatorScale = new Vector3(0.3f, 0.6f, 0.3f);
@@ -59,7 +59,7 @@ namespace Combating.Scripts
         private Animator m_Animator;
         private HealthController m_Health;
 
-        // Indicador de si el escudo fue activado vía teclado
+        // Indicador de si el escudo fue activado vía mouse
         private bool m_ActivatedByInput = false;
 
         // NetworkVariable para sincronizar con otros jugadores en multijugador
@@ -175,22 +175,20 @@ namespace Combating.Scripts
                 return;
             }
 
-            // Detección de la tecla Enter (Intro principal o Numpad Enter)
-            if (Keyboard.current != null && isUnlocked)
+            // Detección de la rueda del mouse (Botón central o Giro/Scroll)
+            if (Mouse.current != null && isUnlocked)
             {
-                var enterKey = Keyboard.current.enterKey;
-                var numpadKey = Keyboard.current.numpadEnterKey;
+                var middleButton = Mouse.current.middleButton;
+                float scrollValue = Mouse.current.scroll.ReadValue().y;
+                bool isScrolling = Mathf.Abs(scrollValue) > 0.01f;
 
-                bool enterPressedThisFrame = (enterKey != null && enterKey.wasPressedThisFrame) ||
-                                            (numpadKey != null && numpadKey.wasPressedThisFrame);
-                bool enterIsPressed = (enterKey != null && enterKey.isPressed) ||
-                                      (numpadKey != null && numpadKey.isPressed);
-                bool enterReleasedThisFrame = (enterKey != null && enterKey.wasReleasedThisFrame) ||
-                                             (numpadKey != null && numpadKey.wasReleasedThisFrame);
+                bool middlePressedThisFrame = middleButton != null && middleButton.wasPressedThisFrame;
+                bool middleIsPressed = middleButton != null && middleButton.isPressed;
+                bool middleReleasedThisFrame = middleButton != null && middleButton.wasReleasedThisFrame;
 
                 if (inputMode == ShieldInputMode.TogglePress)
                 {
-                    if (enterPressedThisFrame)
+                    if (middlePressedThisFrame || isScrolling)
                     {
                         SetShieldState(!IsShieldActive);
                         m_ActivatedByInput = IsShieldActive;
@@ -198,23 +196,32 @@ namespace Combating.Scripts
                 }
                 else // HoldToActivate
                 {
-                    if (enterPressedThisFrame && IsShieldActive && !m_ActivatedByInput)
+                    if ((middlePressedThisFrame || isScrolling) && IsShieldActive && !m_ActivatedByInput)
                     {
-                        // Si el escudo estaba activo (ej: por inventario) y pulsamos Enter, lo desactivamos
+                        // Si el escudo estaba activo (ej: por inventario) e interactuamos con la rueda, lo desactivamos
                         SetShieldState(false);
                         m_ActivatedByInput = false;
                     }
-                    else if (enterIsPressed)
+                    else if (middleIsPressed)
                     {
                         SetShieldState(true);
                         m_ActivatedByInput = true;
                     }
-                    else if (enterReleasedThisFrame || (!enterIsPressed && m_ActivatedByInput))
+                    else if (middleReleasedThisFrame || (!middleIsPressed && m_ActivatedByInput))
                     {
                         SetShieldState(false);
                         m_ActivatedByInput = false;
                     }
                 }
+            }
+        }
+
+        private void LateUpdate()
+        {
+            // Mantiene el offset exacto en cada frame después de procesar animaciones
+            if (shieldVisualObject != null && (IsShieldActive || (!Application.isPlaying && previewInEditor)))
+            {
+                shieldVisualObject.transform.localPosition = generatorOffset;
             }
         }
 
@@ -344,12 +351,26 @@ namespace Combating.Scripts
         }
 
         /// <summary>
-        /// Genera una fuente de energía cilíndrica vertical ubicada en la espalda del robot.
+        /// Genera una fuente de energía cilíndrica ubicada en la espalda/hueso del robot.
         /// </summary>
         [ContextMenu("Re-Generate Shield Mesh")]
         public void GenerateShieldMesh()
         {
-            Transform existing = transform.Find("ShieldRender");
+            RefreshReferences();
+
+            // 1. Intentar buscar el hueso del Pecho o Columna para acompañar las animaciones de movimiento
+            Transform targetParent = transform;
+            if (m_Animator != null && m_Animator.isHuman)
+            {
+                Transform chestBone = m_Animator.GetBoneTransform(HumanBodyBones.Chest) 
+                                   ?? m_Animator.GetBoneTransform(HumanBodyBones.Spine);
+                if (chestBone != null)
+                {
+                    targetParent = chestBone;
+                }
+            }
+
+            Transform existing = transform.Find("ShieldRender") ?? targetParent.Find("ShieldRender");
             if (existing != null)
             {
                 shieldVisualObject = existing.gameObject;
@@ -358,7 +379,7 @@ namespace Combating.Scripts
             {
                 shieldVisualObject = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 shieldVisualObject.name = "ShieldRender";
-                shieldVisualObject.transform.SetParent(transform, false);
+                shieldVisualObject.transform.SetParent(targetParent, false);
 
                 // Quitar colisionador para que no interfiera con la física ni el movimiento
                 var col = shieldVisualObject.GetComponent<Collider>();
@@ -383,18 +404,18 @@ namespace Combating.Scripts
                 }
             }
 
-            // Posición recta y vertical en la espalda
+            // Posición relativa al nuevo padre (hueso o raíz)
             shieldVisualObject.transform.localPosition = generatorOffset;
-            shieldVisualObject.transform.localRotation = Quaternion.identity; // Recta y vertical
+            shieldVisualObject.transform.localRotation = Quaternion.identity;
             shieldVisualObject.transform.localScale = generatorScale;
 
             var mr = shieldVisualObject.GetComponent<MeshRenderer>();
             if (mr != null)
             {
                 Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ??
-                             Shader.Find("Universal Render Pipeline/Lit") ??
-                             Shader.Find("Sprites/Default") ??
-                             Shader.Find("Standard");
+                               Shader.Find("Universal Render Pipeline/Lit") ??
+                               Shader.Find("Sprites/Default") ??
+                               Shader.Find("Standard");
 
                 if (mr.sharedMaterial == null || mr.sharedMaterial.shader != shader)
                 {
