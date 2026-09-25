@@ -23,6 +23,7 @@ namespace Combating.Scripts
         private CharacterController m_CharController;
         private PlayerController m_Player;
         private HealthController m_Health;
+        private PropulsionController m_Propulsion;
 
         private float m_LastTapTimeW;
         private float m_LastTapTimeA;
@@ -46,6 +47,7 @@ namespace Combating.Scripts
             m_Player = player.GetComponent<PlayerController>();
             m_CharController = player.GetComponent<CharacterController>();
             m_Health = player.GetComponent<HealthController>();
+            m_Propulsion = player.GetComponent<PropulsionController>() ?? player.GetComponentInChildren<PropulsionController>();
             RefreshReferences();
             Debug.Log("[DashController] Lógica de Dash de red activada para el jugador.");
         }
@@ -55,6 +57,7 @@ namespace Combating.Scripts
             if (m_Player == null) m_Player = GetComponentInParent<PlayerController>();
             if (m_CharController == null) m_CharController = GetComponentInParent<CharacterController>();
             if (m_Health == null) m_Health = GetComponentInParent<HealthController>();
+            if (m_Propulsion == null) m_Propulsion = GetComponent<PropulsionController>() ?? GetComponentInParent<PropulsionController>();
         }
 
         void Update()
@@ -62,7 +65,6 @@ namespace Combating.Scripts
             if (m_Player == null || m_CharController == null) RefreshReferences();
             if (m_Player == null || m_CharController == null) return;
 
-            // Solo el cliente dueño del personaje lee inputs y ejecuta la física localmente
             bool isOwner = IsNetworkActive ? IsOwner : true;
             if (!isOwner) return;
 
@@ -108,12 +110,10 @@ namespace Combating.Scripts
 
             if (IsNetworkActive)
             {
-                // Solicitamos al servidor iniciar el dash
                 RequestDashServerRpc(worldDirection);
             }
             else
             {
-                // Modo local offline
                 ExecuteLocalDash(worldDirection);
             }
         }
@@ -121,27 +121,24 @@ namespace Combating.Scripts
         [ServerRpc]
         private void RequestDashServerRpc(Vector3 worldDirection)
         {
-            // Validación en el Servidor (Consumo de estamina/fuel)
-            if (m_Health != null && staminaCost > 0)
+            if (m_Propulsion == null) RefreshReferences();
+            if (m_Propulsion != null && staminaCost > 0)
             {
-                if (m_Health.JetpackFuel < staminaCost) return;
-                m_Health.UseFuel(staminaCost);
+                if (m_Propulsion.JetpackFuel < staminaCost) return;
+                m_Propulsion.UseFuel(staminaCost);
             }
 
-            // Notificamos a todos los clientes para disparar la animación/efectos
             NotifyDashClientRpc(worldDirection);
         }
 
         [ClientRpc]
         private void NotifyDashClientRpc(Vector3 worldDirection)
         {
-            // Ejecutar el impulso en el cliente dueño
             if (IsOwner)
             {
                 ExecuteLocalDash(worldDirection);
             }
 
-            // Disparar animación en todos los clientes (para que los demás vean que dasheó)
             TriggerDashAnimation();
         }
 
@@ -159,7 +156,6 @@ namespace Combating.Scripts
 
             if (m_DashTimer > 0)
             {
-                // Movimiento client-authoritative mediante CharacterController
                 m_CharController.Move(m_DashDirection * dashForce * Time.deltaTime);
                 m_DashTimer -= Time.deltaTime;
             }

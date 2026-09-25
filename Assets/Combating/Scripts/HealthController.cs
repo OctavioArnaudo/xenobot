@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.Events;
@@ -7,23 +8,24 @@ namespace Combating.Scripts
     public enum Team { Neutral, Player, Enemy }
 
     /// <summary>
-    /// Universal controller for Health and Team.
-    /// Handles life, damage, status and visual feedback.
-    /// Integrated with ShieldController for damage mitigation.
+    /// Universal controller for Health, Team, and Shield Mitigation.
+    /// Fully compliant with AGENTS.md pattern (clean public overrides with dynamic environment-aware private defaults).
     /// </summary>
     public class HealthController : NetworkBehaviour
     {
-        [Header("Identity & Team")]
-        public Team team = Team.Neutral;
-        public int maxHealth = 100;
+        // --- Internal Hardcoded Health Defaults ---
+        private const int DEFAULT_PLAYER_MAX_HEALTH = 250;
+        private const int DEFAULT_ENEMY_BASE_HEALTH = 120;
 
-        [Header("Jetpack Settings")]
-        public NetworkVariable<float> maxJetpackFuel = new NetworkVariable<float>(100f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        public NetworkVariable<float> currentJetpackFuel = new NetworkVariable<float>(100f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        [Header("Identity & Team Overrides (Neutral = Auto-detectar)")]
+        public Team team = Team.Neutral;
+
+        [Header("Manual Health Override (0 = Usar Balance DinÃ¡mico Interno)")]
+        public int maxHealth = 0;
 
         [Header("Visual Feedback (Optional)")]
         public Renderer[] visualsToFlash;
-        public Color flashColor = Color.white;
+        public Color flashColor = Color.red;
         public float flashDuration = 0.15f;
 
         [Header("Events")]
@@ -32,23 +34,133 @@ namespace Combating.Scripts
 
         private NetworkVariable<int> currentHealth = new NetworkVariable<int>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         private int m_OfflineHealth;
-        private float m_OfflineJetpack;
         private float m_DamageFlashTimer;
+
+        // CachÃ© de colores originales para restaurar exactamente la apariencia sin decolorar al personaje
+        private Dictionary<Material, Color> m_OriginalColors = new Dictionary<Material, Color>();
 
         private Animator m_Animator;
         private static readonly int _animIDTakeDamage = Animator.StringToHash("takeDamage");
         private bool _hasAnimDamage;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+
+        // --- Effective Statistics Resolvers with AGENTS.md Protection ---
+
+        public Team EffectiveTeam
+        {
+            get
+            {
+                if (team != Team.Neutral) return team;
+
+                var pc = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
+                if (pc != null || CompareTag("Player")) return Team.Player;
+
+                var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
+                if (enemy != null || CompareTag("Enemy")) return Team.Enemy;
+
+                return Team.Neutral;
+            }
+        }
+
+        public int EffectiveMaxHealth
+        {
+            get
+            {
+                try
+                {
+                    if (maxHealth > 0) return maxHealth;
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[Fallback] maxHealth en {gameObject.name}: {ex.Message}");
+                }
+
+                return CalculateDynamicHealthBalance();
+            }
+        }
+
         public int CurrentHP => IsNetworkActive ? currentHealth.Value : m_OfflineHealth;
-        public float JetpackFuel => IsNetworkActive ? currentJetpackFuel.Value : m_OfflineJetpack;
-        public float MaxJetpack => IsNetworkActive ? maxJetpackFuel.Value : m_OfflineJetpackMax;
-        private float m_OfflineJetpackMax = 100f;
+
+        private int CalculateDynamicHealthBalance()
+        {
+            var pc = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
+            if (pc != null || CompareTag("Player"))
+            {
+                return DEFAULT_PLAYER_MAX_HEALTH;
+            }
+
+            var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
+            if (enemy != null)
+            {
+                float baseHp = DEFAULT_ENEMY_BASE_HEALTH;
+
+                switch (enemy.activeArchetype)
+                {
+                    case AIArchetype.DefensiveGuardian:
+                        baseHp *= 2.2f;
+                        break;
+                    case AIArchetype.Berserker:
+                        baseHp *= 1.6f;
+                        break;
+                    case AIArchetype.SupportCommander:
+                        baseHp *= 1.2f;
+                        break;
+                    case AIArchetype.AmbushStalker:
+                        baseHp *= 0.85f;
+                        break;
+                    case AIArchetype.KiterHitAndRun:
+                    case AIArchetype.TacticalCover:
+                        baseHp *= 0.9f;
+                        break;
+                    default:
+                        baseHp *= 1.0f;
+                        break;
+                }
+
+                int nearbyAllies = CountNearbyAllies();
+                int nearbyPlayers = CountNearbyPlayers();
+
+                if (nearbyAllies >= 3)
+                {
+                    baseHp *= 0.8f;
+                }
+                else if (nearbyAllies == 0 && nearbyPlayers >= 1)
+                {
+                    baseHp *= 1.4f;
+                }
+
+                return Mathf.RoundToInt(baseHp);
+            }
+
+            return DEFAULT_ENEMY_BASE_HEALTH;
+        }
+
+        private int CountNearbyAllies()
+        {
+            int count = 0;
+            var enemies = GameObject.FindGameObjectsWithTag("Enemy");
+            foreach (var e in enemies)
+            {
+                if (e != gameObject && Vector3.Distance(transform.position, e.transform.position) <= 25f) count++;
+            }
+            return count;
+        }
+
+        private int CountNearbyPlayers()
+        {
+            int count = 0;
+            var players = GameObject.FindGameObjectsWithTag("Player");
+            foreach (var p in players)
+            {
+                if (Vector3.Distance(transform.position, p.transform.position) <= 25f) count++;
+            }
+            return count;
+        }
 
         void Awake()
         {
-            m_OfflineHealth = maxHealth;
-            m_OfflineJetpack = m_OfflineJetpackMax;
+            m_OfflineHealth = EffectiveMaxHealth;
 
             m_Animator = GetComponentInChildren<Animator>();
             if (m_Animator != null)
@@ -56,9 +168,28 @@ namespace Combating.Scripts
                 _hasAnimDamage = HasParameter(m_Animator, _animIDTakeDamage);
             }
 
-            // Auto-detect visuals if not assigned
+            CacheOriginalColors();
+        }
+
+        private void CacheOriginalColors()
+        {
             if (visualsToFlash == null || visualsToFlash.Length == 0)
                 visualsToFlash = GetComponentsInChildren<Renderer>();
+
+            if (visualsToFlash != null)
+            {
+                foreach (var r in visualsToFlash)
+                {
+                    if (r == null) continue;
+                    foreach (var mat in r.materials)
+                    {
+                        if (mat == null || m_OriginalColors.ContainsKey(mat)) continue;
+
+                        if (mat.HasProperty("_Color")) m_OriginalColors[mat] = mat.color;
+                        else if (mat.HasProperty("_BaseColor")) m_OriginalColors[mat] = mat.GetColor("_BaseColor");
+                    }
+                }
+            }
         }
 
         private bool HasParameter(Animator animator, int paramHash)
@@ -72,15 +203,72 @@ namespace Combating.Scripts
         {
             if (IsServer)
             {
-                currentHealth.Value = maxHealth;
-                if (maxJetpackFuel.Value <= 0) maxJetpackFuel.Value = 100f;
-                currentJetpackFuel.Value = maxJetpackFuel.Value;
+                currentHealth.Value = EffectiveMaxHealth;
             }
+
+            currentHealth.OnValueChanged += (oldVal, newVal) =>
+            {
+                int diff = oldVal - newVal;
+                if (diff > 0)
+                {
+                    TriggerDamageFlash();
+                    OnTakeDamage?.Invoke(diff);
+                }
+
+                if (newVal <= 0)
+                {
+                    OnDeath?.Invoke();
+                }
+            };
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            currentHealth.OnValueChanged -= (oldVal, newVal) => { };
+            base.OnNetworkDespawn();
         }
 
         void Update()
         {
-            if (m_DamageFlashTimer > 0) m_DamageFlashTimer -= Time.deltaTime;
+            if (m_DamageFlashTimer > 0)
+            {
+                m_DamageFlashTimer -= Time.deltaTime;
+                if (m_DamageFlashTimer <= 0)
+                {
+                    // Restablecer los colores ORIGINALES exactos
+                    foreach (var kvp in m_OriginalColors)
+                    {
+                        if (kvp.Key == null) continue;
+                        if (kvp.Key.HasProperty("_Color")) kvp.Key.color = kvp.Value;
+                        if (kvp.Key.HasProperty("_BaseColor")) kvp.Key.SetColor("_BaseColor", kvp.Value);
+                    }
+                }
+            }
+        }
+
+        private void TriggerDamageFlash()
+        {
+            CacheOriginalColors();
+
+            if (visualsToFlash != null)
+            {
+                foreach (var r in visualsToFlash)
+                {
+                    if (r == null) continue;
+                    foreach (var mat in r.materials)
+                    {
+                        if (mat == null) continue;
+                        if (mat.HasProperty("_Color")) mat.color = flashColor;
+                        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", flashColor);
+                    }
+                }
+            }
+            m_DamageFlashTimer = flashDuration;
+
+            if (m_Animator != null && _hasAnimDamage)
+            {
+                m_Animator.SetTrigger(_animIDTakeDamage);
+            }
         }
 
         public void TakeDamage(int damage)
@@ -89,68 +277,52 @@ namespace Combating.Scripts
 
             int finalDamage = damage;
 
-            // 1. Integración con ShieldController (Mitigación de daño si el escudo está activo)
             var shield = GetComponent<ShieldController>() ?? GetComponentInParent<ShieldController>();
             if (shield != null && shield.IsShieldActive)
             {
                 finalDamage = Mathf.RoundToInt(shield.ProcessIncomingDamage(finalDamage));
             }
 
-            // Si el escudo bloqueó el 100% del daño, salimos
             if (finalDamage <= 0) return;
 
-            // 2. Integración con HudController (Defensa)
-            var stats = GetComponent<HudController>() ?? GetComponentInParent<HudController>();
-            if (stats != null)
-            {
-                finalDamage = Mathf.RoundToInt(finalDamage * (10f / (10f + stats.Defense)));
-                if (finalDamage < 1) finalDamage = 1;
-            }
-
-            // Aplicar daño
             if (IsNetworkActive)
             {
-                if (IsServer) currentHealth.Value = Mathf.Max(0, currentHealth.Value - finalDamage);
+                if (IsServer) ApplyDamageServer(finalDamage);
+                else RequestTakeDamageServerRpc(finalDamage);
             }
             else
             {
-                m_OfflineHealth = Mathf.Max(0, m_OfflineHealth - finalDamage);
-            }
-
-            // Flash de daño (HUD si es player, Body si es enemigo/objeto)
-            if (IsOwner && team == Team.Player) m_DamageFlashTimer = 0.6f;
-            PlayHitFlash();
-
-            // Trigger Animator Damage
-            if (_hasAnimDamage) m_Animator.SetTrigger(_animIDTakeDamage);
-
-            OnTakeDamage?.Invoke(finalDamage);
-            if (CurrentHP <= 0) Die();
-        }
-
-        private void PlayHitFlash()
-        {
-            if (visualsToFlash != null && visualsToFlash.Length > 0)
-            {
-                foreach (var r in visualsToFlash)
-                {
-                    if (r == null) continue;
-                    var mpb = new MaterialPropertyBlock();
-                    mpb.SetColor("_EmissionColor", flashColor * 2f);
-                    r.SetPropertyBlock(mpb);
-                }
-                Invoke(nameof(ResetFlash), flashDuration);
+                ApplyDamageLocal(finalDamage);
             }
         }
 
-        private void ResetFlash()
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void RequestTakeDamageServerRpc(int damage)
         {
-            if (visualsToFlash != null)
+            ApplyDamageServer(damage);
+        }
+
+        private void ApplyDamageServer(int damage)
+        {
+            currentHealth.Value = Mathf.Max(0, currentHealth.Value - damage);
+            TriggerDamageFlash();
+            OnTakeDamage?.Invoke(damage);
+
+            if (currentHealth.Value <= 0)
             {
-                foreach (var r in visualsToFlash)
-                {
-                    if (r != null) r.SetPropertyBlock(null);
-                }
+                OnDeath?.Invoke();
+            }
+        }
+
+        private void ApplyDamageLocal(int damage)
+        {
+            m_OfflineHealth = Mathf.Max(0, m_OfflineHealth - damage);
+            TriggerDamageFlash();
+            OnTakeDamage?.Invoke(damage);
+
+            if (m_OfflineHealth <= 0)
+            {
+                OnDeath?.Invoke();
             }
         }
 
@@ -160,105 +332,31 @@ namespace Combating.Scripts
 
             if (IsNetworkActive)
             {
-                if (IsServer) currentHealth.Value = Mathf.Min(maxHealth, currentHealth.Value + amount);
+                if (IsServer) currentHealth.Value = Mathf.Min(EffectiveMaxHealth, currentHealth.Value + amount);
+                else HealServerRpc(amount);
             }
             else
             {
-                m_OfflineHealth = Mathf.Min(maxHealth, m_OfflineHealth + amount);
+                m_OfflineHealth = Mathf.Min(EffectiveMaxHealth, m_OfflineHealth + amount);
             }
-
-            Debug.Log($"[Health] Recuperada {amount} HP. Vida actual: {CurrentHP}");
         }
 
-        public void UpgradeMaxStats(int healthBonus, float jetpackBonus)
-        {
-            maxHealth += healthBonus;
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void HealServerRpc(int amount) => Heal(amount);
 
+        public void UpgradeMaxStats(int healthBonus)
+        {
             if (IsNetworkActive)
             {
                 if (IsServer)
                 {
-                    currentHealth.Value = Mathf.Min(maxHealth, currentHealth.Value + healthBonus);
-                    maxJetpackFuel.Value += jetpackBonus;
-                    currentJetpackFuel.Value = Mathf.Min(maxJetpackFuel.Value, currentJetpackFuel.Value + jetpackBonus);
+                    currentHealth.Value += healthBonus;
                 }
             }
             else
             {
-                m_OfflineHealth = Mathf.Min(maxHealth, m_OfflineHealth + healthBonus);
-                m_OfflineJetpackMax += jetpackBonus;
-                m_OfflineJetpack = Mathf.Min(m_OfflineJetpackMax, m_OfflineJetpack + jetpackBonus);
+                m_OfflineHealth += healthBonus;
             }
         }
-
-        public void UseFuel(float amount)
-        {
-            if (IsNetworkActive)
-            {
-                if (IsServer) currentJetpackFuel.Value = Mathf.Max(0f, currentJetpackFuel.Value - amount);
-                else UseFuelServerRpc(amount);
-            }
-            else m_OfflineJetpack = Mathf.Max(0f, m_OfflineJetpack - amount);
-        }
-
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void UseFuelServerRpc(float amount) => UseFuel(amount);
-
-        public void AddFuel(float amount)
-        {
-            if (IsNetworkActive)
-            {
-                if (IsServer) currentJetpackFuel.Value = Mathf.Min(maxJetpackFuel.Value, currentJetpackFuel.Value + amount);
-                else AddFuelServerRpc(amount);
-            }
-            else m_OfflineJetpack = Mathf.Min(m_OfflineJetpackMax, m_OfflineJetpack + amount);
-        }
-
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void AddFuelServerRpc(float amount) => AddFuel(amount);
-
-        private void Die()
-        {
-            OnDeath?.Invoke();
-            if (TryGetComponent<SpawnController>(out var sc)) sc.TriggerDeath();
-            else
-            {
-                if (IsNetworkActive && IsServer && IsSpawned)
-                {
-                    GetComponent<NetworkObject>().Despawn(false);
-                    Destroy(gameObject);
-                }
-                else
-                {
-                    Destroy(gameObject);
-                }
-            }
-        }
-
-        #region UI Effects
-        private void OnGUI()
-        {
-            if (Event.current.type != EventType.Repaint) return;
-            if (!IsOwner || team != Team.Player) return;
-
-            float sw = Screen.width;
-            float sh = Screen.height;
-
-            if (m_DamageFlashTimer > 0)
-            {
-                GUI.color = new Color(1, 0, 0, m_DamageFlashTimer * 0.8f);
-                GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
-                GUI.color = Color.white;
-            }
-
-            if (CurrentHP < maxHealth * 0.25f && CurrentHP > 0)
-            {
-                float pulse = Mathf.PingPong(Time.time * 2.5f, 0.25f);
-                GUI.color = new Color(1, 0, 0, pulse);
-                GUI.DrawTexture(new Rect(0, 0, sw, sh), Texture2D.whiteTexture);
-                GUI.color = Color.white;
-            }
-        }
-        #endregion
     }
 }

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 8696380405166974320}
   - component: {fileID: 9036349324028056157}
   m_Layer: 0
-  m_Name: Shield
+  m_Name: ShieldRender
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -27,7 +27,7 @@ Transform:
   m_GameObject: {fileID: 617122001239242324}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 4, z: 0}
+  m_LocalPosition: {x: 0, y: 0.9, z: 0}
   m_LocalScale: {x: 8.5, y: 8.5, z: 8.5}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -411,17 +411,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 1
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -589,6 +579,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 9f41a1c295b64338a231ce89c6aa91e6, type: 2}
   - {fileID: 11400000, guid: d9ea5b9e700da844c9c2a3f7dd94e4a1, type: 2}
   - {fileID: 11400000, guid: 82f936139cf00f24fbb2382cd48dd828, type: 2}
+  - {fileID: 11400000, guid: 125d620cfc9627c489cc73f5df68953e, type: 2}
   dropDistance: 3.5
 --- !u!114 &6229371320334411257
 MonoBehaviour:
@@ -607,9 +598,15 @@ MonoBehaviour:
   Muzzle: {fileID: 3596114446979786384}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage: 25
-  FireRate: 6
-  AimDistance: 100
+  Damage:
+    useOverride: 0
+    value: 0
+  FireRate:
+    useOverride: 0
+    value: 0
+  AimDistance:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -631,15 +628,26 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2a1f0ccf9aa977047af3b55cf76893f9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.PropulsionController
+  ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 1
   infiniteFuel: 0
   allowRegen: 0
+  maxFuel: 0
   jetpackForce: 60
   hoverForce: 25
   fuelConsumption: 30
   fuelRegen: 15
   maxUpwardVelocity: 12
-  hoverThreshold: 0.5
+  maxJetpackFuel:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 120
+  currentJetpackFuel:
+    UpdateTraits:
+      MinSecondsBetweenUpdates: 0
+      MaxSecondsBetweenUpdates: 0
+    m_InternalValue: 120
 --- !u!114 &1781911189563063036
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -671,17 +679,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
-  attackRange: 2.5
-  attackDamage: 35
-  attackCooldown: 1
+  attackRange:
+    useOverride: 0
+    value: 0
+  attackDamage:
+    useOverride: 0
+    value: 0
+  attackCooldown:
+    useOverride: 0
+    value: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 64
-  slamHoldDuration: 0.25
-  slamDamage: 50
-  slamRadius: 5
-  slamSpeed: 35
-  slamKnockbackForce: 600
+  slamHoldDuration:
+    useOverride: 0
+    value: 0
+  slamDamage:
+    useOverride: 0
+    value: 0
+  slamRadius:
+    useOverride: 0
+    value: 0
+  slamSpeed:
+    useOverride: 0
+    value: 0
+  slamKnockbackForce:
+    useOverride: 0
+    value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
   swingVfxPrefab: {fileID: 0}
@@ -702,14 +726,15 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 1
   damageReduction: 1
-  inputMode: 1
-  autoUnlockOnStart: 1
+  inputMode: 0
+  autoUnlockOnStart: 0
   autoActivateOnStart: 0
   toggleOnUse: 1
-  generateDefaultVisuals: 0
+  generateDefaultVisuals: 1
+  previewInEditor: 0
   shieldVisualObject: {fileID: 617122001239242324}
-  shieldColor: {r: 0, g: 0.5, b: 1, a: 0.3}
-  shieldRadius: 1.5
+  generatorOffset: {x: 0, y: 0.9, z: 0}
+  generatorScale: {x: 2.2, y: 2.2, z: 2.2}
   shieldActivateSound: {fileID: 8300000, guid: 0cacf9e8e361eb24e9101b28422f7c08, type: 3}
   shieldBlockSound: {fileID: 8300000, guid: 93331a7c9fe98494a84f18effb358899, type: 3}
   shieldAnimBool: isShieldActive
@@ -5594,15 +5619,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 550552.2
+      value: 769362.8
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 885.42126
+      value: 1297.7255
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 329473.34
+      value: 460759.72
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5650,15 +5675,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 550552.2
+      value: 769362.8
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 885.42126
+      value: 1297.7255
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 329473.34
+      value: 460759.72
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

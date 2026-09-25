@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 using Unity.Netcode;
@@ -109,24 +110,24 @@ namespace Combating.Scripts
         public string activePhaseName = "Fase Inicial";
         public AIArchetype activeArchetype = AIArchetype.Aggressive;
 
-        [Header("Movement Override Settings (0 = Usar Valor Interno)")]
-        public float hoverHeight = 0f;
-        public float wanderSpeed = 0f;
-        public float chaseSpeed = 0f;
-        public float turnSpeed = 0f;
-        public float wanderRadius = 0f;
+        [Header("Movement Overrides (useOverride = false -> Usar Balance Interno)")]
+        public Optional<float> hoverHeight;
+        public Optional<float> wanderSpeed;
+        public Optional<float> chaseSpeed;
+        public Optional<float> turnSpeed;
+        public Optional<float> wanderRadius;
 
-        [Header("Perception & Range Override Settings (0 = Usar Valor Interno)")]
-        public float detectionRange = 0f;
-        public float shootRange = 0f;
-        public float meleeRange = 0f;
+        [Header("Perception & Range Overrides (useOverride = false -> Usar Balance Interno)")]
+        public Optional<float> detectionRange;
+        public Optional<float> shootRange;
+        public Optional<float> meleeRange;
 
-        // --- Effective Statistics Resolvers with Fallback Protection ---
+        // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
         public float EffectiveHoverHeight
         {
             get
             {
-                try { if (hoverHeight > 0f) return hoverHeight; }
+                try { return hoverHeight.GetValue(DEFAULT_HOVER_HEIGHT); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] HoverHeight: {ex.Message}"); }
                 return DEFAULT_HOVER_HEIGHT;
             }
@@ -136,7 +137,7 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (wanderSpeed > 0f) return wanderSpeed; }
+                try { return wanderSpeed.GetValue(DEFAULT_WANDER_SPEED); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] WanderSpeed: {ex.Message}"); }
                 return DEFAULT_WANDER_SPEED;
             }
@@ -146,7 +147,7 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (chaseSpeed > 0f) return chaseSpeed; }
+                try { return chaseSpeed.GetValue(DEFAULT_CHASE_SPEED); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] ChaseSpeed: {ex.Message}"); }
                 return DEFAULT_CHASE_SPEED;
             }
@@ -156,7 +157,7 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (turnSpeed > 0f) return turnSpeed; }
+                try { return turnSpeed.GetValue(DEFAULT_TURN_SPEED); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] TurnSpeed: {ex.Message}"); }
                 return DEFAULT_TURN_SPEED;
             }
@@ -166,7 +167,7 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (wanderRadius > 0f) return wanderRadius; }
+                try { return wanderRadius.GetValue(DEFAULT_WANDER_RADIUS); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] WanderRadius: {ex.Message}"); }
                 return DEFAULT_WANDER_RADIUS;
             }
@@ -176,7 +177,7 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (detectionRange > 0f) return detectionRange; }
+                try { return detectionRange.GetValue(DEFAULT_DETECTION_RANGE); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] DetectionRange: {ex.Message}"); }
                 return DEFAULT_DETECTION_RANGE;
             }
@@ -186,7 +187,7 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (shootRange > 0f) return shootRange; }
+                try { return shootRange.GetValue(DEFAULT_SHOOT_RANGE); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] ShootRange: {ex.Message}"); }
                 return DEFAULT_SHOOT_RANGE;
             }
@@ -196,7 +197,7 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (meleeRange > 0f) return meleeRange; }
+                try { return meleeRange.GetValue(DEFAULT_MELEE_RANGE); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] MeleeRange: {ex.Message}"); }
                 return DEFAULT_MELEE_RANGE;
             }
@@ -258,6 +259,7 @@ namespace Combating.Scripts
             if (m_Health != null)
             {
                 m_Health.OnTakeDamage.AddListener(OnDamageTaken);
+                m_Health.OnDeath.AddListener(OnEnemyDeath);
             }
 
             InitializePhasesIfNeeded();
@@ -369,14 +371,42 @@ namespace Combating.Scripts
             _damageTakenInPhase += damage;
         }
 
+        private bool _isEnemyDead = false;
+
+        private void OnEnemyDeath()
+        {
+            if (_isEnemyDead) return;
+            _isEnemyDead = true;
+
+            Debug.Log($"<color=orange>[EnemyAI]</color> {gameObject.name} ha muerto.");
+
+            StopMoving();
+
+            if (m_Spawn != null)
+            {
+                m_Spawn.TriggerDeath();
+                if (this == null) return;
+            }
+
+            if (IsNetworkActive && IsServer)
+            {
+                if (TryGetComponent<NetworkObject>(out var netObj) && netObj.IsSpawned)
+                    netObj.Despawn(false);
+                Destroy(gameObject);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+        }
+
         void Update()
         {
             if (!CanExecuteLogic) return;
 
             if (m_Health != null && m_Health.CurrentHP <= 0)
             {
-                StopMoving();
-                UpdateAnimator(0, true);
+                OnEnemyDeath();
                 return;
             }
 
@@ -792,14 +822,14 @@ namespace Combating.Scripts
                 MoveTo(awayFromTarget, EffectiveChaseSpeed * 1.2f * speedMult);
                 RotateBaseTowards(m_Target.position);
 
-                // Invocación frecuente de refuerzos
-                if (Time.time > _supportSummonTimer)
+                // Invocación controlada: Máximo 3 aliados cercanos y cooldown de 12s para evitar saturación de CPU
+                int nearbyAllies = CountNearbyAllies(30f);
+                const int MAX_MINIONS_LIMIT = 3;
+
+                if (nearbyAllies < MAX_MINIONS_LIMIT && Time.time > _supportSummonTimer)
                 {
-                    _supportSummonTimer = Time.time + 5.0f;
-                    if (m_Spawn != null)
-                    {
-                        m_Spawn.SpawnSingleItem(m_Spawn.gameObject, transform.position + transform.right * 2f, "¡REFUERZO EN CAMINO!");
-                    }
+                    _supportSummonTimer = Time.time + 12.0f;
+                    SpawnReinforcementMinion();
                 }
 
                 currentState = AIState.Attack;
@@ -809,6 +839,43 @@ namespace Combating.Scripts
             {
                 currentState = AIState.Patrol;
                 Wander(speedMult);
+            }
+        }
+
+        private void SpawnReinforcementMinion()
+        {
+            if (m_Spawn == null) return;
+
+            GameObject prefabToSpawn = null;
+
+            if (m_Spawn.itemsToSpawn != null && m_Spawn.itemsToSpawn.Count > 0)
+            {
+                var valid = m_Spawn.itemsToSpawn.Where(i => i.prefab != null && i.prefab != gameObject).ToList();
+                if (valid.Count > 0) prefabToSpawn = valid[Random.Range(0, valid.Count)].prefab;
+            }
+
+            if (prefabToSpawn == null && m_Spawn.lootTable != null && m_Spawn.lootTable.Count > 0)
+            {
+                var validLoot = m_Spawn.lootTable.Where(l => l != null && l.itemPrefab != null && l.itemPrefab != gameObject).ToList();
+                if (validLoot.Count > 0) prefabToSpawn = validLoot[Random.Range(0, validLoot.Count)].itemPrefab;
+            }
+
+            if (prefabToSpawn == null) prefabToSpawn = gameObject;
+
+            Vector3 spawnPos = transform.position + transform.right * 2.5f + Vector3.up * 0.5f;
+            GameObject spawnedMinion = Instantiate(prefabToSpawn, spawnPos, Quaternion.identity);
+
+            var minionAI = spawnedMinion.GetComponent<EnemyController>();
+            if (minionAI != null)
+            {
+                minionAI.mainArchetype = AIArchetype.Aggressive;
+                minionAI.activeArchetype = AIArchetype.Aggressive;
+            }
+
+            if (IsNetworkActive && IsServer)
+            {
+                var netObj = spawnedMinion.GetComponent<NetworkObject>();
+                if (netObj != null && !netObj.IsSpawned) netObj.Spawn();
             }
         }
 
@@ -1016,6 +1083,7 @@ namespace Combating.Scripts
             if (m_Health != null)
             {
                 m_Health.OnTakeDamage.RemoveListener(OnDamageTaken);
+                m_Health.OnDeath.RemoveListener(OnEnemyDeath);
             }
             base.OnDestroy();
         }

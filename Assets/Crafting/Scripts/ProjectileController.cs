@@ -10,25 +10,28 @@ namespace Combating.Scripts
     [RequireComponent(typeof(SphereCollider))]
     public class ProjectileController : NetworkBehaviour
     {
+        // --- Internal Hardcoded Projectile Defaults ---
+        private const float DEFAULT_SPEED = 40f;
+        private const float DEFAULT_DAMAGE = 25f;
+        private const float DEFAULT_LIFETIME = 3f;
+        private const float DEFAULT_HOMING_TURN_SPEED = 25f;
+        private const float DEFAULT_DETECTION_RADIUS = 40f;
+
         [Header("Projectile Typology")]
         public ProjectileType type = ProjectileType.Standard;
         [Tooltip("Si se activa, el proyectil elegirá un tipo al azar al despertar.")]
         public bool autoRandomize = false;
 
-        [Header("Settings")]
-        public float speed = 40f;
-        public float damage = 25f;
-        public float lifeTime = 3f;
+        [Header("Manual Overrides (useOverride = false -> Usar Balance Interno)")]
+        public Optional<float> speedOverride;
+        public Optional<float> damageOverride;
+        public Optional<float> lifeTimeOverride;
         public Color color = Color.red;
 
         [Header("Self-Sufficiency (Child Visuals)")]
-        [Tooltip("Hijo para proyectil estándar (ej: esfera + trail)")]
         public GameObject visualsStandard;
-        [Tooltip("Hijo para proyectil láser (ej: cilindro estirado o LineRenderer)")]
         public GameObject visualsLaser;
-        [Tooltip("Hijo para proyectil explosivo (ej: esfera con fuego)")]
         public GameObject visualsExplosive;
-        [Tooltip("Hijo para proyectil teledirigido (ej: misil o estela de humo)")]
         public GameObject visualsHoming;
 
         [Header("Explosive Settings")]
@@ -36,9 +39,9 @@ namespace Combating.Scripts
         public ParticleSystem explosionVFX;
         public ParticleSystem impactVFX;
 
-        [Header("Homing Settings")]
-        public float homingTurnSpeed = 8f;
-        public float detectionRadius = 20f;
+        [Header("Target Lock & Guidance Overrides")]
+        public Optional<float> homingTurnSpeedOverride;
+        public Optional<float> detectionRadiusOverride;
 
         private Vector3 m_Direction;
         private GameObject m_Owner;
@@ -47,13 +50,19 @@ namespace Combating.Scripts
         private Transform m_HomingTarget;
 
         private static Material _sharedMaterial;
-        private static Mesh _sphereMesh;
+
+        // --- Effective Statistics Resolvers with Optional Protection ---
+
+        public float EffectiveSpeed => speedOverride.GetValue(type == ProjectileType.Laser ? DEFAULT_SPEED * 2.5f : DEFAULT_SPEED);
+        public float EffectiveDamage => damageOverride.GetValue(DEFAULT_DAMAGE);
+        public float EffectiveLifeTime => lifeTimeOverride.GetValue(DEFAULT_LIFETIME);
+        public float EffectiveHomingTurnSpeed => homingTurnSpeedOverride.GetValue(DEFAULT_HOMING_TURN_SPEED);
+        public float EffectiveDetectionRadius => detectionRadiusOverride.GetValue(DEFAULT_DETECTION_RADIUS);
 
         void Awake()
         {
             SetupPhysics();
 
-            // Lógica de aleatoriedad para instancias dinámicas
             if (type == ProjectileType.Random || autoRandomize)
             {
                 type = (ProjectileType)Random.Range(0, 4);
@@ -62,7 +71,6 @@ namespace Combating.Scripts
 
         private void Start()
         {
-            // Autosuficiencia: Intentar encontrar los hijos por nombre si no están asignados
             if (visualsStandard == null) visualsStandard = transform.Find("Visuals_Standard")?.gameObject;
             if (visualsLaser == null) visualsLaser = transform.Find("Visuals_Laser")?.gameObject;
             if (visualsExplosive == null) visualsExplosive = transform.Find("Visuals_Explosive")?.gameObject;
@@ -84,47 +92,45 @@ namespace Combating.Scripts
             if (col != null)
             {
                 col.isTrigger = true;
-                col.radius = 0.2f;
+                col.radius = 0.5f;
             }
         }
 
         public void Launch(GameObject owner, Vector3 direction, float dmg, Team team)
         {
             m_Owner = owner;
-            m_Direction = direction.normalized;
-            damage = dmg;
+            m_Direction = direction.sqrMagnitude > 0.01f ? direction.normalized : transform.forward;
             m_OwnerTeam = team;
 
-            // Ignorar colisiones con el dueño
+            if (dmg > 0f && !damageOverride.useOverride)
+            {
+                damageOverride.useOverride = true;
+                damageOverride.value = dmg;
+            }
+
             if (m_Owner != null)
             {
                 Collider[] ownerCols = m_Owner.GetComponentsInChildren<Collider>();
                 Collider myCol = GetComponent<Collider>();
                 if (myCol != null)
                 {
-                    foreach(var oc in ownerCols) Physics.IgnoreCollision(myCol, oc);
+                    foreach (var oc in ownerCols) Physics.IgnoreCollision(myCol, oc);
                 }
             }
-
-            // Ajuste de velocidad según tipo
-            if (type == ProjectileType.Laser) speed *= 3f;
 
             RefreshVisuals();
 
             if (IsServer || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
-                Destroy(gameObject, lifeTime);
+                Destroy(gameObject, EffectiveLifeTime);
         }
 
         private void RefreshVisuals()
         {
-            // Activar solo el objeto visual correspondiente al tipo elegido
             if (visualsStandard != null) visualsStandard.SetActive(type == ProjectileType.Standard);
             if (visualsLaser != null) visualsLaser.SetActive(type == ProjectileType.Laser);
             if (visualsExplosive != null) visualsExplosive.SetActive(type == ProjectileType.Explosive);
             if (visualsHoming != null) visualsHoming.SetActive(type == ProjectileType.Homing);
 
-            // FALLBACK HARDCODED: Si no hay ningún prefab visual asignado, creamos un core básico
-            // Esto permite probar el script aunque el prefab esté vacío.
             if (visualsStandard == null && visualsLaser == null && visualsExplosive == null && visualsHoming == null)
             {
                 GenerateFallbackVisuals();
@@ -138,9 +144,8 @@ namespace Combating.Scripts
             GameObject core = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             core.name = "FallbackCore";
             core.transform.SetParent(transform, false);
-            core.transform.localScale = (type == ProjectileType.Laser) ? new Vector3(0.1f, 0.1f, 0.8f) : Vector3.one * 0.3f;
+            core.transform.localScale = (type == ProjectileType.Laser) ? new Vector3(0.1f, 0.1f, 0.8f) : Vector3.one * 0.35f;
 
-            // Eliminar colisionador del núcleo (ya está en el root)
             var c = core.GetComponent<Collider>();
             if (c != null) DestroyImmediate(c);
 
@@ -151,12 +156,11 @@ namespace Combating.Scripts
             mr.material = _sharedMaterial;
             mr.material.color = color;
 
-            // Añadir Trail al objeto core para mayor estabilidad
             TrailRenderer trail = core.AddComponent<TrailRenderer>();
             if (trail != null)
             {
-                trail.time = 0.2f;
-                trail.startWidth = 0.1f;
+                trail.time = 0.25f;
+                trail.startWidth = 0.15f;
                 trail.endWidth = 0f;
                 trail.material = mr.material;
                 trail.startColor = color;
@@ -166,36 +170,87 @@ namespace Combating.Scripts
 
         private void Update()
         {
-            if (type == ProjectileType.Homing) HandleHoming();
+            GuideTowardsRivalTarget();
 
-            transform.position += m_Direction * speed * Time.deltaTime;
+            float moveDistance = EffectiveSpeed * Time.deltaTime;
 
-            // Orientar el proyectil hacia su dirección de movimiento
+            // Detección continua (SphereCast Sweep) en TODOS los layers (~0) incluyendo capas personalizadas
+            if (moveDistance > 0.001f)
+            {
+                RaycastHit[] hits = Physics.SphereCastAll(transform.position, 0.5f, m_Direction, moveDistance, ~0, QueryTriggerInteraction.Collide);
+                System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+                foreach (var hit in hits)
+                {
+                    if (m_HasHit) break;
+                    if (m_Owner != null && (hit.collider.gameObject == m_Owner || hit.collider.transform.IsChildOf(m_Owner.transform))) continue;
+
+                    HealthController targetHealth = hit.collider.GetComponentInParent<HealthController>() ?? hit.collider.GetComponent<HealthController>();
+
+                    if (hit.collider.isTrigger && targetHealth == null) continue;
+
+                    m_HasHit = true;
+                    transform.position = hit.point;
+
+                    if (type == ProjectileType.Explosive) PerformExplosion();
+                    else if (targetHealth != null) ApplyDirectDamage(targetHealth);
+
+                    FinalizeImpact();
+                    return;
+                }
+            }
+
+            transform.position += m_Direction * moveDistance;
+
             if (m_Direction != Vector3.zero)
                 transform.forward = m_Direction;
         }
 
-        private void HandleHoming()
+        private void GuideTowardsRivalTarget()
         {
-            if (m_HomingTarget == null)
+            if (m_HomingTarget == null || !m_HomingTarget.gameObject.activeInHierarchy)
             {
-                Collider[] hits = Physics.OverlapSphere(transform.position, detectionRadius);
+                m_HomingTarget = null;
+
+                // Escaneo en TODOS los layers (~0)
+                Collider[] hits = Physics.OverlapSphere(transform.position, EffectiveDetectionRadius, ~0, QueryTriggerInteraction.Collide);
                 float minD = float.MaxValue;
-                foreach(var h in hits)
+
+                foreach (var h in hits)
                 {
-                    HealthController hc = h.GetComponentInParent<HealthController>();
-                    if (hc != null && hc.gameObject != m_Owner && hc.team != m_OwnerTeam)
+                    if (m_Owner != null && (h.gameObject == m_Owner || h.transform.IsChildOf(m_Owner.transform))) continue;
+
+                    HealthController hc = h.GetComponentInParent<HealthController>() ?? h.GetComponent<HealthController>();
+                    if (hc != null)
                     {
-                        float d = Vector3.Distance(transform.position, h.transform.position);
-                        if (d < minD) { minD = d; m_HomingTarget = h.transform; }
+                        if (hc.CurrentHP <= 0) continue;
+
+                        bool isOpposing = (m_OwnerTeam != Team.Neutral && hc.EffectiveTeam != m_OwnerTeam) ||
+                                          (m_OwnerTeam == Team.Neutral && hc.EffectiveTeam != Team.Neutral) ||
+                                          (m_Owner != null && m_Owner.CompareTag("Player") && (h.CompareTag("Enemy") || hc.CompareTag("Enemy"))) ||
+                                          (m_Owner != null && m_Owner.CompareTag("Enemy") && (h.CompareTag("Player") || hc.CompareTag("Player")));
+
+                        if (isOpposing)
+                        {
+                            float d = Vector3.Distance(transform.position, h.transform.position);
+                            if (d < minD)
+                            {
+                                minD = d;
+                                m_HomingTarget = h.transform;
+                            }
+                        }
                     }
                 }
             }
 
             if (m_HomingTarget != null)
             {
-                Vector3 targetDir = (m_HomingTarget.position - transform.position).normalized;
-                m_Direction = Vector3.Slerp(m_Direction, targetDir, Time.deltaTime * homingTurnSpeed);
+                Vector3 targetCenter = m_HomingTarget.position + Vector3.up * 0.9f;
+                Vector3 targetDir = (targetCenter - transform.position);
+                if (targetDir.sqrMagnitude > 0.01f)
+                {
+                    m_Direction = Vector3.Slerp(m_Direction, targetDir.normalized, Time.deltaTime * EffectiveHomingTurnSpeed);
+                }
             }
         }
 
@@ -206,7 +261,6 @@ namespace Combating.Scripts
 
             HealthController targetHealth = other.GetComponentInParent<HealthController>() ?? other.GetComponent<HealthController>();
 
-            // Si es un trigger sin salud (zona, otro proyectil), lo ignoramos
             if (other.isTrigger && targetHealth == null) return;
 
             m_HasHit = true;
@@ -219,20 +273,22 @@ namespace Combating.Scripts
 
         private void ApplyDirectDamage(HealthController target)
         {
-            // Evitar fuego amigo si no es neutral
-            if (target.team == m_OwnerTeam && m_OwnerTeam != Team.Neutral) return;
-            target.TakeDamage((int)damage);
+            if (target == null) return;
+            if (target.gameObject == m_Owner || (m_Owner != null && target.transform.IsChildOf(m_Owner.transform))) return;
+
+            target.TakeDamage((int)EffectiveDamage);
+            Debug.Log($"<color=red>[Impacto Directo]</color> {gameObject.name} infligió {(int)EffectiveDamage} de daño a {target.gameObject.name}. HP restante: {target.CurrentHP}");
         }
 
         private void PerformExplosion()
         {
             if (explosionVFX != null) Instantiate(explosionVFX, transform.position, Quaternion.identity);
 
-            Collider[] hits = Physics.OverlapSphere(transform.position, explosionRadius);
-            foreach(var h in hits)
+            Collider[] hits = Physics.OverlapSphere(transform.position, explosionRadius, ~0, QueryTriggerInteraction.Collide);
+            foreach (var h in hits)
             {
-                HealthController hc = h.GetComponentInParent<HealthController>();
-                if (hc != null && hc.team != m_OwnerTeam) ApplyDirectDamage(hc);
+                HealthController hc = h.GetComponentInParent<HealthController>() ?? h.GetComponent<HealthController>();
+                if (hc != null && hc.gameObject != m_Owner) ApplyDirectDamage(hc);
             }
         }
 

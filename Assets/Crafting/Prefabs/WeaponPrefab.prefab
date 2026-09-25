@@ -144,9 +144,15 @@ MonoBehaviour:
   Muzzle: {fileID: 1071471577940376632}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage: 25
-  FireRate: 6
-  AimDistance: 100
+  Damage:
+    useOverride: 0
+    value: 0
+  FireRate:
+    useOverride: 0
+    value: 0
+  AimDistance:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295

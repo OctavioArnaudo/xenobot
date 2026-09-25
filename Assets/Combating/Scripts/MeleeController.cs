@@ -1,24 +1,42 @@
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 
 namespace Combating.Scripts
 {
+    /// <summary>
+    /// Controller for Melee Combat and Ground Slams.
+    /// Fully compliant with AGENTS.md pattern using Optional<T> for Clean Prefabs and dynamic fallback balance.
+    /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class MeleeController : NetworkBehaviour
     {
-        [Header("Normal Melee Settings")]
-        public float attackRange = 2.5f;
-        public float attackDamage = 35f;
-        public float attackCooldown = 1f;
+        // --- Internal Hardcoded Melee Defaults ---
+        private const float DEFAULT_PLAYER_MELEE_DAMAGE = 45f;
+        private const float DEFAULT_PLAYER_MELEE_RANGE = 3.2f;
+        private const float DEFAULT_PLAYER_MELEE_COOLDOWN = 0.8f;
+        private const float DEFAULT_PLAYER_SLAM_DAMAGE = 65f;
+        private const float DEFAULT_PLAYER_SLAM_RADIUS = 5.5f;
+
+        private const float DEFAULT_ENEMY_BASE_MELEE_DAMAGE = 30f;
+        private const float DEFAULT_ENEMY_BASE_MELEE_RANGE = 4.0f;
+        private const float DEFAULT_ENEMY_BASE_MELEE_COOLDOWN = 1.0f;
+        private const float DEFAULT_ENEMY_BASE_SLAM_DAMAGE = 45f;
+        private const float DEFAULT_ENEMY_BASE_SLAM_RADIUS = 4.5f;
+
+        [Header("Manual Melee Overrides")]
+        public Optional<float> attackRange;
+        public Optional<float> attackDamage;
+        public Optional<float> attackCooldown;
         public LayerMask targetLayers;
 
-        [Header("Ground Slam Settings")]
-        public float slamHoldDuration = 0.25f; // Tiempo en segundos manteniendo el clic (250 ms)
-        public float slamDamage = 50f;
-        public float slamRadius = 5f;
-        public float slamSpeed = 35f;
-        public float slamKnockbackForce = 600f;
+        [Header("Manual Ground Slam Overrides")]
+        public Optional<float> slamHoldDuration;
+        public Optional<float> slamDamage;
+        public Optional<float> slamRadius;
+        public Optional<float> slamSpeed;
+        public Optional<float> slamKnockbackForce;
         public ParticleSystem slamVfxPrefab;
         public AudioClip slamSound;
 
@@ -32,11 +50,128 @@ namespace Combating.Scripts
         private float m_NextAttackTime;
         private bool m_IsSlamming;
 
-        // Control de tiempo para el ataque cargado
         private float m_HoldTimer = 0f;
         private bool m_IsHoldingClick = false;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+
+        // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
+
+        public float EffectiveAttackRange
+        {
+            get
+            {
+                try
+                {
+                    var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
+                    float defaultRange = (enemy != null) ? DEFAULT_ENEMY_BASE_MELEE_RANGE : DEFAULT_PLAYER_MELEE_RANGE;
+                    return attackRange.GetValue(defaultRange);
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] attackRange: {ex.Message}"); }
+
+                return DEFAULT_PLAYER_MELEE_RANGE;
+            }
+        }
+
+        public float EffectiveAttackDamage
+        {
+            get
+            {
+                try { return attackDamage.GetValue(CalculateDynamicMeleeDamage()); }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] attackDamage: {ex.Message}"); }
+
+                return CalculateDynamicMeleeDamage();
+            }
+        }
+
+        public float EffectiveAttackCooldown
+        {
+            get
+            {
+                try
+                {
+                    var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
+                    float defaultCooldown = (enemy != null && enemy.activeArchetype == AIArchetype.Berserker) ? 0.4f : ((enemy != null) ? DEFAULT_ENEMY_BASE_MELEE_COOLDOWN : DEFAULT_PLAYER_MELEE_COOLDOWN);
+                    return attackCooldown.GetValue(defaultCooldown);
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] attackCooldown: {ex.Message}"); }
+
+                return DEFAULT_PLAYER_MELEE_COOLDOWN;
+            }
+        }
+
+        public float EffectiveSlamDamage
+        {
+            get
+            {
+                try { return slamDamage.GetValue(EffectiveAttackDamage * 1.4f); }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] slamDamage: {ex.Message}"); }
+
+                return EffectiveAttackDamage * 1.4f;
+            }
+        }
+
+        public float EffectiveSlamRadius
+        {
+            get
+            {
+                try
+                {
+                    var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
+                    float defaultRadius = (enemy != null) ? DEFAULT_ENEMY_BASE_SLAM_RADIUS : DEFAULT_PLAYER_SLAM_RADIUS;
+                    return slamRadius.GetValue(defaultRadius);
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] slamRadius: {ex.Message}"); }
+
+                return DEFAULT_PLAYER_SLAM_RADIUS;
+            }
+        }
+
+        public float EffectiveSlamHoldDuration => slamHoldDuration.GetValue(0.25f);
+        public float EffectiveSlamSpeed => slamSpeed.GetValue(35f);
+        public float EffectiveSlamKnockbackForce => slamKnockbackForce.GetValue(600f);
+
+        private float CalculateDynamicMeleeDamage()
+        {
+            var pc = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
+            if (pc != null || CompareTag("Player"))
+            {
+                return DEFAULT_PLAYER_MELEE_DAMAGE;
+            }
+
+            var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
+            if (enemy != null)
+            {
+                float dmg = DEFAULT_ENEMY_BASE_MELEE_DAMAGE;
+
+                switch (enemy.activeArchetype)
+                {
+                    case AIArchetype.Berserker: dmg *= 1.7f; break;
+                    case AIArchetype.AmbushStalker: dmg *= 1.8f; break;
+                    case AIArchetype.DefensiveGuardian: dmg *= 1.4f; break;
+                    case AIArchetype.Aggressive: dmg *= 1.2f; break;
+                    default: dmg *= 1.0f; break;
+                }
+
+                int allies = CountNearbyAllies();
+                if (allies >= 3) dmg *= 0.75f;
+
+                return dmg;
+            }
+
+            return DEFAULT_ENEMY_BASE_MELEE_DAMAGE;
+        }
+
+        private int CountNearbyAllies()
+        {
+            int count = 0;
+            var enemies = GameObject.FindGameObjectsWithTag("Enemy");
+            foreach (var e in enemies)
+            {
+                if (e != gameObject && Vector3.Distance(transform.position, e.transform.position) <= 25f) count++;
+            }
+            return count;
+        }
 
         void Awake()
         {
@@ -66,32 +201,26 @@ namespace Combating.Scripts
         {
             if (Mouse.current == null) return;
 
-            // 1. Al presionar el clic, iniciamos el conteo
             if (Mouse.current.leftButton.wasPressedThisFrame)
             {
                 m_IsHoldingClick = true;
                 m_HoldTimer = 0f;
             }
 
-            // 2. Mientras se mantenga presionado el clic
             if (Mouse.current.leftButton.isPressed && m_IsHoldingClick)
             {
                 m_HoldTimer += Time.deltaTime;
-
                 bool isAirborne = m_CharacterController != null && !m_CharacterController.isGrounded;
 
-                // Si está en el aire y mantuvo presionado el tiempo necesario -> Detonar Ground Slam
-                if (isAirborne && m_HoldTimer >= slamHoldDuration && Time.time >= m_NextAttackTime)
+                if (isAirborne && m_HoldTimer >= EffectiveSlamHoldDuration && Time.time >= m_NextAttackTime)
                 {
                     m_IsHoldingClick = false;
                     StartGroundSlam();
                 }
             }
 
-            // 3. Al soltar el clic
             if (Mouse.current.leftButton.wasReleasedThisFrame)
             {
-                // Si soltó rápido (clic corto) o estaba en el suelo -> Ataque Melee normal
                 if (m_IsHoldingClick)
                 {
                     m_IsHoldingClick = false;
@@ -105,7 +234,7 @@ namespace Combating.Scripts
 
         private void StartGroundSlam()
         {
-            m_NextAttackTime = Time.time + attackCooldown;
+            m_NextAttackTime = Time.time + EffectiveAttackCooldown;
             m_IsSlamming = true;
 
             Animator anim = GetComponentInChildren<Animator>();
@@ -119,7 +248,7 @@ namespace Combating.Scripts
         {
             if (m_CharacterController != null)
             {
-                m_CharacterController.Move(Vector3.down * (slamSpeed * Time.deltaTime));
+                m_CharacterController.Move(Vector3.down * (EffectiveSlamSpeed * Time.deltaTime));
 
                 if (m_CharacterController.isGrounded)
                 {
@@ -140,7 +269,7 @@ namespace Combating.Scripts
                 RotateVisualsTowards(targetPosition.Value);
             }
 
-            m_NextAttackTime = Time.time + attackCooldown;
+            m_NextAttackTime = Time.time + EffectiveAttackCooldown;
 
             if (IsNetworkActive)
             {
@@ -172,15 +301,9 @@ namespace Combating.Scripts
 
         private void ExecuteGroundSlam(Vector3 impactPosition)
         {
-            float finalDamage = slamDamage;
+            float finalDamage = EffectiveSlamDamage;
 
-            var stats = GetComponent<HudController>() ?? GetComponentInParent<HudController>();
-            if (stats != null)
-            {
-                finalDamage = slamDamage * (stats.Attack / 10f);
-            }
-
-            Collider[] hits = Physics.OverlapSphere(impactPosition, slamRadius, targetLayers);
+            Collider[] hits = Physics.OverlapSphere(impactPosition, EffectiveSlamRadius, targetLayers);
 
             foreach (Collider hit in hits)
             {
@@ -189,14 +312,14 @@ namespace Combating.Scripts
                 var targetHealth = hit.GetComponentInParent<HealthController>();
                 if (targetHealth != null)
                 {
-                    if (m_Health != null && targetHealth.team == m_Health.team) continue;
+                    if (m_Health != null && targetHealth.EffectiveTeam == m_Health.EffectiveTeam) continue;
                     targetHealth.TakeDamage((int)finalDamage);
                 }
 
                 Rigidbody rb = hit.GetComponent<Rigidbody>();
                 if (rb != null)
                 {
-                    rb.AddExplosionForce(slamKnockbackForce, impactPosition, slamRadius, 0.5f, ForceMode.Impulse);
+                    rb.AddExplosionForce(EffectiveSlamKnockbackForce, impactPosition, EffectiveSlamRadius, 0.5f, ForceMode.Impulse);
                 }
             }
 
@@ -240,23 +363,17 @@ namespace Combating.Scripts
 
         private void ExecuteMelee()
         {
-            float finalDamage = attackDamage;
+            float finalDamage = EffectiveAttackDamage;
 
-            var stats = GetComponent<HudController>() ?? GetComponentInParent<HudController>();
-            if (stats != null)
-            {
-                finalDamage = attackDamage * (stats.Attack / 10f);
-            }
-
-            Vector3 attackCenter = transform.position + transform.forward * (attackRange * 0.5f);
-            Collider[] hits = Physics.OverlapSphere(attackCenter, attackRange, targetLayers);
+            Vector3 attackCenter = transform.position + transform.forward * (EffectiveAttackRange * 0.5f);
+            Collider[] hits = Physics.OverlapSphere(attackCenter, EffectiveAttackRange, targetLayers);
 
             foreach (Collider hit in hits)
             {
                 var targetHealth = hit.GetComponentInParent<HealthController>();
                 if (targetHealth != null)
                 {
-                    if (m_Health != null && targetHealth.team == m_Health.team) continue;
+                    if (m_Health != null && targetHealth.EffectiveTeam == m_Health.EffectiveTeam) continue;
                     targetHealth.TakeDamage((int)finalDamage);
                 }
             }
@@ -270,12 +387,13 @@ namespace Combating.Scripts
             if (swingVfxPrefab != null)
             {
                 ProjectileController vfx = Instantiate(swingVfxPrefab, transform.position + transform.forward, transform.rotation);
-                vfx.Launch(gameObject, transform.forward, 0f, m_Health != null ? m_Health.team : Team.Neutral);
+                vfx.Launch(gameObject, transform.forward, 0f, m_Health != null ? m_Health.EffectiveTeam : Team.Neutral);
             }
         }
 
         private bool HasParameter(Animator animator, string paramName)
         {
+            if (animator == null) return false;
             foreach (AnimatorControllerParameter param in animator.parameters)
                 if (param.name == paramName) return true;
             return false;
@@ -284,11 +402,11 @@ namespace Combating.Scripts
         private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.red;
-            Vector3 attackCenter = transform.position + transform.forward * (attackRange * 0.5f);
-            Gizmos.DrawWireSphere(attackCenter, attackRange);
+            Vector3 attackCenter = transform.position + transform.forward * (EffectiveAttackRange * 0.5f);
+            Gizmos.DrawWireSphere(attackCenter, EffectiveAttackRange);
 
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(transform.position, slamRadius);
+            Gizmos.DrawWireSphere(transform.position, EffectiveSlamRadius);
         }
     }
 }

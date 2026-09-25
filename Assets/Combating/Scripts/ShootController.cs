@@ -57,7 +57,7 @@ namespace Combating.Scripts
             }
         }
 
-        public Team EffectiveTeam => m_Health != null ? m_Health.team : (transform.root.CompareTag("Player") ? Team.Player : (transform.root.CompareTag("Enemy") ? Team.Enemy : Team.Neutral));
+        public Team EffectiveTeam => m_Health != null ? m_Health.EffectiveTeam : (transform.root.CompareTag("Player") ? Team.Player : (transform.root.CompareTag("Enemy") ? Team.Enemy : Team.Neutral));
 
         // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
 

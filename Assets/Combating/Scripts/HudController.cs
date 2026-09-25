@@ -54,9 +54,21 @@ public class HudController : NetworkBehaviour
     private bool _stylesReady;
 
     private HealthController m_PlayerHealth;
+    private PropulsionController _propulsion;
     private float _lastTimeUpdate;
     private string _cachedTimeStr = "00:00";
     private Camera _mainCamCache;
+
+    private PropulsionController GetPropulsion()
+    {
+        if (_propulsion == null)
+        {
+            _propulsion = GetComponent<PropulsionController>() ??
+                          GetComponentInParent<PropulsionController>() ??
+                          GetComponentInChildren<PropulsionController>();
+        }
+        return _propulsion;
+    }
 
     private Transform _aureoleRoot;
     private Vector3 _aureoleBaseOffset = new Vector3(0, 2.4f, 0);
@@ -277,8 +289,12 @@ public class HudController : NetworkBehaviour
         // Bono de Vida y Jetpack al subir de nivel
         if (m_PlayerHealth != null)
         {
-            // Expandir maximos y curar un poco (ej: 15 HP y 20 Fuel extra por nivel)
-            m_PlayerHealth.UpgradeMaxStats(15, 20f);
+            m_PlayerHealth.UpgradeMaxStats(15);
+        }
+        var prop = GetPropulsion();
+        if (prop != null)
+        {
+            prop.UpgradeMaxFuel(20f);
         }
     }
 
@@ -342,14 +358,15 @@ public class HudController : NetworkBehaviour
 
     private void DrawBottomLeftHUD()
     {
-        bool hasJet = m_PlayerHealth.MaxJetpack > 0;
+        var prop = GetPropulsion();
+        bool hasJet = prop != null && prop.MaxJetpack > 0;
         int rowH = fontSize + barHeight + 2;
         int totalH = rowH * (hasJet ? 2 : 1) + 4;
         float y = Screen.height - totalH;
         GUI.DrawTexture(new Rect(0, y, barWidth, totalH), _bg);
         float curY = y + 2;
-        if (hasJet) DrawRow(0, ref curY, " JET", m_PlayerHealth.JetpackFuel, m_PlayerHealth.MaxJetpack, _jetFill);
-        DrawRow(0, ref curY, " HP", m_PlayerHealth.CurrentHP, m_PlayerHealth.maxHealth, _hpFill);
+        if (hasJet) DrawRow(0, ref curY, " JET", prop.JetpackFuel, prop.MaxJetpack, _jetFill);
+        if (m_PlayerHealth != null) DrawRow(0, ref curY, " HP", m_PlayerHealth.CurrentHP, m_PlayerHealth.EffectiveMaxHealth, _hpFill);
     }
 
     void DrawRow(float x, ref float y, string label, float val, float max, Texture2D fill)

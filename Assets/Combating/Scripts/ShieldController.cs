@@ -13,9 +13,8 @@ namespace Combating.Scripts
     }
 
     /// <summary>
-    /// Sistema de escudo de energía con soporte para Input (Rueda del mouse), Red (Netcode),
-    /// uso desde inventario (IItemFunctional, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction),
-    /// mitigación de daño y visuales personalizables/autogenerados.
+    /// Sistema de escudo de energía (esférico con Material_HexagonPurple1 1) con soporte para Input (Rueda del mouse),
+    /// Red (Netcode), uso desde inventario y pickups, mitigación de daño y visuales esféricas autogeneradas.
     /// </summary>
     [ExecuteAlways]
     public class ShieldController : NetworkBehaviour, IItemFunctional, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
@@ -37,18 +36,17 @@ namespace Combating.Scripts
         public bool toggleOnUse = true;
 
         [Header("Visuals & Audio")]
-        [Tooltip("Permite o desactiva la generación automática de la fuente de energía 3D por defecto si no se asigna shieldVisualObject.")]
+        [Tooltip("Permite o desactiva la generación automática de la esfera 3D por defecto si no se asigna shieldVisualObject.")]
         public bool generateDefaultVisuals = true;
         [Tooltip("Visualizar el ShieldRender en el Editor para previsualizar su ubicación.")]
         public bool previewInEditor = true;
         public GameObject shieldVisualObject;
-        public Color shieldColor = new Color(0f, 0.5f, 1f, 0.8f);
 
-        [Header("Back Generator Configuration")]
-        [Tooltip("Posición relativa en la espalda del robot o hueso (X, Y, Z)")]
-        public Vector3 generatorOffset = new Vector3(0f, 0.8f, -0.35f);
-        [Tooltip("Tamaño del cilindro fuente de energía (Ancho, Alto, Profundidad)")]
-        public Vector3 generatorScale = new Vector3(0.3f, 0.6f, 0.3f);
+        [Header("Shield Sphere Configuration")]
+        [Tooltip("Posición relativa del centro de la esfera (X, Y, Z)")]
+        public Vector3 generatorOffset = new Vector3(0f, 0.9f, 0f);
+        [Tooltip("Escala de la esfera del escudo (Ancho, Alto, Profundidad)")]
+        public Vector3 generatorScale = new Vector3(2.2f, 2.2f, 2.2f);
 
         public AudioClip shieldActivateSound;
         public AudioClip shieldBlockSound;
@@ -59,20 +57,16 @@ namespace Combating.Scripts
         private Animator m_Animator;
         private HealthController m_Health;
 
-        // Indicador de si el escudo fue activado vía mouse
         private bool m_ActivatedByInput = false;
 
-        // NetworkVariable para sincronizar con otros jugadores en multijugador
         private readonly NetworkVariable<bool> m_IsShieldActive = new NetworkVariable<bool>(
             false,
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Owner
         );
 
-        // Estado local para cuando se prueba sin red (offline)
         private bool m_OfflineShieldActive = false;
 
-        // Propiedad que devuelve el estado actual (sea online u offline)
         public bool IsShieldActive => isUnlocked && (IsNetworkActive ? m_IsShieldActive.Value : m_OfflineShieldActive);
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
@@ -102,19 +96,17 @@ namespace Combating.Scripts
 
         private void OnValidate()
         {
-            if (generateDefaultVisuals && shieldVisualObject == null)
-            {
 #if UNITY_EDITOR
-                UnityEditor.EditorApplication.delayCall += () =>
+            UnityEditor.EditorApplication.delayCall += () =>
+            {
+                if (this == null) return;
+                if (generateDefaultVisuals && shieldVisualObject == null)
                 {
-                    if (this != null && generateDefaultVisuals && shieldVisualObject == null)
-                    {
-                        GenerateShieldMesh();
-                    }
-                };
+                    GenerateShieldMesh();
+                }
+                UpdateVisualsState();
+            };
 #endif
-            }
-            UpdateVisualsState();
         }
 
         private void RefreshReferences()
@@ -137,7 +129,10 @@ namespace Combating.Scripts
         {
             if (shieldVisualObject != null)
             {
-                bool shouldBeActive = IsShieldActive || (!Application.isPlaying && previewInEditor);
+                // Si está montado sobre un ítem/pickup en el suelo, siempre es visible
+                bool isPickupItem = GetComponent<PickupController>() != null || GetComponentInParent<PickupController>() != null;
+                bool shouldBeActive = isPickupItem || IsShieldActive || (!Application.isPlaying && previewInEditor);
+
                 if (shieldVisualObject.activeSelf != shouldBeActive)
                 {
                     shieldVisualObject.SetActive(shouldBeActive);
@@ -147,9 +142,9 @@ namespace Combating.Scripts
 
         private void Update()
         {
-            // Evitar procesar lógica si este componente está montado en un ítem/pickup en el suelo
             if (GetComponent<PickupController>() != null || GetComponentInParent<PickupController>() != null)
             {
+                UpdateVisualsState();
                 return;
             }
 
@@ -162,7 +157,6 @@ namespace Combating.Scripts
 
             if (!Application.isPlaying) return;
 
-            // Solo el dueño del jugador procesa su input local
             if (IsNetworkActive && !IsOwner) return;
 
             if (Cursor.visible)
@@ -175,7 +169,6 @@ namespace Combating.Scripts
                 return;
             }
 
-            // Detección de la rueda del mouse (Botón central o Giro/Scroll)
             if (Mouse.current != null && isUnlocked)
             {
                 var middleButton = Mouse.current.middleButton;
@@ -198,7 +191,6 @@ namespace Combating.Scripts
                 {
                     if ((middlePressedThisFrame || isScrolling) && IsShieldActive && !m_ActivatedByInput)
                     {
-                        // Si el escudo estaba activo (ej: por inventario) e interactuamos con la rueda, lo desactivamos
                         SetShieldState(false);
                         m_ActivatedByInput = false;
                     }
@@ -218,7 +210,6 @@ namespace Combating.Scripts
 
         private void LateUpdate()
         {
-            // Mantiene el offset exacto en cada frame después de procesar animaciones
             if (shieldVisualObject != null && (IsShieldActive || (!Application.isPlaying && previewInEditor)))
             {
                 shieldVisualObject.transform.localPosition = generatorOffset;
@@ -229,7 +220,6 @@ namespace Combating.Scripts
         {
             if (!isUnlocked && active) return;
 
-            // Si el estado no cambió, no hacemos nada
             if (IsShieldActive == active) return;
 
             if (IsNetworkActive)
@@ -238,7 +228,6 @@ namespace Combating.Scripts
             }
             else
             {
-                // Modo offline: guardamos el cambio localmente y actualizamos visuales
                 bool previous = m_OfflineShieldActive;
                 m_OfflineShieldActive = active;
                 OnShieldStateChanged(previous, active);
@@ -259,13 +248,11 @@ namespace Combating.Scripts
         {
             UpdateVisualsState();
 
-            // Reproducir sonido solo al encender
             if (newValue && shieldActivateSound != null)
             {
                 AudioSource.PlayClipAtPoint(shieldActivateSound, transform.position);
             }
 
-            // Actualizar el Animator
             if (m_Animator != null && HasParameter(m_Animator, shieldAnimBool))
             {
                 m_Animator.SetBool(shieldAnimBool, newValue);
@@ -274,45 +261,25 @@ namespace Combating.Scripts
 
         // --- ACCIONES DEDICADAS DE INVENTARIO ---
 
-        public void OnUseItem(GameObject player)
-        {
-            ApplyEffect(player);
-        }
+        public void OnUseItem(GameObject player) => ApplyEffect(player);
 
-        public void OnQuitItem(GameObject player)
-        {
-            SetShieldState(false);
-            Debug.Log($"<color=blue>[Shield]</color> Sistema de defensa DESACTIVADO vía QUIT en {player.name}.");
-        }
+        public void OnQuitItem(GameObject player) => SetShieldState(false);
 
-        public void OnDropItem(GameObject player, GameObject droppedInstance)
-        {
-            SetShieldState(false);
-            Debug.Log($"<color=blue>[Shield]</color> Sistema de defensa DESACTIVADO vía DROP en {player.name}.");
-        }
+        public void OnDropItem(GameObject player, GameObject droppedInstance) => SetShieldState(false);
 
-        public void OnPickupItem(GameObject player)
-        {
-            isUnlocked = true;
-            Debug.Log($"<color=blue>[Shield]</color> Sistema de defensa DESBLOQUEADO vía PICKUP en {player.name}.");
-        }
+        public void OnPickupItem(GameObject player) => isUnlocked = true;
 
-        /// <summary>
-        /// Implementación de IItemFunctional para activar/desbloquear desde inventario o pickups.
-        /// </summary>
         public void ApplyEffect(GameObject entity)
         {
             if (entity == null) return;
 
             GameObject playerRoot = entity.transform.root.gameObject;
 
-            // Buscar un ShieldController existente en el robot que NO sea esta misma instancia
             ShieldController actualController = playerRoot.GetComponentsInChildren<ShieldController>(true)
                 .FirstOrDefault(s => s != null && s != this);
 
             if (actualController != null)
             {
-                // El robot ya posee un ShieldController principal (ej: en el PlayerPrefab)
                 actualController.isUnlocked = true;
 
                 if (actualController.toggleOnUse)
@@ -324,17 +291,13 @@ namespace Combating.Scripts
                     actualController.SetShieldState(true);
                 }
 
-                // Desactivar esta instancia duplicada en el ítem clonado para evitar conflicto de updates
                 if (this != actualController && transform.IsChildOf(playerRoot.transform))
                 {
                     this.enabled = false;
                 }
-
-                Debug.Log($"<color=blue>[Shield]</color> Sistema de defensa en {playerRoot.name} ajustado a {(actualController.IsShieldActive ? "ACTIVADO" : "DESACTIVADO")}.");
             }
             else
             {
-                // El robot no tenía ShieldController, activamos este
                 this.isUnlocked = true;
 
                 if (toggleOnUse)
@@ -345,24 +308,59 @@ namespace Combating.Scripts
                 {
                     SetShieldState(true);
                 }
-
-                Debug.Log($"<color=blue>[Shield]</color> Sistema de defensa ACTIVADO en {playerRoot.name}.");
             }
         }
 
+        private Material GetHexagonPurpleMaterial()
+        {
+            Material mat = null;
+
+#if UNITY_EDITOR
+            string path = "Assets/Characters/Materials/Material_HexagonPurple1 1.mat";
+            mat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>(path);
+            if (mat == null)
+            {
+                mat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Characters/Materials/Material_HexagonPurple1.mat");
+            }
+#endif
+
+            if (mat == null)
+            {
+                mat = Resources.Load<Material>("Material_HexagonPurple1 1") ?? Resources.Load<Material>("Material_HexagonPurple1");
+            }
+
+            if (mat == null)
+            {
+                Shader shader = Shader.Find("Universal Render Pipeline/Lit") ??
+                               Shader.Find("Universal Render Pipeline/Unlit") ??
+                               Shader.Find("Standard");
+                mat = new Material(shader);
+                mat.name = "Material_HexagonPurple1 1";
+                Color purple = new Color(0.6f, 0.1f, 0.9f, 0.7f);
+                if (mat.HasProperty("_Color")) mat.color = purple;
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", purple);
+                if (mat.HasProperty("_EmissionColor"))
+                {
+                    mat.EnableKeyword("_EMISSION");
+                    mat.SetColor("_EmissionColor", purple * 2.0f);
+                }
+            }
+
+            return mat;
+        }
+
         /// <summary>
-        /// Genera una fuente de energía cilíndrica ubicada en la espalda/hueso del robot.
+        /// Genera una esfera de energía 3D que recubre al robot usando el Material_HexagonPurple1 1.
         /// </summary>
         [ContextMenu("Re-Generate Shield Mesh")]
         public void GenerateShieldMesh()
         {
             RefreshReferences();
 
-            // 1. Intentar buscar el hueso del Pecho o Columna para acompañar las animaciones de movimiento
             Transform targetParent = transform;
             if (m_Animator != null && m_Animator.isHuman)
             {
-                Transform chestBone = m_Animator.GetBoneTransform(HumanBodyBones.Chest) 
+                Transform chestBone = m_Animator.GetBoneTransform(HumanBodyBones.Chest)
                                    ?? m_Animator.GetBoneTransform(HumanBodyBones.Spine);
                 if (chestBone != null)
                 {
@@ -377,11 +375,11 @@ namespace Combating.Scripts
             }
             else
             {
-                shieldVisualObject = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                // Reemplazo definitivo del Cilindro por Esfera
+                shieldVisualObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 shieldVisualObject.name = "ShieldRender";
                 shieldVisualObject.transform.SetParent(targetParent, false);
 
-                // Quitar colisionador para que no interfiera con la física ni el movimiento
                 var col = shieldVisualObject.GetComponent<Collider>();
                 if (col != null)
                 {
@@ -404,7 +402,6 @@ namespace Combating.Scripts
                 }
             }
 
-            // Posición relativa al nuevo padre (hueso o raíz)
             shieldVisualObject.transform.localPosition = generatorOffset;
             shieldVisualObject.transform.localRotation = Quaternion.identity;
             shieldVisualObject.transform.localScale = generatorScale;
@@ -412,37 +409,16 @@ namespace Combating.Scripts
             var mr = shieldVisualObject.GetComponent<MeshRenderer>();
             if (mr != null)
             {
-                Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ??
-                               Shader.Find("Universal Render Pipeline/Lit") ??
-                               Shader.Find("Sprites/Default") ??
-                               Shader.Find("Standard");
-
-                if (mr.sharedMaterial == null || mr.sharedMaterial.shader != shader)
+                Material hexMat = GetHexagonPurpleMaterial();
+                if (hexMat != null)
                 {
-                    mr.sharedMaterial = new Material(shader);
-                    if (mr.sharedMaterial.HasProperty("_Surface")) mr.sharedMaterial.SetFloat("_Surface", 1); // Transparent
-                    if (mr.sharedMaterial.HasProperty("_SrcBlend")) mr.sharedMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                    if (mr.sharedMaterial.HasProperty("_DstBlend")) mr.sharedMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    if (mr.sharedMaterial.HasProperty("_ZWrite")) mr.sharedMaterial.SetInt("_ZWrite", 0);
-                    mr.sharedMaterial.renderQueue = 3000;
-                }
-
-                mr.sharedMaterial.color = shieldColor;
-                if (mr.sharedMaterial.HasProperty("_BaseColor")) mr.sharedMaterial.SetColor("_BaseColor", shieldColor);
-                if (mr.sharedMaterial.HasProperty("_Color")) mr.sharedMaterial.SetColor("_Color", shieldColor);
-                if (mr.sharedMaterial.HasProperty("_EmissionColor"))
-                {
-                    mr.sharedMaterial.EnableKeyword("_EMISSION");
-                    mr.sharedMaterial.SetColor("_EmissionColor", shieldColor * 2.5f);
+                    mr.sharedMaterial = hexMat;
                 }
             }
 
             UpdateVisualsState();
         }
 
-        /// <summary>
-        /// Procesa el daño entrante aplicando la reducción configurada si el escudo está activo.
-        /// </summary>
         public float ProcessIncomingDamage(float damage)
         {
             if (!IsShieldActive) return damage;

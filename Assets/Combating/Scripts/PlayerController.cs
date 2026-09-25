@@ -174,6 +174,10 @@ namespace Combating.Scripts
 
             _controller = GetComponent<CharacterController>();
             _health = GetComponent<HealthController>();
+            if (_health != null)
+            {
+                _health.OnDeath.AddListener(OnPlayerDeath);
+            }
             _inventory = GetComponent<InventoryController>();
 
             // Force settings if they are broken in prefab
@@ -313,9 +317,69 @@ namespace Combating.Scripts
             }
         }
 
+        public override void OnDestroy()
+        {
+            if (_health != null)
+            {
+                _health.OnDeath.RemoveListener(OnPlayerDeath);
+            }
+            base.OnDestroy();
+        }
+
+        private bool _isDead = false;
+
+        private void OnPlayerDeath()
+        {
+            if (_isDead) return;
+            _isDead = true;
+
+            Debug.Log($"<color=red>[PlayerDeath]</color> {gameObject.name} ha muerto. Desplegando menú de derrota.");
+
+            SpawnDeathVisuals();
+
+            var defeatMenu = FindFirstObjectByType<Menus.Scripts.DefeatMenu>();
+            if (defeatMenu != null)
+            {
+                defeatMenu.TriggerDefeat();
+            }
+
+            if (IsNetworkActive && IsServer)
+            {
+                if (TryGetComponent<NetworkObject>(out var netObj) && netObj.IsSpawned)
+                    netObj.Despawn(true);
+                else
+                    Destroy(gameObject);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
+        }
+
+        private void SpawnDeathVisuals()
+        {
+            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphere.transform.position = transform.position + Vector3.up * 1.0f;
+            sphere.transform.localScale = Vector3.one * 1.2f;
+            if (sphere.TryGetComponent<Collider>(out var c)) Destroy(c);
+
+            var mr = sphere.GetComponent<MeshRenderer>();
+            var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+            var mat = new Material(shader);
+            mat.color = Color.red;
+            mr.material = mat;
+            Destroy(sphere, 0.25f);
+        }
+
         private void Update()
         {
             if (!CanExecuteLocalLogic) return;
+
+            if (_health != null && _health.CurrentHP <= 0)
+            {
+                OnPlayerDeath();
+                return;
+            }
 
 #if ENABLE_INPUT_SYSTEM
             if (_fireAction == null) RefreshInputActions();

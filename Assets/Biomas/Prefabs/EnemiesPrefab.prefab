@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &563270674254177293
+--- !u!1 &4343740286318478563
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,9 +8,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 6514050918958972158}
-  - component: {fileID: 5699678955851740909}
-  - component: {fileID: 554248309407311138}
+  - component: {fileID: 4449246272776114324}
+  - component: {fileID: 846659770079992603}
+  - component: {fileID: 8313750984613840688}
   m_Layer: 0
   m_Name: ShieldRender
   m_TagString: Untagged
@@ -18,36 +18,36 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!4 &6514050918958972158
+--- !u!4 &4449246272776114324
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 563270674254177293}
+  m_GameObject: {fileID: 4343740286318478563}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.8, z: -0.35}
-  m_LocalScale: {x: 0.3, y: 0.6, z: 0.3}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 925533973088642850}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &5699678955851740909
+--- !u!33 &846659770079992603
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 563270674254177293}
-  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &554248309407311138
+  m_GameObject: {fileID: 4343740286318478563}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &8313750984613840688
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 563270674254177293}
+  m_GameObject: {fileID: 4343740286318478563}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -66,7 +66,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: e7b9808512cda5c43a59e71c73d7ce4a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -171,7 +171,7 @@ Transform:
   - {fileID: 5813065336813210081}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &7745453056218688281
+--- !u!1 &9181954713417417994
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -179,9 +179,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 6736606768549291317}
-  - component: {fileID: 8513564893903935444}
-  - component: {fileID: 4452299323319943908}
+  - component: {fileID: 3203627974983740464}
+  - component: {fileID: 7549375098062916832}
+  - component: {fileID: 4960835963525202881}
   m_Layer: 0
   m_Name: ShieldRender
   m_TagString: Untagged
@@ -189,36 +189,36 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!4 &6736606768549291317
+--- !u!4 &3203627974983740464
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7745453056218688281}
+  m_GameObject: {fileID: 9181954713417417994}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.8, z: -0.35}
-  m_LocalScale: {x: 0.3, y: 0.6, z: 0.3}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6503719880158766996}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &8513564893903935444
+--- !u!33 &7549375098062916832
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7745453056218688281}
-  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
---- !u!23 &4452299323319943908
+  m_GameObject: {fileID: 9181954713417417994}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &4960835963525202881
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7745453056218688281}
+  m_GameObject: {fileID: 9181954713417417994}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -237,7 +237,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: e7b9808512cda5c43a59e71c73d7ce4a, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -378,7 +378,7 @@ PrefabInstance:
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 626157933196567872, guid: 76196561333b78f41b0173e97e0f0cfc, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 6514050918958972158}
+      addedObject: {fileID: 4449246272776114324}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 7504696990558197316, guid: 76196561333b78f41b0173e97e0f0cfc, type: 3}
       insertIndex: -1
@@ -423,14 +423,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
-  isUnlocked: 0
+  isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 5027030347244565460}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage: 25
-  FireRate: 6
-  AimDistance: 100
+  Damage:
+    useOverride: 0
+    value: 0
+  FireRate:
+    useOverride: 0
+    value: 0
+  AimDistance:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -438,8 +444,8 @@ MonoBehaviour:
   UsePlayerInput: 1
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
-  TracerLifetime: 0.05
-  rotationSpeed: 10
+  TracerLifetime: 0
+  rotationSpeed: 0
 --- !u!114 &8205912981210541093
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -454,17 +460,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -543,11 +539,10 @@ MonoBehaviour:
   autoUnlockOnStart: 0
   autoActivateOnStart: 0
   toggleOnUse: 1
-  generateDefaultVisuals: 0
+  generateDefaultVisuals: 1
   previewInEditor: 0
-  shieldVisualObject: {fileID: 563270674254177293}
-  shieldColor: {r: 0, g: 0.5, b: 1, a: 0.8}
-  generatorOffset: {x: 0, y: 0.8, z: -0.35}
+  shieldVisualObject: {fileID: 4343740286318478563}
+  generatorOffset: {x: 0, y: 0, z: 0}
   generatorScale: {x: 0.3, y: 0.6, z: 0.3}
   shieldActivateSound: {fileID: 0}
   shieldBlockSound: {fileID: 0}
@@ -704,14 +699,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
-  isUnlocked: 0
+  isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 3831307437880435059}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage: 25
-  FireRate: 6
-  AimDistance: 100
+  Damage:
+    useOverride: 0
+    value: 0
+  FireRate:
+    useOverride: 0
+    value: 0
+  AimDistance:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -719,8 +720,8 @@ MonoBehaviour:
   UsePlayerInput: 1
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
-  TracerLifetime: 0.05
-  rotationSpeed: 10
+  TracerLifetime: 0
+  rotationSpeed: 0
 --- !u!114 &3492584979246731991
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -735,17 +736,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -949,14 +940,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
-  isUnlocked: 0
+  isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 6379814195262186618}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage: 25
-  FireRate: 6
-  AimDistance: 100
+  Damage:
+    useOverride: 0
+    value: 0
+  FireRate:
+    useOverride: 0
+    value: 0
+  AimDistance:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -964,8 +961,8 @@ MonoBehaviour:
   UsePlayerInput: 1
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
-  TracerLifetime: 0.05
-  rotationSpeed: 10
+  TracerLifetime: 0
+  rotationSpeed: 0
 --- !u!114 &1494917617718014181
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -980,17 +977,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -1202,22 +1189,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
-  attackRange: 2.5
-  attackDamage: 35
-  attackCooldown: 1
+  attackRange:
+    useOverride: 0
+    value: 0
+  attackDamage:
+    useOverride: 0
+    value: 0
+  attackCooldown:
+    useOverride: 0
+    value: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  slamHoldDuration: 0.25
-  slamDamage: 50
-  slamRadius: 5
-  slamSpeed: 35
-  slamKnockbackForce: 600
+  slamHoldDuration:
+    useOverride: 0
+    value: 0
+  slamDamage:
+    useOverride: 0
+    value: 0
+  slamRadius:
+    useOverride: 0
+    value: 0
+  slamSpeed:
+    useOverride: 0
+    value: 0
+  slamKnockbackForce:
+    useOverride: 0
+    value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
-  rotationSpeed: 10
+  rotationSpeed: 0
 --- !u!114 &5863547819742362921
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1232,17 +1235,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -1342,9 +1335,69 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2402464989908802694, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: slamSpeed
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2402464989908802694, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: slamDamage
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2402464989908802694, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: slamRadius
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2402464989908802694, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: attackRange
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2402464989908802694, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: attackDamage
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2402464989908802694, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: rotationSpeed
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2402464989908802694, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: attackCooldown
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2402464989908802694, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: slamHoldDuration
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2402464989908802694, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: slamKnockbackForce
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4549520992404632733, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: Damage
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4549520992404632733, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: FireRate
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4549520992404632733, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: isUnlocked
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4549520992404632733, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: AimDistance
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5200747575897830689, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: team
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5200747575897830689, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: maxHealth
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8181788382255728042, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 46.099
+      value: 53.6
       objectReference: {fileID: 0}
     - target: {fileID: 8181788382255728042, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
       propertyPath: m_LocalPosition.y
@@ -1352,7 +1405,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8181788382255728042, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 800
+      value: 812.7
       objectReference: {fileID: 0}
     - target: {fileID: 8181788382255728042, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1416,7 +1469,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8232218345680356608, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
       propertyPath: phases.Array.size
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8232218345680356608, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
       propertyPath: phases.Array.data[0].transitionTriggers.Array.size
@@ -1605,14 +1658,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
-  isUnlocked: 0
+  isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 215122690192891280}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage: 25
-  FireRate: 6
-  AimDistance: 100
+  Damage:
+    useOverride: 0
+    value: 0
+  FireRate:
+    useOverride: 0
+    value: 0
+  AimDistance:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -1620,8 +1679,8 @@ MonoBehaviour:
   UsePlayerInput: 1
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
-  TracerLifetime: 0.05
-  rotationSpeed: 10
+  TracerLifetime: 0
+  rotationSpeed: 0
 --- !u!114 &8614707706493425226
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1636,17 +1695,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -1863,22 +1912,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
-  attackRange: 2.5
-  attackDamage: 35
-  attackCooldown: 1
+  attackRange:
+    useOverride: 0
+    value: 0
+  attackDamage:
+    useOverride: 0
+    value: 0
+  attackCooldown:
+    useOverride: 0
+    value: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  slamHoldDuration: 0.25
-  slamDamage: 50
-  slamRadius: 5
-  slamSpeed: 35
-  slamKnockbackForce: 600
+  slamHoldDuration:
+    useOverride: 0
+    value: 0
+  slamDamage:
+    useOverride: 0
+    value: 0
+  slamRadius:
+    useOverride: 0
+    value: 0
+  slamSpeed:
+    useOverride: 0
+    value: 0
+  slamKnockbackForce:
+    useOverride: 0
+    value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
-  rotationSpeed: 10
+  rotationSpeed: 0
 --- !u!114 &3751346118024581702
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1893,17 +1958,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -2103,22 +2158,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
-  attackRange: 2.5
-  attackDamage: 35
-  attackCooldown: 1
+  attackRange:
+    useOverride: 0
+    value: 0
+  attackDamage:
+    useOverride: 0
+    value: 0
+  attackCooldown:
+    useOverride: 0
+    value: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  slamHoldDuration: 0.25
-  slamDamage: 50
-  slamRadius: 5
-  slamSpeed: 35
-  slamKnockbackForce: 600
+  slamHoldDuration:
+    useOverride: 0
+    value: 0
+  slamDamage:
+    useOverride: 0
+    value: 0
+  slamRadius:
+    useOverride: 0
+    value: 0
+  slamSpeed:
+    useOverride: 0
+    value: 0
+  slamKnockbackForce:
+    useOverride: 0
+    value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
-  rotationSpeed: 10
+  rotationSpeed: 0
 --- !u!114 &6670321394364057717
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2133,17 +2204,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -2347,14 +2408,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
-  isUnlocked: 0
+  isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 4284258703486034231}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage: 25
-  FireRate: 6
-  AimDistance: 100
+  Damage:
+    useOverride: 0
+    value: 0
+  FireRate:
+    useOverride: 0
+    value: 0
+  AimDistance:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -2362,8 +2429,8 @@ MonoBehaviour:
   UsePlayerInput: 1
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
-  TracerLifetime: 0.05
-  rotationSpeed: 10
+  TracerLifetime: 0
+  rotationSpeed: 0
 --- !u!114 &3750631540880597223
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2378,17 +2445,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -2600,22 +2657,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
-  attackRange: 2.5
-  attackDamage: 35
-  attackCooldown: 1
+  attackRange:
+    useOverride: 0
+    value: 0
+  attackDamage:
+    useOverride: 0
+    value: 0
+  attackCooldown:
+    useOverride: 0
+    value: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  slamHoldDuration: 0.25
-  slamDamage: 50
-  slamRadius: 5
-  slamSpeed: 35
-  slamKnockbackForce: 600
+  slamHoldDuration:
+    useOverride: 0
+    value: 0
+  slamDamage:
+    useOverride: 0
+    value: 0
+  slamRadius:
+    useOverride: 0
+    value: 0
+  slamSpeed:
+    useOverride: 0
+    value: 0
+  slamKnockbackForce:
+    useOverride: 0
+    value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
-  rotationSpeed: 10
+  rotationSpeed: 0
 --- !u!114 &6186540191815327813
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2630,17 +2703,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -2750,7 +2813,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 153929809546428762, guid: 6225b99028d297440904f6d450ff4348, type: 3}
       propertyPath: phases.Array.size
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 153929809546428762, guid: 6225b99028d297440904f6d450ff4348, type: 3}
       propertyPath: phases.Array.data[0].transitionTriggers.Array.size
@@ -2841,14 +2904,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
-  isUnlocked: 0
+  isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 5630633374476518528}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage: 25
-  FireRate: 6
-  AimDistance: 100
+  Damage:
+    useOverride: 0
+    value: 0
+  FireRate:
+    useOverride: 0
+    value: 0
+  AimDistance:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -2896,22 +2965,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
-  attackRange: 2.5
-  attackDamage: 35
-  attackCooldown: 1
+  attackRange:
+    useOverride: 0
+    value: 0
+  attackDamage:
+    useOverride: 0
+    value: 0
+  attackCooldown:
+    useOverride: 0
+    value: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  slamHoldDuration: 0.25
-  slamDamage: 50
-  slamRadius: 5
-  slamSpeed: 35
-  slamKnockbackForce: 600
+  slamHoldDuration:
+    useOverride: 0
+    value: 0
+  slamDamage:
+    useOverride: 0
+    value: 0
+  slamRadius:
+    useOverride: 0
+    value: 0
+  slamSpeed:
+    useOverride: 0
+    value: 0
+  slamKnockbackForce:
+    useOverride: 0
+    value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
-  rotationSpeed: 10
+  rotationSpeed: 0
 --- !u!114 &5526348589039151618
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2925,18 +3010,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
-  team: 0
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  team: 2
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -3125,14 +3200,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
-  isUnlocked: 0
+  isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 2259411296836971117}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage: 25
-  FireRate: 6
-  AimDistance: 100
+  Damage:
+    useOverride: 0
+    value: 0
+  FireRate:
+    useOverride: 0
+    value: 0
+  AimDistance:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -3140,8 +3221,8 @@ MonoBehaviour:
   UsePlayerInput: 1
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
-  TracerLifetime: 0.05
-  rotationSpeed: 10
+  TracerLifetime: 0
+  rotationSpeed: 0
 --- !u!114 &2580094606435898241
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3156,17 +3237,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -3361,22 +3432,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
-  attackRange: 2.5
-  attackDamage: 35
-  attackCooldown: 1
+  attackRange:
+    useOverride: 0
+    value: 0
+  attackDamage:
+    useOverride: 0
+    value: 0
+  attackCooldown:
+    useOverride: 0
+    value: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  slamHoldDuration: 0.25
-  slamDamage: 50
-  slamRadius: 5
-  slamSpeed: 35
-  slamKnockbackForce: 600
+  slamHoldDuration:
+    useOverride: 0
+    value: 0
+  slamDamage:
+    useOverride: 0
+    value: 0
+  slamRadius:
+    useOverride: 0
+    value: 0
+  slamSpeed:
+    useOverride: 0
+    value: 0
+  slamKnockbackForce:
+    useOverride: 0
+    value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
-  rotationSpeed: 10
+  rotationSpeed: 0
 --- !u!114 &6742673680738735026
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3391,17 +3478,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -3613,22 +3690,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
-  attackRange: 2.5
-  attackDamage: 35
-  attackCooldown: 1
+  attackRange:
+    useOverride: 0
+    value: 0
+  attackDamage:
+    useOverride: 0
+    value: 0
+  attackCooldown:
+    useOverride: 0
+    value: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  slamHoldDuration: 0.25
-  slamDamage: 50
-  slamRadius: 5
-  slamSpeed: 35
-  slamKnockbackForce: 600
+  slamHoldDuration:
+    useOverride: 0
+    value: 0
+  slamDamage:
+    useOverride: 0
+    value: 0
+  slamRadius:
+    useOverride: 0
+    value: 0
+  slamSpeed:
+    useOverride: 0
+    value: 0
+  slamKnockbackForce:
+    useOverride: 0
+    value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
-  rotationSpeed: 10
+  rotationSpeed: 0
 --- !u!114 &4756797658570968938
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3643,17 +3736,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -3856,14 +3939,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
-  isUnlocked: 0
+  isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 6882175535980379663}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage: 25
-  FireRate: 6
-  AimDistance: 100
+  Damage:
+    useOverride: 0
+    value: 0
+  FireRate:
+    useOverride: 0
+    value: 0
+  AimDistance:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -3871,8 +3960,8 @@ MonoBehaviour:
   UsePlayerInput: 1
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
-  TracerLifetime: 0.05
-  rotationSpeed: 10
+  TracerLifetime: 0
+  rotationSpeed: 0
 --- !u!114 &6347800306877395534
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3887,17 +3976,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -4105,14 +4184,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
-  isUnlocked: 0
+  isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 6635721484726399573}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage: 25
-  FireRate: 6
-  AimDistance: 100
+  Damage:
+    useOverride: 0
+    value: 0
+  FireRate:
+    useOverride: 0
+    value: 0
+  AimDistance:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -4120,8 +4205,8 @@ MonoBehaviour:
   UsePlayerInput: 1
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
-  TracerLifetime: 0.05
-  rotationSpeed: 10
+  TracerLifetime: 0
+  rotationSpeed: 0
 --- !u!114 &5528472121923515960
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4136,17 +4221,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -4356,22 +4431,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
-  attackRange: 2.5
-  attackDamage: 35
-  attackCooldown: 1
+  attackRange:
+    useOverride: 0
+    value: 0
+  attackDamage:
+    useOverride: 0
+    value: 0
+  attackCooldown:
+    useOverride: 0
+    value: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  slamHoldDuration: 0.25
-  slamDamage: 50
-  slamRadius: 5
-  slamSpeed: 35
-  slamKnockbackForce: 600
+  slamHoldDuration:
+    useOverride: 0
+    value: 0
+  slamDamage:
+    useOverride: 0
+    value: 0
+  slamRadius:
+    useOverride: 0
+    value: 0
+  slamSpeed:
+    useOverride: 0
+    value: 0
+  slamKnockbackForce:
+    useOverride: 0
+    value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
-  rotationSpeed: 10
+  rotationSpeed: 0
 --- !u!114 &4996205060266495060
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4386,17 +4477,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -4573,7 +4654,7 @@ PrefabInstance:
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 3511212089469347938, guid: e238cf6a6f6fbb649beffde238aa7539, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 6736606768549291317}
+      addedObject: {fileID: 3203627974983740464}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4523929736768128810, guid: e238cf6a6f6fbb649beffde238aa7539, type: 3}
       insertIndex: -1
@@ -4609,22 +4690,38 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
-  attackRange: 2.5
-  attackDamage: 35
-  attackCooldown: 1
+  attackRange:
+    useOverride: 0
+    value: 0
+  attackDamage:
+    useOverride: 0
+    value: 0
+  attackCooldown:
+    useOverride: 0
+    value: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  slamHoldDuration: 0.25
-  slamDamage: 50
-  slamRadius: 5
-  slamSpeed: 35
-  slamKnockbackForce: 600
+  slamHoldDuration:
+    useOverride: 0
+    value: 0
+  slamDamage:
+    useOverride: 0
+    value: 0
+  slamRadius:
+    useOverride: 0
+    value: 0
+  slamSpeed:
+    useOverride: 0
+    value: 0
+  slamKnockbackForce:
+    useOverride: 0
+    value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
-  rotationSpeed: 10
+  rotationSpeed: 0
 --- !u!114 &2838374751500827502
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4639,17 +4736,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  maxHealth: 100
-  maxJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
-  currentJetpackFuel:
-    UpdateTraits:
-      MinSecondsBetweenUpdates: 0
-      MaxSecondsBetweenUpdates: 0
-    m_InternalValue: 100
+  maxHealth: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -4728,11 +4815,10 @@ MonoBehaviour:
   autoUnlockOnStart: 0
   autoActivateOnStart: 0
   toggleOnUse: 1
-  generateDefaultVisuals: 0
+  generateDefaultVisuals: 1
   previewInEditor: 0
-  shieldVisualObject: {fileID: 7745453056218688281}
-  shieldColor: {r: 0, g: 0.5, b: 1, a: 0.8}
-  generatorOffset: {x: 0, y: 0.8, z: -0.35}
+  shieldVisualObject: {fileID: 9181954713417417994}
+  generatorOffset: {x: 0, y: 0, z: 0}
   generatorScale: {x: 0.3, y: 0.6, z: 0.3}
   shieldActivateSound: {fileID: 0}
   shieldBlockSound: {fileID: 0}

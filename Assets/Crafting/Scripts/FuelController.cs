@@ -28,19 +28,18 @@ namespace Crafting.Scripts
 
         public void ApplyEffect(GameObject entity)
         {
-            HealthController health = entity.GetComponent<HealthController>() ??
-                                     entity.GetComponentInParent<HealthController>() ??
-                                     entity.GetComponentInChildren<HealthController>();
+            var propulsion = entity.GetComponent<PropulsionController>() ??
+                             entity.GetComponentInParent<PropulsionController>() ??
+                             entity.GetComponentInChildren<PropulsionController>();
 
-            if (health != null)
+            if (propulsion != null)
             {
-                // Cantidad de recarga aumentada a 50 para que se note más
-                health.AddFuel(50f);
+                propulsion.AddFuel(50f);
                 Debug.Log($"<color=cyan>[FuelItem]</color> Combustible restaurado en {entity.name}.");
             }
             else
             {
-                Debug.LogWarning("[FuelItem] No se encontró HealthController para recargar.");
+                Debug.LogWarning("[FuelItem] No se encontró PropulsionController para recargar combustible.");
             }
         }
 
