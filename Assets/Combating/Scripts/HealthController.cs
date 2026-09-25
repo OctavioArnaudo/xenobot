@@ -97,20 +97,20 @@ namespace Combating.Scripts
 
                 switch (enemy.activeArchetype)
                 {
-                    case AIArchetype.DefensiveGuardian:
+                    case AIArchetype.GuardiaConEscudo:
                         baseHp *= 2.2f;
                         break;
-                    case AIArchetype.Berserker:
+                    case AIArchetype.CargaFrenetica:
                         baseHp *= 1.6f;
                         break;
-                    case AIArchetype.SupportCommander:
+                    case AIArchetype.InvocadorRefuerzos:
                         baseHp *= 1.2f;
                         break;
-                    case AIArchetype.AmbushStalker:
+                    case AIArchetype.EmboscadaEnSigilo:
                         baseHp *= 0.85f;
                         break;
-                    case AIArchetype.KiterHitAndRun:
-                    case AIArchetype.TacticalCover:
+                    case AIArchetype.AtaqueYHuida:
+                    case AIArchetype.FlanqueoYCobertura:
                         baseHp *= 0.9f;
                         break;
                     default:

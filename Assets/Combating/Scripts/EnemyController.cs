@@ -15,15 +15,15 @@ namespace Combating.Scripts
 
     public enum AIArchetype
     {
-        Aggressive,
-        TacticalCover,
-        Berserker,
-        DefensiveGuardian,
-        KiterHitAndRun,
-        SupportCommander,
-        AmbushStalker,
-        ErraticChaos,
-        Mixed // Executes the other 8 archetypes in series across phases or HP/time triggers!
+        CargaDirecta,           // Carga frontal directa a alta velocidad hacia el objetivo
+        FlanqueoYCobertura,     // Mantener distancia optima, rodear en arco y buscar cobertura
+        CargaFrenetica,         // Embestida furiosa e imparable a 3.0x de velocidad
+        GuardiaConEscudo,       // Activar escudo protector y defender una zona fija
+        AtaqueYHuida,           // Disparar a distancia y huir velozmente si el jugador se acerca
+        InvocadorRefuerzos,     // Permanecer en retaguardia e invocar esbirros aliados
+        EmboscadaEnSigilo,      // Esperar inmovil en sigilo y realizar ataque sorpresa explosivo
+        MovimientoErratico,     // Desplazamiento impredecible en zigzag a alta velocidad
+        SecuenciaMultifase      // Ejecutar los 8 comportamientos secuencialmente a traves de fases
     }
 
     public enum PhaseTriggerType
@@ -56,7 +56,7 @@ namespace Combating.Scripts
     public class EnemyPhase
     {
         public string phaseName = "Fase";
-        public AIArchetype behaviorArchetype = AIArchetype.Aggressive;
+        public AIArchetype behaviorArchetype = AIArchetype.CargaDirecta;
 
         [Header("Category Override (Optional)")]
         public bool overrideCategory = false;
@@ -83,7 +83,7 @@ namespace Combating.Scripts
     /// </summary>
     public class EnemyController : NetworkBehaviour
     {
-        public enum AIState { Patrol, Chase, Attack, Flee, Guard, Stealth }
+        public enum AIState { Patrulla, Persecucion, Ataque, Huida, Guardia, Sigilo }
 
         // --- Internal Hardcoded Statistics Defaults ---
         private const float DEFAULT_HOVER_HEIGHT = 3.5f;
@@ -98,7 +98,7 @@ namespace Combating.Scripts
 
         [Header("Core Configuration")]
         public EnemyCategory enemyCategory = EnemyCategory.Hybrid;
-        public AIArchetype mainArchetype = AIArchetype.Mixed;
+        public AIArchetype mainArchetype = AIArchetype.SecuenciaMultifase;
         [SerializeField] private string playerTag = "Player";
 
         [Header("Phases Configuration")]
@@ -106,9 +106,9 @@ namespace Combating.Scripts
         public int currentPhaseIndex = 0;
 
         [Header("Current State (Read-Only Info)")]
-        public AIState currentState = AIState.Patrol;
+        public AIState currentState = AIState.Patrulla;
         public string activePhaseName = "Fase Inicial";
-        public AIArchetype activeArchetype = AIArchetype.Aggressive;
+        public AIArchetype activeArchetype = AIArchetype.CargaDirecta;
 
         [Header("Movement Overrides (useOverride = false -> Usar Balance Interno)")]
         public Optional<float> hoverHeight;
@@ -272,19 +272,19 @@ namespace Combating.Scripts
             {
                 phases = new List<EnemyPhase>();
 
-                if (mainArchetype == AIArchetype.Mixed)
+                if (mainArchetype == AIArchetype.SecuenciaMultifase)
                 {
                     // Crear 8 fases en serie representando cada uno de los 8 arquetipos fundamentales
                     AIArchetype[] sequence = new AIArchetype[]
                     {
-                        AIArchetype.Aggressive,
-                        AIArchetype.TacticalCover,
-                        AIArchetype.Berserker,
-                        AIArchetype.DefensiveGuardian,
-                        AIArchetype.KiterHitAndRun,
-                        AIArchetype.SupportCommander,
-                        AIArchetype.AmbushStalker,
-                        AIArchetype.ErraticChaos
+                        AIArchetype.CargaDirecta,
+                        AIArchetype.FlanqueoYCobertura,
+                        AIArchetype.CargaFrenetica,
+                        AIArchetype.GuardiaConEscudo,
+                        AIArchetype.AtaqueYHuida,
+                        AIArchetype.InvocadorRefuerzos,
+                        AIArchetype.EmboscadaEnSigilo,
+                        AIArchetype.MovimientoErratico
                     };
 
                     for (int i = 0; i < sequence.Length; i++)
@@ -337,19 +337,19 @@ namespace Combating.Scripts
             }
 
             AIArchetype archetype = activeArchetype;
-            if (archetype == AIArchetype.DefensiveGuardian)
+            if (archetype == AIArchetype.GuardiaConEscudo)
             {
                 var shield = GetComponent<ShieldController>() ?? GetComponentInParent<ShieldController>();
                 if (shield == null)
                 {
-                    Debug.LogError($"<color=red>[EnemyController Error]</color> El arquetipo DEFENSIVE GUARDIAN en '{gameObject.name}' REQUIERE un componente ShieldController asignado.");
+                    Debug.LogError($"<color=red>[EnemyController Error]</color> El arquetipo GUARDIA CON ESCUDO en '{gameObject.name}' REQUIERE un componente ShieldController asignado.");
                 }
             }
-            else if (archetype == AIArchetype.SupportCommander)
+            else if (archetype == AIArchetype.InvocadorRefuerzos)
             {
                 if (m_Spawn == null)
                 {
-                    Debug.LogError($"<color=red>[EnemyController Error]</color> El arquetipo SUPPORT COMMANDER en '{gameObject.name}' REQUIERE un componente SpawnController asignado.");
+                    Debug.LogError($"<color=red>[EnemyController Error]</color> El arquetipo INVOCADOR REFUERZOS en '{gameObject.name}' REQUIERE un componente SpawnController asignado.");
                 }
             }
         }
@@ -596,7 +596,7 @@ namespace Combating.Scripts
         {
             AIArchetype archetypeToRun = activeArchetype;
 
-            if (archetypeToRun == AIArchetype.Mixed)
+            if (archetypeToRun == AIArchetype.SecuenciaMultifase)
             {
                 int seqIndex = currentPhaseIndex % 8;
                 archetypeToRun = (AIArchetype)seqIndex;
@@ -607,141 +607,140 @@ namespace Combating.Scripts
 
             switch (archetypeToRun)
             {
-                case AIArchetype.Aggressive:
-                    BehaviorAggressive(category, speedMult);
+                case AIArchetype.CargaDirecta:
+                    ComportamientoCargaDirecta(category, speedMult);
                     break;
-                case AIArchetype.TacticalCover:
-                    BehaviorTacticalCover(category, speedMult);
+                case AIArchetype.FlanqueoYCobertura:
+                    ComportamientoFlanqueoYCobertura(category, speedMult);
                     break;
-                case AIArchetype.Berserker:
-                    BehaviorBerserker(category, speedMult);
+                case AIArchetype.CargaFrenetica:
+                    ComportamientoCargaFrenetica(category, speedMult);
                     break;
-                case AIArchetype.DefensiveGuardian:
-                    BehaviorDefensiveGuardian(category, speedMult);
+                case AIArchetype.GuardiaConEscudo:
+                    ComportamientoGuardiaConEscudo(category, speedMult);
                     break;
-                case AIArchetype.KiterHitAndRun:
-                    BehaviorKiterHitAndRun(category, speedMult);
+                case AIArchetype.AtaqueYHuida:
+                    ComportamientoAtaqueYHuida(category, speedMult);
                     break;
-                case AIArchetype.SupportCommander:
-                    BehaviorSupportCommander(category, speedMult);
+                case AIArchetype.InvocadorRefuerzos:
+                    ComportamientoInvocadorRefuerzos(category, speedMult);
                     break;
-                case AIArchetype.AmbushStalker:
-                    BehaviorAmbushStalker(category, speedMult);
+                case AIArchetype.EmboscadaEnSigilo:
+                    ComportamientoEmboscadaEnSigilo(category, speedMult);
                     break;
-                case AIArchetype.ErraticChaos:
-                    BehaviorErraticChaos(category, speedMult);
+                case AIArchetype.MovimientoErratico:
+                    ComportamientoMovimientoErratico(category, speedMult);
                     break;
                 default:
-                    BehaviorAggressive(category, speedMult);
+                    ComportamientoCargaDirecta(category, speedMult);
                     break;
             }
         }
 
         // --- Archetype Implementations (Exaggerated & Category-Agnostic) ---
 
-        private void BehaviorAggressive(EnemyCategory category, float speedMult)
+        private void ComportamientoCargaDirecta(EnemyCategory category, float speedMult)
         {
             if (m_Target != null)
             {
                 float dist = Vector3.Distance(transform.position, m_Target.position);
-                currentState = AIState.Chase;
+                currentState = AIState.Persecucion;
 
-                // Carga directa ultra-rápida
-                MoveTo(m_Target.position, EffectiveChaseSpeed * 2.2f * speedMult);
+                // Carga frontal directa acelerada e implacable
+                MoveTo(m_Target.position, EffectiveChaseSpeed * 2.8f * speedMult);
                 RotateBaseTowards(m_Target.position);
 
-                bool isMeleeRange = dist <= EffectiveMeleeRange * 1.2f;
+                bool isMeleeRange = dist <= EffectiveMeleeRange * 1.3f;
                 bool isShootRange = dist <= EffectiveShootRange;
 
                 if (ShouldAttack(category, isMeleeRange, isShootRange))
                 {
-                    currentState = AIState.Attack;
+                    currentState = AIState.Ataque;
                     ExecuteCombatAction(category, isMeleeRange, isShootRange);
                 }
             }
             else
             {
-                currentState = AIState.Patrol;
+                currentState = AIState.Patrulla;
                 Wander(speedMult);
             }
         }
 
-        private void BehaviorTacticalCover(EnemyCategory category, float speedMult)
+        private void ComportamientoFlanqueoYCobertura(EnemyCategory category, float speedMult)
         {
             if (m_Target != null)
             {
                 float dist = Vector3.Distance(transform.position, m_Target.position);
                 RotateBaseTowards(m_Target.position);
 
-                float idealMin = EffectiveShootRange * 0.4f;
+                float idealMin = EffectiveShootRange * 0.45f;
                 float idealMax = EffectiveShootRange * 0.85f;
 
                 if (dist < idealMin)
                 {
-                    // Evasión hacia atrás a alta velocidad
-                    Vector3 retreatPos = transform.position + (transform.position - m_Target.position).normalized * 8f;
-                    MoveTo(retreatPos, EffectiveChaseSpeed * 2.0f * speedMult);
-                    currentState = AIState.Flee;
+                    // Evitar cuerpo a cuerpo: Huida rápida hacia atrás
+                    Vector3 retreatPos = transform.position + (transform.position - m_Target.position).normalized * 12f;
+                    MoveTo(retreatPos, EffectiveChaseSpeed * 2.5f * speedMult);
+                    currentState = AIState.Huida;
                 }
                 else if (dist > idealMax)
                 {
-                    // Acercamiento
-                    MoveTo(m_Target.position, EffectiveChaseSpeed * 1.6f * speedMult);
-                    currentState = AIState.Chase;
+                    // Acercamiento controlado
+                    MoveTo(m_Target.position, EffectiveChaseSpeed * 1.8f * speedMult);
+                    currentState = AIState.Persecucion;
                 }
                 else
                 {
-                    // Strafing lateral en arco amplio alrededor del objetivo
-                    Vector3 strafeDir = Vector3.Cross(Vector3.up, (m_Target.position - transform.position).normalized);
-                    Vector3 strafePos = transform.position + strafeDir * (Mathf.Sin(Time.time * 3.5f) * 6f);
-                    MoveTo(strafePos, EffectiveChaseSpeed * 1.5f * speedMult);
-                    currentState = AIState.Attack;
+                    // Orbitar en arco alrededor del objetivo a gran velocidad (Strafing)
+                    Vector3 toTarget = (m_Target.position - transform.position).normalized;
+                    Vector3 strafeDir = Vector3.Cross(Vector3.up, toTarget);
+                    float dirSign = (Mathf.FloorToInt(Time.time * 0.8f) % 2 == 0) ? 1f : -1f;
+                    Vector3 strafePos = transform.position + strafeDir * (dirSign * 8f);
+
+                    MoveTo(strafePos, EffectiveChaseSpeed * 2.2f * speedMult);
+                    currentState = AIState.Ataque;
                 }
 
                 ExecuteCombatAction(category, dist <= EffectiveMeleeRange * 1.2f, dist <= EffectiveShootRange);
             }
             else
             {
-                currentState = AIState.Patrol;
+                currentState = AIState.Patrulla;
                 Wander(speedMult);
             }
         }
 
-        private void BehaviorBerserker(EnemyCategory category, float speedMult)
+        private void ComportamientoCargaFrenetica(EnemyCategory category, float speedMult)
         {
             if (m_Target != null)
             {
                 float dist = Vector3.Distance(transform.position, m_Target.position);
-                currentState = AIState.Chase;
+                currentState = AIState.Persecucion;
 
-                // Carga furiosa e imparable a 3.0x de velocidad
-                MoveTo(m_Target.position, EffectiveChaseSpeed * 3.0f * speedMult);
+                // Embestida descontrolada imparable a 3.8x de velocidad
+                MoveTo(m_Target.position, EffectiveChaseSpeed * 3.8f * speedMult);
                 RotateBaseTowards(m_Target.position);
 
-                bool isMeleeRange = dist <= EffectiveMeleeRange * 1.5f;
+                bool isMeleeRange = dist <= EffectiveMeleeRange * 1.6f;
                 bool isShootRange = dist <= EffectiveShootRange;
 
                 if (ShouldAttack(category, isMeleeRange, isShootRange))
                 {
-                    currentState = AIState.Attack;
+                    currentState = AIState.Ataque;
                     ExecuteCombatAction(category, isMeleeRange, isShootRange);
                 }
             }
             else
             {
-                currentState = AIState.Patrol;
-                Wander(speedMult * 1.5f);
+                currentState = AIState.Patrulla;
+                Wander(speedMult * 2.0f);
             }
         }
 
-        private void BehaviorDefensiveGuardian(EnemyCategory category, float speedMult)
+        private void ComportamientoGuardiaConEscudo(EnemyCategory category, float speedMult)
         {
             var shield = GetComponent<ShieldController>() ?? GetComponentInParent<ShieldController>();
-            if (shield == null)
-            {
-                Debug.LogError($"<color=red>[EnemyController Error]</color> El arquetipo DEFENSIVE GUARDIAN en '{gameObject.name}' REQUIERE un componente ShieldController asignado.");
-            }
-            else if (!shield.IsShieldActive)
+            if (shield != null && !shield.IsShieldActive)
             {
                 shield.SetShieldState(true);
             }
@@ -755,45 +754,45 @@ namespace Combating.Scripts
 
                 if (distFromAnchor > EffectiveWanderRadius)
                 {
-                    // Retorno firme a la posición de guardia
-                    MoveTo(_startPosition, EffectiveChaseSpeed * 1.2f * speedMult);
-                    currentState = AIState.Guard;
+                    // Retorno firme al puesto de guardia
+                    MoveTo(_startPosition, EffectiveChaseSpeed * 1.5f * speedMult);
+                    currentState = AIState.Guardia;
                 }
                 else
                 {
-                    currentState = AIState.Attack;
+                    currentState = AIState.Ataque;
                     ExecuteCombatAction(category, distToTarget <= EffectiveMeleeRange * 1.2f, distToTarget <= EffectiveShootRange);
-                    MoveTo(m_Target.position, EffectiveWanderSpeed * 0.6f * speedMult);
+                    MoveTo(m_Target.position, EffectiveWanderSpeed * 0.5f * speedMult);
                 }
             }
             else
             {
-                currentState = AIState.Guard;
-                if (distFromAnchor > 2f) MoveTo(_startPosition, EffectiveWanderSpeed * 0.8f * speedMult);
+                currentState = AIState.Guardia;
+                if (distFromAnchor > 1.5f) MoveTo(_startPosition, EffectiveWanderSpeed * 0.8f * speedMult);
                 else StopMoving();
             }
         }
 
-        private void BehaviorKiterHitAndRun(EnemyCategory category, float speedMult)
+        private void ComportamientoAtaqueYHuida(EnemyCategory category, float speedMult)
         {
             if (m_Target != null)
             {
                 float dist = Vector3.Distance(transform.position, m_Target.position);
                 RotateBaseTowards(m_Target.position);
 
-                float safeDist = EffectiveShootRange * 1.1f;
+                float safeDist = EffectiveShootRange * 0.85f;
 
                 if (dist < safeDist)
                 {
-                    // Huida veloz manteniendo vista al objetivo
+                    // "Hit and Run": Ataca y huye velozmente disparando sobre la marcha
                     Vector3 runDir = (transform.position - m_Target.position).normalized;
-                    Vector3 runPos = transform.position + runDir * 10f;
-                    MoveTo(runPos, EffectiveChaseSpeed * 2.5f * speedMult);
-                    currentState = AIState.Flee;
+                    Vector3 runPos = transform.position + runDir * 14f;
+                    MoveTo(runPos, EffectiveChaseSpeed * 3.2f * speedMult);
+                    currentState = AIState.Huida;
                 }
                 else
                 {
-                    currentState = AIState.Attack;
+                    currentState = AIState.Ataque;
                     StopMoving();
                 }
 
@@ -801,16 +800,16 @@ namespace Combating.Scripts
             }
             else
             {
-                currentState = AIState.Patrol;
+                currentState = AIState.Patrulla;
                 Wander(speedMult);
             }
         }
 
-        private void BehaviorSupportCommander(EnemyCategory category, float speedMult)
+        private void ComportamientoInvocadorRefuerzos(EnemyCategory category, float speedMult)
         {
             if (m_Spawn == null)
             {
-                Debug.LogError($"<color=red>[EnemyController Error]</color> El arquetipo SUPPORT COMMANDER en '{gameObject.name}' REQUIERE un componente SpawnController asignado.");
+                Debug.LogError($"<color=red>[EnemyController Error]</color> El arquetipo INVOCADOR REFUERZOS en '{gameObject.name}' REQUIERE un componente SpawnController asignado.");
             }
 
             if (m_Target != null)
@@ -818,26 +817,26 @@ namespace Combating.Scripts
                 float dist = Vector3.Distance(transform.position, m_Target.position);
 
                 // Posicionamiento en retaguardia
-                Vector3 awayFromTarget = transform.position + (transform.position - m_Target.position).normalized * 12f;
-                MoveTo(awayFromTarget, EffectiveChaseSpeed * 1.2f * speedMult);
+                Vector3 awayFromTarget = transform.position + (transform.position - m_Target.position).normalized * 15f;
+                MoveTo(awayFromTarget, EffectiveChaseSpeed * 1.4f * speedMult);
                 RotateBaseTowards(m_Target.position);
 
-                // Invocación controlada: Máximo 3 aliados cercanos y cooldown de 12s para evitar saturación de CPU
-                int nearbyAllies = CountNearbyAllies(30f);
-                const int MAX_MINIONS_LIMIT = 3;
+                // Invocación controlada para proteger la CPU: Máximo 4 aliados cercanos y cooldown de 10s
+                int nearbyAllies = CountNearbyAllies(35f);
+                const int MAX_MINIONS_LIMIT = 4;
 
                 if (nearbyAllies < MAX_MINIONS_LIMIT && Time.time > _supportSummonTimer)
                 {
-                    _supportSummonTimer = Time.time + 12.0f;
+                    _supportSummonTimer = Time.time + 10.0f;
                     SpawnReinforcementMinion();
                 }
 
-                currentState = AIState.Attack;
+                currentState = AIState.Ataque;
                 ExecuteCombatAction(category, dist <= EffectiveMeleeRange, dist <= EffectiveShootRange);
             }
             else
             {
-                currentState = AIState.Patrol;
+                currentState = AIState.Patrulla;
                 Wander(speedMult);
             }
         }
@@ -868,8 +867,8 @@ namespace Combating.Scripts
             var minionAI = spawnedMinion.GetComponent<EnemyController>();
             if (minionAI != null)
             {
-                minionAI.mainArchetype = AIArchetype.Aggressive;
-                minionAI.activeArchetype = AIArchetype.Aggressive;
+                minionAI.mainArchetype = AIArchetype.CargaDirecta;
+                minionAI.activeArchetype = AIArchetype.CargaDirecta;
             }
 
             if (IsNetworkActive && IsServer)
@@ -879,37 +878,37 @@ namespace Combating.Scripts
             }
         }
 
-        private void BehaviorAmbushStalker(EnemyCategory category, float speedMult)
+        private void ComportamientoEmboscadaEnSigilo(EnemyCategory category, float speedMult)
         {
             if (m_Target != null)
             {
                 float dist = Vector3.Distance(transform.position, m_Target.position);
 
-                if (!_isStealthActive && dist > EffectiveMeleeRange * 2.0f)
+                if (!_isStealthActive && dist > EffectiveMeleeRange * 2.5f)
                 {
-                    // Modo Sigilo: Inmóvil total esperando que se acerque
-                    currentState = AIState.Stealth;
+                    // Modo Sigilo: Inmóvil total aguardando presa
+                    currentState = AIState.Sigilo;
                     StopMoving();
                     RotateBaseTowards(m_Target.position);
 
-                    if (dist <= EffectiveDetectionRange * 0.4f)
+                    if (dist <= EffectiveDetectionRange * 0.45f)
                     {
                         _isStealthActive = true;
                     }
                 }
                 else
                 {
-                    // Emboscada explosiva a 3.5x de velocidad
-                    currentState = AIState.Chase;
-                    MoveTo(m_Target.position, EffectiveChaseSpeed * 3.5f * speedMult);
+                    // Emboscada explosiva a 4.0x de velocidad
+                    currentState = AIState.Persecucion;
+                    MoveTo(m_Target.position, EffectiveChaseSpeed * 4.0f * speedMult);
                     RotateBaseTowards(m_Target.position);
 
-                    bool isMeleeRange = dist <= EffectiveMeleeRange * 1.5f;
+                    bool isMeleeRange = dist <= EffectiveMeleeRange * 1.6f;
                     bool isShootRange = dist <= EffectiveShootRange;
 
                     if (ShouldAttack(category, isMeleeRange, isShootRange))
                     {
-                        currentState = AIState.Attack;
+                        currentState = AIState.Ataque;
                         ExecuteCombatAction(category, isMeleeRange, isShootRange);
                     }
                 }
@@ -917,36 +916,38 @@ namespace Combating.Scripts
             else
             {
                 _isStealthActive = false;
-                currentState = AIState.Patrol;
-                Wander(speedMult * 0.5f);
+                currentState = AIState.Patrulla;
+                Wander(speedMult * 0.4f);
             }
         }
 
-        private void BehaviorErraticChaos(EnemyCategory category, float speedMult)
+        private void ComportamientoMovimientoErratico(EnemyCategory category, float speedMult)
         {
             if (m_Target != null)
             {
                 float dist = Vector3.Distance(transform.position, m_Target.position);
 
-                // Cambios erráticos de dirección en intervalos de 0.35s
+                // Cambios erráticos e hiper-rápidos en zigzag (intervalos de 0.25s - 0.45s)
                 if (Time.time > _chaosTimer)
                 {
-                    _chaosTimer = Time.time + Random.Range(0.3f, 0.6f);
-                    _chaosDirection = Random.insideUnitSphere * 12f;
+                    _chaosTimer = Time.time + Random.Range(0.25f, 0.45f);
+                    Vector3 randSide = Vector3.Cross(Vector3.up, (m_Target.position - transform.position).normalized);
+                    float sideSign = (Random.value > 0.5f) ? 1f : -1f;
+                    _chaosDirection = (randSide * sideSign * 10f) + (transform.forward * Random.Range(-4f, 8f));
                     _chaosDirection.y = 0;
                 }
 
-                Vector3 targetMovePos = (Random.value > 0.4f) ? m_Target.position + _chaosDirection : transform.position + _chaosDirection;
-                MoveTo(targetMovePos, EffectiveChaseSpeed * 2.6f * speedMult);
+                Vector3 targetMovePos = transform.position + _chaosDirection;
+                MoveTo(targetMovePos, EffectiveChaseSpeed * 3.2f * speedMult);
                 RotateBaseTowards(m_Target.position);
 
-                currentState = AIState.Attack;
+                currentState = AIState.Ataque;
                 ExecuteCombatAction(category, dist <= EffectiveMeleeRange * 1.2f, dist <= EffectiveShootRange);
             }
             else
             {
-                currentState = AIState.Patrol;
-                Wander(speedMult * 1.5f);
+                currentState = AIState.Patrulla;
+                Wander(speedMult * 1.8f);
             }
         }
 
@@ -1063,7 +1064,7 @@ namespace Combating.Scripts
             float speedParam = 0f;
             if (speed > 0.01f)
             {
-                if (currentState == AIState.Chase || currentState == AIState.Flee)
+                if (currentState == AIState.Persecucion || currentState == AIState.Huida)
                 {
                     speedParam = Mathf.Lerp(0.5f, 1.0f, speed / Mathf.Max(0.1f, EffectiveChaseSpeed));
                 }

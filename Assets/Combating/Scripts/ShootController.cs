@@ -20,6 +20,9 @@ namespace Combating.Scripts
         private const float DEFAULT_ENEMY_BASE_FIRE_RATE = 5.0f;
         private const float DEFAULT_ENEMY_BASE_AIM_DISTANCE = 100f;
 
+        private const int DEFAULT_MAX_AMMO = 30;
+        private const float DEFAULT_RELOAD_DURATION = 1.8f;
+
         [Header("References")]
         public bool isUnlocked = false; // Si está marcado, dispara desde el inicio. Si no, requiere arma.
         public Camera AimCamera;
@@ -31,9 +34,16 @@ namespace Combating.Scripts
         public Optional<float> Damage;
         public Optional<float> FireRate;
         public Optional<float> AimDistance;
+        public Optional<int> maxAmmo;
+        public Optional<float> reloadDuration;
         public LayerMask AimLayers = ~0;
         public bool HoldToFire = true;
         public bool UsePlayerInput = true;
+
+        [Header("Ammo Runtime State")]
+        public int currentAmmo = 30;
+        public bool isReloading = false;
+        private float m_ReloadTimer = 0f;
 
         [Header("Effects")]
         public ParticleSystem MuzzleFlash;
@@ -99,6 +109,24 @@ namespace Combating.Scripts
             }
         }
 
+        public int EffectiveMaxAmmo => maxAmmo.GetValue(DEFAULT_MAX_AMMO);
+        public float EffectiveReloadDuration => reloadDuration.GetValue(DEFAULT_RELOAD_DURATION);
+
+        public void AddAmmo(int amount)
+        {
+            currentAmmo = Mathf.Min(currentAmmo + amount, EffectiveMaxAmmo);
+            if (isReloading) { isReloading = false; m_ReloadTimer = 0f; }
+        }
+
+        public bool TryReload()
+        {
+            if (isReloading || currentAmmo >= EffectiveMaxAmmo) return false;
+            isReloading = true;
+            m_ReloadTimer = 0f;
+            Debug.Log($"<color=yellow>[ShootController]</color> Recargando... ({EffectiveReloadDuration}s)");
+            return true;
+        }
+
         private float CalculateDynamicShootDamage()
         {
             var pc = (m_Player != null) ? m_Player : (GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>());
@@ -114,17 +142,17 @@ namespace Combating.Scripts
 
                 switch (enemy.activeArchetype)
                 {
-                    case AIArchetype.KiterHitAndRun:
-                    case AIArchetype.TacticalCover:
+                    case AIArchetype.AtaqueYHuida:
+                    case AIArchetype.FlanqueoYCobertura:
                         dmg *= 1.3f;
                         break;
-                    case AIArchetype.Berserker:
+                    case AIArchetype.CargaFrenetica:
                         dmg *= 1.5f;
                         break;
-                    case AIArchetype.AmbushStalker:
+                    case AIArchetype.EmboscadaEnSigilo:
                         dmg *= 1.6f;
                         break;
-                    case AIArchetype.SupportCommander:
+                    case AIArchetype.InvocadorRefuerzos:
                         dmg *= 1.1f;
                         break;
                     default:
@@ -154,10 +182,10 @@ namespace Combating.Scripts
             {
                 switch (enemy.activeArchetype)
                 {
-                    case AIArchetype.Berserker: return 10.0f;
-                    case AIArchetype.KiterHitAndRun: return 6.5f;
-                    case AIArchetype.TacticalCover: return 6.0f;
-                    case AIArchetype.SupportCommander: return 4.0f;
+                    case AIArchetype.CargaFrenetica: return 10.0f;
+                    case AIArchetype.AtaqueYHuida: return 6.5f;
+                    case AIArchetype.FlanqueoYCobertura: return 6.0f;
+                    case AIArchetype.InvocadorRefuerzos: return 4.0f;
                     default: return DEFAULT_ENEMY_BASE_FIRE_RATE;
                 }
             }
@@ -221,12 +249,35 @@ namespace Combating.Scripts
 
         void Update()
         {
+            if (isReloading)
+            {
+                m_ReloadTimer += Time.deltaTime;
+                if (m_ReloadTimer >= EffectiveReloadDuration)
+                {
+                    currentAmmo = EffectiveMaxAmmo;
+                    isReloading = false;
+                    m_ReloadTimer = 0f;
+                    Debug.Log("<color=green>[ShootController]</color> Recarga completa.");
+                }
+            }
+
             if (!isUnlocked || !UsePlayerInput) return;
 
             bool canHandleInput = (m_Player != null) ? (IsNetworkActive ? m_Player.IsOwner : true) : true;
             if (!canHandleInput) return;
 
             if (m_Player == null) RefreshReferences();
+
+            if (m_Player != null)
+            {
+                bool wantsReload = m_Player.reload;
+                if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame) wantsReload = true;
+                if (wantsReload)
+                {
+                    TryReload();
+                    m_Player.reload = false;
+                }
+            }
 
             if (m_Player != null && WantsToFire())
             {
@@ -265,8 +316,19 @@ namespace Combating.Scripts
                 if (Projectile == null || Muzzle == null) return false;
             }
 
+            if (isReloading) return false;
+
+            if (currentAmmo <= 0)
+            {
+                TryReload();
+                return false;
+            }
+
             if (Time.time < m_NextFireTime) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, EffectiveFireRate);
+
+            currentAmmo--;
+            if (currentAmmo <= 0) TryReload();
 
             Vector3 originPos = Muzzle.transform.position;
             Vector3 direction = GetAimDirection(originPos);
@@ -282,8 +344,19 @@ namespace Combating.Scripts
                 if (Projectile == null || Muzzle == null) return false;
             }
 
+            if (isReloading) return false;
+
+            if (currentAmmo <= 0)
+            {
+                TryReload();
+                return false;
+            }
+
             if (Time.time < m_NextFireTime) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, EffectiveFireRate);
+
+            currentAmmo--;
+            if (currentAmmo <= 0) TryReload();
 
             RotateVisualsTowards(targetPosition);
 

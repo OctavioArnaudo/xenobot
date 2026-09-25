@@ -153,11 +153,19 @@ MonoBehaviour:
   AimDistance:
     useOverride: 0
     value: 0
+  maxAmmo:
+    useOverride: 0
+    value: 0
+  reloadDuration:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
   UsePlayerInput: 1
+  currentAmmo: 30
+  isReloading: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05

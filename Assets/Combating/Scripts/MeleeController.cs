@@ -91,7 +91,7 @@ namespace Combating.Scripts
                 try
                 {
                     var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
-                    float defaultCooldown = (enemy != null && enemy.activeArchetype == AIArchetype.Berserker) ? 0.4f : ((enemy != null) ? DEFAULT_ENEMY_BASE_MELEE_COOLDOWN : DEFAULT_PLAYER_MELEE_COOLDOWN);
+                    float defaultCooldown = (enemy != null && enemy.activeArchetype == AIArchetype.CargaFrenetica) ? 0.4f : ((enemy != null) ? DEFAULT_ENEMY_BASE_MELEE_COOLDOWN : DEFAULT_PLAYER_MELEE_COOLDOWN);
                     return attackCooldown.GetValue(defaultCooldown);
                 }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] attackCooldown: {ex.Message}"); }
@@ -146,10 +146,10 @@ namespace Combating.Scripts
 
                 switch (enemy.activeArchetype)
                 {
-                    case AIArchetype.Berserker: dmg *= 1.7f; break;
-                    case AIArchetype.AmbushStalker: dmg *= 1.8f; break;
-                    case AIArchetype.DefensiveGuardian: dmg *= 1.4f; break;
-                    case AIArchetype.Aggressive: dmg *= 1.2f; break;
+                    case AIArchetype.CargaFrenetica: dmg *= 1.7f; break;
+                    case AIArchetype.EmboscadaEnSigilo: dmg *= 1.8f; break;
+                    case AIArchetype.GuardiaConEscudo: dmg *= 1.4f; break;
+                    case AIArchetype.CargaDirecta: dmg *= 1.2f; break;
                     default: dmg *= 1.0f; break;
                 }
 

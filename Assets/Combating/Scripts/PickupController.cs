@@ -175,17 +175,32 @@ namespace Crafting.Scripts
 
             if (isPlayer)
             {
-                var sc = GetComponent<SpawnController>();
-                if (item == null && sc == null)
-                {
-                    Debug.LogWarning($"[Pickup] {gameObject.name} no tiene ItemData ni SpawnController asignado.");
-                    return;
-                }
+                ResolveItemDataIfNeeded();
 
                 _taken = true;
                 if (IsNetworkActive) ProcessPickupAuthoritative(inv, root.gameObject);
                 else ProcessPickupLocal(inv, root.gameObject);
             }
+        }
+
+        private void ResolveItemDataIfNeeded()
+        {
+            if (item != null) return;
+
+#if UNITY_EDITOR
+            string cleanName = GetItemDisplayName().Replace(" ", "");
+            string[] possiblePaths = new string[]
+            {
+                $"Assets/Crafting/Data/Item_{cleanName}.asset",
+                $"Assets/Crafting/Data/Item_{gameObject.name.Replace("Prefab", "").Replace("(Clone)", "").Trim()}.asset"
+            };
+
+            foreach (var path in possiblePaths)
+            {
+                item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>(path);
+                if (item != null) break;
+            }
+#endif
         }
 
         private void ProcessPickupAuthoritative(InventoryController inv, GameObject player)
@@ -218,36 +233,29 @@ namespace Crafting.Scripts
             if (sc != null)
             {
                 sc.TriggerDeath();
-                // Si el SpawnController ya destruyó el objeto contenedor, terminamos la recompensa
                 if (this == null) return;
             }
 
-            if (item == null || inv == null) return;
+            ResolveItemDataIfNeeded();
 
-            // FORCE AUTO-USE for Experience: Orbs should never sit in the inventory
-            bool forceAutoUse = (item.type == ItemType.Experience);
-
-            if (item.autoUse || forceAutoUse)
+            // Ejecutar acciones de pickup o efectos funcionales directamente del objeto
+            var pickupActions = GetComponentsInChildren<IItemPickupAction>(true);
+            if (pickupActions.Length > 0)
             {
-                // 1. Ejecutar acciones PICKUP dedicadas
-                var pickupActions = GetComponentsInChildren<IItemPickupAction>(true);
-                if (pickupActions.Length > 0)
-                {
-                    foreach (var act in pickupActions) act.OnPickupItem(player);
-                }
-                else
-                {
-                    // Fallback a IItemFunctional (excluyendo SpawnController)
-                    foreach (var func in GetComponentsInChildren<IItemFunctional>(true))
-                    {
-                        if (func is SpawnController) continue;
-                        func.ApplyEffect(player);
-                    }
-                }
+                foreach (var act in pickupActions) act.OnPickupItem(player);
             }
             else
             {
-                // Normal items go to the specific player inventory
+                foreach (var func in GetComponentsInChildren<IItemFunctional>(true))
+                {
+                    if (func is SpawnController || func is PickupController) continue;
+                    func.ApplyEffect(player);
+                }
+            }
+
+            // Si se resolvió un ItemData y no es autoUse ni experiencia, agregarlo al inventario
+            if (item != null && inv != null && !item.autoUse && item.type != ItemType.Experience)
+            {
                 int hash = item.GetItemHashCode();
                 if (IsNetworkActive) inv.AddItemServerRpc(hash, 1);
                 else inv.InternalAddItem(hash, 1);

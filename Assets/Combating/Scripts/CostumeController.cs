@@ -67,6 +67,12 @@ namespace Crafting.Scripts
             _modelHiddenByMe.SetActive(false);
 
             // 4. ACOPLAR mi cuerpo al Player
+            // Bypassear error de Unity Netcode al reemparentar localmente deshabilitando NetworkObject
+            if (TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
+            {
+                netObj.enabled = false;
+            }
+
             // Nos ponemos como hijos del padre del cuerpo original para mantener la jerarquía
             transform.SetParent(playerOriginalBody.transform.parent);
             transform.localPosition = Vector3.zero;
@@ -85,6 +91,7 @@ namespace Crafting.Scripts
             // 5. Limpiar componentes de mundo (Uso de Destroy seguro)
             if (TryGetComponent<PickupController>(out var p)) Destroy(p);
             if (TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
+            if (netObj != null) Destroy(netObj);
             foreach (var c in GetComponentsInChildren<Collider>(true)) c.enabled = false;
         }
 
