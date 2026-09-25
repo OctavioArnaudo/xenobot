@@ -22,31 +22,31 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 9.749997
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 187.99998
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.8504015
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.52613425
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -54,7 +54,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 63.489
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -94,7 +94,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 64412bc6feadf5a47981b61c37eaf563, type: 2}
     - target: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_Name
-      value: EnemyRender 1
+      value: EnemyRender (1)
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       propertyPath: m_Layer
@@ -139,15 +139,7 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2975570499385772857}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 380256153338158369}
   m_SourcePrefab: {fileID: 100100000, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
---- !u!4 &4633806194282844743 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 330939144036027221, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
-  m_PrefabInstance: {fileID: 4961046265253189906}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &5194977601721787459 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 116b4341c6061bb44afe4ddecbf4d814, type: 3}
@@ -175,19 +167,3 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
---- !u!114 &380256153338158369
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5194977601721787459}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1aa9ee72c6c61454792e57ad9faddac9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.RenderController
-  headPoint: {fileID: 4633806194282844743}
-  spinePoint: {fileID: 4633806194282844743}
-  muzzlePoint: {fileID: 4633806194282844743}
-  cameraLookAtPoint: {fileID: 4633806194282844743}

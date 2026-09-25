@@ -277,7 +277,7 @@ namespace Combating.Scripts
             if (target.gameObject == m_Owner || (m_Owner != null && target.transform.IsChildOf(m_Owner.transform))) return;
 
             target.TakeDamage((int)EffectiveDamage);
-            Debug.Log($"<color=red>[Impacto Directo]</color> {gameObject.name} infligió {(int)EffectiveDamage} de daño a {target.gameObject.name}. HP restante: {target.CurrentHP}");
+            //Debug.Log($"<color=red>[Impacto Directo]</color> {gameObject.name} infligió {(int)EffectiveDamage} de daño a {target.gameObject.name}. HP restante: {target.CurrentHP}");
         }
 
         private void PerformExplosion()

@@ -66,13 +66,6 @@ namespace Combating.Scripts
         [Header("Hierarchy Articulation")]
         public Transform renderRoot;
         public GameObject cameraTarget;
-        public RenderController activeModel;
-
-        // Dynamic properties that always point to the active model's bones
-        public Transform HeadPoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.headPoint : null; } }
-        public Transform SpinePoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.spinePoint : null; } }
-        public Transform MuzzlePoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.muzzlePoint : null; } }
-        public Transform CameraLookAtPoint { get { if (activeModel != null) activeModel.EnsurePoints(); return activeModel != null ? activeModel.cameraLookAtPoint : null; } }
 
         [Header("Shared Physical State")]
         public float VerticalVelocity;
@@ -142,34 +135,6 @@ namespace Combating.Scripts
                 // Force base alignment: The render root must be at the feet of the entity
                 renderRoot.localPosition = Vector3.zero;
                 renderRoot.localRotation = Quaternion.identity;
-
-                // Intelligent Model Discovery: The RenderController is usually on the renderRoot or its children
-                activeModel = renderRoot.GetComponentsInChildren<RenderController>(true)
-                    .FirstOrDefault(rc => rc.transform != renderRoot)
-                    ?? renderRoot.GetComponent<RenderController>();
-
-                if (activeModel == null)
-                {
-                    activeModel = renderRoot.gameObject.AddComponent<RenderController>();
-                }
-
-                if (activeModel != null)
-                {
-                    activeModel.gameObject.SetActive(true);
-                    animator = activeModel.Animator;
-                    if (animator != null)
-                    {
-                        animator.enabled = true;
-                        animator.Rebind();
-                        animator.Update(0);
-                    }
-                }
-            }
-
-            if (cameraTarget != null && activeModel != null)
-            {
-                Transform lookPoint = CameraLookAtPoint ?? HeadPoint ?? activeModel.transform;
-                cameraTarget.transform.position = lookPoint.position;
             }
 
             NotifyModulesRefresh();

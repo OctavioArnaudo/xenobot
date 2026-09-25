@@ -9,7 +9,7 @@ namespace Crafting.Scripts
     /// Specialized modular controller for appearance changes.
     /// Handles hiding current visuals and restoring them when removed.
     /// </summary>
-    public class CostumeController : MonoBehaviour, IItemFunctional, IModular
+    public class CostumeController : MonoBehaviour, IItemFunctional
     {
         [Header("Settings")]
         [Tooltip("Tag to find the render root in the player hierarchy")]
@@ -17,13 +17,6 @@ namespace Crafting.Scripts
 
         private GameObject _modelHiddenByMe;
         private bool _isEquipped = false;
-        private ModularController _hub;
-
-        public void Bind(ModularController hub)
-        {
-            _hub = hub;
-            if (_hub != null) _hub.RegisterModule(this);
-        }
 
         public void OnRefreshModule() { }
 
@@ -31,13 +24,9 @@ namespace Crafting.Scripts
         {
             if (_isEquipped) return;
 
-            if (_hub == null) _hub = player.GetComponent<ModularController>();
-
             // 1. Identificar el cuerpo original del Player (el objeto con tag Render)
             // Priorizamos el activeModel del hub si existe, si no buscamos por tag
-            GameObject playerOriginalBody = (_hub != null && _hub.activeModel != null)
-                ? _hub.activeModel.gameObject
-                : FindChildWithTag(player, renderTag);
+            GameObject playerOriginalBody = FindChildWithTag(player, renderTag);
 
             // 2. Identificar mi propio cuerpo (el FBX del costume con tag Render)
             GameObject myCostumeBody = FindChildWithTag(gameObject, renderTag);
@@ -97,12 +86,6 @@ namespace Crafting.Scripts
             if (TryGetComponent<PickupController>(out var p)) Destroy(p);
             if (TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
             foreach (var c in GetComponentsInChildren<Collider>(true)) c.enabled = false;
-
-            // 6. REFRESCAR SISTEMAS: Crucial para que el Animator y el Muzzle apunten al nuevo FBX
-            if (_hub != null)
-            {
-                _hub.RefreshBodyReferences();
-            }
         }
 
         private void OnDestroy()
@@ -114,9 +97,6 @@ namespace Crafting.Scripts
             if (_modelHiddenByMe.gameObject != null && _modelHiddenByMe.scene.isLoaded)
             {
                 _modelHiddenByMe.SetActive(true);
-
-                // Notificar al hub si aún existe
-                if (_hub != null) _hub.RefreshBodyReferences();
             }
         }
 

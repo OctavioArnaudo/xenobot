@@ -213,7 +213,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
       propertyPath: m_Name
-      value: PlayerRender1
+      value: PlayerRender
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
       propertyPath: m_Layer
@@ -336,21 +336,8 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 6848051356982628840}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 6869875211158617871}
   m_SourcePrefab: {fileID: 100100000, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
---- !u!4 &1580260158610495192 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -4292154010595695564, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
-  m_PrefabInstance: {fileID: 5872978235884745452}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &2781766785629762155 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 8582682977320009863, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
-  m_PrefabInstance: {fileID: 5872978235884745452}
-  m_PrefabAsset: {fileID: 0}
 --- !u!4 &6200255932903970055 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
@@ -361,23 +348,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
   m_PrefabInstance: {fileID: 5872978235884745452}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &6848051356982628840
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6719488597655785405}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1aa9ee72c6c61454792e57ad9faddac9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.RenderController
-  headPoint: {fileID: 8577516068843709065}
-  spinePoint: {fileID: 2781766785629762155}
-  feetPoint: {fileID: 4266148392444164780}
-  muzzlePoint: {fileID: 1580260158610495192}
-  cameraLookAtPoint: {fileID: 1580260158610495192}
 --- !u!64 &6869875211158617871
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -400,8 +370,3 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
---- !u!4 &8577516068843709065 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 2776601101219188837, guid: ed12319cee99a0f47bb2eaa35b73edce, type: 3}
-  m_PrefabInstance: {fileID: 5872978235884745452}
-  m_PrefabAsset: {fileID: 0}

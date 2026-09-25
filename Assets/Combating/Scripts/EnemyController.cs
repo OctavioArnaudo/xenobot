@@ -378,7 +378,7 @@ namespace Combating.Scripts
             if (_isEnemyDead) return;
             _isEnemyDead = true;
 
-            Debug.Log($"<color=orange>[EnemyAI]</color> {gameObject.name} ha muerto.");
+            //Debug.Log($"<color=orange>[EnemyAI]</color> {gameObject.name} ha muerto.");
 
             StopMoving();
 
@@ -442,7 +442,7 @@ namespace Combating.Scripts
 
             ValidateRequiredControllers();
 
-            Debug.Log($"<color=orange>[EnemyAI]</color> {gameObject.name} entró a {activePhaseName} (Arquetipo: {activeArchetype})");
+            //Debug.Log($"<color=orange>[EnemyAI]</color> {gameObject.name} entró a {activePhaseName} (Arquetipo: {activeArchetype})");
         }
 
         private void EvaluatePhaseTransitions()

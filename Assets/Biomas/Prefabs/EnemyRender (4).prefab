@@ -42,15 +42,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -58,7 +58,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: -277.835
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -254,11 +254,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_Name
-      value: EnemyRender 6
+      value: EnemyRender (4)
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_Layer
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
+      propertyPath: m_TagString
+      value: Render
       objectReference: {fileID: 0}
     - target: {fileID: 3800382922380307807, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -379,9 +383,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6284096952043489367}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 9161886899950747783}
   m_SourcePrefab: {fileID: 100100000, guid: 08915c9897caf254f962383e322fc3be, type: 3}
 --- !u!1 &776614261595603509 stripped
 GameObject:
@@ -410,19 +411,3 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
---- !u!114 &9161886899950747783
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 776614261595603509}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1aa9ee72c6c61454792e57ad9faddac9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.RenderController
-  headPoint: {fileID: 0}
-  spinePoint: {fileID: 0}
-  muzzlePoint: {fileID: 0}
-  cameraLookAtPoint: {fileID: 0}

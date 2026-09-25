@@ -34,7 +34,7 @@ namespace Combating.Scripts
 
                 if (!hasEnergy)
                 {
-                    Debug.Log($"[VictoryController] {other.gameObject.name} entered but lacks Energy Source.");
+                    //Debug.Log($"[VictoryController] {other.gameObject.name} entered but lacks Energy Source.");
                     return;
                 }
 

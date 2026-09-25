@@ -81,9 +81,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 17fb032b5f9d05c429f232fe64a150af, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2969990196355499210}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 17fb032b5f9d05c429f232fe64a150af, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 3479155145545040510}
   m_SourcePrefab: {fileID: 100100000, guid: 17fb032b5f9d05c429f232fe64a150af, type: 3}
 --- !u!1 &7271889202838394890 stripped
 GameObject:
@@ -129,13 +126,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
+  isUnlocked: 0
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 7744843159117796457, guid: ec0b8a2ec330bbc4cbd41ec02990d718, type: 3}
-  ProjectilePrefab: {fileID: 11400000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Projectile: {fileID: 0}
   visualsToRotate: []
-  Damage: 25
-  FireRate: 6
-  AimDistance: 100
+  Damage:
+    useOverride: 0
+    value: 0
+  FireRate:
+    useOverride: 0
+    value: 0
+  AimDistance:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
@@ -145,7 +149,6 @@ MonoBehaviour:
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
   rotationSpeed: 10
-  animator: {fileID: 0}
 --- !u!114 &2969990196355499210
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -165,26 +168,3 @@ MonoBehaviour:
     message: EXP+
   explosionForce: 10
   spreadRadius: 2.5
---- !u!114 &3479155145545040510
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7271889202838394890}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7a57358321eb3f446843d8d80e24f8b8, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.AiController
-  ShowTopMostFoldoutHeaderGroup: 1
-  currentState: 0
-  playerTag: Player
-  hoverHeight: 3.5
-  wanderSpeed: 2
-  chaseSpeed: 5
-  turnSpeed: 10
-  wanderRadius: 10
-  detectionRange: 15
-  shootRange: 12
-  meleeRange: 2.5

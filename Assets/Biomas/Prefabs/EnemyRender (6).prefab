@@ -110,7 +110,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_Name
-      value: EnemyRender 8
+      value: EnemyRender (6)
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       propertyPath: m_Layer
@@ -163,15 +163,7 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2059642648193015196}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7991492190520082894}
   m_SourcePrefab: {fileID: 100100000, guid: 08915c9897caf254f962383e322fc3be, type: 3}
---- !u!4 &559205673434029548 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 330939144036027221, guid: 08915c9897caf254f962383e322fc3be, type: 3}
-  m_PrefabInstance: {fileID: 240109137564866233}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1122627953242156008 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 08915c9897caf254f962383e322fc3be, type: 3}
@@ -199,19 +191,3 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
---- !u!114 &7991492190520082894
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1122627953242156008}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1aa9ee72c6c61454792e57ad9faddac9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.RenderController
-  headPoint: {fileID: 559205673434029548}
-  spinePoint: {fileID: 559205673434029548}
-  muzzlePoint: {fileID: 559205673434029548}
-  cameraLookAtPoint: {fileID: 559205673434029548}

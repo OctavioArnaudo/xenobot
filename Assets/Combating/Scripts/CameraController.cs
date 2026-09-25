@@ -97,11 +97,8 @@ namespace Combating.Scripts
 
             if (_target == null) _target = transform.Find("PlayerTarget")?.gameObject ?? transform.Find("Target")?.gameObject ?? gameObject;
 
-            Transform lookPoint = _hub.CameraLookAtPoint ?? _hub.HeadPoint;
 
-            Vector3 basePosition = (lookPoint != null)
-                ? lookPoint.position
-                : _hub.transform.position + Vector3.up * 1.6f;
+            Vector3 basePosition = _hub.transform.position + Vector3.up * 1.6f;
 
             float minY = _hub.transform.position.y + MinLookAtHeight;
             if (basePosition.y < minY) basePosition.y = minY;

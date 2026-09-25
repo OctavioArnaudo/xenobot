@@ -38,15 +38,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -54,7 +54,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: -320.755
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -90,7 +90,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 02bf9731214da9247bb87b38dfdde3a2, type: 2}
     - target: {fileID: 919132149155446097, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       propertyPath: m_Name
-      value: EnemyRender 4
+      value: EnemyRender (2)
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       propertyPath: m_Layer
@@ -123,9 +123,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2674119129987327586}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8950838222399733430}
   m_SourcePrefab: {fileID: 100100000, guid: bac64013becf3d74e84ebb554dc01a1b, type: 3}
 --- !u!1 &4317877234650066423 stripped
 GameObject:
@@ -154,19 +151,3 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
---- !u!114 &8950838222399733430
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4317877234650066423}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1aa9ee72c6c61454792e57ad9faddac9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.RenderController
-  headPoint: {fileID: 0}
-  spinePoint: {fileID: 0}
-  muzzlePoint: {fileID: 0}
-  cameraLookAtPoint: {fileID: 0}
