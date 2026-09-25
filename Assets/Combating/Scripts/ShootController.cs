@@ -7,22 +7,30 @@ namespace Combating.Scripts
 {
     /// <summary>
     /// Logic controller for shooting mechanics.
-    /// Handles firing projectiles, cooldowns, and input.
-    /// Works for both Players (via bridge) and AI (direct server spawning).
+    /// Fully compliant with AGENTS.md pattern using Optional<T> for Clean Prefabs and dynamic fallback balance.
     /// </summary>
     public class ShootController : MonoBehaviour, IItemFunctional
     {
+        // --- Internal Hardcoded Ranged Defaults ---
+        private const float DEFAULT_PLAYER_SHOOT_DAMAGE = 32f;
+        private const float DEFAULT_PLAYER_FIRE_RATE = 8.0f;
+        private const float DEFAULT_PLAYER_AIM_DISTANCE = 120f;
+
+        private const float DEFAULT_ENEMY_BASE_SHOOT_DAMAGE = 22f;
+        private const float DEFAULT_ENEMY_BASE_FIRE_RATE = 5.0f;
+        private const float DEFAULT_ENEMY_BASE_AIM_DISTANCE = 100f;
+
         [Header("References")]
         public bool isUnlocked = false; // Si está marcado, dispara desde el inicio. Si no, requiere arma.
         public Camera AimCamera;
-        public GameObject Muzzle; // Único punto de disparo (asignar manualmente en el inspector)
-        public GameObject Projectile; // Prefab del proyectil
+        public GameObject Muzzle;
+        public GameObject Projectile;
         public Renderer[] visualsToRotate;
 
-        [Header("Shooting")]
-        public float Damage = 25f;
-        public float FireRate = 6f;
-        public float AimDistance = 100f;
+        [Header("Manual Ranged Overrides")]
+        public Optional<float> Damage;
+        public Optional<float> FireRate;
+        public Optional<float> AimDistance;
         public LayerMask AimLayers = ~0;
         public bool HoldToFire = true;
         public bool UsePlayerInput = true;
@@ -39,6 +47,135 @@ namespace Combating.Scripts
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
+        public GameObject OwnerEntity
+        {
+            get
+            {
+                if (m_Player != null) return m_Player.gameObject;
+                if (m_Health != null) return m_Health.gameObject;
+                return transform.root.gameObject;
+            }
+        }
+
+        public Team EffectiveTeam => m_Health != null ? m_Health.team : (transform.root.CompareTag("Player") ? Team.Player : (transform.root.CompareTag("Enemy") ? Team.Enemy : Team.Neutral));
+
+        // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
+
+        public float EffectiveDamage
+        {
+            get
+            {
+                try { return Damage.GetValue(CalculateDynamicShootDamage()); }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] Damage: {ex.Message}"); }
+
+                return CalculateDynamicShootDamage();
+            }
+        }
+
+        public float EffectiveFireRate
+        {
+            get
+            {
+                try { return FireRate.GetValue(CalculateDynamicFireRate()); }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] FireRate: {ex.Message}"); }
+
+                return CalculateDynamicFireRate();
+            }
+        }
+
+        public float EffectiveAimDistance
+        {
+            get
+            {
+                try
+                {
+                    var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
+                    float defaultDist = (enemy != null) ? DEFAULT_ENEMY_BASE_AIM_DISTANCE : DEFAULT_PLAYER_AIM_DISTANCE;
+                    return AimDistance.GetValue(defaultDist);
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] AimDistance: {ex.Message}"); }
+
+                return DEFAULT_PLAYER_AIM_DISTANCE;
+            }
+        }
+
+        private float CalculateDynamicShootDamage()
+        {
+            var pc = (m_Player != null) ? m_Player : (GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>());
+            if (pc != null || CompareTag("Player"))
+            {
+                return DEFAULT_PLAYER_SHOOT_DAMAGE;
+            }
+
+            var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
+            if (enemy != null)
+            {
+                float dmg = DEFAULT_ENEMY_BASE_SHOOT_DAMAGE;
+
+                switch (enemy.activeArchetype)
+                {
+                    case AIArchetype.KiterHitAndRun:
+                    case AIArchetype.TacticalCover:
+                        dmg *= 1.3f;
+                        break;
+                    case AIArchetype.Berserker:
+                        dmg *= 1.5f;
+                        break;
+                    case AIArchetype.AmbushStalker:
+                        dmg *= 1.6f;
+                        break;
+                    case AIArchetype.SupportCommander:
+                        dmg *= 1.1f;
+                        break;
+                    default:
+                        dmg *= 1.0f;
+                        break;
+                }
+
+                int allies = CountNearbyAllies();
+                if (allies >= 3) dmg *= 0.75f;
+
+                return dmg;
+            }
+
+            return DEFAULT_ENEMY_BASE_SHOOT_DAMAGE;
+        }
+
+        private float CalculateDynamicFireRate()
+        {
+            var pc = (m_Player != null) ? m_Player : (GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>());
+            if (pc != null || CompareTag("Player"))
+            {
+                return DEFAULT_PLAYER_FIRE_RATE;
+            }
+
+            var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
+            if (enemy != null)
+            {
+                switch (enemy.activeArchetype)
+                {
+                    case AIArchetype.Berserker: return 10.0f;
+                    case AIArchetype.KiterHitAndRun: return 6.5f;
+                    case AIArchetype.TacticalCover: return 6.0f;
+                    case AIArchetype.SupportCommander: return 4.0f;
+                    default: return DEFAULT_ENEMY_BASE_FIRE_RATE;
+                }
+            }
+
+            return DEFAULT_ENEMY_BASE_FIRE_RATE;
+        }
+
+        private int CountNearbyAllies()
+        {
+            int count = 0;
+            var enemies = GameObject.FindGameObjectsWithTag("Enemy");
+            foreach (var e in enemies)
+            {
+                if (e != gameObject && Vector3.Distance(transform.position, e.transform.position) <= 25f) count++;
+            }
+            return count;
+        }
+
         void Awake()
         {
             RefreshReferences();
@@ -54,19 +191,26 @@ namespace Combating.Scripts
 
         private void RefreshReferences()
         {
-            if (m_Player == null) m_Player = GetComponentInParent<PlayerController>();
-            if (m_Health == null) m_Health = GetComponentInParent<HealthController>();
+            if (GetComponent<EnemyController>() == null && GetComponentInParent<EnemyController>() == null)
+            {
+                if (m_Player == null) m_Player = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
+            }
+            else
+            {
+                m_Player = null;
+            }
 
-            // Búsqueda de cámara en el jugador
+            if (m_Health == null)
+            {
+                m_Health = GetComponent<HealthController>() ??
+                           GetComponentInParent<HealthController>() ??
+                           GetComponentInChildren<HealthController>();
+            }
+
             if (AimCamera == null && m_Player != null)
                 AimCamera = m_Player.GetComponentInChildren<Camera>();
 
             if (AimCamera == null) AimCamera = Camera.main;
-
-            if (Muzzle == null)
-            {
-                Debug.LogWarning($"[ShootController] Muzzle no asignado en {gameObject.name}. El disparo fallará.");
-            }
 
             if (visualsToRotate == null || visualsToRotate.Length == 0)
             {
@@ -79,7 +223,6 @@ namespace Combating.Scripts
         {
             if (!isUnlocked || !UsePlayerInput) return;
 
-            // Only the owner of the player should process input and trigger shots
             bool canHandleInput = (m_Player != null) ? (IsNetworkActive ? m_Player.IsOwner : true) : true;
             if (!canHandleInput) return;
 
@@ -95,12 +238,10 @@ namespace Combating.Scripts
         {
             if (m_Player == null) return false;
 
-            // Block firing if inventory or crafting is open
             if (InventoryController.LocalInstance != null && Cursor.visible) return false;
 
             bool inputActive = false;
 
-            // Lectura directa del Clic Derecho con el Input System
             if (Mouse.current != null)
             {
                 inputActive = HoldToFire
@@ -108,7 +249,6 @@ namespace Combating.Scripts
                     : Mouse.current.rightButton.wasPressedThisFrame;
             }
 
-            // Compatibilidad con el estado 'aim' del PlayerController (asociado a apuntar/clic derecho)
             if (!inputActive && m_Player != null)
             {
                 inputActive = m_Player.aim;
@@ -126,7 +266,7 @@ namespace Combating.Scripts
             }
 
             if (Time.time < m_NextFireTime) return false;
-            m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
+            m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, EffectiveFireRate);
 
             Vector3 originPos = Muzzle.transform.position;
             Vector3 direction = GetAimDirection(originPos);
@@ -143,69 +283,82 @@ namespace Combating.Scripts
             }
 
             if (Time.time < m_NextFireTime) return false;
-            m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, FireRate);
+            m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, EffectiveFireRate);
 
             RotateVisualsTowards(targetPosition);
 
             Vector3 originPos = Muzzle.transform.position;
-            Vector3 direction = (targetPosition - originPos).normalized;
+            Vector3 direction = (targetPosition - originPos);
+            if (direction.sqrMagnitude < 0.01f) direction = transform.forward;
+            else direction = direction.normalized;
+
             ExecuteFire(direction, originPos);
             return true;
         }
 
         private void ExecuteFire(Vector3 direction, Vector3 spawnPos)
         {
-            float finalDamage = Damage;
-            // StatsController check...
-            var pc = (m_Player != null) ? m_Player : GetComponentInParent<PlayerController>();
-
-            Team team = m_Health != null ? m_Health.team : Team.Neutral;
+            float finalDamage = EffectiveDamage;
+            Team team = EffectiveTeam;
 
             if (m_Player != null && IsNetworkActive)
             {
-                // PLAYER NETWORK MODE
                 m_Player.RequestFire(Projectile, direction, spawnPos, finalDamage, team);
             }
             else
             {
-                // LOCAL MODE OR AI
                 SpawnProjectileLocally(direction, spawnPos, finalDamage, team, IsNetworkActive && NetworkManager.Singleton.IsServer);
             }
 
-            // Trigger shoot animation safely
             Animator anim = GetComponentInChildren<Animator>();
-            if (anim != null)
+            if (anim != null && HasParameter(anim, "shoot"))
             {
-                if (HasParameter(anim, "shoot"))
-                {
-                    anim.SetTrigger("shoot");
-                }
+                anim.SetTrigger("shoot");
             }
 
-            // Local Visual Feedback (Immediate)
-            if (MuzzleFlash != null && !MuzzleFlash.isPlaying) MuzzleFlash.Play();
-            SpawnTracer(spawnPos, spawnPos + direction * AimDistance);
+            if (MuzzleFlash != null) MuzzleFlash.Play();
         }
 
-        private bool HasParameter(Animator animator, string paramName)
+        private Vector3 GetAimDirection(Vector3 muzzlePos)
         {
-            foreach (AnimatorControllerParameter param in animator.parameters)
-                if (param.name == paramName) return true;
-            return false;
-        }
+            if (AimCamera == null) return transform.forward;
 
-        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool shouldNetSpawn)
-        {
-            GameObject projObj = Instantiate(Projectile, spawnPos, Quaternion.LookRotation(direction));
-            if (projObj != null)
+            Ray ray = AimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
+
+            RaycastHit[] hits = Physics.RaycastAll(ray, EffectiveAimDistance, AimLayers);
+            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+            Vector3 targetPoint = ray.GetPoint(EffectiveAimDistance);
+            Transform rootTransform = OwnerEntity.transform;
+
+            foreach (var hit in hits)
             {
-                ProjectileController projectile = projObj.GetComponent<ProjectileController>();
-                if (projectile != null)
-                {
-                    projectile.Launch(m_Player != null ? m_Player.gameObject : gameObject, direction, damage, team);
-                }
+                if (hit.transform.root == rootTransform) continue;
+                if (hit.collider.isTrigger) continue;
 
-                if (shouldNetSpawn && projObj.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
+                targetPoint = hit.point;
+                break;
+            }
+
+            Vector3 dir = (targetPoint - muzzlePos);
+            if (dir.sqrMagnitude < 0.01f) return AimCamera.transform.forward;
+            return dir.normalized;
+        }
+
+        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool isServer)
+        {
+            GameObject projGO = Instantiate(Projectile, spawnPos, Quaternion.LookRotation(direction));
+
+            var proj = projGO.GetComponent<ProjectileController>();
+            if (proj != null)
+            {
+                proj.Launch(OwnerEntity, direction, damage, team);
+            }
+
+            if (isServer)
+            {
+                var netObj = projGO.GetComponent<NetworkObject>();
+                if (netObj != null) netObj.Spawn();
             }
         }
 
@@ -224,26 +377,11 @@ namespace Combating.Scripts
             }
         }
 
-        Vector3 GetAimDirection(Vector3 fromPosition)
+        private bool HasParameter(Animator animator, string paramName)
         {
-            if (AimCamera == null) return transform.forward;
-            Ray ray = new Ray(AimCamera.transform.position, AimCamera.transform.forward);
-            int layerMask = ~((1 << 3) | (1 << 2)); // Ignore player and ignore raycast layers
-
-            if (Physics.Raycast(ray, out RaycastHit hit, AimDistance, layerMask, QueryTriggerInteraction.Ignore))
-                return (hit.point - fromPosition).normalized;
-
-            return ray.direction;
-        }
-
-        void SpawnTracer(Vector3 start, Vector3 end)
-        {
-            if (TracerPrefab == null) return;
-            LineRenderer tracer = Instantiate(TracerPrefab, start, Quaternion.identity);
-            tracer.positionCount = 2;
-            tracer.SetPosition(0, start);
-            tracer.SetPosition(1, end);
-            Destroy(tracer.gameObject, TracerLifetime);
+            foreach (AnimatorControllerParameter param in animator.parameters)
+                if (param.name == paramName) return true;
+            return false;
         }
     }
 }

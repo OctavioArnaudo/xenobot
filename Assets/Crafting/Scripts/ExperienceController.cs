@@ -40,22 +40,6 @@ namespace Crafting.Scripts
                 Debug.Log($"[ExperienceController] Otorgados {EXP_AMOUNT} EXP a {entity.name} via StatsController.");
                 return;
             }
-
-            // 2. Fallback to modular LevelingController
-            LevelingController leveling = entity.GetComponent<LevelingController>() ??
-                                          entity.GetComponentInParent<LevelingController>() ??
-                                          entity.GetComponentInChildren<LevelingController>();
-            if (leveling == null)
-            {
-                var hub = entity.GetComponent<ModularController>() ?? entity.GetComponentInParent<ModularController>();
-                if (hub != null) leveling = hub.GetModule<LevelingController>();
-            }
-
-            if (leveling != null)
-            {
-                leveling.AddExp(EXP_AMOUNT);
-                Debug.Log($"[ExperienceController] Otorgados {EXP_AMOUNT} EXP a {entity.name} via LevelingController.");
-            }
         }
 
         public void GenerateOrbVisuals()

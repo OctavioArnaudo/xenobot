@@ -199,32 +199,6 @@ namespace Combating.Scripts
             currentHealth.Value = Mathf.Clamp(currentHealth.Value + amount, 0, maxHealth.Value);
         }
 
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        public void AddExpServerRpc(float amount)
-        {
-            var leveling = GetModule<LevelingController>();
-            if (leveling != null)
-            {
-                // Leveling logic is server-side authoritative over Hub variables
-                Exp.Value += amount;
-                while (Exp.Value >= ExpToLevelUp.Value)
-                {
-                    Exp.Value -= ExpToLevelUp.Value;
-                    Level.Value++;
-                    // Basic scaling here or call leveling module
-                    Attack.Value += 2.0f;
-                    Defense.Value += 1.5f;
-                    ExpToLevelUp.Value *= 1.2f;
-
-                    maxHealth.Value += 15;
-                    currentHealth.Value = maxHealth.Value; // Full heal on level up
-
-                    maxFuel.Value += 20f;
-                    currentFuel.Value = maxFuel.Value;
-                }
-            }
-        }
-
         /// <summary>
         /// Cleans up an instantiated module or equipment to prevent interference.
         /// </summary>

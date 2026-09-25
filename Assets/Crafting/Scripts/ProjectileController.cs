@@ -221,10 +221,7 @@ namespace Combating.Scripts
         {
             // Evitar fuego amigo si no es neutral
             if (target.team == m_OwnerTeam && m_OwnerTeam != Team.Neutral) return;
-
-            var damageCtrl = target.GetComponent<DamageController>();
-            if (damageCtrl != null) damageCtrl.TakeDamage((int)damage, m_OwnerTeam);
-            else target.TakeDamage((int)damage);
+            target.TakeDamage((int)damage);
         }
 
         private void PerformExplosion()
