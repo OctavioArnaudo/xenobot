@@ -418,6 +418,7 @@ namespace Crafting.Scripts
         {
             int hash = item.GetHashCode();
             bool isCostume = item.itemPrefab != null && item.itemPrefab.GetComponentInChildren<CostumeController>() != null;
+            bool isMask = item.itemPrefab != null && item.itemPrefab.GetComponentInChildren<MaskController>() != null;
 
             if (_equippedInstances.TryGetValue(hash, out GameObject existing))
             {
@@ -450,11 +451,26 @@ namespace Crafting.Scripts
                         }
                     }
 
+                    // Si es una Máscara/Visor, desequipamos cualquier otra máscara activa
+                    if (isMask)
+                    {
+                        var activeMasks = _equippedInstances.Where(x => x.Value != null && x.Value.GetComponentInChildren<MaskController>() != null).ToList();
+                        foreach (var active in activeMasks)
+                        {
+                            var activeQuitActions = active.Value.GetComponentsInChildren<IItemQuitAction>(true);
+                            foreach (var act in activeQuitActions) act.OnQuitItem(gameObject);
+
+                            Destroy(active.Value);
+                            _equippedInstances.Remove(active.Key);
+                        }
+                    }
+
                     GameObject instance = Instantiate(item.itemPrefab, transform);
                     _equippedInstances[hash] = instance;
 
-                    // Regla visual: Solo ocultamos si es un objeto de pura lógica (sin Costume ni Weapon Controller)
+                    // Regla visual: Solo ocultamos si es un objeto de pura lógica (sin Costume, Mask ni Weapon Controller)
                     bool hasVisualModule = instance.GetComponentInChildren<CostumeController>() != null ||
+                                         instance.GetComponentInChildren<MaskController>() != null ||
                                          instance.GetComponentInChildren<WeaponController>() != null;
 
                     if (!hasVisualModule)

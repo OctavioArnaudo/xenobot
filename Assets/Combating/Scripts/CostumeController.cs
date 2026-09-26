@@ -33,10 +33,17 @@ namespace Crafting.Scripts
 
         public void OnUseItem(GameObject player)
         {
+            // Si este prefab de ítem también tiene un MaskController, cancelar la ocultación de traje
+            if (GetComponent<MaskController>() != null || GetComponentInChildren<MaskController>() != null ||
+                gameObject.name.ToLower().Contains("mask") || gameObject.name.ToLower().Contains("mascara"))
+            {
+                enabled = false;
+                return;
+            }
+
             if (_isEquipped) return;
 
             // 1. Identificar el cuerpo original del Player (el objeto con tag Render)
-            // Priorizamos el activeModel del hub si existe, si no buscamos por tag
             GameObject playerOriginalBody = FindChildWithTag(player, renderTag);
 
             // 2. Identificar mi propio cuerpo (el FBX del costume con tag Render)
@@ -57,14 +64,11 @@ namespace Crafting.Scripts
 
             if (oldAnim != null && newAnim != null)
             {
-                // Copiar el controlador para que el nuevo FBX use la misma lógica de estados
                 newAnim.runtimeAnimatorController = oldAnim.runtimeAnimatorController;
 
-                // Sincronizar el estado actual de la capa base para que no haya salto visual
                 var stateInfo = oldAnim.GetCurrentAnimatorStateInfo(0);
                 newAnim.Play(stateInfo.fullPathHash, 0, stateInfo.normalizedTime);
 
-                // Copiar parámetros básicos (Speed, Grounded, etc)
                 foreach (var param in oldAnim.parameters)
                 {
                     if (param.type == AnimatorControllerParameterType.Float)
@@ -73,24 +77,20 @@ namespace Crafting.Scripts
                         newAnim.SetBool(param.nameHash, oldAnim.GetBool(param.nameHash));
                 }
             }
-            // --------------------------------------
 
             _modelHiddenByMe.SetActive(false);
 
             // 4. ACOPLAR mi cuerpo al Player
-            // Bypassear error de Unity Netcode al reemparentar localmente deshabilitando NetworkObject
             if (TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
             {
                 netObj.enabled = false;
             }
 
-            // Nos ponemos como hijos del padre del cuerpo original para mantener la jerarquía
             transform.SetParent(playerOriginalBody.transform.parent);
             transform.localPosition = Vector3.zero;
             transform.localRotation = Quaternion.identity;
             transform.localScale = Vector3.one;
 
-            // Asegurarnos de que el visual del costume esté activo
             if (myCostumeBody != null)
             {
                 myCostumeBody.SetActive(true);
@@ -99,7 +99,7 @@ namespace Crafting.Scripts
             gameObject.SetActive(true);
             _isEquipped = true;
 
-            // 5. Limpiar componentes de mundo (Uso de Destroy seguro)
+            // 5. Limpiar componentes de mundo
             if (TryGetComponent<PickupController>(out var p)) Destroy(p);
             if (TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
             if (netObj != null) Destroy(netObj);

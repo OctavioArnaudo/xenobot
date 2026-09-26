@@ -125,8 +125,7 @@ GameObject:
   - component: {fileID: 1945186437379167726}
   - component: {fileID: 4274388821328516478}
   - component: {fileID: 3912552371969611411}
-  - component: {fileID: 9033031276754880590}
-  - component: {fileID: 176722422056584648}
+  - component: {fileID: 1888491341270129377}
   m_Layer: 0
   m_Name: MaskPrefab (1)
   m_TagString: Untagged
@@ -144,7 +143,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.441667, y: 1.441667, z: 1.441667}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 6022107401312191842}
@@ -213,7 +212,7 @@ MonoBehaviour:
     message: EXP
   explosionForce: 10
   spreadRadius: 2.5
---- !u!114 &9033031276754880590
+--- !u!114 &1888491341270129377
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -222,20 +221,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 4020058620638717664}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c70afe0c671254344a4a4e58ece50270, type: 3}
+  m_Script: {fileID: 11500000, guid: d5d2aee50e5b61042ac4e6638fea25a4, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.CostumeController
+  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.MaskController
   renderTag: Render
---- !u!114 &176722422056584648
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4020058620638717664}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c70afe0c671254344a4a4e58ece50270, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.CostumeController
-  renderTag: Render
+  visorTypeOverride:
+    useOverride: 0
+    value: 0
+  headOffsetOverride:
+    useOverride: 0
+    value: {x: 0, y: 0, z: 0}
+  headScaleOverride:
+    useOverride: 0
+    value: {x: 0, y: 0, z: 0}
