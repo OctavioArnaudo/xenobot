@@ -33,10 +33,12 @@ namespace Combating.Scripts
         private float m_BaseSprintSpeed = -1f;
 
         private HealthController m_Health;
+        private EnemyController m_Enemy;
 
         void Awake()
         {
             m_Health = GetComponent<HealthController>() ?? GetComponentInParent<HealthController>();
+            m_Enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
         }
 
         public void ApplyFreeze(float slowPerStack, float duration)

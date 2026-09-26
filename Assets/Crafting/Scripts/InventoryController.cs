@@ -5,7 +5,6 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Combating.Scripts;
-using Crafting.Scripts;
 
 namespace Crafting.Scripts
 {
