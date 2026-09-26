@@ -17,13 +17,12 @@ namespace Crafting.Scripts
         public Color jetpackColor = new Color(0.3f, 0.3f, 0.4f);
         public float jetpackScale = 1.0f;
 
-        public void OnUseItem(GameObject player) => ApplyEffect(player);
         public void OnQuitItem(GameObject player)
         {
             if (_targetPropulsion != null) _targetPropulsion.isUnlocked = false;
         }
-        public void OnDropItem(GameObject player, GameObject droppedInstance) => OnQuitItem(player);
-        public void OnPickupItem(GameObject player) => ApplyEffect(player);
+        public void OnDropItem(GameObject player) => OnQuitItem(player);
+        public void OnPickupItem(GameObject player) => OnUseItem(player);
 
         void Awake()
         {
@@ -54,7 +53,7 @@ namespace Crafting.Scripts
 
         private PropulsionController _targetPropulsion;
 
-        public void ApplyEffect(GameObject entity)
+        public void OnUseItem(GameObject entity)
         {
             transform.localPosition = new Vector3(0, 2.4f, -0.35f);
             transform.localRotation = Quaternion.identity;

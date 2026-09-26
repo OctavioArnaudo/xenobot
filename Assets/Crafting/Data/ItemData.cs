@@ -16,7 +16,7 @@ namespace Crafting.Scripts
     /// </summary>
     public interface IItemDropAction
     {
-        void OnDropItem(GameObject player, GameObject droppedInstance);
+        void OnDropItem(GameObject player);
     }
 
     /// <summary>

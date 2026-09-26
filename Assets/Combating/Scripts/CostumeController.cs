@@ -18,8 +18,6 @@ namespace Crafting.Scripts
         private GameObject _modelHiddenByMe;
         private bool _isEquipped = false;
 
-        public void OnUseItem(GameObject player) => ApplyEffect(player);
-
         public void OnQuitItem(GameObject player)
         {
             if (!_isEquipped || _modelHiddenByMe == null) return;
@@ -31,11 +29,9 @@ namespace Crafting.Scripts
             _isEquipped = false;
         }
 
-        public void OnDropItem(GameObject player, GameObject droppedInstance) => OnQuitItem(player);
+        public void OnDropItem(GameObject player) => OnQuitItem(player);
 
-        public void OnRefreshModule() { }
-
-        public void ApplyEffect(GameObject player)
+        public void OnUseItem(GameObject player)
         {
             if (_isEquipped) return;
 

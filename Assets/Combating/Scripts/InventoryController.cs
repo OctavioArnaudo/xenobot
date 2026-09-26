@@ -514,7 +514,7 @@ namespace Crafting.Scripts
                 var dropActions = equippedObj.GetComponentsInChildren<IItemDropAction>(true);
                 foreach (var act in dropActions)
                 {
-                    act.OnDropItem(gameObject, null);
+                    act.OnDropItem(gameObject);
                 }
 
                 ToggleEquipment(item);

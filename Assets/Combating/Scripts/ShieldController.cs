@@ -261,15 +261,13 @@ namespace Combating.Scripts
 
         // --- ACCIONES DEDICADAS DE INVENTARIO ---
 
-        public void OnUseItem(GameObject player) => ApplyEffect(player);
-
         public void OnQuitItem(GameObject player) => SetShieldState(false);
 
-        public void OnDropItem(GameObject player, GameObject droppedInstance) => SetShieldState(false);
+        public void OnDropItem(GameObject player) => SetShieldState(false);
 
         public void OnPickupItem(GameObject player) => isUnlocked = true;
 
-        public void ApplyEffect(GameObject entity)
+        public void OnUseItem(GameObject entity)
         {
             if (entity == null) return;
 

@@ -16,13 +16,12 @@ namespace Crafting.Scripts
         public Color weaponColor = new Color(0.2f, 0.2f, 0.25f);
         public float weaponScale = 1.0f;
 
-        public void OnUseItem(GameObject player) => ApplyEffect(player);
         public void OnQuitItem(GameObject player)
         {
             if (_targetShooter != null) _targetShooter.isUnlocked = false;
         }
-        public void OnDropItem(GameObject player, GameObject droppedInstance) => OnQuitItem(player);
-        public void OnPickupItem(GameObject player) => ApplyEffect(player);
+        public void OnDropItem(GameObject player) => OnQuitItem(player);
+        public void OnPickupItem(GameObject player) => OnUseItem(player);
 
         [Header("Runtime Info")]
         public Transform muzzlePoint;
@@ -54,25 +53,25 @@ namespace Crafting.Scripts
             #endif
         }
 
-        public void ApplyEffect(GameObject entity)
+        public void OnUseItem(GameObject player)
         {
             transform.localPosition = new Vector3(0.4f, 1.2f, 0.2f);
             transform.localRotation = Quaternion.identity;
 
             // Activate Shoot Module: Robust search for both Modular and Standard Players
-            _targetShooter = entity.GetComponentInChildren<ShootController>(true) ??
-                            entity.GetComponentInParent<ShootController>() ??
+            _targetShooter = player.GetComponentInChildren<ShootController>(true) ??
+                            player.GetComponentInParent<ShootController>() ??
                             GameObject.FindObjectsByType<ShootController>(FindObjectsSortMode.None)
-                            .FirstOrDefault(s => s.gameObject.transform.root == entity.transform.root);
+                            .FirstOrDefault(s => s.gameObject.transform.root == player.transform.root);
 
             if (_targetShooter != null)
             {
                 _targetShooter.isUnlocked = true;
-                Debug.Log($"[WeaponController] Sistema de disparo ACTIVADO en {entity.name}.");
+                Debug.Log($"[WeaponController] Sistema de disparo ACTIVADO en {player.name}.");
             }
             else
             {
-                Debug.LogWarning($"[WeaponController] No se encontró ShootController en la jerarquía de {entity.name}.");
+                Debug.LogWarning($"[WeaponController] No se encontró ShootController en la jerarquía de {player.name}.");
             }
         }
 
