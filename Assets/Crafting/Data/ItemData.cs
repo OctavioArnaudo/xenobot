@@ -3,11 +3,6 @@ using UnityEngine.Serialization;
 
 namespace Crafting.Scripts
 {
-    public interface IItemFunctional
-    {
-        void ApplyEffect(GameObject player);
-    }
-
     /// <summary>
     /// Acción ejecutada cuando el ítem se usa desde el inventario (Botón USE).
     /// </summary>
@@ -42,11 +37,12 @@ namespace Crafting.Scripts
 
     public enum ItemType
     {
-        Resource,
-        Consumable,
-        Equipment,
-        Experience,
-        KeyItem
+        Resource,   // Items solo stackeables (ej: Iron)
+        Consumable, // Uso manual en inventario sobre sí mismo / compartible (ej: Life, Fuel, Ammo)
+        Equipment,  // Efecto en inventario sobre sí mismo, con/sin renderizado (ej: Weapon, Shield)
+        Usability,  // No sobre sí mismo; afecta únicamente al entorno (ej: Key)
+        Additivity, // Efecto sobre sí mismo únicamente al momento de pickearlo (ej: Experience, Dialogs)
+        Wearable    // Afecta únicamente al renderizado/apariencia (ej: Mask, Costumes)
     }
 
     [CreateAssetMenu(menuName = "Items/Item Data", fileName = "Item_")]
@@ -54,29 +50,38 @@ namespace Crafting.Scripts
     {
         [Header("Identificación")]
         public string itemCode;
-        public string displayName;
+        public string itemName;
 
-        [Header("Visual")]
+        [Header("Categorización")]
+        public ItemType type = ItemType.Resource;
+
+        [Tooltip("¿El ítem afecta o crea un renderizado/mesh en el mundo o en el jugador?")]
+        public bool isEquippable = true;
+
+        [Tooltip("¿Afecta/aplica un efecto sobre el propio jugador al usarse desde el inventario?")]
+        public bool isUsable = false;
+
+        [Tooltip("¿Se puede apilar en varias unidades en la misma casilla del inventario?")]
+        public bool isStackable = true;
+
+        [Tooltip("¿Se puede tirar al suelo desde el inventario o solo se puede usar/quit?")]
+        public bool isDroppable = true;
+
+        [Tooltip("¿Se puede quitar del inventario o solo se puede usar/dropear?")]
+        public bool isQuitable = true;
+
+        [Tooltip("¿Se puede recoger del suelo o solo se puede usar/dropear/quit?")]
+        public bool isPickupable = true;
+
+        public int maxStack = 99;
+
+        [Header("Representación")]
         [FormerlySerializedAs("icon")]
         public Sprite itemSprite;
 
-        [Header("Comportamiento")]
-        public ItemType type;
-
-        [Tooltip("¿Se puede apilar en el inventario?")]
-        public bool isStackable = true;
-        public int maxStack = 99;
-
-        [Tooltip("¿El jugador puede usarlo manualmente desde el inventario?")]
-        public bool canUse;
-
-        [Tooltip("¿Se usa automáticamente al recogerlo del suelo?")]
-        public bool autoUse;
-
         [TextArea]
-        public string description;
+        public string itemDescription;
 
-        [Header("World Representation")]
         [FormerlySerializedAs("worldPrefab")]
         public GameObject itemPrefab;
 
