@@ -17,7 +17,7 @@ namespace Combating.Scripts
     /// Red (Netcode), uso desde inventario y pickups, mitigación de daño y visuales esféricas autogeneradas.
     /// </summary>
     [ExecuteAlways]
-    public class ShieldController : NetworkBehaviour, IItemFunctional, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
+    public class ShieldController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
     {
         [Header("Shield Settings")]
         public bool isUnlocked = true; // Permiso para usar el escudo

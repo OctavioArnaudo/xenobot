@@ -9,7 +9,7 @@ namespace Combating.Scripts
     /// Network-aware controller for directional dashing.
     /// Double-tap W,A,S,D triggers local client movement and syncs animation/fuel via ServerRpc/ClientRpc.
     /// </summary>
-    public class DashController : NetworkBehaviour, IItemFunctional
+    public class DashController : NetworkBehaviour
     {
         [Header("Dash Settings")]
         public float dashForce = 25f;

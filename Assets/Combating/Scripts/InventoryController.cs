@@ -119,7 +119,7 @@ namespace Crafting.Scripts
             ItemData data = GetItemDataByHash(slot.itemHash);
             if (data != null)
             {
-                string key = data.itemCode.ToLowerInvariant();
+                string key = data.itemName.ToLowerInvariant();
                 _localBag[key] = (data, slot.quantity);
                 if (!_localKeys.Contains(key)) _localKeys.Add(key);
             }
@@ -142,7 +142,7 @@ namespace Crafting.Scripts
         {
             EnsureDatabase();
             string c = code.ToLowerInvariant();
-            return itemDatabase.FirstOrDefault(x => x.itemCode.ToLowerInvariant() == c);
+            return itemDatabase.FirstOrDefault(x => x.itemName.ToLowerInvariant() == c);
         }
 
         private void EnsureDatabase()
@@ -315,21 +315,21 @@ namespace Crafting.Scripts
                 bool isEquipped = _equippedInstances.ContainsKey(hash);
                 string actionText = isEquipped ? "QUIT" : "USE";
 
-                // Botón dinámico USE: se muestra si el ítem está marcado como 'canUse' o es un equipo/consumible/llave
-                bool canShowUse = slot.def.canUse ||
-                                 slot.def.type == ItemType.Equipment ||
-                                 slot.def.type == ItemType.Consumable ||
-                                 slot.def.type == ItemType.KeyItem;
+                // Botón dinámico USE/QUIT y DROP según las 4 acciones de ItemData
+                bool canShowUse = isEquipped ? slot.def.isQuitable : (slot.def.isUsable);
 
                 if (canShowUse)
                 {
                     if (GUI.Button(new Rect(btnArea.x, btnArea.y, btnArea.width * 0.5f, 30), actionText, _btnSty)) UseItem(slot.def);
                 }
 
-                float dropBtnWidth = canShowUse ? btnArea.width * 0.5f : btnArea.width;
-                float dropBtnX = canShowUse ? btnArea.x + btnArea.width * 0.5f : btnArea.x;
+                if (slot.def.isDropable)
+                {
+                    float dropBtnWidth = canShowUse ? btnArea.width * 0.5f : btnArea.width;
+                    float dropBtnX = canShowUse ? btnArea.x + btnArea.width * 0.5f : btnArea.x;
 
-                if (GUI.Button(new Rect(dropBtnX, btnArea.y, dropBtnWidth, 30), "DROP", _btnSty)) DropItem(slot.def);
+                    if (GUI.Button(new Rect(dropBtnX, btnArea.y, dropBtnWidth, 30), "DROP", _btnSty)) DropItem(slot.def);
+                }
 
                 if (isOver && Event.current.type == EventType.MouseDown && Event.current.button == 0) { _draggedItem = slot.def; Event.current.Use(); }
                 i++;
@@ -379,19 +379,8 @@ namespace Crafting.Scripts
         {
             if (item == null) return;
             int hash = item.GetItemHashCode();
-
-            if (item.type == ItemType.Equipment)
-            {
-                // Equipment is still handled locally for immediate visual feedback,
-                // but its effects (like ShootController) handle their own network logic.
-                ToggleEquipment(item);
-            }
-            else
-            {
-                // CONSUMABLES: Must be processed by the server to be real
-                if (IsNetworkActive) UseItemServerRpc(hash);
-                else InternalUseItem(hash);
-            }
+            if (IsNetworkActive) UseItemServerRpc(hash);
+            else InternalUseItem(hash);
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -405,9 +394,7 @@ namespace Crafting.Scripts
             ItemData item = GetItemDataByHash(hash);
             if (item == null) return;
 
-            bool isUsableType = item.canUse ||
-                               item.type == ItemType.Consumable ||
-                               item.type == ItemType.KeyItem;
+            bool isUsableType = item.isUsable;
 
             if (isUsableType)
             {
@@ -432,9 +419,6 @@ namespace Crafting.Scripts
 
                 Destroy(existing);
                 _equippedInstances.Remove(hash);
-
-                if (IsOwner && item.itemCode.ToLower().Contains("weapon"))
-                    EquippedWeaponHash.Value = 0;
             }
             else
             {
@@ -484,15 +468,7 @@ namespace Crafting.Scripts
                     }
                     else
                     {
-                        foreach (var func in instance.GetComponentsInChildren<IItemFunctional>(true))
-                        {
-                            if (func is SpawnController) continue;
-                            func.ApplyEffect(gameObject);
-                        }
                     }
-
-                    if (IsOwner && item.itemCode.ToLower().Contains("weapon"))
-                        EquippedWeaponHash.Value = hash;
                 }
             }
 
@@ -505,7 +481,6 @@ namespace Crafting.Scripts
         {
             if (item.itemPrefab != null)
             {
-                // INTENTO 1: Ejecutar acciones dedicadas IItemUseAction directamente del prefab
                 var useActions = item.itemPrefab.GetComponentsInChildren<IItemUseAction>(true);
                 if (useActions.Length > 0)
                 {
@@ -513,33 +488,7 @@ namespace Crafting.Scripts
                     return;
                 }
 
-                // INTENTO 2: Fallback a IItemFunctional (excluyendo SpawnController)
-                var prefabEffects = item.itemPrefab.GetComponentsInChildren<IItemFunctional>(true)
-                    .Where(f => !(f is SpawnController)).ToArray();
-
-                if (prefabEffects.Length > 0)
-                {
-                    foreach (var func in prefabEffects)
-                    {
-                        func.ApplyEffect(gameObject);
-                    }
-                    return; // Si funcionó desde el prefab, no instanciamos nada
-                }
-
-                // INTENTO 3: Si el prefab no tiene los scripts pero es fuel, auto-reparación
-                if (item.itemCode.ToLower().Contains("fuel") || item.displayName.ToLower().Contains("combustible"))
-                {
-                    // En este caso sí instanciamos uno temporal para añadirle el script
-                    GameObject temp = Instantiate(item.itemPrefab);
-                    temp.name = "Temp_Fuel_Process";
-                    temp.SetActive(false);
-                    var autoFuel = temp.AddComponent<FuelController>();
-                    autoFuel.OnUseItem(gameObject);
-                    Destroy(temp); // Destroy seguro al final del frame
-                    return;
-                }
-
-                Debug.LogWarning($"[Inventory] El ítem {item.displayName} no tiene componentes de efecto válidos.");
+                Debug.LogWarning($"[Inventory] El ítem {item.itemName} no tiene componentes de efecto válidos.");
             }
         }
 
@@ -567,7 +516,7 @@ namespace Crafting.Scripts
             else
             {
                 InternalRemoveItem(hash, 1);
-                if (_spawnController != null) _spawnController.SpawnDroppedItem(item.itemPrefab, dropPos, item.displayName);
+                if (_spawnController != null) _spawnController.SpawnDroppedItem(item.itemPrefab, dropPos, item.itemName);
             }
         }
 
@@ -578,7 +527,7 @@ namespace Crafting.Scripts
             if (data != null)
             {
                 InternalRemoveItem(hash, 1);
-                if (_spawnController != null) _spawnController.SpawnDroppedItem(data.itemPrefab, position, data.displayName);
+                if (_spawnController != null) _spawnController.SpawnDroppedItem(data.itemPrefab, position, data.itemName);
             }
         }
 

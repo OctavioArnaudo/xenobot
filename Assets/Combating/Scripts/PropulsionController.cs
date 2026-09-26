@@ -10,7 +10,7 @@ namespace Combating.Scripts
     /// Handles fuel consumption, regeneration, capacity, and vertical movement.
     /// Fully compliant with AGENTS.md pattern (clean public overrides with dynamic environment-aware private defaults).
     /// </summary>
-    public class PropulsionController : NetworkBehaviour, IItemFunctional
+    public class PropulsionController : NetworkBehaviour
     {
         // --- Internal Hardcoded Fuel & Flight Defaults ---
         private const float DEFAULT_PLAYER_MAX_FUEL = 120f;

@@ -8,7 +8,7 @@ namespace Crafting.Scripts
     /// Implements IItemFunctional, IItemUseAction, and IItemPickupAction to add EXP to the player.
     /// </summary>
     [ExecuteAlways]
-    public class ExperienceController : MonoBehaviour, IItemFunctional, IItemUseAction, IItemPickupAction
+    public class ExperienceController : MonoBehaviour, IItemUseAction, IItemPickupAction
     {
         // Economy Reliability Constants
         private const float EXP_AMOUNT = 25f;

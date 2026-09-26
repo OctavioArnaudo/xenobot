@@ -8,7 +8,7 @@ namespace Crafting.Scripts
     /// Implements IItemFunctional, IItemUseAction, and IItemPickupAction to restore fuel to the entity's tank.
     /// </summary>
     [ExecuteAlways]
-    public class FuelController : MonoBehaviour, IItemFunctional, IItemUseAction, IItemPickupAction
+    public class FuelController : MonoBehaviour, IItemUseAction, IItemPickupAction
     {
         // Economy Reliability Constants
         private const float FUEL_AMOUNT = 40f;

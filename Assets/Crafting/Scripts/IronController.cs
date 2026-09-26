@@ -11,7 +11,7 @@ namespace Crafting.Scripts
     [ExecuteAlways]
     [RequireComponent(typeof(NetworkObject))]
     [RequireComponent(typeof(PickupController))]
-    public class IronController : MonoBehaviour, IItemFunctional
+    public class IronController : MonoBehaviour
     {
         [Header("Visual Settings")]
         public Color ironColor = new Color(0.75f, 0.75f, 0.8f); // Shiny Metallic Gray

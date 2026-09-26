@@ -12,13 +12,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
   m_Name: Item_CostumeSilver
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
-  itemCode: costume_silver
-  displayName: Chasis
-  itemSprite: {fileID: -1471987373, guid: bd14de53842556c449cbc6ec67c12a89, type: 3}
-  type: 2
+  itemName: Silver Chasis
+  isPickupable: 1
+  isUsable: 0
+  isQuitable: 1
+  isDroppable: 1
   isStackable: 0
   maxStack: 1
-  canUse: 0
-  autoUse: 0
-  description: Un nuevo chasis para tu robot.
+  itemSprite: {fileID: -1471987373, guid: bd14de53842556c449cbc6ec67c12a89, type: 3}
   itemPrefab: {fileID: 7206365576661330795, guid: 1a5bbacd533cb8a4c89f64b9e3d8f7d1, type: 3}

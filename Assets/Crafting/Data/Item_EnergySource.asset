@@ -11,14 +11,13 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
   m_Name: Item_EnergySource
-  m_EditorClassIdentifier: 
-  itemCode: energy_source
-  displayName: "Fuente de Energ\xEDa"
-  itemSprite: {fileID: -1628903129, guid: b82e81ef4f3d8d243a8a0b20e453b819, type: 3}
-  type: 4
+  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
+  itemName: Energy
+  isPickupable: 1
+  isUsable: 1
+  isQuitable: 0
+  isDroppable: 1
   isStackable: 0
   maxStack: 1
-  canUse: 0
-  autoUse: 0
-  description: Una fuente de poder concentrado capaz de abrir el edificio misterioso.
+  itemSprite: {fileID: -1628903129, guid: b82e81ef4f3d8d243a8a0b20e453b819, type: 3}
   itemPrefab: {fileID: 0}

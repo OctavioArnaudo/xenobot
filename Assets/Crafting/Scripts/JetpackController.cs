@@ -11,11 +11,19 @@ namespace Crafting.Scripts
     /// Implements IItemFunctional to handle auto-positioning when equipped.
     /// </summary>
     [ExecuteAlways]
-    public class JetpackController : MonoBehaviour, IItemFunctional
+    public class JetpackController : MonoBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
     {
         [Header("Visuals (Procedural)")]
         public Color jetpackColor = new Color(0.3f, 0.3f, 0.4f);
         public float jetpackScale = 1.0f;
+
+        public void OnUseItem(GameObject player) => ApplyEffect(player);
+        public void OnQuitItem(GameObject player)
+        {
+            if (_targetPropulsion != null) _targetPropulsion.isUnlocked = false;
+        }
+        public void OnDropItem(GameObject player, GameObject droppedInstance) => OnQuitItem(player);
+        public void OnPickupItem(GameObject player) => ApplyEffect(player);
 
         void Awake()
         {

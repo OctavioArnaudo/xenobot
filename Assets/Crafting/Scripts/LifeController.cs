@@ -10,10 +10,13 @@ namespace Crafting.Scripts
     /// </summary>
     [ExecuteAlways]
     [RequireComponent(typeof(NetworkObject))]
-    public class LifeController : MonoBehaviour, IItemFunctional
+    public class LifeController : MonoBehaviour, IItemUseAction, IItemPickupAction
     {
         // Economy Reliability Constants
         private const int HEAL_AMOUNT = 30;
+
+        public void OnUseItem(GameObject entity) => ApplyEffect(entity);
+        public void OnPickupItem(GameObject entity) => ApplyEffect(entity);
 
         [Header("Visual Settings")]
         public Color heartColor = new Color(0.6f, 0f, 0f); // Dark Red

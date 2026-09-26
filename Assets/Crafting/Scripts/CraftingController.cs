@@ -199,7 +199,7 @@ namespace Crafting.Scripts
                 {
                     if (availableTrades[i].OutputItem.itemSprite != null)
                         GUI.DrawTexture(new Rect(5, i * 55 + 5, 40, 40), availableTrades[i].OutputItem.itemSprite.texture);
-                    GUI.Label(new Rect(50, i * 55, listRect.width - 60, 50), availableTrades[i].OutputItem.displayName, _recipeSty);
+                    GUI.Label(new Rect(50, i * 55, listRect.width - 60, 50), availableTrades[i].OutputItem.itemName, _recipeSty);
                 }
                 if (Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition))
                 {
@@ -219,14 +219,14 @@ namespace Crafting.Scripts
                 GUI.DrawTexture(new Rect(0, y, 60, 60), _texSlot);
                 if (recipe.InputItem.itemSprite != null) GUI.DrawTexture(new Rect(5, y + 5, 50, 50), recipe.InputItem.itemSprite.texture);
                 GUI.Label(new Rect(0, y, 60, 60), "x" + recipe.InputAmount, _qtySty);
-                GUI.Label(new Rect(70, y + 15, detailRect.width - 70, 30), recipe.InputItem.displayName, _recipeSty);
+                GUI.Label(new Rect(70, y + 15, detailRect.width - 70, 30), recipe.InputItem.itemName, _recipeSty);
                 y += 75;
                 GUI.Label(new Rect(detailRect.width / 2 - 15, y - 5, 30, 30), "↓", _titleSty); y += 30;
                 GUI.Label(new Rect(0, y, detailRect.width, 25), "OBTIENES:", _infoSty); y += 30;
                 GUI.DrawTexture(new Rect(0, y, 60, 60), _texSlot);
                 if (recipe.OutputItem.itemSprite != null) GUI.DrawTexture(new Rect(5, y + 5, 50, 50), recipe.OutputItem.itemSprite.texture);
                 GUI.Label(new Rect(0, y, 60, 60), "x" + recipe.OutputAmount, _qtySty);
-                GUI.Label(new Rect(70, y + 15, detailRect.width - 70, 30), recipe.OutputItem.displayName, _recipeSty);
+                GUI.Label(new Rect(70, y + 15, detailRect.width - 70, 30), recipe.OutputItem.itemName, _recipeSty);
                 y += 85;
                 Rect btnR = new Rect(0, y, detailRect.width, 50);
                 GUI.DrawTexture(btnR, btnR.Contains(Event.current.mousePosition) ? _texBtnHover : _texBtnNormal);
@@ -257,14 +257,14 @@ namespace Crafting.Scripts
             }
             else
             {
-                Debug.LogWarning("[Crafting] Materiales insuficientes para " + recipe.OutputItem.displayName);
+                Debug.LogWarning("[Crafting] Materiales insuficientes para " + recipe.OutputItem.itemName);
             }
         }
 
         private bool CanCraft(TradeData recipe)
         {
             var bag = InventoryController.GetBag();
-            string key = recipe.InputItem.itemCode.ToLowerInvariant();
+            string key = recipe.InputItem.itemName.ToLowerInvariant();
             if (bag.TryGetValue(key, out var slot)) return slot.qty >= recipe.InputAmount;
             return false;
         }

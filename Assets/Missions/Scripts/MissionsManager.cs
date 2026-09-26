@@ -197,7 +197,7 @@ namespace Missions.Scripts
                     foreach (var req in mission.gatheringRequirements)
                     {
                         if (req.item == null) continue;
-                        string key = req.item.itemCode.ToLowerInvariant();
+                        string key = req.item.itemName.ToLowerInvariant();
                         if (!bag.TryGetValue(key, out var slot) || slot.qty < req.amount)
                         {
                             allItemsInBag = false;

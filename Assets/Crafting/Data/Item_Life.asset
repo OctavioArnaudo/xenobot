@@ -11,14 +11,13 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
   m_Name: Item_Life
-  m_EditorClassIdentifier: 
-  itemCode: life
-  displayName: Vida
-  itemSprite: {fileID: 387897152, guid: c62c99886c9af4748b0da09c5ca92296, type: 3}
-  type: 1
+  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
+  itemName: Life
+  isPickupable: 1
+  isUsable: 1
+  isQuitable: 0
+  isDroppable: 1
   isStackable: 1
   maxStack: 10
-  canUse: 0
-  autoUse: 0
-  description: Restaura la salud del jugador.
+  itemSprite: {fileID: 387897152, guid: c62c99886c9af4748b0da09c5ca92296, type: 3}
   itemPrefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}

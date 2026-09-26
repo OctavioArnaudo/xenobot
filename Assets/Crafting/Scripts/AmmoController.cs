@@ -9,7 +9,7 @@ namespace Crafting.Scripts
     /// Implements IItemFunctional, IItemUseAction, and IItemPickupAction to restore ammunition to ShootController.
     /// </summary>
     [ExecuteAlways]
-    public class AmmoController : MonoBehaviour, IItemFunctional, IItemUseAction, IItemPickupAction
+    public class AmmoController : MonoBehaviour, IItemUseAction, IItemPickupAction
     {
         private const int AMMO_AMOUNT = 30;
 

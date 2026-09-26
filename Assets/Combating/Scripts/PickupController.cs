@@ -133,9 +133,9 @@ namespace Crafting.Scripts
 
         private string GetItemDisplayName()
         {
-            if (item != null && !string.IsNullOrEmpty(item.displayName))
+            if (item != null && !string.IsNullOrEmpty(item.itemName))
             {
-                return item.displayName;
+                return item.itemName;
             }
 
             // Fallback: usar el nombre limpio del gameObject/prefab
@@ -246,15 +246,10 @@ namespace Crafting.Scripts
             }
             else
             {
-                foreach (var func in GetComponentsInChildren<IItemFunctional>(true))
-                {
-                    if (func is SpawnController || func is PickupController) continue;
-                    func.ApplyEffect(player);
-                }
             }
 
-            // Si se resolvió un ItemData y no es autoUse ni experiencia, agregarlo al inventario
-            if (item != null && inv != null && !item.autoUse && item.type != ItemType.Experience)
+            // Si el ítem es pickupable y no es de tipo Additivity (efecto directo al pickear), agregarlo al inventario
+            if (item != null && inv != null && item.isPickable)
             {
                 int hash = item.GetItemHashCode();
                 if (IsNetworkActive) inv.AddItemServerRpc(hash, 1);
@@ -278,7 +273,7 @@ namespace Crafting.Scripts
             main.startLifetime = 0.5f;
             main.startSpeed = 5f;
             main.startSize = 0.2f;
-            main.startColor = (item != null && item.type == ItemType.Experience) ? Color.yellow : Color.cyan;
+            main.startColor = (item != null) ? Color.yellow : Color.cyan;
             main.stopAction = ParticleSystemStopAction.Destroy;
 
             var emission = ps.emission;

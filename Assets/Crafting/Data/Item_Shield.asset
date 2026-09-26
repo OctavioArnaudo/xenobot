@@ -11,15 +11,13 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
   m_Name: Item_Shield
-  m_EditorClassIdentifier: 
-  itemCode: shield
-  displayName: Escudo de Energia
-  itemSprite: {fileID: -329512943, guid: 6bd645498b286504d878cebc60528226, type: 3}
-  type: 2
+  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
+  itemName: Shield
+  isPickupable: 1
+  isUsable: 1
+  isQuitable: 1
+  isDroppable: 1
   isStackable: 0
   maxStack: 1
-  canUse: 1
-  autoUse: 0
-  description: Genera un campo de fuerza protector alrededor del usuario que mitiga
-    el damage recibido.
+  itemSprite: {fileID: -329512943, guid: 6bd645498b286504d878cebc60528226, type: 3}
   itemPrefab: {fileID: 8672541856844511905, guid: 2b49295e9c21fcc488c10d0f578e8028, type: 3}

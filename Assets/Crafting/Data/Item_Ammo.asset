@@ -11,14 +11,13 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
   m_Name: Item_Ammo
-  m_EditorClassIdentifier: 
-  itemCode: ammo
-  displayName: "Munici\xF3n"
-  itemSprite: {fileID: 430632166, guid: c21adb698363ac942a41fa5fc190a1c4, type: 3}
-  type: 1
+  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
+  itemName: Ammo
+  isPickupable: 1
+  isUsable: 1
+  isQuitable: 0
+  isDroppable: 1
   isStackable: 1
   maxStack: 99
-  canUse: 1
-  autoUse: 0
-  description: "Restaura la munici\xF3n de armas a distancia."
+  itemSprite: {fileID: 430632166, guid: c21adb698363ac942a41fa5fc190a1c4, type: 3}
   itemPrefab: {fileID: 1139238878079789139, guid: 14e31196291bec84785649e17e7df0d3, type: 3}

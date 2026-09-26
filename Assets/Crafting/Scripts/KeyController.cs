@@ -10,10 +10,13 @@ namespace Crafting.Scripts
     /// Requires NetworkObject and PickupController (pre-configured with Item_Key).
     /// </summary>
     [ExecuteAlways]
-    public class KeyController : MonoBehaviour, IItemFunctional
+    public class KeyController : MonoBehaviour, IItemUseAction, IItemPickupAction
     {
         [Header("Visual Settings")]
         public Color keyColor = new Color(0.1f, 0.4f, 1f); // Bright Blue
+
+        public void OnUseItem(GameObject entity) => ApplyEffect(entity);
+        public void OnPickupItem(GameObject entity) => ApplyEffect(entity);
         public float metallic = 0.8f;
         public float smoothness = 0.9f;
 

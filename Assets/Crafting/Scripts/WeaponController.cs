@@ -10,11 +10,19 @@ namespace Crafting.Scripts
     /// Optimized for a closer, more natural shooting position.
     /// </summary>
     [ExecuteAlways]
-    public class WeaponController : MonoBehaviour, IItemFunctional
+    public class WeaponController : MonoBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
     {
         [Header("Visuals (Procedural)")]
         public Color weaponColor = new Color(0.2f, 0.2f, 0.25f);
         public float weaponScale = 1.0f;
+
+        public void OnUseItem(GameObject player) => ApplyEffect(player);
+        public void OnQuitItem(GameObject player)
+        {
+            if (_targetShooter != null) _targetShooter.isUnlocked = false;
+        }
+        public void OnDropItem(GameObject player, GameObject droppedInstance) => OnQuitItem(player);
+        public void OnPickupItem(GameObject player) => ApplyEffect(player);
 
         [Header("Runtime Info")]
         public Transform muzzlePoint;

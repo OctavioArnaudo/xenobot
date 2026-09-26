@@ -17,7 +17,7 @@ namespace Combating.Scripts
     /// Handles visual death effects and loot spawning.
     /// Triggered by HealthController upon death or PickupController.
     /// </summary>
-    public class SpawnController : NetworkBehaviour, IItemFunctional
+    public class SpawnController : NetworkBehaviour
     {
         [Header("Spawn Settings")]
         public List<ItemData> lootTable = new List<ItemData>();
@@ -173,7 +173,7 @@ namespace Combating.Scripts
             {
                 if (item != null)
                 {
-                    SpawnDroppedItem(item.itemPrefab, transform.position, item.displayName, item);
+                    SpawnDroppedItem(item.itemPrefab, transform.position, item.itemName, item);
                 }
             }
 
