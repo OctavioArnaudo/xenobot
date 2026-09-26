@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8646177470548912538}
   - component: {fileID: 6220167797272930570}
   - component: {fileID: 2661213883430369790}
+  - component: {fileID: 3224056596010198457}
   m_Layer: 0
   m_Name: MaskPrefab (2)
   m_TagString: Untagged
@@ -47,14 +48,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2953776419
+  GlobalObjectIdHash: 2373552565
   InScenePlacedSourceGlobalObjectIdHash: 1155652179
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -98,6 +99,19 @@ MonoBehaviour:
     message: EXP
   explosionForce: 10
   spreadRadius: 2.5
+--- !u!114 &3224056596010198457
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6541982445443734164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c70afe0c671254344a4a4e58ece50270, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.CostumeController
+  renderTag: Render
 --- !u!1001 &5117322286921062655
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -229,6 +243,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 91bb20286b725f14d94922a8686de190, type: 3}
       propertyPath: m_Layer
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 91bb20286b725f14d94922a8686de190, type: 3}
+      propertyPath: m_TagString
+      value: Render
       objectReference: {fileID: 0}
     - target: {fileID: 5811517544658636179, guid: 91bb20286b725f14d94922a8686de190, type: 3}
       propertyPath: m_LocalPosition.y

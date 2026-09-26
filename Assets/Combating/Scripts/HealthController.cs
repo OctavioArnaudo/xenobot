@@ -9,7 +9,6 @@ namespace Combating.Scripts
 
     /// <summary>
     /// Universal controller for Health, Team, and Shield Mitigation.
-    /// Fully compliant with AGENTS.md pattern (clean public overrides with dynamic environment-aware private defaults).
     /// </summary>
     public class HealthController : NetworkBehaviour
     {
@@ -44,8 +43,6 @@ namespace Combating.Scripts
         private bool _hasAnimDamage;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
-
-        // --- Effective Statistics Resolvers with AGENTS.md Protection ---
 
         public Team EffectiveTeam
         {

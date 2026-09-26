@@ -7,7 +7,6 @@ namespace Combating.Scripts
 {
     /// <summary>
     /// Logic controller for shooting mechanics.
-    /// Fully compliant with AGENTS.md pattern using Optional<T> for Clean Prefabs and dynamic fallback balance.
     /// </summary>
     public class ShootController : MonoBehaviour
     {

@@ -2,7 +2,6 @@ using UnityEngine;
 
 /// <summary>
 /// Generic serializable struct for Optional Inspector overrides.
-/// Fully compliant with AGENTS.md pattern for Clean Prefabs and Zero-Crash Fallbacks.
 /// </summary>
 [System.Serializable]
 public struct Optional<T>

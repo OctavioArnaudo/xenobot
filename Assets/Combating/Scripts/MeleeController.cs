@@ -7,7 +7,6 @@ namespace Combating.Scripts
 {
     /// <summary>
     /// Controller for Melee Combat and Ground Slams.
-    /// Fully compliant with AGENTS.md pattern using Optional<T> for Clean Prefabs and dynamic fallback balance.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class MeleeController : NetworkBehaviour

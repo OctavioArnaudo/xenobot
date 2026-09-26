@@ -17,7 +17,6 @@ namespace Combating.Scripts
     /// Sistema de escudo de energía esférico con mitigación de daño, colisionadores de impacto,
     /// capacidad de resistencia, cooldowns por tiempo/daño, escalado por nivel (Jugador)
     /// y degradación inversa por ciclos (Enemigo).
-    /// Compliant con AGENTS.md (Clean Prefabs con Optional<T> y fallbacks de nivel).
     /// </summary>
     [ExecuteAlways]
     public class ShieldController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction

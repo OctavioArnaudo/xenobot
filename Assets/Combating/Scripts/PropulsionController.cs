@@ -8,7 +8,6 @@ namespace Combating.Scripts
     /// <summary>
     /// Logic controller for jetpack flight and fuel storage.
     /// Handles fuel consumption, regeneration, capacity, and vertical movement.
-    /// Fully compliant with AGENTS.md pattern (clean public overrides with dynamic environment-aware private defaults).
     /// </summary>
     public class PropulsionController : NetworkBehaviour
     {
@@ -47,8 +46,6 @@ namespace Combating.Scripts
         private bool m_JetpackDepleted = false;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
-
-        // --- Effective Statistics Resolvers with AGENTS.md Protection ---
 
         public float EffectiveMaxFuel
         {
