@@ -13,11 +13,10 @@ MonoBehaviour:
   m_Name: Item_CostumeSilver
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
   itemName: Silver Chasis
-  isPickupable: 1
-  isUsable: 0
+  isPickable: 1
+  isUsable: 1
   isQuitable: 1
-  isDroppable: 1
-  isStackable: 0
+  isDropable: 1
   maxStack: 1
   itemSprite: {fileID: -1471987373, guid: bd14de53842556c449cbc6ec67c12a89, type: 3}
   itemPrefab: {fileID: 7206365576661330795, guid: 1a5bbacd533cb8a4c89f64b9e3d8f7d1, type: 3}

@@ -12,15 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
   m_Name: Item_Experience
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
-  itemCode: experince
   itemName: Orb Exp
-  type: 4
-  isPickupable: 1
+  isPickable: 1
   isUsable: 0
   isQuitable: 0
-  isDroppable: 0
-  isStackable: 0
+  isDropable: 1
   maxStack: 0
   itemSprite: {fileID: 160913979, guid: 3b669ea6a7106c94c808d85a15ebd7ce, type: 3}
-  itemDescription: Incrementa la experiencia del robot al recogerlo.
   itemPrefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}

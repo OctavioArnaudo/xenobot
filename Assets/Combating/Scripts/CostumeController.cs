@@ -9,7 +9,7 @@ namespace Crafting.Scripts
     /// Specialized modular controller for appearance changes.
     /// Handles hiding current visuals and restoring them when removed.
     /// </summary>
-    public class CostumeController : MonoBehaviour
+    public class CostumeController : MonoBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction
     {
         [Header("Settings")]
         [Tooltip("Tag to find the render root in the player hierarchy")]
@@ -17,6 +17,21 @@ namespace Crafting.Scripts
 
         private GameObject _modelHiddenByMe;
         private bool _isEquipped = false;
+
+        public void OnUseItem(GameObject player) => ApplyEffect(player);
+
+        public void OnQuitItem(GameObject player)
+        {
+            if (!_isEquipped || _modelHiddenByMe == null) return;
+
+            if (_modelHiddenByMe.gameObject != null && _modelHiddenByMe.scene.isLoaded)
+            {
+                _modelHiddenByMe.SetActive(true);
+            }
+            _isEquipped = false;
+        }
+
+        public void OnDropItem(GameObject player, GameObject droppedInstance) => OnQuitItem(player);
 
         public void OnRefreshModule() { }
 
@@ -97,14 +112,7 @@ namespace Crafting.Scripts
 
         private void OnDestroy()
         {
-            // Evitar errores al cerrar el juego o si el objeto ya no es válido
-            if (!_isEquipped || _modelHiddenByMe == null) return;
-
-            // Si el objeto que escondimos aún existe y la escena sigue cargada, lo restauramos
-            if (_modelHiddenByMe.gameObject != null && _modelHiddenByMe.scene.isLoaded)
-            {
-                _modelHiddenByMe.SetActive(true);
-            }
+            OnQuitItem(null);
         }
 
         private GameObject FindChildWithTag(GameObject parent, string tag)

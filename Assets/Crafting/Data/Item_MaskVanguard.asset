@@ -13,11 +13,10 @@ MonoBehaviour:
   m_Name: Item_MaskVanguard
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
   itemName: Vanguard Mask
-  isPickupable: 1
-  isUsable: 0
+  isPickable: 1
+  isUsable: 1
   isQuitable: 1
-  isDroppable: 1
-  isStackable: 0
+  isDropable: 1
   maxStack: 1
-  itemSprite: {fileID: -1931818165, guid: efff9cd0a4b73b5448cd3c5c93c12aa4, type: 3}
-  itemPrefab: {fileID: 4020058620638717664, guid: ab27bc3eef250274191ae9bb270cddf4, type: 3}
+  itemSprite: {fileID: 1725961892, guid: 13d996ecc70f1e94cbfdb989013e6e6f, type: 3}
+  itemPrefab: {fileID: 6541982445443734164, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}

@@ -13,11 +13,10 @@ MonoBehaviour:
   m_Name: Item_CostumeGolden
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
   itemName: Golden Chasis
-  isPickupable: 1
-  isUsable: 0
+  isPickable: 1
+  isUsable: 1
   isQuitable: 1
-  isDroppable: 1
-  isStackable: 0
+  isDropable: 1
   maxStack: 1
   itemSprite: {fileID: -270819373, guid: 0245794956b7fa74b9f4c923fbf5bccc, type: 3}
   itemPrefab: {fileID: 7206365576661330795, guid: d8529ec5a0caeae45892ee25cf647f8c, type: 3}
