@@ -66,7 +66,7 @@ namespace Crafting.Scripts
         {
             foreach (Transform child in transform)
             {
-                if (child.name.StartsWith("Xenobot_Ammo_"))
+                if (child.name.StartsWith("AmmoRender"))
                 {
                     if (Application.isPlaying) Destroy(child.gameObject);
                     else DestroyImmediate(child.gameObject);
@@ -75,7 +75,7 @@ namespace Crafting.Scripts
 
             // Create a stylized ammo box with bullet cylinders
             GameObject box = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            box.name = "Xenobot_Ammo_Box";
+            box.name = "AmmoRender";
             box.transform.SetParent(transform, false);
             box.transform.localScale = new Vector3(0.5f, 0.35f, 0.4f);
             DestroyColliders(box);
@@ -89,7 +89,7 @@ namespace Crafting.Scripts
             for (int i = -1; i <= 1; i++)
             {
                 GameObject bullet = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                bullet.name = $"Xenobot_Ammo_Bullet_{i}";
+                bullet.name = $"Ammo_Bullet_{i}";
                 bullet.transform.SetParent(box.transform, false);
                 bullet.transform.localPosition = new Vector3(i * 0.28f, 0.6f, 0f);
                 bullet.transform.localScale = new Vector3(0.18f, 0.4f, 0.18f);
@@ -103,7 +103,7 @@ namespace Crafting.Scripts
 
                 // Bullet Tip
                 GameObject tip = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                tip.name = $"Xenobot_Ammo_Tip_{i}";
+                tip.name = $"Ammo_Tip_{i}";
                 tip.transform.SetParent(bullet.transform, false);
                 tip.transform.localPosition = new Vector3(0f, 0.9f, 0f);
                 tip.transform.localScale = new Vector3(0.95f, 0.6f, 0.95f);

@@ -580,6 +580,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 82f936139cf00f24fbb2382cd48dd828, type: 2}
   - {fileID: 11400000, guid: 125d620cfc9627c489cc73f5df68953e, type: 2}
   - {fileID: 11400000, guid: 3a97472931f85e148983e025719c89f4, type: 2}
+  - {fileID: 11400000, guid: daed6fcceb87bce418b245a5c5b7f855, type: 2}
   dropDistance: 3.5
 --- !u!114 &6229371320334411257
 MonoBehaviour:
@@ -607,11 +608,19 @@ MonoBehaviour:
   AimDistance:
     useOverride: 0
     value: 0
+  maxAmmo:
+    useOverride: 0
+    value: 0
+  reloadDuration:
+    useOverride: 0
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
   UsePlayerInput: 1
+  currentAmmo: 30
+  isReloading: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
@@ -5619,15 +5628,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 798499.06
+      value: 864760.3
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1352.5629
+      value: 1477.2733
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 478241.47
+      value: 517998.22
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5675,15 +5684,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 798499.06
+      value: 864760.3
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1352.5629
+      value: 1477.2733
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 478241.47
+      value: 517998.22
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
