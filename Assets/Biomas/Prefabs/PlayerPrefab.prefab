@@ -734,7 +734,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShieldController
   ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 1
-  damageReduction: 1
+  damageReductionOverride:
+    useOverride: 0
+    value: 0
+  maxShieldHealthOverride:
+    useOverride: 0
+    value: 0
+  maxShieldDurationOverride:
+    useOverride: 0
+    value: 0
+  cooldownDurationOverride:
+    useOverride: 0
+    value: 0
   inputMode: 0
   autoUnlockOnStart: 0
   autoActivateOnStart: 0
@@ -5628,15 +5639,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 864760.3
+      value: 1014209.06
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1477.2733
+      value: 1758.5511
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 517998.22
+      value: 607667.3
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5684,15 +5695,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 864760.3
+      value: 1014209.06
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1477.2733
+      value: 1758.5511
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 517998.22
+      value: 607667.3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -6004,6 +6015,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 6719488597655785405, guid: 5203522eb5628f8428fe035396b29d3b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8443094571123553119}
+    - targetCorrespondingSourceObject: {fileID: 6719488597655785405, guid: 5203522eb5628f8428fe035396b29d3b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4476551454845719384}
   m_SourcePrefab: {fileID: 100100000, guid: 5203522eb5628f8428fe035396b29d3b, type: 3}
 --- !u!1 &1464029703214904009 stripped
 GameObject:
@@ -6023,6 +6037,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerFXController
   chispasFX: {fileID: 120105670842106354}
+--- !u!65 &4476551454845719384
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1464029703214904009}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.9923096, y: 7.230213, z: 4.2555313}
+  m_Center: {x: 0.07388306, y: 3.8398705, z: -5.9598274}
 --- !u!4 &2241270816149792883 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6200255932903970055, guid: 5203522eb5628f8428fe035396b29d3b, type: 3}
