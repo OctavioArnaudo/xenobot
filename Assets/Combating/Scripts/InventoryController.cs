@@ -479,10 +479,12 @@ namespace Crafting.Scripts
                         foreach(var r in instance.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
                     }
 
-                    // Quitar componentes de mundo para que no interfieran con el player (Uso de Destroy seguro)
-                    if (instance.TryGetComponent<PickupController>(out var p)) Destroy(p);
-                    if (instance.TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
-                    if (instance.TryGetComponent<NetworkObject>(out var no)) Destroy(no);
+                    // Quitar componentes de mundo inmediatos antes de reemparentar
+                    if (instance.TryGetComponent<PickupController>(out var p)) DestroyImmediate(p);
+                    if (instance.TryGetComponent<Rigidbody>(out var rb)) DestroyImmediate(rb);
+
+                    var netObjs = instance.GetComponentsInChildren<NetworkObject>(true);
+                    foreach (var no in netObjs) DestroyImmediate(no);
 
                     // Desactivar colisionadores para evitar que el player salga volando
                     foreach (var c in instance.GetComponentsInChildren<Collider>(true)) c.enabled = false;

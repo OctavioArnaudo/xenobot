@@ -116,10 +116,11 @@ namespace Crafting.Scripts
             // 5. Localizar el hueso de la cabeza
             Transform headTransform = FindHeadTransform(_playerRoot);
 
-            // 6. Deshabilitar NetworkObject en caso de existir en el accesorio
-            if (TryGetComponent<Unity.Netcode.NetworkObject>(out var netObj))
+            // 6. Destruir componentes NetworkObject INMEDIATAMENTE ANTES de reemparentar para evitar que Netcode intercepte OnTransformParentChanged
+            var netObjs = GetComponentsInChildren<Unity.Netcode.NetworkObject>(true);
+            foreach (var no in netObjs)
             {
-                netObj.enabled = false;
+                if (Application.isPlaying) DestroyImmediate(no);
             }
 
             // 7. Adjuntar la máscara a la cabeza (o arriba del cuerpo si es el root)
@@ -138,7 +139,6 @@ namespace Crafting.Scripts
             // 8. Limpiar componentes de mundo
             if (TryGetComponent<PickupController>(out var p)) Destroy(p);
             if (TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
-            if (netObj != null) Destroy(netObj);
             foreach (var c in GetComponentsInChildren<Collider>(true)) c.enabled = false;
         }
 
@@ -356,7 +356,7 @@ namespace Crafting.Scripts
 
         private void DrawThermalOverlay()
         {
-            var healths = GameObject.FindObjectsOfType<HealthController>();
+            var healths = Object.FindObjectsByType<HealthController>(FindObjectsSortMode.None);
             foreach (var h in healths)
             {
                 if (h == null || h.gameObject == _playerRoot || h.CurrentHP <= 0) continue;
@@ -379,7 +379,7 @@ namespace Crafting.Scripts
 
         private void DrawStatsOverlay()
         {
-            var healths = GameObject.FindObjectsOfType<HealthController>();
+            var healths = Object.FindObjectsByType<HealthController>(FindObjectsSortMode.None);
             foreach (var h in healths)
             {
                 if (h == null || h.gameObject == _playerRoot || h.CurrentHP <= 0) continue;
@@ -402,7 +402,7 @@ namespace Crafting.Scripts
 
         private void DrawObjectsOverlay()
         {
-            var pickups = GameObject.FindObjectsOfType<PickupController>();
+            var pickups = Object.FindObjectsByType<PickupController>(FindObjectsSortMode.None);
             foreach (var p in pickups)
             {
                 if (p == null || !p.gameObject.activeInHierarchy) continue;

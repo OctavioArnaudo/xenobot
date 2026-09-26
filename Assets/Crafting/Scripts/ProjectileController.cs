@@ -28,13 +28,15 @@ namespace Combating.Scripts
         private float m_CorrosionDamagePerStack = 8f;
         private float m_CorrosionTickTimer = 0f;
 
+        private float m_BaseNavSpeed = -1f;
+        private float m_BaseMoveSpeed = -1f;
+        private float m_BaseSprintSpeed = -1f;
+
         private HealthController m_Health;
-        private EnemyController m_Enemy;
 
         void Awake()
         {
             m_Health = GetComponent<HealthController>() ?? GetComponentInParent<HealthController>();
-            m_Enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
         }
 
         public void ApplyFreeze(float slowPerStack, float duration)
@@ -89,18 +91,37 @@ namespace Combating.Scripts
         private void UpdateSlowEffect()
         {
             float speedMultiplier = Mathf.Clamp(1.0f - (m_FreezeStacks * m_SlowPerStack), 0.1f, 1.0f);
-            if (m_Enemy != null)
+
+            var navAgent = GetComponent<UnityEngine.AI.NavMeshAgent>() ?? GetComponentInParent<UnityEngine.AI.NavMeshAgent>();
+            if (navAgent != null)
             {
-                m_Enemy.chaseSpeed.value = speedMultiplier;
+                if (m_BaseNavSpeed <= 0f) m_BaseNavSpeed = navAgent.speed;
+                navAgent.speed = m_BaseNavSpeed * speedMultiplier;
+            }
+
+            var player = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
+            if (player != null)
+            {
+                if (m_BaseMoveSpeed <= 0f) m_BaseMoveSpeed = player.MoveSpeed;
+                if (m_BaseSprintSpeed <= 0f) m_BaseSprintSpeed = player.SprintSpeed;
+
+                player.MoveSpeed = m_BaseMoveSpeed * speedMultiplier;
+                player.SprintSpeed = m_BaseSprintSpeed * speedMultiplier;
             }
         }
     }
 
+    /// <summary>
+    /// Control genérico de proyectiles con 5 tipos temáticos diferenciados, autogestión visual,
+    /// guiado teledirigido y total cumplimiento con AGENTS.md (Clean Prefabs con Optional<T>).
+    /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(SphereCollider))]
     public class ProjectileController : NetworkBehaviour
     {
+        // --- Internal Hardcoded Projectile Defaults (AGENTS.md) ---
         private const ProjectileType DEFAULT_TYPE = ProjectileType.BalaFuego;
+        private const bool DEFAULT_AUTO_RANDOMIZE = false;
         private const float DEFAULT_SPEED = 45f;
         private const float DEFAULT_DAMAGE = 25f;
         private const float DEFAULT_LIFETIME = 3.5f;
@@ -111,10 +132,11 @@ namespace Combating.Scripts
         private const float DEFAULT_CORROSION_DAMAGE = 8f;
         private const float DEFAULT_DOT_DURATION = 3.5f;
 
-        [Header("Tipo de Proyectil")]
+        [Header("Tipo de Proyectil (AGENTS.md)")]
         public Optional<ProjectileType> typeOverride;
+        public Optional<bool> autoRandomizeOverride;
 
-        [Header("Estadísticas Generales")]
+        [Header("Estadísticas Generales (Optional<T> - AGENTS.md)")]
         public Optional<float> speedOverride;
         public Optional<float> damageOverride;
         public Optional<float> lifeTimeOverride;
@@ -122,7 +144,7 @@ namespace Combating.Scripts
         public Optional<float> detectionRadiusOverride;
         public Optional<Color> colorOverride;
 
-        [Header("Efectos Especiales")]
+        [Header("Efectos Especiales (Optional<T> - AGENTS.md)")]
         public Optional<float> explosionRadiusOverride;
         public Optional<float> freezeSlowAmountOverride;
         public Optional<float> corrosionDamageOverride;
@@ -149,7 +171,10 @@ namespace Combating.Scripts
 
         private static List<ProjectileController> s_ActiveAttachedBombs = new List<ProjectileController>();
 
+        // --- Effective Statistics Resolvers with AGENTS.md Protection ---
+
         public ProjectileType EffectiveType => typeOverride.GetValue(DEFAULT_TYPE);
+        public bool EffectiveAutoRandomize => autoRandomizeOverride.GetValue(DEFAULT_AUTO_RANDOMIZE);
         public float EffectiveSpeed => speedOverride.GetValue(EffectiveType == ProjectileType.RayoContinuo ? DEFAULT_SPEED * 2.2f : DEFAULT_SPEED);
         public float EffectiveDamage => damageOverride.GetValue(DEFAULT_DAMAGE);
         public float EffectiveLifeTime => lifeTimeOverride.GetValue(DEFAULT_LIFETIME);
@@ -177,6 +202,13 @@ namespace Combating.Scripts
         void Awake()
         {
             SetupPhysics();
+
+            if (EffectiveAutoRandomize)
+            {
+                ProjectileType randomType = (ProjectileType)Random.Range(0, 5);
+                typeOverride.useOverride = true;
+                typeOverride.value = randomType;
+            }
         }
 
         private void Start()
@@ -463,6 +495,13 @@ namespace Combating.Scripts
             if (!s_ActiveAttachedBombs.Contains(this))
             {
                 s_ActiveAttachedBombs.Add(this);
+            }
+
+            // Quitar NetworkObject antes de reemparentar localmente para evitar errores de Netcode
+            var netObjs = GetComponentsInChildren<NetworkObject>(true);
+            foreach (var no in netObjs)
+            {
+                if (Application.isPlaying) DestroyImmediate(no);
             }
 
             transform.SetParent(m_AttachedTarget);
