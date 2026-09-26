@@ -251,7 +251,7 @@ namespace Crafting.Scripts
             // Si el ítem es pickupable y no es de tipo Additivity (efecto directo al pickear), agregarlo al inventario
             if (item != null && inv != null && item.isPickable)
             {
-                int hash = item.GetItemHashCode();
+                int hash = item.GetHashCode();
                 if (IsNetworkActive) inv.AddItemServerRpc(hash, 1);
                 else inv.InternalAddItem(hash, 1);
             }

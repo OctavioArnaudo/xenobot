@@ -128,11 +128,11 @@ namespace Crafting.Scripts
         public ItemData GetItemDataByHash(int hash)
         {
             EnsureDatabase();
-            var found = itemDatabase.FirstOrDefault(x => x.GetItemHashCode() == hash);
+            var found = itemDatabase.FirstOrDefault(x => x.GetHashCode() == hash);
             if (found == null)
             {
                 var allItems = Resources.LoadAll<ItemData>("");
-                found = allItems.FirstOrDefault(x => x.GetItemHashCode() == hash);
+                found = allItems.FirstOrDefault(x => x.GetHashCode() == hash);
                 if (found != null && !itemDatabase.Contains(found)) itemDatabase.Add(found);
             }
             return found;
@@ -227,7 +227,7 @@ namespace Crafting.Scripts
         public static void Add(ItemData def)
         {
             if (LocalInstance == null) return;
-            int hash = def.GetItemHashCode();
+            int hash = def.GetHashCode();
             if (LocalInstance.IsNetworkActive) LocalInstance.AddItemServerRpc(hash, 1);
             else LocalInstance.InternalAddItem(hash, 1);
         }
@@ -237,7 +237,7 @@ namespace Crafting.Scripts
             var data = LocalInstance?.GetItemDataByCode(key);
             if (data != null)
             {
-                int hash = data.GetItemHashCode();
+                int hash = data.GetHashCode();
                 if (LocalInstance.IsNetworkActive) LocalInstance.RemoveItemServerRpc(hash, 1);
                 else LocalInstance.InternalRemoveItem(hash, 1);
             }
@@ -311,7 +311,7 @@ namespace Crafting.Scripts
                 GUI.Label(cell, "x" + slot.qty, _qtySty);
 
                 Rect btnArea = new Rect(cell.x, cell.yMax + 2, cell.width, 35);
-                int hash = slot.def.GetItemHashCode();
+                int hash = slot.def.GetHashCode();
                 bool isEquipped = _equippedInstances.ContainsKey(hash);
                 string actionText = isEquipped ? "QUIT" : "USE";
 
@@ -378,7 +378,7 @@ namespace Crafting.Scripts
         public void UseItem(ItemData item)
         {
             if (item == null) return;
-            int hash = item.GetItemHashCode();
+            int hash = item.GetHashCode();
             if (IsNetworkActive) UseItemServerRpc(hash);
             else InternalUseItem(hash);
         }
@@ -416,7 +416,7 @@ namespace Crafting.Scripts
 
         private void ToggleEquipment(ItemData item)
         {
-            int hash = item.GetItemHashCode();
+            int hash = item.GetHashCode();
             bool isCostume = item.itemPrefab != null && item.itemPrefab.GetComponentInChildren<CostumeController>() != null;
 
             if (_equippedInstances.TryGetValue(hash, out GameObject existing))
@@ -506,7 +506,7 @@ namespace Crafting.Scripts
         public void DropItem(ItemData item)
         {
             if (item == null) return;
-            int hash = item.GetItemHashCode();
+            int hash = item.GetHashCode();
 
             if (_equippedInstances.TryGetValue(hash, out GameObject equippedObj))
             {

@@ -286,14 +286,14 @@ namespace Crafting.Scripts
 
             if (crafterInv != null)
             {
-                if (IsNetworkActive) crafterInv.RemoveItemServerRpc(recipe.InputItem.GetItemHashCode(), recipe.InputAmount);
-                else crafterInv.InternalAddItem(recipe.InputItem.GetItemHashCode(), -recipe.InputAmount);
+                if (IsNetworkActive) crafterInv.RemoveItemServerRpc(recipe.InputItem.GetHashCode(), recipe.InputAmount);
+                else crafterInv.InternalAddItem(recipe.InputItem.GetHashCode(), -recipe.InputAmount);
             }
 
             if (receiverInv != null)
             {
-                if (IsNetworkActive) receiverInv.AddItemServerRpc(recipe.OutputItem.GetItemHashCode(), recipe.OutputAmount);
-                else receiverInv.InternalAddItem(recipe.OutputItem.GetItemHashCode(), recipe.OutputAmount);
+                if (IsNetworkActive) receiverInv.AddItemServerRpc(recipe.OutputItem.GetHashCode(), recipe.OutputAmount);
+                else receiverInv.InternalAddItem(recipe.OutputItem.GetHashCode(), recipe.OutputAmount);
             }
 
             InventoryController.MarkCountDirty();

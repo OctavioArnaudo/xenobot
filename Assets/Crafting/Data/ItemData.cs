@@ -63,11 +63,5 @@ namespace Crafting.Scripts
 
         [FormerlySerializedAs("worldPrefab")]
         public GameObject itemPrefab;
-
-        public int GetItemHashCode()
-        {
-            if (string.IsNullOrEmpty(itemName)) return 0;
-            return itemName.ToLowerInvariant().GetHashCode();
-        }
     }
 }
