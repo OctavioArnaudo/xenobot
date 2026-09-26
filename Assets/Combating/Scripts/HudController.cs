@@ -531,9 +531,32 @@ public class HudController : NetworkBehaviour
         // Shield Bar
         if (shield != null)
         {
-            float shieldVal = shield.IsShieldActive ? 100f : 0f;
-            string shieldValStr = shield.IsShieldActive ? "ACTIVO" : "LISTO";
-            DrawRowCustomVal(x, ref curY, " SHIELD", shieldVal, 100f, _shieldFill, shieldValStr, panelWidth);
+            float shieldVal = 0f;
+            float maxShieldVal = shield.EffectiveMaxShieldHealth > 0 ? shield.EffectiveMaxShieldHealth : 100f;
+            string shieldValStr = "N/A";
+
+            if (shield.InCooldown)
+            {
+                shieldVal = shield.CooldownProgress * maxShieldVal;
+                shieldValStr = $"RECARGA {shield.CooldownRemaining:F1}s";
+            }
+            else if (shield.IsShieldActive)
+            {
+                shieldVal = shield.CurrentShieldHealth;
+                shieldValStr = $"{shield.CurrentShieldHealth:F0}/{maxShieldVal:F0}";
+            }
+            else if (shield.isUnlocked)
+            {
+                shieldVal = maxShieldVal;
+                shieldValStr = "LISTO";
+            }
+            else
+            {
+                shieldVal = 0f;
+                shieldValStr = "BLOQUEADO";
+            }
+
+            DrawRowCustomVal(x, ref curY, " SHIELD", shieldVal, maxShieldVal, _shieldFill, shieldValStr, panelWidth);
         }
         else
         {
