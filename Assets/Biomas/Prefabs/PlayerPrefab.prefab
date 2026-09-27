@@ -581,6 +581,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 125d620cfc9627c489cc73f5df68953e, type: 2}
   - {fileID: 11400000, guid: 3a97472931f85e148983e025719c89f4, type: 2}
   - {fileID: 11400000, guid: daed6fcceb87bce418b245a5c5b7f855, type: 2}
+  - {fileID: 11400000, guid: 8eee5fae4dbf594448b2248a273b7ccf, type: 2}
   dropDistance: 3.5
 --- !u!114 &6229371320334411257
 MonoBehaviour:
@@ -717,9 +718,12 @@ MonoBehaviour:
     value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
+  rotationSpeedOverride:
+    useOverride: 0
+    value: 0
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
-  rotationSpeed: 10
+  meleeHitSound: {fileID: 0}
 --- !u!114 &9193409881328918840
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5639,15 +5643,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1014209.06
+      value: 1160742.9
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1758.5511
+      value: 2034.3428
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 607667.3
+      value: 695587.56
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5695,15 +5699,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1014209.06
+      value: 1160742.9
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1758.5511
+      value: 2034.3428
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 607667.3
+      value: 695587.56
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
