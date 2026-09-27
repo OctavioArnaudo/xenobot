@@ -48,14 +48,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2373552565
+  GlobalObjectIdHash: 2953776419
   InScenePlacedSourceGlobalObjectIdHash: 1155652179
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -117,7 +117,7 @@ MonoBehaviour:
     value: 0
   headOffsetOverride:
     useOverride: 1
-    value: {x: -2.68, y: 3.31, z: -0.66}
+    value: {x: -3.86, y: 1.14, z: 0.83}
   headScaleOverride:
     useOverride: 1
     value: {x: 1, y: 1, z: 1}
