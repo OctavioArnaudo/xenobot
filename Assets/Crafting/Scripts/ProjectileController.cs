@@ -115,13 +115,11 @@ namespace Combating.Scripts
 
     /// <summary>
     /// Control genérico de proyectiles con 5 tipos temáticos diferenciados, autogestión visual,
-    /// guiado teledirigido y total cumplimiento con AGENTS.md (Clean Prefabs con Optional<T>).
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(SphereCollider))]
     public class ProjectileController : NetworkBehaviour
     {
-        // --- Internal Hardcoded Projectile Defaults (AGENTS.md) ---
         private const ProjectileType DEFAULT_TYPE = ProjectileType.BalaFuego;
         private const bool DEFAULT_AUTO_RANDOMIZE = false;
         private const float DEFAULT_SPEED = 45f;
@@ -134,11 +132,11 @@ namespace Combating.Scripts
         private const float DEFAULT_CORROSION_DAMAGE = 8f;
         private const float DEFAULT_DOT_DURATION = 3.5f;
 
-        [Header("Tipo de Proyectil (AGENTS.md)")]
+        [Header("Tipo de Proyectil")]
         public Optional<ProjectileType> typeOverride;
         public Optional<bool> autoRandomizeOverride;
 
-        [Header("Estadísticas Generales (Optional<T> - AGENTS.md)")]
+        [Header("Estadísticas Generales")]
         public Optional<float> speedOverride;
         public Optional<float> damageOverride;
         public Optional<float> lifeTimeOverride;
@@ -146,7 +144,7 @@ namespace Combating.Scripts
         public Optional<float> detectionRadiusOverride;
         public Optional<Color> colorOverride;
 
-        [Header("Efectos Especiales (Optional<T> - AGENTS.md)")]
+        [Header("Efectos Especiales")]
         public Optional<float> explosionRadiusOverride;
         public Optional<float> freezeSlowAmountOverride;
         public Optional<float> corrosionDamageOverride;
@@ -172,8 +170,6 @@ namespace Combating.Scripts
         private Vector3 m_AttachedLocalPos;
 
         private static List<ProjectileController> s_ActiveAttachedBombs = new List<ProjectileController>();
-
-        // --- Effective Statistics Resolvers with AGENTS.md Protection ---
 
         public ProjectileType EffectiveType => typeOverride.GetValue(DEFAULT_TYPE);
         public bool EffectiveAutoRandomize => autoRandomizeOverride.GetValue(DEFAULT_AUTO_RANDOMIZE);

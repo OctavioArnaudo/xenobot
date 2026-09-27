@@ -239,6 +239,11 @@ namespace Combating.Scripts
             {
                 m_Agent.baseOffset = EffectiveHoverHeight;
                 m_Agent.updateRotation = false;
+
+                if (GetCurrentCategory() == EnemyCategory.Melee)
+                {
+                    m_Agent.stoppingDistance = 0.1f;
+                }
             }
 
             m_Animator = GetComponentInChildren<Animator>();

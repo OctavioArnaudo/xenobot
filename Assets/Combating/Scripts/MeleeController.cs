@@ -6,23 +6,24 @@ using Unity.Netcode;
 namespace Combating.Scripts
 {
     /// <summary>
-    /// Controller for Melee Combat and Ground Slams.
+    /// Controller for Melee Combat, Contact Transmission, and Ground Slams.
+    /// Handles physical collision damage transmission, visual emphasis, and multi-layer targeting.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class MeleeController : NetworkBehaviour
     {
-        // --- Internal Hardcoded Melee Defaults ---
-        private const float DEFAULT_PLAYER_MELEE_DAMAGE = 45f;
+        private const float DEFAULT_PLAYER_MELEE_DAMAGE = 40f;
         private const float DEFAULT_PLAYER_MELEE_RANGE = 3.2f;
         private const float DEFAULT_PLAYER_MELEE_COOLDOWN = 0.8f;
-        private const float DEFAULT_PLAYER_SLAM_DAMAGE = 65f;
+        private const float DEFAULT_PLAYER_SLAM_DAMAGE = 60f;
         private const float DEFAULT_PLAYER_SLAM_RADIUS = 5.5f;
 
-        private const float DEFAULT_ENEMY_BASE_MELEE_DAMAGE = 30f;
-        private const float DEFAULT_ENEMY_BASE_MELEE_RANGE = 4.0f;
+        private const float DEFAULT_ENEMY_BASE_MELEE_DAMAGE = 18f; // Daño balanceado para evitar un-shot kills
+        private const float DEFAULT_ENEMY_BASE_MELEE_RANGE = 3.8f;
         private const float DEFAULT_ENEMY_BASE_MELEE_COOLDOWN = 1.0f;
-        private const float DEFAULT_ENEMY_BASE_SLAM_DAMAGE = 45f;
-        private const float DEFAULT_ENEMY_BASE_SLAM_RADIUS = 4.5f;
+        private const float DEFAULT_ENEMY_BASE_SLAM_DAMAGE = 35f;
+        private const float DEFAULT_ENEMY_BASE_SLAM_RADIUS = 4.0f;
+        private const float DEFAULT_ROTATION_SPEED = 10f;
 
         [Header("Manual Melee Overrides")]
         public Optional<float> attackRange;
@@ -39,10 +40,11 @@ namespace Combating.Scripts
         public ParticleSystem slamVfxPrefab;
         public AudioClip slamSound;
 
-        [Header("Visuals")]
+        [Header("Visuals & Audio Emphasis")]
+        public Optional<float> rotationSpeedOverride;
         public ProjectileController swingVfxPrefab;
         public Renderer[] visualsToRotate;
-        public float rotationSpeed = 10f;
+        public AudioClip meleeHitSound;
 
         private HealthController m_Health;
         private CharacterController m_CharacterController;
@@ -129,6 +131,7 @@ namespace Combating.Scripts
         public float EffectiveSlamHoldDuration => slamHoldDuration.GetValue(0.25f);
         public float EffectiveSlamSpeed => slamSpeed.GetValue(35f);
         public float EffectiveSlamKnockbackForce => slamKnockbackForce.GetValue(600f);
+        public float EffectiveRotationSpeed => rotationSpeedOverride.GetValue(DEFAULT_ROTATION_SPEED);
 
         private float CalculateDynamicMeleeDamage()
         {
@@ -145,17 +148,18 @@ namespace Combating.Scripts
 
                 switch (enemy.activeArchetype)
                 {
-                    case AIArchetype.CargaFrenetica: dmg *= 1.7f; break;
-                    case AIArchetype.EmboscadaEnSigilo: dmg *= 1.8f; break;
-                    case AIArchetype.GuardiaConEscudo: dmg *= 1.4f; break;
-                    case AIArchetype.CargaDirecta: dmg *= 1.2f; break;
+                    case AIArchetype.CargaFrenetica: dmg *= 1.3f; break;
+                    case AIArchetype.EmboscadaEnSigilo: dmg *= 1.4f; break;
+                    case AIArchetype.GuardiaConEscudo: dmg *= 1.2f; break;
+                    case AIArchetype.CargaDirecta: dmg *= 1.1f; break;
                     default: dmg *= 1.0f; break;
                 }
 
                 int allies = CountNearbyAllies();
                 if (allies >= 3) dmg *= 0.75f;
 
-                return dmg;
+                // Cap de daño máximo por golpe para evitar muertes instantáneas (no one-shot)
+                return Mathf.Min(35f, dmg);
             }
 
             return DEFAULT_ENEMY_BASE_MELEE_DAMAGE;
@@ -174,7 +178,7 @@ namespace Combating.Scripts
 
         void Awake()
         {
-            m_Health = GetComponent<HealthController>();
+            m_Health = GetComponent<HealthController>() ?? GetComponentInParent<HealthController>();
             m_CharacterController = GetComponent<CharacterController>();
 
             if (visualsToRotate == null || visualsToRotate.Length == 0)
@@ -228,6 +232,42 @@ namespace Combating.Scripts
                         PerformMeleeAction();
                     }
                 }
+            }
+        }
+
+        // --- TRANSMISIÓN DE DAÑO POR CONTACTO FÍSICO / COLISIÓN ---
+
+        private void OnTriggerEnter(Collider other) => TryContactDamage(other.gameObject, other.ClosestPoint(transform.position));
+        private void OnTriggerStay(Collider other) => TryContactDamage(other.gameObject, other.ClosestPoint(transform.position));
+        private void OnCollisionEnter(Collision collision) => TryContactDamage(collision.gameObject, collision.contacts.Length > 0 ? collision.contacts[0].point : transform.position);
+        private void OnCollisionStay(Collision collision) => TryContactDamage(collision.gameObject, collision.contacts.Length > 0 ? collision.contacts[0].point : transform.position);
+
+        private void TryContactDamage(GameObject hitObject, Vector3 impactPoint)
+        {
+            if (hitObject == null || hitObject == gameObject || hitObject.transform.IsChildOf(transform)) return;
+
+            if (Time.time < m_NextAttackTime) return;
+
+            HealthController targetHealth = hitObject.GetComponentInParent<HealthController>() ?? hitObject.GetComponent<HealthController>();
+
+            if (targetHealth == null || targetHealth.CurrentHP <= 0) return;
+
+            Team myTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") ? Team.Player : Team.Enemy);
+            if (targetHealth.EffectiveTeam == myTeam) return;
+
+            // Transmitir daño melee al colisionar con cualquier parte del cuerpo/render del rival
+            float damage = EffectiveAttackDamage;
+            targetHealth.TakeDamage((int)damage);
+
+            m_NextAttackTime = Time.time + EffectiveAttackCooldown;
+
+            Vector3 hitDirection = (hitObject.transform.position - transform.position).normalized;
+            TriggerMeleeVisualEffect(impactPoint, hitDirection);
+
+            Animator anim = GetComponentInChildren<Animator>();
+            if (anim != null && HasParameter(anim, "meleeAttack"))
+            {
+                anim.SetTrigger("meleeAttack");
             }
         }
 
@@ -301,14 +341,15 @@ namespace Combating.Scripts
         private void ExecuteGroundSlam(Vector3 impactPosition)
         {
             float finalDamage = EffectiveSlamDamage;
+            int mask = (targetLayers.value != 0) ? targetLayers.value : ~0;
 
-            Collider[] hits = Physics.OverlapSphere(impactPosition, EffectiveSlamRadius, targetLayers);
+            Collider[] hits = Physics.OverlapSphere(impactPosition, EffectiveSlamRadius, mask, QueryTriggerInteraction.Collide);
 
             foreach (Collider hit in hits)
             {
-                if (hit.gameObject == gameObject) continue;
+                if (hit.gameObject == gameObject || hit.transform.IsChildOf(transform)) continue;
 
-                var targetHealth = hit.GetComponentInParent<HealthController>();
+                var targetHealth = hit.GetComponentInParent<HealthController>() ?? hit.GetComponent<HealthController>();
                 if (targetHealth != null)
                 {
                     if (m_Health != null && targetHealth.EffectiveTeam == m_Health.EffectiveTeam) continue;
@@ -349,7 +390,7 @@ namespace Combating.Scripts
                 foreach (var r in visualsToRotate)
                 {
                     if (r != null)
-                        r.transform.rotation = Quaternion.Slerp(r.transform.rotation, targetFullRotation, rotationSpeed * Time.deltaTime);
+                        r.transform.rotation = Quaternion.Slerp(r.transform.rotation, targetFullRotation, EffectiveRotationSpeed * Time.deltaTime);
                 }
             }
         }
@@ -363,18 +404,33 @@ namespace Combating.Scripts
         private void ExecuteMelee()
         {
             float finalDamage = EffectiveAttackDamage;
+            int mask = (targetLayers.value != 0) ? targetLayers.value : ~0;
 
             Vector3 attackCenter = transform.position + transform.forward * (EffectiveAttackRange * 0.5f);
-            Collider[] hits = Physics.OverlapSphere(attackCenter, EffectiveAttackRange, targetLayers);
+            Collider[] hits = Physics.OverlapSphere(attackCenter, EffectiveAttackRange, mask, QueryTriggerInteraction.Collide);
+
+            Team myTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") ? Team.Player : Team.Enemy);
+            bool hasHitAny = false;
 
             foreach (Collider hit in hits)
             {
-                var targetHealth = hit.GetComponentInParent<HealthController>();
-                if (targetHealth != null)
+                if (hit.gameObject == gameObject || hit.transform.IsChildOf(transform)) continue;
+
+                var targetHealth = hit.GetComponentInParent<HealthController>() ?? hit.GetComponent<HealthController>();
+                if (targetHealth != null && targetHealth.EffectiveTeam != myTeam && targetHealth.CurrentHP > 0)
                 {
-                    if (m_Health != null && targetHealth.EffectiveTeam == m_Health.EffectiveTeam) continue;
                     targetHealth.TakeDamage((int)finalDamage);
+                    hasHitAny = true;
+
+                    Vector3 impactPos = hit.ClosestPoint(attackCenter);
+                    Vector3 hitDir = (hit.transform.position - transform.position).normalized;
+                    TriggerMeleeVisualEffect(impactPos, hitDir);
                 }
+            }
+
+            if (!hasHitAny)
+            {
+                TriggerMeleeVisualEffect(attackCenter, transform.forward);
             }
 
             Animator anim = GetComponentInChildren<Animator>();
@@ -382,12 +438,59 @@ namespace Combating.Scripts
             {
                 anim.SetTrigger("meleeAttack");
             }
+        }
+
+        private void TriggerMeleeVisualEffect(Vector3 position, Vector3 direction)
+        {
+            if (meleeHitSound != null)
+            {
+                AudioSource.PlayClipAtPoint(meleeHitSound, position);
+            }
 
             if (swingVfxPrefab != null)
             {
-                ProjectileController vfx = Instantiate(swingVfxPrefab, transform.position + transform.forward, transform.rotation);
-                vfx.Launch(gameObject, transform.forward, 0f, m_Health != null ? m_Health.EffectiveTeam : Team.Neutral);
+                ProjectileController vfx = Instantiate(swingVfxPrefab, position, Quaternion.LookRotation(direction));
+                vfx.Launch(gameObject, direction, 0f, m_Health != null ? m_Health.EffectiveTeam : Team.Neutral);
             }
+            else
+            {
+                GenerateHardcodedSlashVFX(position, direction);
+            }
+        }
+
+        private void GenerateHardcodedSlashVFX(Vector3 position, Vector3 direction)
+        {
+            GameObject vfxGo = new GameObject("MeleeSlashVFX");
+            vfxGo.transform.position = position;
+            vfxGo.transform.rotation = Quaternion.LookRotation(direction.sqrMagnitude > 0.01f ? direction : transform.forward);
+
+            ParticleSystem ps = vfxGo.AddComponent<ParticleSystem>();
+            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+            var main = ps.main;
+            main.loop = false;
+            main.duration = 0.35f;
+            main.startLifetime = 0.35f;
+            main.startSpeed = 8f;
+            main.startSize = 0.4f;
+            main.startColor = CompareTag("Enemy") ? Color.red : new Color(1f, 0.85f, 0.1f);
+            main.stopAction = ParticleSystemStopAction.Destroy;
+
+            var emission = ps.emission;
+            emission.rateOverTime = 0;
+            emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0, 25) });
+
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Cone;
+            shape.angle = 45f;
+            shape.radius = 0.2f;
+
+            var renderer = vfxGo.GetComponent<ParticleSystemRenderer>();
+            Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Particles/Standard Unlit");
+            if (shader != null) renderer.material = new Material(shader);
+
+            ps.Play();
+            Destroy(vfxGo, 1.5f);
         }
 
         private bool HasParameter(Animator animator, string paramName)
