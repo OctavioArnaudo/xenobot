@@ -533,26 +533,16 @@ namespace Combating.Scripts
             // Shield Bar
             if (shield != null)
             {
-                float shieldVal = 0f;
+                float shieldVal = shield.CurrentShieldHealth;
                 float maxShieldVal = shield.EffectiveMaxShieldHealth > 0 ? shield.EffectiveMaxShieldHealth : 100f;
-                string shieldValStr = "N/A";
+                string shieldValStr = $"{shieldVal:F0}/{maxShieldVal:F0}";
 
                 if (shield.InCooldown)
                 {
                     shieldVal = shield.CooldownProgress * maxShieldVal;
                     shieldValStr = $"RECARGA {shield.CooldownRemaining:F1}s";
                 }
-                else if (shield.IsShieldActive)
-                {
-                    shieldVal = shield.CurrentShieldHealth;
-                    shieldValStr = $"{shield.CurrentShieldHealth:F0}/{maxShieldVal:F0}";
-                }
-                else if (shield.isUnlocked)
-                {
-                    shieldVal = maxShieldVal;
-                    shieldValStr = "LISTO";
-                }
-                else
+                else if (!shield.isUnlocked)
                 {
                     shieldVal = 0f;
                     shieldValStr = "BLOQUEADO";

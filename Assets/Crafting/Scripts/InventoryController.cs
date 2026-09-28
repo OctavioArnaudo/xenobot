@@ -395,10 +395,9 @@ namespace Crafting.Scripts
 
             bool isEquipped = _equippedInstances.ContainsKey(hash);
             bool isEquipment = isEquipped || (item.itemPrefab != null && (
-                item.itemPrefab.GetComponentInChildren<IItemQuitAction>(true) != null ||
                 item.itemPrefab.GetComponentInChildren<CostumeController>(true) != null ||
+                item.itemPrefab.GetComponentInChildren<MaskController>(true) != null ||
                 item.itemPrefab.GetComponentInChildren<WeaponController>(true) != null ||
-                item.itemPrefab.GetComponentInChildren<ShieldController>(true) != null ||
                 item.itemPrefab.GetComponentInChildren<JetpackController>(true) != null
             ));
 

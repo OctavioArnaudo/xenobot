@@ -13,11 +13,10 @@ MonoBehaviour:
   m_Name: Item_Shield
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
   itemName: Shield
-  isPickupable: 1
+  isPickable: 1
   isUsable: 1
-  isQuitable: 1
-  isDroppable: 1
-  isStackable: 0
+  isQuitable: 0
+  isDropable: 1
   maxStack: 1
   itemSprite: {fileID: -329512943, guid: 6bd645498b286504d878cebc60528226, type: 3}
   itemPrefab: {fileID: 8672541856844511905, guid: 2b49295e9c21fcc488c10d0f578e8028, type: 3}

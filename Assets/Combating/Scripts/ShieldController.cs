@@ -15,8 +15,9 @@ namespace Combating.Scripts
 
     /// <summary>
     /// Sistema de escudo de energía esférico con mitigación de daño, colisionadores de impacto,
-    /// capacidad de resistencia, cooldowns por tiempo/daño, opción de Escudo Infinito,
+    /// capacidad de resistencia, drenado en tiempo real, recarga exclusiva al USAR desde inventario,
     /// escalado por nivel (Jugador) y degradación inversa por ciclos (Enemigo).
+    /// Compliant con AGENTS.md (Clean Prefabs con Optional<T>).
     /// </summary>
     [ExecuteAlways]
     public class ShieldController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
@@ -30,7 +31,7 @@ namespace Combating.Scripts
         [Header("Shield Settings")]
         public bool isUnlocked = true; // Permiso para usar el escudo
 
-        [Header("Sobrescrituras Opcionales del Inspector")]
+        [Header("Sobrescrituras Opcionales del Inspector (AGENTS.md)")]
         [Tooltip("Mitigación de daño: 1.0 = Bloqueo total, 0.5 = Mitiga el 50%")]
         public Optional<float> damageReductionOverride;
 
@@ -99,6 +100,7 @@ namespace Combating.Scripts
             }
         }
 
+        // --- Effective Statistics Resolvers with AGENTS.md Protection ---
 
         public float EffectiveDamageReduction
         {
@@ -288,8 +290,10 @@ namespace Combating.Scripts
                 if (m_CooldownTimer <= 0f)
                 {
                     m_CooldownTimer = 0f;
-                    m_CurrentShieldHealth = EffectiveMaxShieldHealth;
                     m_ActiveTimer = 0f;
+                    m_CurrentShieldHealth = EffectiveMaxShieldHealth;
+                    SetShieldState(true);
+                    Debug.Log("<color=green>[ShieldController]</color> Recarga de escudo completa.");
                 }
             }
 
@@ -297,8 +301,12 @@ namespace Combating.Scripts
             {
                 m_ActiveTimer += Time.deltaTime;
 
+                float drainRate = EffectiveMaxShieldHealth / Mathf.Max(0.1f, EffectiveMaxShieldDuration);
+                m_CurrentShieldHealth = Mathf.Max(0f, m_CurrentShieldHealth - (drainRate * Time.deltaTime));
+
                 if (m_ActiveTimer >= EffectiveMaxShieldDuration || m_CurrentShieldHealth <= 0f)
                 {
+                    m_CurrentShieldHealth = 0f;
                     StartCooldown();
                 }
             }
@@ -324,7 +332,7 @@ namespace Combating.Scripts
                 return;
             }
 
-            if (Mouse.current != null && isUnlocked && !InCooldown)
+            if (Mouse.current != null && isUnlocked && (!InCooldown || EffectiveInfiniteShield) && m_CurrentShieldHealth > 0f)
             {
                 var middleButton = Mouse.current.middleButton;
                 float scrollValue = Mouse.current.scroll.ReadValue().y;
@@ -371,12 +379,12 @@ namespace Combating.Scripts
             }
         }
 
-        public void RechargeShieldInstantly()
+        public void StartRechargeSequence()
         {
-            m_CooldownTimer = 0f;
-            m_CurrentShieldHealth = EffectiveMaxShieldHealth;
+            m_CooldownTimer = EffectiveCooldownDuration;
             m_ActiveTimer = 0f;
-            Debug.Log($"<color=cyan>[ShieldController]</color> Escudo recargado al 100% de capacidad ({m_CurrentShieldHealth} HP).");
+            SetShieldState(false);
+            Debug.Log($"<color=cyan>[ShieldController]</color> Iniciando recarga de escudo ({EffectiveCooldownDuration}s)...");
         }
 
         public void SetShieldState(bool active)
@@ -385,20 +393,16 @@ namespace Combating.Scripts
 
             if (active && InCooldown && !EffectiveInfiniteShield) return;
 
+            if (active && m_CurrentShieldHealth <= 0f && !EffectiveInfiniteShield)
+            {
+                return;
+            }
+
             if (IsShieldActive == active) return;
 
             if (active)
             {
-                if (m_CurrentShieldHealth <= 0f)
-                {
-                    m_CurrentShieldHealth = EffectiveMaxShieldHealth;
-                }
                 m_ActiveTimer = 0f;
-            }
-            else if (IsShieldActive && !InCooldown && !EffectiveInfiniteShield)
-            {
-                StartCooldown();
-                return;
             }
 
             if (IsNetworkActive)
@@ -417,25 +421,21 @@ namespace Combating.Scripts
         {
             if (EffectiveInfiniteShield) return;
 
-            m_CooldownTimer = EffectiveCooldownDuration;
-            m_ActiveTimer = 0f;
+            SetShieldState(false);
 
-            if (IsNetworkActive)
+            // Solo mostrar la recarga si es un enemigo o si el booleano infiniteShield está activo
+            if (IsEnemy || EffectiveInfiniteShield)
             {
-                if (m_IsShieldActive.Value) m_IsShieldActive.Value = false;
+                m_CooldownTimer = EffectiveCooldownDuration;
+                m_ActiveTimer = 0f;
+                if (IsEnemy) m_EnemyCycleCount++;
             }
             else
             {
-                if (m_OfflineShieldActive)
-                {
-                    m_OfflineShieldActive = false;
-                    OnShieldStateChanged(true, false);
-                }
-            }
-
-            if (IsEnemy)
-            {
-                m_EnemyCycleCount++;
+                // Para el jugador al agotarse en combate sin usar un ítem, cae inmediatamente a 0/X sin mostrar efecto de recarga
+                m_CurrentShieldHealth = 0f;
+                m_CooldownTimer = 0f;
+                m_ActiveTimer = 0f;
             }
         }
 
@@ -484,16 +484,7 @@ namespace Combating.Scripts
             if (actualController != null)
             {
                 actualController.isUnlocked = true;
-                actualController.RechargeShieldInstantly();
-
-                if (actualController.toggleOnUse)
-                {
-                    actualController.SetShieldState(!actualController.IsShieldActive);
-                }
-                else
-                {
-                    actualController.SetShieldState(true);
-                }
+                actualController.StartRechargeSequence();
 
                 if (this != actualController && transform.IsChildOf(playerRoot.transform))
                 {
@@ -503,16 +494,7 @@ namespace Combating.Scripts
             else
             {
                 this.isUnlocked = true;
-                RechargeShieldInstantly();
-
-                if (toggleOnUse)
-                {
-                    SetShieldState(!IsShieldActive);
-                }
-                else
-                {
-                    SetShieldState(true);
-                }
+                StartRechargeSequence();
             }
         }
 
@@ -613,7 +595,7 @@ namespace Combating.Scripts
 
             if (!EffectiveInfiniteShield)
             {
-                m_CurrentShieldHealth -= damage;
+                m_CurrentShieldHealth = Mathf.Max(0f, m_CurrentShieldHealth - damage);
             }
 
             TriggerShieldHitEffect();

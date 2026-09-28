@@ -7,10 +7,12 @@ namespace Combating.Scripts
 {
     /// <summary>
     /// Logic controller for shooting mechanics.
+    /// Compliant with AGENTS.md (Clean Prefabs with Optional<T>).
     /// Supports Infinite Ammo, Auto-Reload from Inventory on empty clip, and Ammo Damage Multipliers.
     /// </summary>
     public class ShootController : MonoBehaviour
     {
+        // --- Internal Hardcoded Ranged Defaults (AGENTS.md) ---
         private const float DEFAULT_PLAYER_SHOOT_DAMAGE = 32f;
         private const float DEFAULT_PLAYER_FIRE_RATE = 8.0f;
         private const float DEFAULT_PLAYER_AIM_DISTANCE = 120f;
@@ -30,7 +32,7 @@ namespace Combating.Scripts
         public GameObject Projectile;
         public Renderer[] visualsToRotate;
 
-        [Header("Sobrescrituras Opcionales del Inspector")]
+        [Header("Sobrescrituras Opcionales del Inspector (AGENTS.md)")]
         public Optional<float> Damage;
         public Optional<float> FireRate;
         public Optional<float> AimDistance;
@@ -123,6 +125,27 @@ namespace Combating.Scripts
             if (isReloading) { isReloading = false; m_ReloadTimer = 0f; }
         }
 
+        public bool HasAmmoInInventory()
+        {
+            var inv = InventoryController.LocalInstance ?? GetComponent<InventoryController>() ?? GetComponentInParent<InventoryController>();
+            if (inv == null) return false;
+
+            var bag = inv.GetMyBag();
+            foreach (var kvp in bag)
+            {
+                ItemData itemDef = kvp.Value.def;
+                if (itemDef != null && itemDef.itemPrefab != null)
+                {
+                    AmmoController ammoComp = itemDef.itemPrefab.GetComponentInChildren<AmmoController>();
+                    if (ammoComp != null && kvp.Value.qty > 0)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         public bool AutoReloadFromInventory()
         {
             var inv = InventoryController.LocalInstance ?? GetComponent<InventoryController>() ?? GetComponentInParent<InventoryController>();
@@ -151,6 +174,12 @@ namespace Combating.Scripts
         {
             if (EffectiveInfiniteAmmo) return false;
             if (isReloading || currentAmmo >= EffectiveMaxAmmo) return false;
+
+            // Si es el jugador y NO posee ítems de munición en inventario, NO iniciar simulación de recarga ni mostrar "RECARGANDO"
+            if (m_Player != null && !HasAmmoInInventory())
+            {
+                return false;
+            }
 
             isReloading = true;
             m_ReloadTimer = 0f;
@@ -309,7 +338,6 @@ namespace Combating.Scripts
                     }
                     else
                     {
-                        // Para enemigos (sin inventario) se recarga normalmente; para el jugador requiere ítem de munición
                         if (m_Player == null)
                         {
                             currentAmmo = EffectiveMaxAmmo;
@@ -318,7 +346,6 @@ namespace Combating.Scripts
                         else
                         {
                             currentAmmo = 0;
-                            //Debug.LogWarning("<color=red>[ShootController]</color> Sin munición en inventario. ¡Cargador vacío!");
                         }
                     }
 
