@@ -11,7 +11,15 @@ namespace Crafting.Scripts
     [ExecuteAlways]
     public class AmmoController : MonoBehaviour, IItemUseAction, IItemPickupAction
     {
-        private const int AMMO_AMOUNT = 30;
+        private const int DEFAULT_AMMO_AMOUNT = 30;
+        private const float DEFAULT_DAMAGE_MULTIPLIER = 1.25f;
+
+        [Header("Sobrescrituras Opcionales del Inspector")]
+        public Optional<int> ammoAmountToAdd;
+        public Optional<float> damageMultiplierOverride;
+
+        public int EffectiveAmmoAmount => ammoAmountToAdd.GetValue(DEFAULT_AMMO_AMOUNT);
+        public float EffectiveDamageMultiplier => damageMultiplierOverride.GetValue(DEFAULT_DAMAGE_MULTIPLIER);
 
         [Header("Visual Settings")]
         public bool generateDefaultVisuals = true;
@@ -42,8 +50,11 @@ namespace Crafting.Scripts
             }
         }
 
+        // Al usar el ítem desde el inventario, recarga la munición del arma
         public void OnUseItem(GameObject entity) => ApplyEffect(entity);
-        public void OnPickupItem(GameObject entity) => ApplyEffect(entity);
+
+        // Al recoger del suelo, NO recargar el arma automáticamente (solo va al inventario)
+        public void OnPickupItem(GameObject entity) { }
 
         public void ApplyEffect(GameObject entity)
         {
@@ -53,8 +64,8 @@ namespace Crafting.Scripts
 
             if (shooter != null)
             {
-                shooter.AddAmmo(AMMO_AMOUNT);
-                Debug.Log($"<color=yellow>[AmmoItem]</color> Munición restaurada (+{AMMO_AMOUNT}) en {entity.name}.");
+                shooter.AddAmmo(EffectiveAmmoAmount, EffectiveDamageMultiplier);
+                Debug.Log($"<color=yellow>[AmmoItem]</color> Munición recargada (+{EffectiveAmmoAmount}, Mult: x{EffectiveDamageMultiplier:F2}) en {entity.name}.");
             }
             else
             {
@@ -73,7 +84,6 @@ namespace Crafting.Scripts
                 }
             }
 
-            // Create a stylized ammo box with bullet cylinders
             GameObject box = GameObject.CreatePrimitive(PrimitiveType.Cube);
             box.name = "AmmoRender";
             box.transform.SetParent(transform, false);
@@ -82,10 +92,9 @@ namespace Crafting.Scripts
 
             var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard") ?? Shader.Find("Diffuse");
             var boxMat = new Material(shader);
-            boxMat.color = new Color(0.2f, 0.3f, 0.2f); // Military green
+            boxMat.color = new Color(0.2f, 0.3f, 0.2f);
             box.GetComponent<MeshRenderer>().sharedMaterial = boxMat;
 
-            // Add 3 decorative bullets sticking out
             for (int i = -1; i <= 1; i++)
             {
                 GameObject bullet = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -101,7 +110,6 @@ namespace Crafting.Scripts
                 if (bulletMat.HasProperty("_Smoothness")) bulletMat.SetFloat("_Smoothness", 0.7f);
                 bullet.GetComponent<MeshRenderer>().sharedMaterial = bulletMat;
 
-                // Bullet Tip
                 GameObject tip = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 tip.name = $"Ammo_Tip_{i}";
                 tip.transform.SetParent(bullet.transform, false);

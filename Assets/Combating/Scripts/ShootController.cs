@@ -7,10 +7,10 @@ namespace Combating.Scripts
 {
     /// <summary>
     /// Logic controller for shooting mechanics.
+    /// Supports Infinite Ammo, Auto-Reload from Inventory on empty clip, and Ammo Damage Multipliers.
     /// </summary>
     public class ShootController : MonoBehaviour
     {
-        // --- Internal Hardcoded Ranged Defaults ---
         private const float DEFAULT_PLAYER_SHOOT_DAMAGE = 32f;
         private const float DEFAULT_PLAYER_FIRE_RATE = 8.0f;
         private const float DEFAULT_PLAYER_AIM_DISTANCE = 120f;
@@ -21,6 +21,7 @@ namespace Combating.Scripts
 
         private const int DEFAULT_MAX_AMMO = 30;
         private const float DEFAULT_RELOAD_DURATION = 1.8f;
+        private const bool DEFAULT_INFINITE_AMMO = false;
 
         [Header("References")]
         public bool isUnlocked = false; // Si está marcado, dispara desde el inicio. Si no, requiere arma.
@@ -29,18 +30,21 @@ namespace Combating.Scripts
         public GameObject Projectile;
         public Renderer[] visualsToRotate;
 
-        [Header("Manual Ranged Overrides")]
+        [Header("Sobrescrituras Opcionales del Inspector")]
         public Optional<float> Damage;
         public Optional<float> FireRate;
         public Optional<float> AimDistance;
         public Optional<int> maxAmmo;
         public Optional<float> reloadDuration;
+        public Optional<bool> infiniteAmmo;
+
         public LayerMask AimLayers = ~0;
         public bool HoldToFire = true;
         public bool UsePlayerInput = true;
 
         [Header("Ammo Runtime State")]
         public int currentAmmo = 30;
+        public float currentAmmoDamageMultiplier = 1.0f;
         public bool isReloading = false;
         private float m_ReloadTimer = 0f;
 
@@ -110,16 +114,44 @@ namespace Combating.Scripts
 
         public int EffectiveMaxAmmo => maxAmmo.GetValue(DEFAULT_MAX_AMMO);
         public float EffectiveReloadDuration => reloadDuration.GetValue(DEFAULT_RELOAD_DURATION);
+        public bool EffectiveInfiniteAmmo => infiniteAmmo.GetValue(DEFAULT_INFINITE_AMMO);
 
-        public void AddAmmo(int amount)
+        public void AddAmmo(int amount, float damageMultiplier = 1.0f)
         {
             currentAmmo = Mathf.Min(currentAmmo + amount, EffectiveMaxAmmo);
+            currentAmmoDamageMultiplier = damageMultiplier;
             if (isReloading) { isReloading = false; m_ReloadTimer = 0f; }
+        }
+
+        public bool AutoReloadFromInventory()
+        {
+            var inv = InventoryController.LocalInstance ?? GetComponent<InventoryController>() ?? GetComponentInParent<InventoryController>();
+            if (inv == null) return false;
+
+            var bag = inv.GetMyBag();
+            foreach (var kvp in bag)
+            {
+                ItemData itemDef = kvp.Value.def;
+                if (itemDef != null && itemDef.itemPrefab != null)
+                {
+                    AmmoController ammoComp = itemDef.itemPrefab.GetComponentInChildren<AmmoController>();
+                    if (ammoComp != null && kvp.Value.qty > 0)
+                    {
+                        InventoryController.RemoveItem(itemDef.itemName);
+                        AddAmmo(ammoComp.EffectiveAmmoAmount, ammoComp.EffectiveDamageMultiplier);
+                        Debug.Log($"<color=green>[ShootController]</color> Recarga consumida de inventario (+{ammoComp.EffectiveAmmoAmount} balas, Mult: x{ammoComp.EffectiveDamageMultiplier:F2})");
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         public bool TryReload()
         {
+            if (EffectiveInfiniteAmmo) return false;
             if (isReloading || currentAmmo >= EffectiveMaxAmmo) return false;
+
             isReloading = true;
             m_ReloadTimer = 0f;
             Debug.Log($"<color=yellow>[ShootController]</color> Recargando... ({EffectiveReloadDuration}s)");
@@ -248,15 +280,50 @@ namespace Combating.Scripts
 
         void Update()
         {
+            // Evitar procesamiento duplicado si existe un ShootController principal en la raíz
+            if (transform != transform.root)
+            {
+                var rootShooter = transform.root.GetComponent<ShootController>();
+                if (rootShooter != null && rootShooter != this && rootShooter.isUnlocked)
+                {
+                    enabled = false;
+                    return;
+                }
+            }
+
+            if (EffectiveInfiniteAmmo)
+            {
+                currentAmmo = EffectiveMaxAmmo;
+                isReloading = false;
+            }
+
             if (isReloading)
             {
                 m_ReloadTimer += Time.deltaTime;
                 if (m_ReloadTimer >= EffectiveReloadDuration)
                 {
-                    currentAmmo = EffectiveMaxAmmo;
+                    bool consumedFromInventory = AutoReloadFromInventory();
+                    if (consumedFromInventory)
+                    {
+                        Debug.Log("<color=green>[ShootController]</color> Recarga completa con munición del inventario.");
+                    }
+                    else
+                    {
+                        // Para enemigos (sin inventario) se recarga normalmente; para el jugador requiere ítem de munición
+                        if (m_Player == null)
+                        {
+                            currentAmmo = EffectiveMaxAmmo;
+                            Debug.Log("<color=green>[ShootController]</color> Recarga completa (Enemigo).");
+                        }
+                        else
+                        {
+                            currentAmmo = 0;
+                            //Debug.LogWarning("<color=red>[ShootController]</color> Sin munición en inventario. ¡Cargador vacío!");
+                        }
+                    }
+
                     isReloading = false;
                     m_ReloadTimer = 0f;
-                    Debug.Log("<color=green>[ShootController]</color> Recarga completa.");
                 }
             }
 
@@ -317,7 +384,7 @@ namespace Combating.Scripts
 
             if (isReloading) return false;
 
-            if (currentAmmo <= 0)
+            if (!EffectiveInfiniteAmmo && currentAmmo <= 0)
             {
                 TryReload();
                 return false;
@@ -326,8 +393,11 @@ namespace Combating.Scripts
             if (Time.time < m_NextFireTime) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, EffectiveFireRate);
 
-            currentAmmo--;
-            if (currentAmmo <= 0) TryReload();
+            if (!EffectiveInfiniteAmmo)
+            {
+                currentAmmo = Mathf.Max(0, currentAmmo - 1);
+                if (currentAmmo <= 0) TryReload();
+            }
 
             Vector3 originPos = Muzzle.transform.position;
             Vector3 direction = GetAimDirection(originPos);
@@ -345,7 +415,7 @@ namespace Combating.Scripts
 
             if (isReloading) return false;
 
-            if (currentAmmo <= 0)
+            if (!EffectiveInfiniteAmmo && currentAmmo <= 0)
             {
                 TryReload();
                 return false;
@@ -354,8 +424,11 @@ namespace Combating.Scripts
             if (Time.time < m_NextFireTime) return false;
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, EffectiveFireRate);
 
-            currentAmmo--;
-            if (currentAmmo <= 0) TryReload();
+            if (!EffectiveInfiniteAmmo)
+            {
+                currentAmmo = Mathf.Max(0, currentAmmo - 1);
+                if (currentAmmo <= 0) TryReload();
+            }
 
             RotateVisualsTowards(targetPosition);
 
@@ -370,7 +443,7 @@ namespace Combating.Scripts
 
         private void ExecuteFire(Vector3 direction, Vector3 spawnPos)
         {
-            float finalDamage = EffectiveDamage;
+            float finalDamage = EffectiveDamage * currentAmmoDamageMultiplier;
             Team team = EffectiveTeam;
 
             if (m_Player != null && IsNetworkActive)

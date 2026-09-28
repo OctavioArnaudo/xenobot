@@ -615,12 +615,16 @@ MonoBehaviour:
   reloadDuration:
     useOverride: 0
     value: 0
+  infiniteAmmo:
+    useOverride: 1
+    value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
   UsePlayerInput: 1
   currentAmmo: 30
+  currentAmmoDamageMultiplier: 1
   isReloading: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
@@ -748,6 +752,9 @@ MonoBehaviour:
     useOverride: 0
     value: 0
   cooldownDurationOverride:
+    useOverride: 0
+    value: 0
+  infiniteShield:
     useOverride: 0
     value: 0
   inputMode: 0
@@ -5643,15 +5650,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1160742.9
+      value: 1194059.1
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2034.3428
+      value: 2097.0474
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 695587.56
+      value: 715577.3
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5699,15 +5706,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1160742.9
+      value: 1194059.1
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2034.3428
+      value: 2097.0474
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 695587.56
+      value: 715577.3
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

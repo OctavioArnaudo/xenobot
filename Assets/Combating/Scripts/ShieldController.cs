@@ -15,8 +15,8 @@ namespace Combating.Scripts
 
     /// <summary>
     /// Sistema de escudo de energía esférico con mitigación de daño, colisionadores de impacto,
-    /// capacidad de resistencia, cooldowns por tiempo/daño, escalado por nivel (Jugador)
-    /// y degradación inversa por ciclos (Enemigo).
+    /// capacidad de resistencia, cooldowns por tiempo/daño, opción de Escudo Infinito,
+    /// escalado por nivel (Jugador) y degradación inversa por ciclos (Enemigo).
     /// </summary>
     [ExecuteAlways]
     public class ShieldController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
@@ -25,10 +25,12 @@ namespace Combating.Scripts
         private const float DEFAULT_MAX_SHIELD_HEALTH = 150.0f;
         private const float DEFAULT_MAX_SHIELD_DURATION = 10.0f;
         private const float DEFAULT_COOLDOWN_DURATION = 5.0f;
+        private const bool DEFAULT_INFINITE_SHIELD = false;
 
         [Header("Shield Settings")]
         public bool isUnlocked = true; // Permiso para usar el escudo
 
+        [Header("Sobrescrituras Opcionales del Inspector")]
         [Tooltip("Mitigación de daño: 1.0 = Bloqueo total, 0.5 = Mitiga el 50%")]
         public Optional<float> damageReductionOverride;
 
@@ -40,6 +42,9 @@ namespace Combating.Scripts
 
         [Tooltip("Tiempo de enfriamiento/recarga en segundos tras agotarse o desactivarse")]
         public Optional<float> cooldownDurationOverride;
+
+        [Tooltip("Si se activa, el escudo nunca se agota ni entra en cooldown")]
+        public Optional<bool> infiniteShield;
 
         [Header("Activation & Input Settings")]
         [Tooltip("Modo de entrada de la rueda del mouse: HoldToActivate (mantener botón) o TogglePress (pulsar/girar para alternar)")]
@@ -93,6 +98,7 @@ namespace Combating.Scripts
                 return CompareTag("Enemy") || GetComponent<EnemyController>() != null || GetComponentInParent<EnemyController>() != null;
             }
         }
+
 
         public float EffectiveDamageReduction
         {
@@ -174,12 +180,14 @@ namespace Combating.Scripts
             }
         }
 
+        public bool EffectiveInfiniteShield => infiniteShield.GetValue(DEFAULT_INFINITE_SHIELD);
+
         // --- State Properties ---
-        public bool IsShieldActive => isUnlocked && !InCooldown && (IsNetworkActive ? m_IsShieldActive.Value : m_OfflineShieldActive);
-        public bool InCooldown => m_CooldownTimer > 0f;
-        public float CooldownRemaining => Mathf.Max(0f, m_CooldownTimer);
+        public bool IsShieldActive => isUnlocked && (!InCooldown || EffectiveInfiniteShield) && (IsNetworkActive ? m_IsShieldActive.Value : m_OfflineShieldActive);
+        public bool InCooldown => !EffectiveInfiniteShield && m_CooldownTimer > 0f;
+        public float CooldownRemaining => EffectiveInfiniteShield ? 0f : Mathf.Max(0f, m_CooldownTimer);
         public float CooldownProgress => InCooldown ? Mathf.Clamp01(1f - (m_CooldownTimer / Mathf.Max(0.01f, EffectiveCooldownDuration))) : 1f;
-        public float CurrentShieldHealth => m_CurrentShieldHealth;
+        public float CurrentShieldHealth => EffectiveInfiniteShield ? EffectiveMaxShieldHealth : m_CurrentShieldHealth;
         public float MaxShieldHealth => EffectiveMaxShieldHealth;
 
         private void Awake()
@@ -268,7 +276,12 @@ namespace Combating.Scripts
 
             if (!Application.isPlaying) return;
 
-            // Manejo de Tiempos de Cooldown y Duración Activa
+            if (EffectiveInfiniteShield)
+            {
+                m_CurrentShieldHealth = EffectiveMaxShieldHealth;
+                m_CooldownTimer = 0f;
+            }
+
             if (InCooldown)
             {
                 m_CooldownTimer -= Time.deltaTime;
@@ -280,18 +293,16 @@ namespace Combating.Scripts
                 }
             }
 
-            if (IsShieldActive)
+            if (IsShieldActive && !EffectiveInfiniteShield)
             {
                 m_ActiveTimer += Time.deltaTime;
 
-                // Desactivación y Cooldown al superar la duración o capacidad de daño
                 if (m_ActiveTimer >= EffectiveMaxShieldDuration || m_CurrentShieldHealth <= 0f)
                 {
                     StartCooldown();
                 }
             }
 
-            // Destello visual de impacto
             if (m_HitFlashTimer > 0f)
             {
                 m_HitFlashTimer -= Time.deltaTime;
@@ -360,11 +371,19 @@ namespace Combating.Scripts
             }
         }
 
+        public void RechargeShieldInstantly()
+        {
+            m_CooldownTimer = 0f;
+            m_CurrentShieldHealth = EffectiveMaxShieldHealth;
+            m_ActiveTimer = 0f;
+            Debug.Log($"<color=cyan>[ShieldController]</color> Escudo recargado al 100% de capacidad ({m_CurrentShieldHealth} HP).");
+        }
+
         public void SetShieldState(bool active)
         {
             if (!isUnlocked && active) return;
 
-            if (active && InCooldown) return;
+            if (active && InCooldown && !EffectiveInfiniteShield) return;
 
             if (IsShieldActive == active) return;
 
@@ -376,7 +395,7 @@ namespace Combating.Scripts
                 }
                 m_ActiveTimer = 0f;
             }
-            else if (IsShieldActive && !InCooldown)
+            else if (IsShieldActive && !InCooldown && !EffectiveInfiniteShield)
             {
                 StartCooldown();
                 return;
@@ -396,6 +415,8 @@ namespace Combating.Scripts
 
         public void StartCooldown()
         {
+            if (EffectiveInfiniteShield) return;
+
             m_CooldownTimer = EffectiveCooldownDuration;
             m_ActiveTimer = 0f;
 
@@ -463,6 +484,7 @@ namespace Combating.Scripts
             if (actualController != null)
             {
                 actualController.isUnlocked = true;
+                actualController.RechargeShieldInstantly();
 
                 if (actualController.toggleOnUse)
                 {
@@ -481,6 +503,7 @@ namespace Combating.Scripts
             else
             {
                 this.isUnlocked = true;
+                RechargeShieldInstantly();
 
                 if (toggleOnUse)
                 {
@@ -531,9 +554,6 @@ namespace Combating.Scripts
             return mat;
         }
 
-        /// <summary>
-        /// Genera una esfera de energía 3D con colisionador Trigger que recubre al robot.
-        /// </summary>
         [ContextMenu("Re-Generate Shield Mesh")]
         public void GenerateShieldMesh()
         {
@@ -562,7 +582,6 @@ namespace Combating.Scripts
                 shieldVisualObject.transform.SetParent(targetParent, false);
             }
 
-            // Colisionador Trigger para interceptar disparos e impactos en la superficie de la esfera
             SphereCollider sc = shieldVisualObject.GetComponent<SphereCollider>();
             if (sc == null) sc = shieldVisualObject.AddComponent<SphereCollider>();
             sc.isTrigger = true;
@@ -587,17 +606,19 @@ namespace Combating.Scripts
 
         public float ProcessIncomingDamage(float damage)
         {
-            if (!IsShieldActive || InCooldown) return damage;
+            if (!IsShieldActive || (InCooldown && !EffectiveInfiniteShield)) return damage;
 
             float dr = EffectiveDamageReduction;
             float unmitigatedDamage = damage * (1f - dr);
 
-            // El escudo absorbe el impacto de su capacidad interna de vida
-            m_CurrentShieldHealth -= damage;
+            if (!EffectiveInfiniteShield)
+            {
+                m_CurrentShieldHealth -= damage;
+            }
 
             TriggerShieldHitEffect();
 
-            if (m_CurrentShieldHealth <= 0f)
+            if (!EffectiveInfiniteShield && m_CurrentShieldHealth <= 0f)
             {
                 m_CurrentShieldHealth = 0f;
                 StartCooldown();
@@ -608,7 +629,7 @@ namespace Combating.Scripts
 
         public int ProcessIncomingDamage(int damage)
         {
-            if (!IsShieldActive || InCooldown) return damage;
+            if (!IsShieldActive || (InCooldown && !EffectiveInfiniteShield)) return damage;
 
             return Mathf.RoundToInt(ProcessIncomingDamage((float)damage));
         }

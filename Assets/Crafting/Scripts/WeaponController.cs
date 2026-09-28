@@ -58,15 +58,23 @@ namespace Crafting.Scripts
             transform.localPosition = new Vector3(0.4f, 1.2f, 0.2f);
             transform.localRotation = Quaternion.identity;
 
-            // Activate Shoot Module: Robust search for both Modular and Standard Players
-            _targetShooter = player.GetComponentInChildren<ShootController>(true) ??
-                            player.GetComponentInParent<ShootController>() ??
+            // Desactivar cualquier ShootController secundario presente en el arma instanciada
+            var weaponShooter = GetComponent<ShootController>() ?? GetComponentInChildren<ShootController>();
+            if (weaponShooter != null && weaponShooter.transform != player.transform)
+            {
+                weaponShooter.enabled = false;
+            }
+
+            // Seleccionar e integrar con el ShootController principal del personaje
+            _targetShooter = player.GetComponent<ShootController>() ??
+                            player.GetComponentInChildren<ShootController>() ??
                             GameObject.FindObjectsByType<ShootController>(FindObjectsSortMode.None)
                             .FirstOrDefault(s => s.gameObject.transform.root == player.transform.root);
 
             if (_targetShooter != null)
             {
                 _targetShooter.isUnlocked = true;
+                _targetShooter.enabled = true;
                 Debug.Log($"[WeaponController] Sistema de disparo ACTIVADO en {player.name}.");
             }
             else
@@ -77,7 +85,6 @@ namespace Crafting.Scripts
 
         private void OnDestroy()
         {
-            // Si el ítem se destruye (QUIT/DROP), volvemos a bloquear la habilidad si así está configurado
             if (lockOnUnequip && _targetShooter != null)
             {
                 _targetShooter.isUnlocked = false;
@@ -111,7 +118,6 @@ namespace Crafting.Scripts
 
             if (!Application.isPlaying && mf.sharedMesh != null)
             {
-                // Solo destruimos si realmente es una malla generada por nosotros para evitar MissingReference
                 if (mf.sharedMesh.name == "Weapon_Mesh")
                 {
                     DestroyImmediate(mf.sharedMesh);
