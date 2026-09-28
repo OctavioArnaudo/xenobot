@@ -7,19 +7,17 @@ namespace Combating.Scripts
 {
     /// <summary>
     /// Logic controller for shooting mechanics.
-    /// Compliant with AGENTS.md (Clean Prefabs with Optional<T>).
     /// Supports Infinite Ammo, Auto-Reload from Inventory on empty clip, and Ammo Damage Multipliers.
     /// </summary>
     public class ShootController : MonoBehaviour
     {
-        // --- Internal Hardcoded Ranged Defaults (AGENTS.md) ---
         private const float DEFAULT_PLAYER_SHOOT_DAMAGE = 32f;
         private const float DEFAULT_PLAYER_FIRE_RATE = 8.0f;
         private const float DEFAULT_PLAYER_AIM_DISTANCE = 120f;
 
         private const float DEFAULT_ENEMY_BASE_SHOOT_DAMAGE = 22f;
         private const float DEFAULT_ENEMY_BASE_FIRE_RATE = 5.0f;
-        private const float DEFAULT_ENEMY_BASE_AIM_DISTANCE = 100f;
+        private const float DEFAULT_ENEMY_BASE_AIM_DISTANCE = 120f;
 
         private const int DEFAULT_MAX_AMMO = 30;
         private const float DEFAULT_RELOAD_DURATION = 1.8f;
@@ -32,7 +30,7 @@ namespace Combating.Scripts
         public GameObject Projectile;
         public Renderer[] visualsToRotate;
 
-        [Header("Sobrescrituras Opcionales del Inspector (AGENTS.md)")]
+        [Header("Sobrescrituras Opcionales del Inspector")]
         public Optional<float> Damage;
         public Optional<float> FireRate;
         public Optional<float> AimDistance;

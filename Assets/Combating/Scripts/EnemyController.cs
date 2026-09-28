@@ -83,9 +83,8 @@ namespace Combating.Scripts
     /// </summary>
     public class EnemyController : NetworkBehaviour
     {
-        public enum AIState { Patrulla, Persecucion, Ataque, Huida, Guardia, Sigilo }
+        public enum AIState { Patrulla, Alerta, Persecucion, Ataque, Huida, Guardia, Sigilo }
 
-        // --- Internal Hardcoded Statistics Defaults ---
         private const float DEFAULT_HOVER_HEIGHT = 3.5f;
         private const float DEFAULT_WANDER_SPEED = 3.5f;
         private const float DEFAULT_CHASE_SPEED = 8.0f;
@@ -93,8 +92,9 @@ namespace Combating.Scripts
         private const float DEFAULT_WANDER_RADIUS = 20.0f;
 
         private const float DEFAULT_DETECTION_RANGE = 35.0f;
-        private const float DEFAULT_SHOOT_RANGE = 22.0f;
+        private const float DEFAULT_SHOOT_RANGE = 120.0f;
         private const float DEFAULT_MELEE_RANGE = 4.0f;
+        private const float DEFAULT_VISION_ANGLE = 120.0f;
 
         [Header("Core Configuration")]
         public EnemyCategory enemyCategory = EnemyCategory.Hybrid;
@@ -121,6 +121,9 @@ namespace Combating.Scripts
         public Optional<float> detectionRange;
         public Optional<float> shootRange;
         public Optional<float> meleeRange;
+        public Optional<float> visionAngleOverride;
+
+        public float EffectiveVisionAngle => visionAngleOverride.GetValue(DEFAULT_VISION_ANGLE);
 
         // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
         public float EffectiveHoverHeight
@@ -193,6 +196,24 @@ namespace Combating.Scripts
             }
         }
 
+        public float EffectiveMaxProjectileReach
+        {
+            get
+            {
+                float baseRange = EffectiveShootRange;
+                if (m_Shooter != null && m_Shooter.Projectile != null)
+                {
+                    var proj = m_Shooter.Projectile.GetComponent<ProjectileController>();
+                    if (proj != null)
+                    {
+                        float projDistance = proj.EffectiveSpeed * proj.EffectiveLifeTime;
+                        return Mathf.Max(baseRange, projDistance);
+                    }
+                }
+                return baseRange;
+            }
+        }
+
         public float EffectiveMeleeRange
         {
             get
@@ -237,10 +258,11 @@ namespace Combating.Scripts
 
             if (m_Agent != null)
             {
-                m_Agent.baseOffset = EffectiveHoverHeight;
                 m_Agent.updateRotation = false;
+                EnemyCategory cat = GetCurrentCategory();
+                m_Agent.baseOffset = (cat == EnemyCategory.Melee) ? 0f : EffectiveHoverHeight;
 
-                if (GetCurrentCategory() == EnemyCategory.Melee)
+                if (cat == EnemyCategory.Melee)
                 {
                     m_Agent.stoppingDistance = 0.1f;
                 }
@@ -415,6 +437,8 @@ namespace Combating.Scripts
                 return;
             }
 
+            UpdateHoverOffsetForCategory();
+            DetectAndDodgeHazards();
             EvaluatePhaseTransitions();
             FindTarget();
             ExecuteArchetypeBehavior();
@@ -556,6 +580,58 @@ namespace Combating.Scripts
             return true;
         }
 
+        private void UpdateHoverOffsetForCategory()
+        {
+            if (m_Agent == null) return;
+            EnemyCategory cat = GetCurrentCategory();
+            if (cat == EnemyCategory.Melee)
+            {
+                m_Agent.baseOffset = 0f;
+            }
+            else if (cat == EnemyCategory.Ranged)
+            {
+                m_Agent.baseOffset = EffectiveHoverHeight;
+            }
+            else
+            {
+                bool isMeleeClose = m_Target != null && Vector3.Distance(transform.position, m_Target.position) <= EffectiveMeleeRange * 1.5f;
+                m_Agent.baseOffset = isMeleeClose ? 0f : EffectiveHoverHeight;
+            }
+        }
+
+        private Vector3 FindCoverPosition(Vector3 targetPos)
+        {
+            Vector3 bestCover = transform.position;
+            float bestDist = float.MaxValue;
+            Vector3 origin = transform.position;
+
+            for (int i = 0; i < 8; i++)
+            {
+                float angle = i * 45f;
+                Vector3 dir = Quaternion.Euler(0, angle, 0) * transform.forward;
+                Vector3 samplePos = origin + dir * 12f;
+
+                if (NavMesh.SamplePosition(samplePos, out NavMeshHit hit, 8f, NavMesh.AllAreas))
+                {
+                    Vector3 eyePos = hit.position + Vector3.up * 1.5f;
+                    Vector3 targetEye = targetPos + Vector3.up * 1.5f;
+                    Vector3 rayDir = (targetEye - eyePos).normalized;
+
+                    if (Physics.Raycast(eyePos, rayDir, Vector3.Distance(eyePos, targetEye), ~0, QueryTriggerInteraction.Ignore))
+                    {
+                        float d = Vector3.Distance(transform.position, hit.position);
+                        if (d < bestDist)
+                        {
+                            bestDist = d;
+                            bestCover = hit.position;
+                        }
+                    }
+                }
+            }
+
+            return bestCover;
+        }
+
         private void FindTarget()
         {
             if (m_Target != null)
@@ -573,8 +649,18 @@ namespace Combating.Scripts
                     float d = Vector3.Distance(transform.position, p.transform.position);
                     if (d <= closest)
                     {
-                        closest = d;
-                        m_Target = p.transform;
+                        Vector3 dirToP = (p.transform.position - transform.position).normalized;
+                        float angle = Vector3.Angle(transform.forward, dirToP);
+
+                        bool inFOV = angle <= (EffectiveVisionAngle * 0.5f) && HasLineOfSightToTarget();
+                        bool inProximity = d <= 6.0f;
+
+                        if (inFOV || inProximity)
+                        {
+                            closest = d;
+                            m_Target = p.transform;
+                            currentState = AIState.Alerta;
+                        }
                     }
                 }
             }
@@ -597,6 +683,39 @@ namespace Combating.Scripts
             return 1.0f;
         }
 
+        private void AnalyzeTargetAndReactTactically(ref AIArchetype currentArchetype)
+        {
+            if (m_Target == null) return;
+
+            HealthController targetHealth = m_Target.GetComponent<HealthController>() ?? m_Target.GetComponentInParent<HealthController>();
+            ShieldController targetShield = m_Target.GetComponent<ShieldController>() ?? m_Target.GetComponentInParent<ShieldController>();
+            ShootController targetShooter = m_Target.GetComponent<ShootController>() ?? m_Target.GetComponentInParent<ShootController>();
+
+            if (m_Health != null && (m_Health.CurrentHP / (float)m_Health.maxHealth) < 0.30f)
+            {
+                currentArchetype = AIArchetype.FlanqueoYCobertura;
+                return;
+            }
+
+            if (targetShooter != null && (targetShooter.isReloading || targetShooter.currentAmmo == 0))
+            {
+                currentArchetype = AIArchetype.CargaFrenetica;
+                return;
+            }
+
+            if (targetHealth != null && (targetHealth.CurrentHP / (float)targetHealth.maxHealth) < 0.25f)
+            {
+                currentArchetype = AIArchetype.CargaFrenetica;
+                return;
+            }
+
+            if (targetShield != null && targetShield.IsShieldActive)
+            {
+                currentArchetype = AIArchetype.FlanqueoYCobertura;
+                return;
+            }
+        }
+
         private void ExecuteArchetypeBehavior()
         {
             AIArchetype archetypeToRun = activeArchetype;
@@ -606,6 +725,8 @@ namespace Combating.Scripts
                 int seqIndex = currentPhaseIndex % 8;
                 archetypeToRun = (AIArchetype)seqIndex;
             }
+
+            AnalyzeTargetAndReactTactically(ref archetypeToRun);
 
             EnemyCategory category = GetCurrentCategory();
             float speedMult = GetCurrentSpeedMultiplier();
@@ -683,26 +804,19 @@ namespace Combating.Scripts
 
                 if (dist < idealMin)
                 {
-                    // Evitar cuerpo a cuerpo: Huida rápida hacia atrás
-                    Vector3 retreatPos = transform.position + (transform.position - m_Target.position).normalized * 12f;
-                    MoveTo(retreatPos, EffectiveChaseSpeed * 2.5f * speedMult);
+                    Vector3 coverPos = FindCoverPosition(m_Target.position);
+                    MoveTo(coverPos, EffectiveChaseSpeed * 2.5f * speedMult);
                     currentState = AIState.Huida;
                 }
                 else if (dist > idealMax)
                 {
-                    // Acercamiento controlado
                     MoveTo(m_Target.position, EffectiveChaseSpeed * 1.8f * speedMult);
                     currentState = AIState.Persecucion;
                 }
                 else
                 {
-                    // Orbitar en arco alrededor del objetivo a gran velocidad (Strafing)
-                    Vector3 toTarget = (m_Target.position - transform.position).normalized;
-                    Vector3 strafeDir = Vector3.Cross(Vector3.up, toTarget);
-                    float dirSign = (Mathf.FloorToInt(Time.time * 0.8f) % 2 == 0) ? 1f : -1f;
-                    Vector3 strafePos = transform.position + strafeDir * (dirSign * 8f);
-
-                    MoveTo(strafePos, EffectiveChaseSpeed * 2.2f * speedMult);
+                    Vector3 coverPos = FindCoverPosition(m_Target.position);
+                    MoveTo(coverPos, EffectiveChaseSpeed * 2.2f * speedMult);
                     currentState = AIState.Ataque;
                 }
 
@@ -789,10 +903,8 @@ namespace Combating.Scripts
 
                 if (dist < safeDist)
                 {
-                    // "Hit and Run": Ataca y huye velozmente disparando sobre la marcha
-                    Vector3 runDir = (transform.position - m_Target.position).normalized;
-                    Vector3 runPos = transform.position + runDir * 14f;
-                    MoveTo(runPos, EffectiveChaseSpeed * 3.2f * speedMult);
+                    Vector3 coverPos = FindCoverPosition(m_Target.position);
+                    MoveTo(coverPos, EffectiveChaseSpeed * 3.2f * speedMult);
                     currentState = AIState.Huida;
                 }
                 else
@@ -958,50 +1070,114 @@ namespace Combating.Scripts
 
         // --- Helper Methods ---
 
+        private static HashSet<EnemyController> s_ActiveMeleeAttackers = new HashSet<EnemyController>();
+        private const int MAX_CONCURRENT_MELEE_ATTACKERS = 2;
+
+        private bool RequestMeleeAttackToken()
+        {
+            s_ActiveMeleeAttackers.RemoveWhere(e => e == null || !e.enabled || e.m_Health == null || e.m_Health.CurrentHP <= 0);
+            if (s_ActiveMeleeAttackers.Contains(this)) return true;
+            if (s_ActiveMeleeAttackers.Count < MAX_CONCURRENT_MELEE_ATTACKERS)
+            {
+                s_ActiveMeleeAttackers.Add(this);
+                return true;
+            }
+            return false;
+        }
+
+        private void ReleaseMeleeAttackToken()
+        {
+            s_ActiveMeleeAttackers.Remove(this);
+        }
+
+        private Vector3 GetPredictedTargetPosition()
+        {
+            if (m_Target == null) return transform.position + transform.forward * 10f;
+            Vector3 targetPos = m_Target.position + Vector3.up;
+
+            Vector3 targetVel = Vector3.zero;
+            if (m_Target.TryGetComponent<CharacterController>(out var cc)) targetVel = cc.velocity;
+            else if (m_Target.TryGetComponent<Rigidbody>(out var rb)) targetVel = rb.linearVelocity;
+
+            if (m_Shooter != null && m_Shooter.Projectile != null)
+            {
+                var proj = m_Shooter.Projectile.GetComponent<ProjectileController>();
+                float speed = proj != null ? proj.EffectiveSpeed : 30f;
+                float dist = Vector3.Distance(transform.position, m_Target.position);
+                float travelTime = dist / Mathf.Max(1f, speed);
+                targetPos += targetVel * travelTime;
+            }
+
+            return targetPos;
+        }
+
+        private void DetectAndDodgeHazards()
+        {
+            Collider[] hazards = Physics.OverlapSphere(transform.position, 6.0f);
+            foreach (var c in hazards)
+            {
+                if (c == null) continue;
+                var proj = c.GetComponent<ProjectileController>();
+                if (proj != null && proj.m_OwnerTeam != Team.Enemy)
+                {
+                    Vector3 dodgeDir = Vector3.Cross(Vector3.up, (proj.transform.position - transform.position).normalized);
+                    MoveTo(transform.position + dodgeDir * 7f, EffectiveChaseSpeed * 3.2f);
+                    return;
+                }
+            }
+        }
+
         private bool ShouldAttack(EnemyCategory category, bool isMeleeRange, bool isShootRange)
         {
+            bool inMaxShootRange = m_Target != null && Vector3.Distance(transform.position, m_Target.position) <= EffectiveMaxProjectileReach;
             switch (category)
             {
                 case EnemyCategory.Melee:
-                    return isMeleeRange && m_Melee != null;
+                    return isMeleeRange && m_Melee != null && RequestMeleeAttackToken();
                 case EnemyCategory.Ranged:
-                    return isShootRange && m_Shooter != null;
+                    return inMaxShootRange && m_Shooter != null;
                 case EnemyCategory.Hybrid:
-                    return (isMeleeRange && m_Melee != null) || (isShootRange && m_Shooter != null);
+                    return (isMeleeRange && m_Melee != null && RequestMeleeAttackToken()) || (inMaxShootRange && m_Shooter != null);
                 default:
-                    return isMeleeRange || isShootRange;
+                    return isMeleeRange || inMaxShootRange;
             }
         }
 
         private void ExecuteCombatAction(EnemyCategory category, bool isMeleeRange, bool isShootRange)
         {
             if (m_Target == null) return;
-            RotateBaseTowards(m_Target.position);
+            Vector3 aimPos = GetPredictedTargetPosition();
+            RotateBaseTowards(aimPos);
 
             switch (category)
             {
                 case EnemyCategory.Melee:
-                    if (m_Melee != null && isMeleeRange)
+                    if (m_Melee != null && isMeleeRange && RequestMeleeAttackToken())
                     {
                         m_Melee.PerformMeleeAction(m_Target.position);
+                    }
+                    else
+                    {
+                        ReleaseMeleeAttackToken();
                     }
                     break;
 
                 case EnemyCategory.Ranged:
                     if (m_Shooter != null && isShootRange)
                     {
-                        m_Shooter.FireAt(m_Target.position + Vector3.up);
+                        m_Shooter.FireAt(aimPos);
                     }
                     break;
 
                 case EnemyCategory.Hybrid:
-                    if (isMeleeRange && m_Melee != null)
+                    if (isMeleeRange && m_Melee != null && RequestMeleeAttackToken())
                     {
                         m_Melee.PerformMeleeAction(m_Target.position);
                     }
                     else if (isShootRange && m_Shooter != null)
                     {
-                        m_Shooter.FireAt(m_Target.position + Vector3.up);
+                        ReleaseMeleeAttackToken();
+                        m_Shooter.FireAt(aimPos);
                     }
                     break;
             }
@@ -1041,7 +1217,7 @@ namespace Combating.Scripts
         private void RotateBaseTowards(Vector3 position)
         {
             Vector3 direction = (position - transform.position);
-            direction.y = 0;
+            if (GetCurrentCategory() == EnemyCategory.Melee) direction.y = 0;
 
             if (direction.sqrMagnitude > 0.001f)
             {
@@ -1080,8 +1256,9 @@ namespace Combating.Scripts
             }
             speedParam = Mathf.Clamp01(speedParam);
 
+            bool isTerrestrial = GetCurrentCategory() == EnemyCategory.Melee;
             if (_hasAnimSpeed) m_Animator.SetFloat(_animIDSpeed, speedParam);
-            if (_hasAnimGrounded) m_Animator.SetBool(_animIDIsGrounded, grounded);
+            if (_hasAnimGrounded) m_Animator.SetBool(_animIDIsGrounded, isTerrestrial);
         }
 
         public override void OnDestroy()

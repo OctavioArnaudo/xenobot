@@ -17,7 +17,6 @@ namespace Combating.Scripts
     /// Sistema de escudo de energía esférico con mitigación de daño, colisionadores de impacto,
     /// capacidad de resistencia, drenado en tiempo real, recarga exclusiva al USAR desde inventario,
     /// escalado por nivel (Jugador) y degradación inversa por ciclos (Enemigo).
-    /// Compliant con AGENTS.md (Clean Prefabs con Optional<T>).
     /// </summary>
     [ExecuteAlways]
     public class ShieldController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
@@ -31,7 +30,7 @@ namespace Combating.Scripts
         [Header("Shield Settings")]
         public bool isUnlocked = true; // Permiso para usar el escudo
 
-        [Header("Sobrescrituras Opcionales del Inspector (AGENTS.md)")]
+        [Header("Sobrescrituras Opcionales del Inspector")]
         [Tooltip("Mitigación de daño: 1.0 = Bloqueo total, 0.5 = Mitiga el 50%")]
         public Optional<float> damageReductionOverride;
 
@@ -100,7 +99,7 @@ namespace Combating.Scripts
             }
         }
 
-        // --- Effective Statistics Resolvers with AGENTS.md Protection ---
+        // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
 
         public float EffectiveDamageReduction
         {

@@ -161,7 +161,7 @@ namespace Combating.Scripts
 
         private Vector3 m_Direction;
         private GameObject m_Owner;
-        private Team m_OwnerTeam;
+        public Team m_OwnerTeam;
         private bool m_HasHit = false;
         private Transform m_HomingTarget;
 
