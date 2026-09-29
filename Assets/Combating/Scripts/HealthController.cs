@@ -268,6 +268,13 @@ namespace Combating.Scripts
             }
         }
 
+        public void SetHealth(int newHealth)
+        {
+            maxHealth = Mathf.Max(maxHealth, newHealth);
+            if (IsNetworkActive && IsServer) currentHealth.Value = newHealth;
+            else m_OfflineHealth = newHealth;
+        }
+
         public void TakeDamage(int damage)
         {
             if (damage <= 0) return;

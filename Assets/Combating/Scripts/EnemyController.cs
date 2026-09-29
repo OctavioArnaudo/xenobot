@@ -97,7 +97,7 @@ namespace Combating.Scripts
         private const float DEFAULT_VISION_ANGLE = 120.0f;
 
         [Header("Core Configuration")]
-        public EnemyCategory enemyCategory = EnemyCategory.Hybrid;
+        public EnemyCategory enemyCategory;
         public AIArchetype mainArchetype = AIArchetype.SecuenciaMultifase;
         [SerializeField] private string playerTag = "Player";
 
@@ -285,6 +285,10 @@ namespace Combating.Scripts
 
             if (m_Health != null)
             {
+                if (enemyCategory == EnemyCategory.Hybrid)
+                {
+                    m_Health.SetHealth(800);
+                }
                 m_Health.OnTakeDamage.AddListener(OnDamageTaken);
                 m_Health.OnDeath.AddListener(OnEnemyDeath);
             }
@@ -295,52 +299,42 @@ namespace Combating.Scripts
 
         private void InitializePhasesIfNeeded()
         {
-            if (phases == null || phases.Count == 0)
+            if (enemyCategory == EnemyCategory.Hybrid || phases == null || phases.Count == 0)
             {
                 phases = new List<EnemyPhase>();
 
-                if (mainArchetype == AIArchetype.SecuenciaMultifase)
+                AIArchetype[] sequence = new AIArchetype[]
                 {
-                    // Crear 8 fases en serie representando cada uno de los 8 arquetipos fundamentales
-                    AIArchetype[] sequence = new AIArchetype[]
+                    AIArchetype.CargaDirecta,
+                    AIArchetype.FlanqueoYCobertura,
+                    AIArchetype.CargaFrenetica,
+                    AIArchetype.GuardiaConEscudo,
+                    AIArchetype.AtaqueYHuida,
+                    AIArchetype.InvocadorRefuerzos,
+                    AIArchetype.EmboscadaEnSigilo,
+                    AIArchetype.MovimientoErratico
+                };
+
+                for (int i = 0; i < sequence.Length; i++)
+                {
+                    EnemyPhase p = new EnemyPhase
                     {
-                        AIArchetype.CargaDirecta,
-                        AIArchetype.FlanqueoYCobertura,
-                        AIArchetype.CargaFrenetica,
-                        AIArchetype.GuardiaConEscudo,
-                        AIArchetype.AtaqueYHuida,
-                        AIArchetype.InvocadorRefuerzos,
-                        AIArchetype.EmboscadaEnSigilo,
-                        AIArchetype.MovimientoErratico
+                        phaseName = $"Fase Final Boss {i + 1}: {sequence[i]}",
+                        behaviorArchetype = sequence[i],
+                        overrideCategory = true,
+                        categoryOverride = EnemyCategory.Hybrid,
+                        speedMultiplier = 1.3f + (i * 0.15f),
+                        damageMultiplier = 1.5f + (i * 0.2f)
                     };
 
-                    for (int i = 0; i < sequence.Length; i++)
+                    float hpThreshold = 100f - ((i + 1) * (100f / sequence.Length));
+                    p.transitionTriggers.Add(new PhaseTrigger
                     {
-                        EnemyPhase p = new EnemyPhase
-                        {
-                            phaseName = $"Fase {i + 1}: {sequence[i]}",
-                            behaviorArchetype = sequence[i],
-                            speedMultiplier = 1.0f + (i * 0.1f)
-                        };
-
-                        // Trigger de cambio por porcentaje de vida descendente
-                        float hpThreshold = 100f - ((i + 1) * (100f / sequence.Length));
-                        p.transitionTriggers.Add(new PhaseTrigger
-                        {
-                            triggerType = PhaseTriggerType.HealthPercentageLessThan,
-                            thresholdValue = Mathf.Max(5f, hpThreshold)
-                        });
-
-                        phases.Add(p);
-                    }
-                }
-                else
-                {
-                    phases.Add(new EnemyPhase
-                    {
-                        phaseName = $"Fase Única ({mainArchetype})",
-                        behaviorArchetype = mainArchetype
+                        triggerType = PhaseTriggerType.HealthPercentageLessThan,
+                        thresholdValue = Mathf.Max(5f, hpThreshold)
                     });
+
+                    phases.Add(p);
                 }
             }
 
@@ -360,7 +354,6 @@ namespace Combating.Scripts
             }
             if (category == EnemyCategory.Hybrid && (m_Melee == null || m_Shooter == null))
             {
-                Debug.LogError($"<color=red>[EnemyController Error]</color> El enemigo '{gameObject.name}' es de categoría HYBRID pero le falta MeleeController o ShootController.");
             }
 
             AIArchetype archetype = activeArchetype;
