@@ -17,7 +17,9 @@ MonoBehaviour:
     Fuente de Energ\xEDa."
   missionRequirements:
   - {fileID: 11400000, guid: 18ad1a0b05d246e3b0338a958bda0fcc, type: 2}
-  inventoryRequirements: []
+  inventoryRequirements:
+  - item: {fileID: 11400000, guid: 6ac606d832f14c4fa3466276ffe3c0b4, type: 2}
+    amount: 1
   craftingRequirements:
   - {fileID: 11400000, guid: 7b76efe4ffc7424f8b030a2e804f39d6, type: 2}
   missionPrefab: {fileID: 600001, guid: 956e200413c54fcba7ca946c3c670ff5, type: 3}

@@ -114,6 +114,7 @@ GameObject:
   - component: {fileID: 6353754398152676254}
   - component: {fileID: 9193409881328918840}
   - component: {fileID: 4056139371762185263}
+  - component: {fileID: 8123456789012345678}
   m_Layer: 0
   m_Name: PlayerPrefab
   m_TagString: Player
@@ -791,6 +792,30 @@ MonoBehaviour:
   missions: []
   customTitle: 
   customDescription: 
+--- !u!114 &8123456789012345678
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1804703078109025515}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1f2e3b4c5a69876543210fedcba9876, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.CraftingController
+  ShowTopMostFoldoutHeaderGroup: 1
+  availableTrades: []
+  requireProximity: 0
+  panelWidth: 500
+  panelHeight: 550
+  titleH: 65
+  padding: 20
+  cornerRadius: 15
+  panelColor: {r: 0.05, g: 0.05, b: 0.05, a: 0.95}
+  accentColor: {r: 1, g: 0.85, b: 0, a: 1}
+  minWidth: 250
+  minHeight: 40
 --- !u!1 &3596114446979786384
 GameObject:
   m_ObjectHideFlags: 0
@@ -5674,17 +5699,17 @@ PrefabInstance:
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1305269.1
+      value: 1310480.4
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2306.356
+      value: 2316.164
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 782303.3
+      value: 785430.06
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc,
         type: 3}
@@ -5744,17 +5769,17 @@ PrefabInstance:
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc,
         type: 3}
       propertyPath: m_LocalPosition.x
-      value: 1305276
+      value: 1310487.2
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc,
         type: 3}
       propertyPath: m_LocalPosition.y
-      value: 2306.369
+      value: 2316.177
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc,
         type: 3}
       propertyPath: m_LocalPosition.z
-      value: 782307.44
+      value: 785434.2
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

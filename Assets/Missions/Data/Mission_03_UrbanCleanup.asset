@@ -16,7 +16,8 @@ MonoBehaviour:
   description: Elimina enemigos para extraer Combustible de sus restos.
   missionRequirements:
   - {fileID: 11400000, guid: f81b450690584dae8665369f97c5655d, type: 2}
-  inventoryRequirements: []
-  craftingRequirements:
-  - {fileID: 0}
+  inventoryRequirements:
+  - item: {fileID: 11400000, guid: cc730feca3d9438aa9e28397df2e6fe4, type: 2}
+    amount: 1
+  craftingRequirements: []
   missionPrefab: {fileID: 300001, guid: 08809094878a481d9df81595cff85401, type: 3}

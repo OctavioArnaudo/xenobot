@@ -16,7 +16,7 @@ MonoBehaviour:
   description: Ve al laboratorio. Usa el Hierro para craftear un Arma.
   missionRequirements:
   - {fileID: 11400000, guid: faf7bd1c8a064b2181e4b6eb5c8857ee, type: 2}
-  inventoryRequirements:
-  - {fileID: 11400000, guid: d7c9c3ed602c45bda00bb8572b645ef1, type: 2}
-  craftingRequirements: []
+  inventoryRequirements: []
+  craftingRequirements:
+  - {fileID: 11400000, guid: c73dfdf4058e4f13b973f9ef61b0a184, type: 2}
   missionPrefab: {fileID: 200001, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}

@@ -179,23 +179,12 @@ namespace Narrative.Scripts
             // 2. Requisitos de recolección en inventario (ItemData)
             if (mData.inventoryRequirements != null && mData.inventoryRequirements.Count > 0)
             {
-                var requiredCounts = new Dictionary<ItemData, int>();
-                foreach (var item in mData.inventoryRequirements)
+                foreach (var req in mData.inventoryRequirements)
                 {
-                    if (item == null) continue;
-                    if (requiredCounts.ContainsKey(item))
-                        requiredCounts[item]++;
-                    else
-                        requiredCounts[item] = 1;
-                }
-
-                foreach (var kvp in requiredCounts)
-                {
-                    ItemData reqItem = kvp.Key;
-                    int reqQty = kvp.Value;
-
-                    int playerQty = MissionController.GetItemQuantityInBag(bag, reqItem);
-                    if (playerQty < reqQty)
+                    if (req.item == null) continue;
+                    int requiredQty = req.amount > 0 ? req.amount : 1;
+                    int playerQty = MissionController.GetItemQuantityInBag(bag, req.item);
+                    if (playerQty < requiredQty)
                     {
                         return false;
                     }
@@ -209,19 +198,24 @@ namespace Narrative.Scripts
                 {
                     if (trade == null) continue;
 
-                    if (trade.OutputItem != null)
-                    {
-                        int reqQty = trade.OutputAmount > 0 ? trade.OutputAmount : 1;
-                        int playerQty = MissionController.GetItemQuantityInBag(bag, trade.OutputItem);
-                        if (playerQty < reqQty)
-                            return false;
-                    }
+                    // 1. Verificar si el crafteo/trade fue ejecutado
+                    bool tradeDone = CraftingController.IsTradeCompletedAnywhere(trade);
+                    if (!tradeDone)
+                        return false;
 
-                    if (trade.InputItem != null && trade.InputAmount > 0)
+                    // 2. Si produce productos de salida, verificar que el jugador posea las cantidades requeridas
+                    if (trade.outputs != null && trade.outputs.Count > 0)
                     {
-                        int playerQty = MissionController.GetItemQuantityInBag(bag, trade.InputItem);
-                        if (playerQty < trade.InputAmount)
-                            return false;
+                        foreach (var outReq in trade.outputs)
+                        {
+                            if (outReq == null || outReq.item == null) continue;
+                            int reqQty = outReq.GetMinRequiredAmount();
+                            if (reqQty <= 0) continue;
+
+                            int playerQty = MissionController.GetItemQuantityInBag(bag, outReq.item);
+                            if (playerQty < reqQty)
+                                return false;
+                        }
                     }
                 }
             }
@@ -535,9 +529,9 @@ namespace Narrative.Scripts
                 var m = Asset<Missions.Data.MissionData>("Assets/Missions/Data/Mission_" + NarrativeManager.Id[i] + ".asset");
                 m.title = Titles[i];
                 m.description = Descs[i];
-                m.inventoryRequirements = new List<ItemData>();
+                m.inventoryRequirements = new List<ItemRequirement>();
                 if (i % 2 == 1 && i < 17)
-                    m.inventoryRequirements.Add(items[i / 2]);
+                    m.inventoryRequirements.Add(new ItemRequirement(items[i / 2], 1));
                 EditorUtility.SetDirty(m);
                 list.GetArrayElementAtIndex(i).objectReferenceValue = m;
             }

@@ -15,10 +15,10 @@ namespace Missions.Data
         [Header("Requisitos de Progresión")]
         public List<MissionData> missionRequirements;
 
-        [Header("Objetivos de Recolección")]
-        public List<ItemData> inventoryRequirements;
+        [Header("Objetivos de Recolección (Inventario)")]
+        public List<ItemRequirement> inventoryRequirements;
 
-        [Header("Objetivos de Crafteo")]
+        [Header("Objetivos de Crafteo (Acción de Receta)")]
         public List<TradeData> craftingRequirements;
 
         [Header("Configuración Visual")]

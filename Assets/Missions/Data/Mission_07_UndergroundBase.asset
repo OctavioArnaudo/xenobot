@@ -16,7 +16,9 @@ MonoBehaviour:
   description: Usa la Llave para entrar a la base subterranea.
   missionRequirements:
   - {fileID: 11400000, guid: af7c02f85c154db59efb6d3a23fcce30, type: 2}
-  inventoryRequirements: []
+  inventoryRequirements:
+  - item: {fileID: 11400000, guid: 6ac606d832f14c4fa3466276ffe3c0b4, type: 2}
+    amount: 1
   craftingRequirements: []
   missionPrefab: {fileID: 2782716079324928893, guid: a1957f42c3caff64c81c5b4c360defed,
     type: 3}

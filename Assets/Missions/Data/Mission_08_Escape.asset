@@ -16,7 +16,9 @@ MonoBehaviour:
   description: Entra a la base con la Fuente de Energia para ganar.
   missionRequirements:
   - {fileID: 11400000, guid: e730414ac684b374c8643c5fd5abe765, type: 2}
-  inventoryRequirements: []
+  inventoryRequirements:
+  - item: {fileID: 11400000, guid: 9f41a1c295b64338a231ce89c6aa91e6, type: 2}
+    amount: 1
   craftingRequirements: []
   missionPrefab: {fileID: 7690778578472770116, guid: ac458b5116867cc4699f7ee89d919e5c,
     type: 3}

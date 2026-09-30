@@ -3,6 +3,75 @@ using UnityEngine.Serialization;
 
 namespace Crafting.Scripts
 {
+    [System.Serializable]
+    public struct ItemRequirement
+    {
+        public ItemData item;
+        public int amount;
+
+        public ItemRequirement(ItemData item, int amount = 1)
+        {
+            this.item = item;
+            this.amount = amount <= 0 ? 1 : amount;
+        }
+    }
+
+    [System.Serializable]
+    public class ItemAmount
+    {
+        public ItemData item;
+
+        [Header("Cantidad")]
+        public int amount = 1;
+
+        [Header("Rango Aleatorio (Opcional)")]
+        public bool useRange = false;
+        public int minAmount = 1;
+        public int maxAmount = 1;
+
+        [Header("Probabilidad de Recompensa (0% - 100%)")]
+        [Range(0f, 100f)]
+        public float dropChance = 100f;
+
+        public ItemAmount() { }
+
+        public ItemAmount(ItemData item, int amount = 1)
+        {
+            this.item = item;
+            this.amount = amount;
+            this.useRange = false;
+            this.minAmount = amount;
+            this.maxAmount = amount;
+            this.dropChance = 100f;
+        }
+
+        public int GetAmount()
+        {
+            if (dropChance < 100f && Random.value * 100f > dropChance)
+            {
+                return 0;
+            }
+
+            if (useRange)
+            {
+                int min = Mathf.Min(minAmount, maxAmount);
+                int max = Mathf.Max(minAmount, maxAmount);
+                return Random.Range(min, max + 1);
+            }
+
+            return amount;
+        }
+
+        public int GetMinRequiredAmount()
+        {
+            if (useRange)
+            {
+                return Mathf.Min(minAmount, maxAmount);
+            }
+            return amount;
+        }
+    }
+
     /// <summary>
     /// Acción ejecutada cuando el ítem se usa desde el inventario (Botón USE).
     /// </summary>
@@ -42,7 +111,6 @@ namespace Crafting.Scripts
         public string itemName;
 
         [Header("Categorización")]
-
         [Tooltip("¿Se puede recoger del suelo o solo se puede usar/dropear/quit?")]
         public bool isPickable = true;
 
@@ -56,14 +124,15 @@ namespace Crafting.Scripts
         public bool isDropable = true;
 
         public int maxStack = 99;
-        // Hash estable entre PCs (el default depende del proceso y rompe el inventario en red).
+        public int defaultAmount = 1;
+
+        // Hash estable entre PCs
         public override int GetHashCode()
         {
             int h = 17;
             foreach (char c in (itemName ?? "").ToLowerInvariant()) h = unchecked(h * 31 + c);
             return h;
         }
-
 
         [Header("Representación")]
         [FormerlySerializedAs("icon")]

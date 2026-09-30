@@ -17,7 +17,7 @@ MonoBehaviour:
     a cuerpo."
   missionRequirements: []
   inventoryRequirements:
-  - {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
-  craftingRequirements:
-  - {fileID: 11400000, guid: e24617f83abd35b44ae69666480bf225, type: 2}
+  - item: {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
+    amount: 5
+  craftingRequirements: []
   missionPrefab: {fileID: 100001, guid: bcb98aa31a1346ba8e6efc43685bb56f, type: 3}

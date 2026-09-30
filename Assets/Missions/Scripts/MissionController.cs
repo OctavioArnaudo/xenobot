@@ -93,6 +93,7 @@ namespace Missions.Scripts
             {
                 CreateUI();
             }
+            UpdateMissionFlow();
         }
 
         public override void OnNetworkSpawn()
@@ -111,6 +112,7 @@ namespace Missions.Scripts
                     SyncLocalListWithNetwork();
                 }
             }
+            UpdateMissionFlow();
         }
 
         private void EnsureTriggerRigidbody()
@@ -316,6 +318,11 @@ namespace Missions.Scripts
 
             MissionData nextMission = SelectNextMissionByPriority(_currentActiveMission, missions);
 
+            if (nextMission == null && this.missionData != null && !IsMissionCompleted(this.missionData))
+            {
+                nextMission = this.missionData;
+            }
+
             if (nextMission != null)
             {
                 _currentActiveMission = nextMission;
@@ -386,23 +393,12 @@ namespace Missions.Scripts
 
             if (mData.inventoryRequirements != null && mData.inventoryRequirements.Count > 0)
             {
-                var requiredCounts = new Dictionary<ItemData, int>();
-                foreach (var item in mData.inventoryRequirements)
+                foreach (var req in mData.inventoryRequirements)
                 {
-                    if (item == null) continue;
-                    if (requiredCounts.ContainsKey(item))
-                        requiredCounts[item]++;
-                    else
-                        requiredCounts[item] = 1;
-                }
-
-                foreach (var kvp in requiredCounts)
-                {
-                    ItemData reqItem = kvp.Key;
-                    int reqQty = kvp.Value;
-
-                    int playerQty = GetItemQuantityInBag(bag, reqItem);
-                    if (playerQty < reqQty)
+                    if (req.item == null) continue;
+                    int requiredQty = req.amount > 0 ? req.amount : 1;
+                    int playerQty = GetItemQuantityInBag(bag, req.item);
+                    if (playerQty < requiredQty)
                     {
                         return false;
                     }
@@ -415,19 +411,22 @@ namespace Missions.Scripts
                 {
                     if (trade == null) continue;
 
-                    if (trade.OutputItem != null)
-                    {
-                        int reqQty = trade.OutputAmount > 0 ? trade.OutputAmount : 1;
-                        int playerQty = GetItemQuantityInBag(bag, trade.OutputItem);
-                        if (playerQty < reqQty)
-                            return false;
-                    }
+                    bool tradeDone = CraftingController.IsTradeCompletedAnywhere(trade);
+                    if (!tradeDone)
+                        return false;
 
-                    if (trade.InputItem != null && trade.InputAmount > 0)
+                    if (trade.outputs != null && trade.outputs.Count > 0)
                     {
-                        int playerQty = GetItemQuantityInBag(bag, trade.InputItem);
-                        if (playerQty < trade.InputAmount)
-                            return false;
+                        foreach (var outReq in trade.outputs)
+                        {
+                            if (outReq == null || outReq.item == null) continue;
+                            int reqQty = outReq.GetMinRequiredAmount();
+                            if (reqQty <= 0) continue;
+
+                            int playerQty = GetItemQuantityInBag(bag, outReq.item);
+                            if (playerQty < reqQty)
+                                return false;
+                        }
                     }
                 }
             }
@@ -506,20 +505,22 @@ namespace Missions.Scripts
             panelImg.color = new Color(0, 0, 0, 0.85f);
 
             RectTransform rt = _hudPanel.GetComponent<RectTransform>();
-            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 1);
+            rt.anchorMin = new Vector2(0.5f, 1f);
+            rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
             rt.anchoredPosition = new Vector2(0, -10);
-            rt.sizeDelta = new Vector2(400, 80); // Se amplía la altura del panel a 80px
+            rt.sizeDelta = new Vector2(420, 90);
 
-            // Configuración del Título en la mitad superior del HUD
+            // Título: posicionado en la parte superior del panel
             _titleTMP = CreateTextElement("Title", _hudPanel.transform, 16, Color.yellow,
-                new Vector2(0, 1), new Vector2(1, 1), // Anchors arriba (Min: 0,1 - Max: 1,1)
-                new Vector2(0.5f, 1f), new Vector2(0, -5), new Vector2(-20, 25));
+                new Vector2(0f, 0.55f), new Vector2(1f, 1f),
+                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(-20, 0));
             _titleTMP.fontStyle = FontStyles.Bold;
 
-            // Configuración de la Descripción en la mitad inferior del HUD
-            _descTMP = CreateTextElement("Description", _hudPanel.transform, 12, Color.white,
-                new Vector2(0, 0), new Vector2(1, 0.6f), // Anchors abajo (Min: 0,0 - Max: 1,0.6)
-                new Vector2(0.5f, 1f), new Vector2(0, 0), new Vector2(-20, 0));
+            // Descripción: posicionada en la parte inferior del panel
+            _descTMP = CreateTextElement("Description", _hudPanel.transform, 13, Color.white,
+                new Vector2(0f, 0f), new Vector2(1f, 0.55f),
+                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(-20, 0));
 
             s_SharedHudPanel = _hudPanel;
             s_SharedTitleTMP = _titleTMP;
@@ -537,6 +538,7 @@ namespace Missions.Scripts
             tmp.fontSize = size;
             tmp.color = color;
             tmp.alignment = TextAlignmentOptions.Center;
+            tmp.overflowMode = TextOverflowModes.Ellipsis;
 
             RectTransform rt = go.GetComponent<RectTransform>();
             rt.anchorMin = anchorMin;
@@ -641,17 +643,20 @@ namespace Missions.Scripts
         {
             if (mData == null) return;
 
-            string newId = GetMissionIdentifier(mData);
+            if (_hudPanel == null || _titleTMP == null) CreateUI();
 
-            if (_hudPanel != null && _hudPanel.activeSelf && _currentVisibleMissionId == newId)
+            if (s_SharedHudPanel != null)
             {
-                return;
+                _hudPanel = s_SharedHudPanel;
+                _titleTMP = s_SharedTitleTMP;
+                _descTMP = s_SharedDescTMP;
             }
 
-            if (_hudPanel == null) CreateUI();
             if (_hudPanel == null) return;
 
+            string newId = GetMissionIdentifier(mData);
             _currentVisibleMissionId = newId;
+
             _hudPanel.SetActive(true);
             if (_titleTMP != null) _titleTMP.text = mData.title;
             if (_descTMP != null) _descTMP.text = mData.description;
@@ -660,6 +665,14 @@ namespace Missions.Scripts
         public void ShowMessage(string title, string description)
         {
             if (_hudPanel == null) CreateUI();
+
+            if (s_SharedHudPanel != null)
+            {
+                _hudPanel = s_SharedHudPanel;
+                _titleTMP = s_SharedTitleTMP;
+                _descTMP = s_SharedDescTMP;
+            }
+
             if (_hudPanel == null) return;
 
             _hudPanel.SetActive(true);

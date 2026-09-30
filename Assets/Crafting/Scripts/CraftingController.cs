@@ -1,21 +1,24 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
+using Unity.Collections;
 using System.Collections.Generic;
 using Trades.Data;
 using System.Linq;
 using Crafting.Scripts;
 using Combating.Scripts;
+using Missions.Scripts;
 
 namespace Crafting.Scripts
 {
     /// <summary>
     /// Unified controller for the Crafting System.
-    /// Handles UI (Minimized & Expanded), Trigger proximity, and Debug activation.
+    /// Handles UI, trigger proximity, player-attached crafting, and tracking completed trades.
     /// </summary>
     public class CraftingController : NetworkBehaviour
     {
         public static CraftingController Instance { get; private set; }
+        public static CraftingController LocalInstance { get; private set; }
 
         public bool IsUIOpen => _open;
 
@@ -45,13 +48,27 @@ namespace Crafting.Scripts
         private GUIStyle _titleSty, _recipeSty, _btnSty, _infoSty, _qtySty, _minSty;
         private bool _stylesReady;
 
+        // Registro de trades crafteados
+        private NetworkList<FixedString32Bytes> _completedTrades = new NetworkList<FixedString32Bytes>();
+        private HashSet<string> _localCompletedTrades = new HashSet<string>();
+
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
         private void Awake()
         {
             if (Instance == null) Instance = this;
 
-            if (GetComponent<Collider>() == null)
+            bool isPlayer = CompareTag("Player") ||
+                            (transform.root != null && transform.root.CompareTag("Player")) ||
+                            GetComponentInParent<InventoryController>() != null;
+
+            if (isPlayer)
+            {
+                LocalInstance = this;
+                _isPlayerInRange = true;
+                requireProximity = false;
+            }
+            else if (requireProximity && GetComponent<Collider>() == null)
             {
                 var col = gameObject.AddComponent<BoxCollider>();
                 col.isTrigger = true;
@@ -59,20 +76,142 @@ namespace Crafting.Scripts
             }
         }
 
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+            if (Instance == this) Instance = null;
+            if (LocalInstance == this) LocalInstance = null;
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            if (IsServer && _completedTrades == null)
+            {
+                _completedTrades = new NetworkList<FixedString32Bytes>();
+            }
+
+            if (IsClient && _completedTrades != null)
+            {
+                _completedTrades.OnListChanged += OnTradesListChanged;
+                SyncLocalTradesWithNetwork();
+            }
+        }
+
+        private void OnTradesListChanged(NetworkListEvent<FixedString32Bytes> changeEvent)
+        {
+            if (changeEvent.Type == NetworkListEvent<FixedString32Bytes>.EventType.Add)
+            {
+                if (_localCompletedTrades == null) _localCompletedTrades = new HashSet<string>();
+                _localCompletedTrades.Add(changeEvent.Value.ToString());
+            }
+        }
+
+        private void SyncLocalTradesWithNetwork()
+        {
+            if (_completedTrades == null) return;
+            if (_localCompletedTrades == null) _localCompletedTrades = new HashSet<string>();
+
+            foreach (var id in _completedTrades)
+            {
+                _localCompletedTrades.Add(id.ToString());
+            }
+        }
+
+        public static string GetTradeIdentifier(TradeData trade)
+        {
+            if (trade == null) return "";
+            if (!string.IsNullOrEmpty(trade.name)) return trade.name;
+            if (trade.OutputItem != null && !string.IsNullOrEmpty(trade.OutputItem.itemName))
+                return trade.OutputItem.itemName;
+            return trade.ToString();
+        }
+
+        public bool IsTradeCompleted(TradeData trade)
+        {
+            if (trade == null) return false;
+            return IsTradeCompleted(GetTradeIdentifier(trade));
+        }
+
+        public bool IsTradeCompleted(string id)
+        {
+            if (string.IsNullOrEmpty(id) || _localCompletedTrades == null) return false;
+            string cleanId = id.Trim().ToLowerInvariant();
+            foreach (var completed in _localCompletedTrades)
+            {
+                if (completed.Trim().ToLowerInvariant() == cleanId)
+                    return true;
+            }
+            return false;
+        }
+
+        public static bool IsTradeCompletedAnywhere(TradeData trade)
+        {
+            if (trade == null) return false;
+            if (LocalInstance != null && LocalInstance.IsTradeCompleted(trade)) return true;
+            if (Instance != null && Instance.IsTradeCompleted(trade)) return true;
+
+            var allCraftingControllers = Object.FindObjectsByType<CraftingController>(FindObjectsSortMode.None);
+            foreach (var cc in allCraftingControllers)
+            {
+                if (cc != null && cc.IsTradeCompleted(trade)) return true;
+            }
+            return false;
+        }
+
+        public void RecordCompletedTrade(TradeData trade)
+        {
+            if (trade == null) return;
+            string id = GetTradeIdentifier(trade);
+            if (string.IsNullOrEmpty(id)) return;
+
+            if (_localCompletedTrades == null) _localCompletedTrades = new HashSet<string>();
+            _localCompletedTrades.Add(id);
+
+            if (IsSpawned && _completedTrades != null)
+            {
+                RecordTradeServerRpc(id);
+            }
+
+            if (LocalInstance != null && LocalInstance != this)
+            {
+                LocalInstance.RecordCompletedTrade(trade);
+            }
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void RecordTradeServerRpc(string tradeId)
+        {
+            if (!IsTradeCompleted(tradeId) && _completedTrades != null)
+            {
+                _completedTrades.Add(tradeId);
+            }
+        }
+
         private void Update()
         {
             if (Keyboard.current == null) return;
 
-            // ACTIVACIÓN DEBUG (Tecla T): En cualquier momento
+            // ACTIVACIÓN DEBUG (Tecla T)
             if (Keyboard.current.tKey.wasPressedThisFrame)
             {
                 SetOpen(!_open);
             }
 
-            // ACTIVACIÓN NORMAL (Tecla C): Solo si está en rango
+            // ACTIVACIÓN NORMAL (Tecla C)
             if (Keyboard.current.cKey.wasPressedThisFrame)
             {
-                if (!requireProximity || _isPlayerInRange)
+                var allControllers = Object.FindObjectsByType<CraftingController>(FindObjectsSortMode.None);
+                var nearbyZone = allControllers.FirstOrDefault(x => x != null && x.requireProximity && x._isPlayerInRange);
+
+                if (nearbyZone != null)
+                {
+                    nearbyZone.SetOpen(!nearbyZone._open);
+                }
+                else if (LocalInstance != null)
+                {
+                    LocalInstance.SetOpen(!LocalInstance._open);
+                }
+                else
                 {
                     SetOpen(!_open);
                 }
@@ -81,6 +220,18 @@ namespace Crafting.Scripts
 
         public void SetOpen(bool open)
         {
+            if (open)
+            {
+                var allControllers = Object.FindObjectsByType<CraftingController>(FindObjectsSortMode.None);
+                foreach (var cc in allControllers)
+                {
+                    if (cc != null && cc != this)
+                    {
+                        cc._open = false;
+                    }
+                }
+            }
+
             _open = open;
             Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = open;
@@ -90,7 +241,7 @@ namespace Crafting.Scripts
         #region Trigger Proximity
         private void OnTriggerEnter(Collider other)
         {
-            if (other.CompareTag("Player"))
+            if (other.CompareTag("Player") || other.GetComponentInParent<InventoryController>() != null)
             {
                 _isPlayerInRange = true;
             }
@@ -98,7 +249,7 @@ namespace Crafting.Scripts
 
         private void OnTriggerStay(Collider other)
         {
-            if (other.CompareTag("Player"))
+            if (other.CompareTag("Player") || other.GetComponentInParent<InventoryController>() != null)
             {
                 _isPlayerInRange = true;
             }
@@ -106,10 +257,13 @@ namespace Crafting.Scripts
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.CompareTag("Player"))
+            if (other.CompareTag("Player") || other.GetComponentInParent<InventoryController>() != null)
             {
-                _isPlayerInRange = false;
-                if (_open) SetOpen(false);
+                if (requireProximity)
+                {
+                    _isPlayerInRange = false;
+                    if (_open) SetOpen(false);
+                }
             }
         }
         #endregion
@@ -117,17 +271,16 @@ namespace Crafting.Scripts
         #region UI Rendering
         private void OnGUI()
         {
-            // Solo dibujamos si estamos en rango O si la UI está abierta (Debug T)
-            if (!_isPlayerInRange && !_open) return;
-
-            EnsureStyles();
-
             if (_open)
             {
+                EnsureStyles();
                 DrawExpandedUI();
+                return;
             }
-            else if (_isPlayerInRange)
+
+            if (requireProximity && _isPlayerInRange)
             {
+                EnsureStyles();
                 DrawMinimizedUI();
             }
         }
@@ -188,19 +341,29 @@ namespace Crafting.Scripts
             Rect listRect = new Rect(rect.x + paddingInner, rect.y + titleH + 10, rect.width * 0.45f, rect.height - titleH - 30);
             Rect detailRect = new Rect(rect.x + rect.width * 0.5f, rect.y + titleH + 10, rect.width * 0.45f, rect.height - titleH - 30);
 
+            if (availableTrades == null) availableTrades = new List<TradeData>();
+
             GUI.BeginGroup(listRect);
             _scrollPos = GUI.BeginScrollView(new Rect(0, 0, listRect.width, listRect.height), _scrollPos, new Rect(0, 0, listRect.width - 20, availableTrades.Count * 55));
             for (int i = 0; i < availableTrades.Count; i++)
             {
+                if (availableTrades[i] == null) continue;
                 Rect r = new Rect(0, i * 55, listRect.width - 20, 50);
                 bool isSelected = (_selectedRecipeIndex == i);
                 GUI.DrawTexture(r, isSelected ? _texSelected : _texSlot);
-                if (availableTrades[i].OutputItem != null)
+
+                ItemData displayItem = availableTrades[i].OutputItem ?? availableTrades[i].InputItem;
+                if (displayItem != null)
                 {
-                    if (availableTrades[i].OutputItem.itemSprite != null)
-                        GUI.DrawTexture(new Rect(5, i * 55 + 5, 40, 40), availableTrades[i].OutputItem.itemSprite.texture);
-                    GUI.Label(new Rect(50, i * 55, listRect.width - 60, 50), availableTrades[i].OutputItem.itemName, _recipeSty);
+                    if (displayItem.itemSprite != null)
+                        GUI.DrawTexture(new Rect(5, i * 55 + 5, 40, 40), displayItem.itemSprite.texture);
+                    GUI.Label(new Rect(50, i * 55, listRect.width - 60, 50), displayItem.itemName, _recipeSty);
                 }
+                else
+                {
+                    GUI.Label(new Rect(10, i * 55, listRect.width - 20, 50), availableTrades[i].name, _recipeSty);
+                }
+
                 if (Event.current.type == EventType.MouseDown && r.Contains(Event.current.mousePosition))
                 {
                     _selectedRecipeIndex = i;
@@ -210,25 +373,46 @@ namespace Crafting.Scripts
             GUI.EndScrollView();
             GUI.EndGroup();
 
-            if (_selectedRecipeIndex >= 0)
+            if (_selectedRecipeIndex >= 0 && _selectedRecipeIndex < availableTrades.Count && availableTrades[_selectedRecipeIndex] != null)
             {
                 TradeData recipe = availableTrades[_selectedRecipeIndex];
                 GUI.BeginGroup(detailRect);
                 float y = 0;
-                GUI.Label(new Rect(0, y, detailRect.width, 25), "REQUIERE:", _infoSty); y += 30;
-                GUI.DrawTexture(new Rect(0, y, 60, 60), _texSlot);
-                if (recipe.InputItem.itemSprite != null) GUI.DrawTexture(new Rect(5, y + 5, 50, 50), recipe.InputItem.itemSprite.texture);
-                GUI.Label(new Rect(0, y, 60, 60), "x" + recipe.InputAmount, _qtySty);
-                GUI.Label(new Rect(70, y + 15, detailRect.width - 70, 30), recipe.InputItem.itemName, _recipeSty);
-                y += 75;
-                GUI.Label(new Rect(detailRect.width / 2 - 15, y - 5, 30, 30), "↓", _titleSty); y += 30;
-                GUI.Label(new Rect(0, y, detailRect.width, 25), "OBTIENES:", _infoSty); y += 30;
-                GUI.DrawTexture(new Rect(0, y, 60, 60), _texSlot);
-                if (recipe.OutputItem.itemSprite != null) GUI.DrawTexture(new Rect(5, y + 5, 50, 50), recipe.OutputItem.itemSprite.texture);
-                GUI.Label(new Rect(0, y, 60, 60), "x" + recipe.OutputAmount, _qtySty);
-                GUI.Label(new Rect(70, y + 15, detailRect.width - 70, 30), recipe.OutputItem.itemName, _recipeSty);
-                y += 85;
-                Rect btnR = new Rect(0, y, detailRect.width, 50);
+                GUI.Label(new Rect(0, y, detailRect.width, 22), "REQUIERE:", _infoSty); y += 25;
+
+                if (recipe.inputs != null && recipe.inputs.Count > 0)
+                {
+                    foreach (var inReq in recipe.inputs)
+                    {
+                        if (inReq == null || inReq.item == null) continue;
+                        GUI.DrawTexture(new Rect(0, y, 40, 40), _texSlot);
+                        if (inReq.item.itemSprite != null) GUI.DrawTexture(new Rect(2, y + 2, 36, 36), inReq.item.itemSprite.texture);
+                        string qtyText = inReq.useRange ? $"x{inReq.minAmount}-{inReq.maxAmount}" : $"x{inReq.amount}";
+                        GUI.Label(new Rect(0, y, 40, 40), qtyText, _qtySty);
+                        GUI.Label(new Rect(50, y + 8, detailRect.width - 50, 25), inReq.item.itemName, _recipeSty);
+                        y += 45;
+                    }
+                }
+
+                GUI.Label(new Rect(detailRect.width / 2 - 15, y - 5, 30, 25), "↓", _titleSty); y += 25;
+                GUI.Label(new Rect(0, y, detailRect.width, 22), "OBTIENES:", _infoSty); y += 25;
+
+                if (recipe.outputs != null && recipe.outputs.Count > 0)
+                {
+                    foreach (var outReq in recipe.outputs)
+                    {
+                        if (outReq == null || outReq.item == null) continue;
+                        GUI.DrawTexture(new Rect(0, y, 40, 40), _texSlot);
+                        if (outReq.item.itemSprite != null) GUI.DrawTexture(new Rect(2, y + 2, 36, 36), outReq.item.itemSprite.texture);
+                        string qtyText = outReq.useRange ? $"x{outReq.minAmount}-{outReq.maxAmount}" : $"x{outReq.amount}";
+                        GUI.Label(new Rect(0, y, 40, 40), qtyText, _qtySty);
+                        GUI.Label(new Rect(50, y + 8, detailRect.width - 50, 25), outReq.item.itemName, _recipeSty);
+                        y += 45;
+                    }
+                }
+
+                y += 10;
+                Rect btnR = new Rect(0, y, detailRect.width, 45);
                 GUI.DrawTexture(btnR, btnR.Contains(Event.current.mousePosition) ? _texBtnHover : _texBtnNormal);
                 if (GUI.Button(btnR, "CRAFTEAR", _btnSty)) TryExecuteTrade(_selectedRecipeIndex);
                 GUI.EndGroup();
@@ -257,15 +441,29 @@ namespace Crafting.Scripts
             }
             else
             {
-                Debug.LogWarning("[Crafting] Materiales insuficientes para " + recipe.OutputItem.itemName);
+                Debug.LogWarning("[Crafting] Materiales insuficientes para " + (recipe.OutputItem != null ? recipe.OutputItem.itemName : recipe.name));
             }
         }
 
         private bool CanCraft(TradeData recipe)
         {
+            if (recipe == null) return false;
             var bag = InventoryController.GetBag();
-            string key = recipe.InputItem.itemName.ToLowerInvariant();
-            if (bag.TryGetValue(key, out var slot)) return slot.qty >= recipe.InputAmount;
+
+            if (recipe.inputs != null && recipe.inputs.Count > 0)
+            {
+                foreach (var inReq in recipe.inputs)
+                {
+                    if (inReq == null || inReq.item == null) continue;
+                    int requiredAmount = inReq.GetMinRequiredAmount();
+                    if (requiredAmount <= 0) continue;
+
+                    int qtyInBag = MissionController.GetItemQuantityInBag(bag, inReq.item);
+                    if (qtyInBag < requiredAmount) return false;
+                }
+                return true;
+            }
+
             return false;
         }
 
@@ -276,6 +474,7 @@ namespace Crafting.Scripts
         {
             if (recipeId < 0 || recipeId >= availableTrades.Count) return;
             TradeData recipe = availableTrades[recipeId];
+            if (recipe == null) return;
 
             var allInvs = Object.FindObjectsByType<InventoryController>(FindObjectsSortMode.None);
             var crafterInv = allInvs.FirstOrDefault(x => x.OwnerClientId == clientId);
@@ -284,19 +483,48 @@ namespace Crafting.Scripts
             if (crafterInv == null) crafterInv = InventoryController.LocalInstance;
             if (receiverInv == null) receiverInv = crafterInv;
 
-            if (crafterInv != null)
+            // 1. Remover insumos
+            if (crafterInv != null && recipe.inputs != null)
             {
-                if (IsNetworkActive) crafterInv.RemoveItemServerRpc(recipe.InputItem.GetHashCode(), recipe.InputAmount);
-                else crafterInv.InternalAddItem(recipe.InputItem.GetHashCode(), -recipe.InputAmount);
+                foreach (var inReq in recipe.inputs)
+                {
+                    if (inReq == null || inReq.item == null) continue;
+                    int amountToRemove = inReq.GetAmount();
+                    if (amountToRemove <= 0) continue;
+
+                    if (IsNetworkActive)
+                        crafterInv.RemoveItemServerRpc(inReq.item.GetHashCode(), amountToRemove);
+                    else
+                        crafterInv.InternalAddItem(inReq.item.GetHashCode(), -amountToRemove);
+                }
             }
 
-            if (receiverInv != null)
+            // 2. Otorgar productos
+            if (receiverInv != null && recipe.outputs != null)
             {
-                if (IsNetworkActive) receiverInv.AddItemServerRpc(recipe.OutputItem.GetHashCode(), recipe.OutputAmount);
-                else receiverInv.InternalAddItem(recipe.OutputItem.GetHashCode(), recipe.OutputAmount);
+                foreach (var outReq in recipe.outputs)
+                {
+                    if (outReq == null || outReq.item == null) continue;
+                    int amountToAdd = outReq.GetAmount();
+                    if (amountToAdd <= 0) continue;
+
+                    if (IsNetworkActive)
+                        receiverInv.AddItemServerRpc(outReq.item.GetHashCode(), amountToAdd);
+                    else
+                        receiverInv.InternalAddItem(outReq.item.GetHashCode(), amountToAdd);
+                }
             }
+
+            // 3. Registrar el crafteo/trade como realizado
+            RecordCompletedTrade(recipe);
 
             InventoryController.MarkCountDirty();
+
+            // Actualizar misiones para verificar si este crafteo completa una misión activa
+            if (MissionController.Instance != null)
+            {
+                MissionController.Instance.UpdateMissionFlow();
+            }
         }
         #endregion
 
