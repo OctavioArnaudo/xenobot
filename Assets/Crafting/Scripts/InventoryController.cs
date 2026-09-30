@@ -111,6 +111,8 @@ namespace Crafting.Scripts
             {
                 foreach (var slot in _offlineBag) ProcessSlot(slot);
             }
+
+            MarkCountDirty();
         }
 
         private void ProcessSlot(NetworkInventorySlot slot)
@@ -560,7 +562,11 @@ namespace Crafting.Scripts
 
         public static Dictionary<string, (ItemData def, int qty)> GetBag() => LocalInstance?._localBag ?? new();
         public Dictionary<string, (ItemData def, int qty)> GetMyBag() => _localBag;
-        public static void MarkCountDirty() => s_CountDirty = true;
+        public static void MarkCountDirty()
+        {
+            s_CountDirty = true;
+            Missions.Scripts.MissionController.Instance?.UpdateMissionFlow();
+        }
         public static ItemData GetItemDataByCodeStatic(string code) => LocalInstance?.GetItemDataByCode(code);
     }
 }

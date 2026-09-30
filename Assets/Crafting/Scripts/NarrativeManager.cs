@@ -12,6 +12,7 @@ using UnityEngine.UI;
 using Crafting.Scripts;
 using Dialogs.Scripts;
 using Missions.Scripts;
+using Trades.Data;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -21,25 +22,25 @@ using Missions.Data;
 namespace Narrative.Scripts
 {
     /// <summary>
-    /// Manager narrativo en un solo archivo. Sin estado propio: la marca de agua se deriva de
-    /// MissionsManager (ya replicado por red). Cada cliente detecta el avance por su cuenta.
-    /// Pasos: pares = puertas, impares = llaves. 0 = log inicial, 17 = final.
-    /// Pistas: H[objetivo][nivel 0..2]. Separa variantes con '|' para tener un pool.
+    /// Instancia √∫nica ejecutora de misiones y narrativa seg√∫n sus √≠tems y requisitos.
+    /// Funciona articulado con MissionController de forma completamente segura.
     /// </summary>
     [AddComponentMenu("Narrative/Narrative Manager")]
     public class NarrativeManager : MonoBehaviour
     {
+        public static NarrativeManager Instance { get; private set; }
+
         [Serializable]
         public class Site
         {
             public Transform at;
-            [Tooltip("Puerta (abre su paso) o punto de interÈs (da pistas).")]
+            [Tooltip("Puerta (abre su paso) o punto de inter√©s (da pistas).")]
             public bool door;
-            [Tooltip("Puerta: 2,4,6,8,10,12,14,16. Punto: paso del lugar (donde est· una llave) o -1.")]
+            [Tooltip("Puerta: 2,4,6,8,10,12,14,16. Punto: paso del lugar (donde est√° una llave) o -1.")]
             public int step = -1;
             public float radius = 3f;
             public float cooldown = 25f;
-            [Tooltip("Solo puertas. Se invoca en todos los clientes al abrirse (tambiÈn al entrar tarde).")]
+            [Tooltip("Solo puertas. Se invoca en todos los clientes al abrirse (tambi√©n al entrar tarde).")]
             public UnityEvent onUnlocked;
             [NonSerialized] public bool inside, unlocked, fired;
             [NonSerialized] public float next;
@@ -57,21 +58,21 @@ namespace Narrative.Scripts
 
         static readonly string[] Done =
         {
-            "Sistemas mÌnimos operativos. Sigo la firma de datos m·s cercana.",
+            "Sistemas m√≠nimos operativos. Sigo la firma de datos m√°s cercana.",
             "Chip de mapa integrado. La ruta marca una cerradura sellada: la puerta 1.",
-            "Puerta 1 abierta. Dentro hay una m·scara de acceso.",
-            "M·scara acoplada. El mapa marca otra cerradura: la puerta 2.",
+            "Puerta 1 abierta. Dentro hay una m√°scara de acceso.",
+            "M√°scara acoplada. El mapa marca otra cerradura: la puerta 2.",
             "Puerta 2 abierta. Una consola guarda un chip de memoria.",
             "Fragmentos recuperados: 'restituir la especie'. Una tercera cerradura espera: la puerta 3.",
-            "Puerta 3 abierta. El complejo se bifurca en m·s sectores.",
-            "Segundo chip: fui construido para restituir a la humanidad tras el cataclismo atÛmico. La puerta 4 debe abrirse.",
-            "Puerta 4 abierta. Hay m·s equipo de acceso guardado.",
-            "Segunda m·scara asegurada. El sector de embriones es la puerta 5.",
-            "Puerta 5 abierta. Una c·mara criogÈnica sigue activa.",
-            "EmbriÛn asegurado. Debo llevarlo al laboratorio: la puerta 6.",
+            "Puerta 3 abierta. El complejo se bifurca en m√°s sectores.",
+            "Segundo chip: fui construido para restituir a la humanidad tras el cataclismo at√≥mico. La puerta 4 debe abrirse.",
+            "Puerta 4 abierta. Hay m√°s equipo de acceso guardado.",
+            "Segunda m√°scara asegurada. El sector de embriones es la puerta 5.",
+            "Puerta 5 abierta. Una c√°mara criog√©nica sigue activa.",
+            "Embri√≥n asegurado. Debo llevarlo al laboratorio: la puerta 6.",
             "Laboratorio operativo. Sus sectores internos exigen una llave propia.",
             "Llave del laboratorio obtenida. La puerta 7 responde a ella.",
-            "Puerta 7 abierta. Detecto un depÛsito de combustible.",
+            "Puerta 7 abierta. Detecto un dep√≥sito de combustible.",
             "Combustible cargado. La nave espera tras la puerta 8.",
             "", ""
         };
@@ -79,22 +80,22 @@ namespace Narrative.Scripts
         static readonly string[][] H =
         {
             null,
-            new[] { "Detecto una firma de datos cercana. Algo aquÌ almacena informaciÛn cartogr·fica.", "Sin mapa no hay ruta. El chip de navegaciÛn no est· tras ninguna puerta.", "Objetivo: recoger el chip de mapa. Est· en el camino abierto, sin cerradura." },
-            new[] { "El mapa marca una cerradura sellada con un '1' grabado.", "El chip de mapa encaja con la puerta 1. Las dem·s siguen bloqueadas.", "Objetivo: usar el chip de mapa en la puerta 1." },
-            new[] { "El interior de la puerta 1 huele a metal y polvo: algo se guardÛ ahÌ.", "Los registros hablan de una m·scara de acceso resguardada tras la puerta 1.", "Objetivo: recoger la m·scara dentro de la zona de la puerta 1." },
-            new[] { "La m·scara tiene un '2' inscripto en el borde interno.", "La m·scara es una credencial. La puerta 2 la reconoce.", "Objetivo: usar la m·scara en la puerta 2." },
+            new[] { "Detecto una firma de datos cercana. Algo aqu√≠ almacena informaci√≥n cartogr√°fica.", "Sin mapa no hay ruta. El chip de navegaci√≥n no est√° tras ninguna puerta.", "Objetivo: recoger el chip de mapa. Est√° en el camino abierto, sin cerradura." },
+            new[] { "El mapa marca una cerradura sellada con un '1' grabado.", "El chip de mapa encaja con la puerta 1. Las dem√°s siguen bloqueadas.", "Objetivo: usar el chip de mapa en la puerta 1." },
+            new[] { "El interior de la puerta 1 huele a metal y polvo: algo se guard√≥ ah√≠.", "Los registros hablan de una m√°scara de acceso resguardada tras la puerta 1.", "Objetivo: recoger la m√°scara dentro de la zona de la puerta 1." },
+            new[] { "La m√°scara tiene un '2' inscripto en el borde interno.", "La m√°scara es una credencial. La puerta 2 la reconoce.", "Objetivo: usar la m√°scara en la puerta 2." },
             new[] { "Un destello en la memoria corrupta: hay datos esperando al otro lado de la puerta 2.", "Un chip de memoria guarda fragmentos de mi pasado, tras la puerta 2.", "Objetivo: recoger el chip de memoria dentro de la zona de la puerta 2." },
-            new[] { "Los fragmentos recuperados apuntan a una tercera cerradura.", "El chip de memoria contiene el cÛdigo de la puerta 3.", "Objetivo: usar el chip de memoria en la puerta 3." },
-            new[] { "La puerta 3 dejÛ abierto un tramo nuevo. Hay seÒales m·s adentro.", "M·s all· de la puerta 3 hay otro chip de memoria.", "Objetivo: recoger el segundo chip de memoria tras la puerta 3." },
+            new[] { "Los fragmentos recuperados apuntan a una tercera cerradura.", "El chip de memoria contiene el c√≥digo de la puerta 3.", "Objetivo: usar el chip de memoria en la puerta 3." },
+            new[] { "La puerta 3 dej√≥ abierto un tramo nuevo. Hay se√±ales m√°s adentro.", "M√°s all√° de la puerta 3 hay otro chip de memoria.", "Objetivo: recoger el segundo chip de memoria tras la puerta 3." },
             new[] { "El segundo chip vibra: reconoce un cerrojo cercano marcado con un '4'.", "El segundo chip de memoria abre la puerta 4.", "Objetivo: usar el segundo chip en la puerta 4." },
-            new[] { "Tras la puerta 4 hay m·s equipo de acceso.", "Otra m·scara aguarda dentro de la zona de la puerta 4.", "Objetivo: recoger la segunda m·scara tras la puerta 4." },
-            new[] { "Esta m·scara lleva grabado un '5'. Eso es una cerradura.", "La segunda m·scara es la credencial de la puerta 5.", "Objetivo: usar la segunda m·scara en la puerta 5." },
-            new[] { "Sensores tÈrmicos: hay algo vivo, o casi, tras la puerta 5.", "Un embriÛn en criopreservaciÛn resiste tras la puerta 5. Es mi razÛn de existir.", "Objetivo: recoger el embriÛn de la zona de la puerta 5." },
-            new[] { "El embriÛn necesita incubaciÛn. El laboratorio tiene una puerta sellada, la 6.", "Llevar el embriÛn al laboratorio: la puerta 6.", "Objetivo: usar el embriÛn en la puerta 6 del laboratorio." },
+            new[] { "Tras la puerta 4 hay m√°s equipo de acceso.", "Otra m√°scara aguarda dentro de la zona de la puerta 4.", "Objetivo: recoger la segunda m√°scara tras la puerta 4." },
+            new[] { "Esta m√°scara lleva grabado un '5'. Eso es una cerradura.", "La segunda m√°scara es la credencial de la puerta 5.", "Objetivo: usar la segunda m√°scara en la puerta 5." },
+            new[] { "Sensores t√©rmicos: hay algo vivo, o casi, tras la puerta 5.", "Un embri√≥n en criopreservaci√≥n resiste tras la puerta 5. Es mi raz√≥n de existir.", "Objetivo: recoger el embri√≥n de la zona de la puerta 5." },
+            new[] { "El embri√≥n necesita incubaci√≥n. El laboratorio tiene una puerta sellada, la 6.", "Llevar el embri√≥n al laboratorio: la puerta 6.", "Objetivo: usar el embri√≥n en la puerta 6 del laboratorio." },
             new[] { "El laboratorio guarda una llave propia.", "Dentro del laboratorio hay una llave que abre sus sectores internos.", "Objetivo: recoger la llave del laboratorio." },
-            new[] { "Hay una puerta interna m·s, marcada con un '7'.", "La llave del laboratorio corresponde a la puerta 7.", "Objetivo: usar la llave del laboratorio en la puerta 7." },
-            new[] { "Un olor a combustible viene desde dentro de la puerta 7.", "Para huir en la nave hace falta combustible, y est· tras la puerta 7.", "Objetivo: recoger el combustible dentro de la zona de la puerta 7." },
-            new[] { "La nave est· lista, pero sin combustible no despega. Ahora sÌ.", "La puerta 8 lleva a la nave. Tengo lo que necesito.", "Objetivo: usar el combustible y abrir la puerta 8 hacia la nave." },
+            new[] { "Hay una puerta interna m√°s, marcada con un '7'.", "La llave del laboratorio corresponde a la puerta 7.", "Objetivo: usar la llave del laboratorio en la puerta 7." },
+            new[] { "Un olor a combustible viene desde dentro de la puerta 7.", "Para huir en la nave hace falta combustible, y est√° tras la puerta 7.", "Objetivo: recoger el combustible dentro de la zona de la puerta 7." },
+            new[] { "La nave est√° lista, pero sin combustible no despega. Ahora s√≠.", "La puerta 8 lleva a la nave. Tengo lo que necesito.", "Objetivo: usar el combustible y abrir la puerta 8 hacia la nave." },
         };
 
         static readonly string[] Intro =
@@ -104,27 +105,38 @@ namespace Narrative.Scripts
             "> ERROR: falla de memoria, sectores corruptos",
             "> sistema de emergencia iniciado",
             "> ERROR: mapa no encontrado",
-            "> buscando mÛdulo de navegaciÛn...",
-            "> seÒal de datos detectada en las inmediaciones",
-            "> restableciendo locomociÛn",
+            "> buscando m√≥dulo de navegaci√≥n...",
+            "> se√±al de datos detectada en las inmediaciones",
+            "> restableciendo locomoci√≥n",
         };
 
         static readonly string[] Final =
         {
-            "> ALERTA: falla de contenciÛn en incubadora",
-            "> cascada de fallos en c·maras de gestaciÛn",
+            "> ALERTA: falla de contenci√≥n en incubadora",
+            "> cascada de fallos en c√°maras de gestaci√≥n",
             "> embriones viables: 12... 7... 3... 1",
-            "> protocolo de evacuaciÛn: despegue inmediato",
-            "> cargando embriÛn superviviente",
+            "> protocolo de evacuaci√≥n: despegue inmediato",
+            "> cargando embri√≥n superviviente",
             "> despegue confirmado",
-            "> an·lisis genÈtico del embriÛn... completo",
+            "> an√°lisis gen√©tico del embri√≥n... completo",
             "> coincidencia con genoma humano: 97,3 %",
-            "> el 2,7 % restante no figura en ning˙n registro",
-            "> reclasificando propÛsito...",
+            "> el 2,7 % restante no figura en ning√∫n registro",
+            "> reclasificando prop√≥sito...",
         };
 
-        // Usa la lista privada "dialogs" de DialogManager: no hace falta modificar ese archivo.
         static readonly FieldInfo DlgField = typeof(DialogManager).GetField("dialogs", BindingFlags.NonPublic | BindingFlags.Instance);
+
+        private readonly HashSet<string> _localNarrativeCompleted = new HashSet<string>();
+
+        private void Awake()
+        {
+            if (Instance == null) Instance = this;
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+        }
 
         static void Show(string[] lines)
         {
@@ -135,7 +147,7 @@ namespace Narrative.Scripts
             DialogManager.Instance.ShowDialog("_narr");
         }
 
-        const string Blocked = "Sellada. Nada de lo que llevo encima la abre todavÌa.";
+        const string Blocked = "Sellada. Nada de lo que llevo encima la abre todav√≠a.";
 
         int _last = -1;
         bool _ready, _logging, _finalDone, _blocked;
@@ -143,6 +155,111 @@ namespace Narrative.Scripts
         readonly Dictionary<int, int> _visits = new Dictionary<int, int>();
         readonly Dictionary<int, int> _lastVar = new Dictionary<int, int>();
         readonly Queue<string[]> _q = new Queue<string[]>();
+
+        /// <summary>
+        /// Comprueba si se cumplen todos los requisitos (√≠tems, recetas y prerrequisitos) de un MissionData para un jugador.
+        /// Eval√∫a la bolsa del jugador comparando por referencia de asset, Hash de √≠tem y nombre de √≠tem.
+        /// </summary>
+        public bool CheckRequirements(Missions.Data.MissionData mData, InventoryController playerInv)
+        {
+            if (mData == null) return false;
+
+            // 1. Prerrequisitos de misi√≥n
+            if (mData.missionRequirements != null && mData.missionRequirements.Count > 0)
+            {
+                foreach (var req in mData.missionRequirements)
+                {
+                    if (req != null && !IsMissionCompleted(req))
+                        return false;
+                }
+            }
+
+            var bag = playerInv != null ? playerInv.GetMyBag() : InventoryController.GetBag();
+
+            // 2. Requisitos de recolecci√≥n en inventario (ItemData)
+            if (mData.inventoryRequirements != null && mData.inventoryRequirements.Count > 0)
+            {
+                var requiredCounts = new Dictionary<ItemData, int>();
+                foreach (var item in mData.inventoryRequirements)
+                {
+                    if (item == null) continue;
+                    if (requiredCounts.ContainsKey(item))
+                        requiredCounts[item]++;
+                    else
+                        requiredCounts[item] = 1;
+                }
+
+                foreach (var kvp in requiredCounts)
+                {
+                    ItemData reqItem = kvp.Key;
+                    int reqQty = kvp.Value;
+
+                    int playerQty = MissionController.GetItemQuantityInBag(bag, reqItem);
+                    if (playerQty < reqQty)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            // 3. Requisitos de crafteo/receta (TradeData)
+            if (mData.craftingRequirements != null && mData.craftingRequirements.Count > 0)
+            {
+                foreach (var trade in mData.craftingRequirements)
+                {
+                    if (trade == null) continue;
+
+                    if (trade.OutputItem != null)
+                    {
+                        int reqQty = trade.OutputAmount > 0 ? trade.OutputAmount : 1;
+                        int playerQty = MissionController.GetItemQuantityInBag(bag, trade.OutputItem);
+                        if (playerQty < reqQty)
+                            return false;
+                    }
+
+                    if (trade.InputItem != null && trade.InputAmount > 0)
+                    {
+                        int playerQty = MissionController.GetItemQuantityInBag(bag, trade.InputItem);
+                        if (playerQty < trade.InputAmount)
+                            return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        public void ExecuteMission(Missions.Data.MissionData mData, InventoryController playerInv)
+        {
+            if (mData == null) return;
+
+            string id = !string.IsNullOrEmpty(mData.title) ? mData.title : mData.name;
+            CompleteMission(id);
+        }
+
+        public bool IsMissionCompleted(Missions.Data.MissionData mData)
+        {
+            if (mData == null) return false;
+            string id = !string.IsNullOrEmpty(mData.title) ? mData.title : mData.name;
+            return IsMissionCompleted(id);
+        }
+
+        public bool IsMissionCompleted(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return false;
+            if (MissionController.Instance != null)
+                return MissionController.Instance.IsMissionCompleted(id);
+            return _localNarrativeCompleted.Contains(id);
+        }
+
+        public void CompleteMission(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return;
+            _localNarrativeCompleted.Add(id);
+
+            if (MissionController.Instance != null)
+                MissionController.Instance.CompleteMission(id);
+        }
 
         void Update()
         {
@@ -167,18 +284,21 @@ namespace Narrative.Scripts
 
         void Boot()
         {
-            var mm = MissionsManager.Instance;
+            var mm = MissionController.Instance;
             if (mm == null || DialogManager.Instance == null || InventoryController.LocalInstance == null) return;
             if (_t0 < 0f) _t0 = Time.time;
             float waited = Time.time - _t0;
             var nm = NetworkManager.Singleton;
             bool netPending = nm != null && nm.IsListening && !mm.IsSpawned;
-            if (waited < 0.75f || (netPending && waited < 5f)) return; // tope de 5 s: si no spawnea, seguimos en modo local
+            if (waited < 0.75f || (netPending && waited < 5f)) return;
 
             _ready = true;
             _last = Watermark();
             foreach (var s in sites) if (s.door && s.step <= _last) Unlock(s);
-            if (_last < 0) StartCoroutine(Log(Intro, () => MissionsManager.Instance.CompleteMission(Id[0]), 0.02f, 0.35f, 1.5f));
+            if (_last < 0)
+            {
+                StartCoroutine(Log(Intro, null, 0.02f, 0.35f, 1.5f));
+            }
             else if (_last == 16) Finale();
         }
 
@@ -187,7 +307,7 @@ namespace Narrative.Scripts
             int w = -1;
             for (int i = 0; i < Id.Length; i++)
             {
-                if (MissionsManager.Instance.IsMissionCompleted(Id[i])) w = i;
+                if (IsMissionCompleted(Id[i])) w = i;
                 else break;
             }
             return w;
@@ -215,7 +335,7 @@ namespace Narrative.Scripts
         {
             if (_finalDone) return;
             _finalDone = true;
-            StartCoroutine(Log(Final, () => { MissionsManager.Instance.CompleteMission(Id[17]); onEnd?.Invoke(); }, 0.03f, 0.6f, 3f));
+            StartCoroutine(Log(Final, null, 0.03f, 0.6f, 3f));
         }
 
         void Visits()
@@ -239,13 +359,6 @@ namespace Narrative.Scripts
 
             if (s.door)
             {
-                if (s.step < t) return;
-                if (s.step == t && t % 2 == 0)
-                {
-                    s.next = Time.time + 2f;
-                    MissionsManager.Instance.CompleteMission(Id[t]);
-                    return;
-                }
                 s.next = Time.time + s.cooldown;
                 _q.Enqueue(new[] { Blocked, Hint(t) });
                 return;
@@ -266,12 +379,11 @@ namespace Narrative.Scripts
             int key = t * 3 + lv;
             int prev = _lastVar.TryGetValue(key, out int pv) ? pv : -1;
             int k = UnityEngine.Random.Range(0, pool.Length);
-            if (pool.Length > 1 && k == prev) k = (k + 1) % pool.Length; // no repetir la misma variante seguida
+            if (pool.Length > 1 && k == prev) k = (k + 1) % pool.Length;
             _lastVar[key] = k;
             return pool[k];
         }
 
-        // Bloquea el input del player mientras hay log o di·logo, con las mismas llamadas que usa PlayerController.
         void Block()
         {
             var inv = InventoryController.LocalInstance;
@@ -299,7 +411,7 @@ namespace Narrative.Scripts
         IEnumerator Log(string[] lines, Action done, float charDelay, float lineDelay, float hold)
         {
             _logging = true;
-            Cursor.visible = true; // los scripts de combate se bloquean solos con Cursor.visible
+            Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
 
             var go = new GameObject("NarrativeLog", typeof(Canvas));
@@ -341,7 +453,7 @@ namespace Narrative.Scripts
     }
 
 #if UNITY_EDITOR
-    /// <summary>Men˙ Narrative > Setup: crea Ìtems y misiones y las asigna a MissionsManager.</summary>
+    /// <summary>Men√∫ Narrative > Setup: crea √≠tems y misiones y las asigna a MissionController.</summary>
     public static class NarrativeSetup
     {
         static readonly string[] Items =
@@ -349,18 +461,18 @@ namespace Narrative.Scripts
 
         static readonly string[] Titles =
         {
-            "ReactivaciÛn", "Firma de datos", "Cerradura 1", "Credencial", "Cerradura 2", "Memoria", "Cerradura 3",
+            "Reactivaci√≥n", "Firma de datos", "Cerradura 1", "Credencial", "Cerradura 2", "Memoria", "Cerradura 3",
             "Origen", "Cerradura 4", "Segunda credencial", "Cerradura 5", "Semilla", "Laboratorio", "Acceso interno",
-            "Cerradura 7", "EnergÌa", "Nave", "Huida"
+            "Cerradura 7", "Energ√≠a", "Nave", "Huida"
         };
 
         static readonly string[] Descs =
         {
-            "Sistemas en reinicio.", "Algo cercano emite informaciÛn.", "Una puerta sellada espera.",
+            "Sistemas en reinicio.", "Algo cercano emite informaci√≥n.", "Una puerta sellada espera.",
             "Hay equipo de acceso guardado.", "Otra puerta sellada.", "Fragmentos de datos aguardan.",
-            "El complejo sigue cerrado.", "M·s memoria, m·s adentro.", "Un cerrojo reconoce lo recuperado.",
-            "Hay m·s equipo de acceso.", "Una c·mara sellada.", "Algo sigue con vida.", "El laboratorio espera.",
-            "El laboratorio guarda una llave.", "Un ˙ltimo sello interno.", "Se necesita combustible.",
+            "El complejo sigue cerrado.", "M√°s memoria, m√°s adentro.", "Un cerrojo reconoce lo recuperado.",
+            "Hay m√°s equipo de acceso.", "Una c√°mara sellada.", "Algo sigue con vida.", "El laboratorio espera.",
+            "El laboratorio guarda una llave.", "Un √∫ltimo sello interno.", "Se necesita combustible.",
             "La nave espera.", "Despegar."
         };
 
@@ -389,18 +501,18 @@ namespace Narrative.Scripts
         [MenuItem("Narrative/Setup")]
         static void Run()
         {
-            var mm = UnityEngine.Object.FindFirstObjectByType<MissionsManager>();
+            var mm = UnityEngine.Object.FindFirstObjectByType<MissionController>();
             if (mm == null)
             {
-                EditorUtility.DisplayDialog("Narrative", "No hay un MissionsManager en la escena abierta.", "OK");
+                EditorUtility.DisplayDialog("Narrative", "No hay un MissionController en la escena abierta.", "OK");
                 return;
             }
             if (!EditorUtility.DisplayDialog("Narrative",
-                    "Se crear·n 8 Ìtems y 18 misiones y se REEMPLAZAR¡ MissionsManager.allMissions. øContinuar?",
+                    "Se crear√°n 8 √≠tems y 18 misiones y se REEMPLAZAR√Å MissionController.missions. ¬øContinuar?",
                     "Continuar", "Cancelar")) return;
 
-            Dir("Assets/Resources/Narrative/Items"); // Resources: InventoryController resuelve Ìtems desde ahÌ
-            Dir("Assets/Narrative/Missions");
+            Dir("Assets/Resources/Narrative/Items");
+            Dir("Assets/Missions/Data");
 
             var items = new ItemData[Items.Length];
             for (int i = 0; i < Items.Length; i++)
@@ -416,18 +528,16 @@ namespace Narrative.Scripts
             }
 
             var so = new SerializedObject(mm);
-            var list = so.FindProperty("allMissions");
+            var list = so.FindProperty("missions");
             list.arraySize = NarrativeManager.Id.Length;
             for (int i = 0; i < NarrativeManager.Id.Length; i++)
             {
-                var m = Asset<MissionData>("Assets/Narrative/Missions/Mission_" + NarrativeManager.Id[i] + ".asset");
-                m.missionId = NarrativeManager.Id[i];
+                var m = Asset<Missions.Data.MissionData>("Assets/Missions/Data/Mission_" + NarrativeManager.Id[i] + ".asset");
                 m.title = Titles[i];
                 m.description = Descs[i];
-                m.isFinalMission = i == NarrativeManager.Id.Length - 1;
-                m.gatheringRequirements = new List<MissionData.ItemRequirement>();
+                m.inventoryRequirements = new List<ItemData>();
                 if (i % 2 == 1 && i < 17)
-                    m.gatheringRequirements.Add(new MissionData.ItemRequirement { item = items[i / 2], amount = 1 });
+                    m.inventoryRequirements.Add(items[i / 2]);
                 EditorUtility.SetDirty(m);
                 list.GetArrayElementAtIndex(i).objectReferenceValue = m;
             }
@@ -437,7 +547,7 @@ namespace Narrative.Scripts
 
             AssetDatabase.SaveAssets();
             EditorSceneManager.MarkSceneDirty(mm.gameObject.scene);
-            Debug.Log("[Narrative] Setup completo: 8 Ìtems, 18 misiones asignadas y NarrativeManager aÒadido.");
+            Debug.Log("[Narrative] Setup completo: 8 √≠tems, 18 misiones asignadas y NarrativeManager a√±adido.");
         }
     }
 #endif

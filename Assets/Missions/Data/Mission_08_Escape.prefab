@@ -10,7 +10,8 @@ GameObject:
   m_Component:
   - component: {fileID: 7690778578472770119}
   - component: {fileID: 7690778578472770118}
-  - component: {fileID: 7690778578472770113}
+  - component: {fileID: 7338028504383011201}
+  - component: {fileID: 1902378103819234406}
   m_Layer: 0
   m_Name: Mission_08_Escape
   m_TagString: Untagged
@@ -54,7 +55,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &7690778578472770113
+--- !u!114 &7338028504383011201
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -63,8 +64,38 @@ MonoBehaviour:
   m_GameObject: {fileID: 7690778578472770116}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ccac4b6a7a2961643989f2862d555926, type: 3}
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Xenobot.Missions.MissionController
-  mode: 1
-  targetNameOrId: desert_final_01
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 640383562
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &1902378103819234406
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7690778578472770116}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e04fca8f4c0720f42bbbb659ade89a2f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Missions.Scripts.MissionController
+  ShowTopMostFoldoutHeaderGroup: 1
+  missionData: {fileID: 11400000, guid: 88e1abbd00ca8984db9d4fc6358f2551, type: 2}
+  missions: []
+  customTitle: 
+  customDescription: 

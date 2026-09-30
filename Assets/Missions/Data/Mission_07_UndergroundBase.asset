@@ -12,15 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
   m_Name: Mission_07_UndergroundBase
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  missionId: mission_07
   title: 7. Infiltracion
   description: Usa la Llave para entrar a la base subterranea.
-  mode: 2
-  isFinalMission: 0
-  requiredLocation: Acceso Base
-  requiredMissionIds:
-  - mission_06
-  gatheringRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: af7c02f85c154db59efb6d3a23fcce30, type: 2}
+  inventoryRequirements: []
   craftingRequirements: []
-  requiredSkillIds: []
-  missionPrefab: {fileID: 2782716079324928893, guid: a1957f42c3caff64c81c5b4c360defed, type: 3}
+  missionPrefab: {fileID: 2782716079324928893, guid: a1957f42c3caff64c81c5b4c360defed,
+    type: 3}

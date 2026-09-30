@@ -12,15 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
   m_Name: Mission_04_MountainCrossing
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  missionId: mission_04
   title: "4. Desaf\xEDo de Altura"
   description: "Cruza la monta\xF1a opuesta al precipicio para avanzar."
-  mode: 2
-  isFinalMission: 0
-  requiredLocation: Cima
-  requiredMissionIds:
-  - mission_03
-  gatheringRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: 9f000000000000000000000000000004, type: 2}
+  inventoryRequirements:
+  - {fileID: 11400000, guid: bb42e76d6f734c5091156f6de5048962, type: 2}
   craftingRequirements: []
-  requiredSkillIds: []
   missionPrefab: {fileID: 400001, guid: 213ec5a41e644c398aff69e25ee62a76, type: 3}
