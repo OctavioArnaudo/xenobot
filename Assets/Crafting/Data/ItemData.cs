@@ -56,6 +56,14 @@ namespace Crafting.Scripts
         public bool isDropable = true;
 
         public int maxStack = 99;
+        // Hash estable entre PCs (el default depende del proceso y rompe el inventario en red).
+        public override int GetHashCode()
+        {
+            int h = 17;
+            foreach (char c in (itemName ?? "").ToLowerInvariant()) h = unchecked(h * 31 + c);
+            return h;
+        }
+
 
         [Header("Representación")]
         [FormerlySerializedAs("icon")]
