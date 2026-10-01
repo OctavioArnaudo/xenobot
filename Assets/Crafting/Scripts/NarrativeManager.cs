@@ -34,7 +34,6 @@ namespace Narrative.Scripts
         public class Site
         {
             public Transform at;
-<<<<<<< Updated upstream
             [Tooltip("Puerta (abre su paso) o punto de interés (da pistas).")]
             public bool door;
             [Tooltip("Puerta: 2,4,6,8,10,12,14,16. Punto: paso del lugar (donde está una llave) o -1.")]
@@ -42,15 +41,6 @@ namespace Narrative.Scripts
             public float radius = 3f;
             public float cooldown = 25f;
             [Tooltip("Solo puertas. Se invoca en todos los clientes al abrirse (también al entrar tarde).")]
-=======
-            [Tooltip("Puerta (abre su paso) o punto de inter�s (da pistas).")]
-            public bool door;
-            [Tooltip("Puerta: 2,4,6,8,10,12,14,16. Punto: paso del lugar (donde est� una llave) o -1.")]
-            public int step = -1;
-            public float radius = 3f;
-            public float cooldown = 25f;
-            [Tooltip("Solo puertas. Se invoca en todos los clientes al abrirse (tambi�n al entrar tarde).")]
->>>>>>> Stashed changes
             public UnityEvent onUnlocked;
             [NonSerialized] public bool inside, unlocked, fired;
             [NonSerialized] public float next;
@@ -68,7 +58,6 @@ namespace Narrative.Scripts
 
         static readonly string[] Done =
         {
-<<<<<<< Updated upstream
             "Sistemas mínimos operativos. Sigo la firma de datos más cercana.",
             "Chip de mapa integrado. La ruta marca una cerradura sellada: la puerta 1.",
             "Puerta 1 abierta. Dentro hay una máscara de acceso.",
@@ -84,23 +73,6 @@ namespace Narrative.Scripts
             "Laboratorio operativo. Sus sectores internos exigen una llave propia.",
             "Llave del laboratorio obtenida. La puerta 7 responde a ella.",
             "Puerta 7 abierta. Detecto un depósito de combustible.",
-=======
-            "Sistemas m�nimos operativos. Sigo la firma de datos m�s cercana.",
-            "Chip de mapa integrado. La ruta marca una cerradura sellada: la puerta 1.",
-            "Puerta 1 abierta. Dentro hay una m�scara de acceso.",
-            "M�scara acoplada. El mapa marca otra cerradura: la puerta 2.",
-            "Puerta 2 abierta. Una consola guarda un chip de memoria.",
-            "Fragmentos recuperados: 'restituir la especie'. Una tercera cerradura espera: la puerta 3.",
-            "Puerta 3 abierta. El complejo se bifurca en m�s sectores.",
-            "Segundo chip: fui construido para restituir a la humanidad tras el cataclismo at�mico. La puerta 4 debe abrirse.",
-            "Puerta 4 abierta. Hay m�s equipo de acceso guardado.",
-            "Segunda m�scara asegurada. El sector de embriones es la puerta 5.",
-            "Puerta 5 abierta. Una c�mara criog�nica sigue activa.",
-            "Embri�n asegurado. Debo llevarlo al laboratorio: la puerta 6.",
-            "Laboratorio operativo. Sus sectores internos exigen una llave propia.",
-            "Llave del laboratorio obtenida. La puerta 7 responde a ella.",
-            "Puerta 7 abierta. Detecto un dep�sito de combustible.",
->>>>>>> Stashed changes
             "Combustible cargado. La nave espera tras la puerta 8.",
             "", ""
         };
@@ -108,7 +80,6 @@ namespace Narrative.Scripts
         static readonly string[][] H =
         {
             null,
-<<<<<<< Updated upstream
             new[] { "Detecto una firma de datos cercana. Algo aquí almacena información cartográfica.", "Sin mapa no hay ruta. El chip de navegación no está tras ninguna puerta.", "Objetivo: recoger el chip de mapa. Está en el camino abierto, sin cerradura." },
             new[] { "El mapa marca una cerradura sellada con un '1' grabado.", "El chip de mapa encaja con la puerta 1. Las demás siguen bloqueadas.", "Objetivo: usar el chip de mapa en la puerta 1." },
             new[] { "El interior de la puerta 1 huele a metal y polvo: algo se guardó ahí.", "Los registros hablan de una máscara de acceso resguardada tras la puerta 1.", "Objetivo: recoger la máscara dentro de la zona de la puerta 1." },
@@ -125,24 +96,6 @@ namespace Narrative.Scripts
             new[] { "Hay una puerta interna más, marcada con un '7'.", "La llave del laboratorio corresponde a la puerta 7.", "Objetivo: usar la llave del laboratorio en la puerta 7." },
             new[] { "Un olor a combustible viene desde dentro de la puerta 7.", "Para huir en la nave hace falta combustible, y está tras la puerta 7.", "Objetivo: recoger el combustible dentro de la zona de la puerta 7." },
             new[] { "La nave está lista, pero sin combustible no despega. Ahora sí.", "La puerta 8 lleva a la nave. Tengo lo que necesito.", "Objetivo: usar el combustible y abrir la puerta 8 hacia la nave." },
-=======
-            new[] { "Detecto una firma de datos cercana. Algo aqu� almacena informaci�n cartogr�fica.", "Sin mapa no hay ruta. El chip de navegaci�n no est� tras ninguna puerta.", "Objetivo: recoger el chip de mapa. Est� en el camino abierto, sin cerradura." },
-            new[] { "El mapa marca una cerradura sellada con un '1' grabado.", "El chip de mapa encaja con la puerta 1. Las dem�s siguen bloqueadas.", "Objetivo: usar el chip de mapa en la puerta 1." },
-            new[] { "El interior de la puerta 1 huele a metal y polvo: algo se guard� ah�.", "Los registros hablan de una m�scara de acceso resguardada tras la puerta 1.", "Objetivo: recoger la m�scara dentro de la zona de la puerta 1." },
-            new[] { "La m�scara tiene un '2' inscripto en el borde interno.", "La m�scara es una credencial. La puerta 2 la reconoce.", "Objetivo: usar la m�scara en la puerta 2." },
-            new[] { "Un destello en la memoria corrupta: hay datos esperando al otro lado de la puerta 2.", "Un chip de memoria guarda fragmentos de mi pasado, tras la puerta 2.", "Objetivo: recoger el chip de memoria dentro de la zona de la puerta 2." },
-            new[] { "Los fragmentos recuperados apuntan a una tercera cerradura.", "El chip de memoria contiene el c�digo de la puerta 3.", "Objetivo: usar el chip de memoria en la puerta 3." },
-            new[] { "La puerta 3 dej� abierto un tramo nuevo. Hay se�ales m�s adentro.", "M�s all� de la puerta 3 hay otro chip de memoria.", "Objetivo: recoger el segundo chip de memoria tras la puerta 3." },
-            new[] { "El segundo chip vibra: reconoce un cerrojo cercano marcado con un '4'.", "El segundo chip de memoria abre la puerta 4.", "Objetivo: usar el segundo chip en la puerta 4." },
-            new[] { "Tras la puerta 4 hay m�s equipo de acceso.", "Otra m�scara aguarda dentro de la zona de la puerta 4.", "Objetivo: recoger la segunda m�scara tras la puerta 4." },
-            new[] { "Esta m�scara lleva grabado un '5'. Eso es una cerradura.", "La segunda m�scara es la credencial de la puerta 5.", "Objetivo: usar la segunda m�scara en la puerta 5." },
-            new[] { "Sensores t�rmicos: hay algo vivo, o casi, tras la puerta 5.", "Un embri�n en criopreservaci�n resiste tras la puerta 5. Es mi raz�n de existir.", "Objetivo: recoger el embri�n de la zona de la puerta 5." },
-            new[] { "El embri�n necesita incubaci�n. El laboratorio tiene una puerta sellada, la 6.", "Llevar el embri�n al laboratorio: la puerta 6.", "Objetivo: usar el embri�n en la puerta 6 del laboratorio." },
-            new[] { "El laboratorio guarda una llave propia.", "Dentro del laboratorio hay una llave que abre sus sectores internos.", "Objetivo: recoger la llave del laboratorio." },
-            new[] { "Hay una puerta interna m�s, marcada con un '7'.", "La llave del laboratorio corresponde a la puerta 7.", "Objetivo: usar la llave del laboratorio en la puerta 7." },
-            new[] { "Un olor a combustible viene desde dentro de la puerta 7.", "Para huir en la nave hace falta combustible, y est� tras la puerta 7.", "Objetivo: recoger el combustible dentro de la zona de la puerta 7." },
-            new[] { "La nave est� lista, pero sin combustible no despega. Ahora s�.", "La puerta 8 lleva a la nave. Tengo lo que necesito.", "Objetivo: usar el combustible y abrir la puerta 8 hacia la nave." },
->>>>>>> Stashed changes
         };
 
         static readonly string[] Intro =
@@ -152,20 +105,13 @@ namespace Narrative.Scripts
             "> ERROR: falla de memoria, sectores corruptos",
             "> sistema de emergencia iniciado",
             "> ERROR: mapa no encontrado",
-<<<<<<< Updated upstream
             "> buscando módulo de navegación...",
             "> señal de datos detectada en las inmediaciones",
             "> restableciendo locomoción",
-=======
-            "> buscando m�dulo de navegaci�n...",
-            "> se�al de datos detectada en las inmediaciones",
-            "> restableciendo locomoci�n",
->>>>>>> Stashed changes
         };
 
         static readonly string[] Final =
         {
-<<<<<<< Updated upstream
             "> ALERTA: falla de contención en incubadora",
             "> cascada de fallos en cámaras de gestación",
             "> embriones viables: 12... 7... 3... 1",
@@ -176,18 +122,6 @@ namespace Narrative.Scripts
             "> coincidencia con genoma humano: 97,3 %",
             "> el 2,7 % restante no figura en ningún registro",
             "> reclasificando propósito...",
-=======
-            "> ALERTA: falla de contenci�n en incubadora",
-            "> cascada de fallos en c�maras de gestaci�n",
-            "> embriones viables: 12... 7... 3... 1",
-            "> protocolo de evacuaci�n: despegue inmediato",
-            "> cargando embri�n superviviente",
-            "> despegue confirmado",
-            "> an�lisis gen�tico del embri�n... completo",
-            "> coincidencia con genoma humano: 97,3 %",
-            "> el 2,7 % restante no figura en ning�n registro",
-            "> reclasificando prop�sito...",
->>>>>>> Stashed changes
         };
 
         static readonly FieldInfo DlgField = typeof(DialogManager).GetField("dialogs", BindingFlags.NonPublic | BindingFlags.Instance);
@@ -213,14 +147,10 @@ namespace Narrative.Scripts
             DialogManager.Instance.ShowDialog("_narr");
         }
 
-<<<<<<< Updated upstream
         const string Blocked = "Sellada. Nada de lo que llevo encima la abre todavía.";
-=======
-        const string Blocked = "Sellada. Nada de lo que llevo encima la abre todav�a.";
->>>>>>> Stashed changes
 
         int _last = -1;
-        bool _ready, _logging, _finalDone, _blocked, _wasOpen;
+        bool _ready, _logging, _finalDone, _blocked;
         float _t0 = -1f, _poll;
         readonly Dictionary<int, int> _visits = new Dictionary<int, int>();
         readonly Dictionary<int, int> _lastVar = new Dictionary<int, int>();
@@ -331,7 +261,6 @@ namespace Narrative.Scripts
             if (!_ready) { Boot(); return; }
             if (!_logging && _q.Count > 0 && !DialogManager.Instance.IsOpen)
                 Show(_q.Dequeue());
-            Interact();
 
             if (Time.unscaledTime < _poll) return;
             _poll = Time.unscaledTime + 0.2f;
@@ -345,25 +274,6 @@ namespace Narrative.Scripts
                 for (int i = from; i <= w; i++) Completed(i);
             }
             Visits();
-        }
-
-        // E abre la puerta que toca si el jugador está en su radio. Se ignora la E que cierra un diálogo.
-        void Interact()
-        {
-            bool open = DialogManager.Instance.IsOpen;
-            bool ok = !open && !_wasOpen && !_logging;
-            _wasOpen = open;
-            var inv = InventoryController.LocalInstance;
-            if (!ok || inv == null || Keyboard.current == null || !Keyboard.current.eKey.wasPressedThisFrame) return;
-            int t = _last + 1;
-            if (t <= 0 || t % 2 != 0 || t >= Id.Length - 1) return;
-            Vector3 p = inv.transform.position;
-            foreach (var s in sites)
-                if (s.door && s.step == t && s.at != null && (s.at.position - p).sqrMagnitude <= s.radius * s.radius)
-                {
-                    MissionsManager.Instance.CompleteMission(Id[t]);
-                    return;
-                }
         }
 
         void Boot()
@@ -443,12 +353,8 @@ namespace Narrative.Scripts
 
             if (s.door)
             {
-<<<<<<< Updated upstream
-=======
-                if (s.step < t) return;
->>>>>>> Stashed changes
                 s.next = Time.time + s.cooldown;
-                _q.Enqueue(s.step == t ? new[] { "Cerradura compatible. Pulsa [E] para abrir." } : new[] { Blocked, Hint(t) });
+                _q.Enqueue(new[] { Blocked, Hint(t) });
                 return;
             }
 
@@ -472,10 +378,6 @@ namespace Narrative.Scripts
             return pool[k];
         }
 
-<<<<<<< Updated upstream
-=======
-        // Bloquea el input del player mientras hay log o di�logo, con las mismas llamadas que usa PlayerController.
->>>>>>> Stashed changes
         void Block()
         {
             var inv = InventoryController.LocalInstance;
@@ -545,11 +447,7 @@ namespace Narrative.Scripts
     }
 
 #if UNITY_EDITOR
-<<<<<<< Updated upstream
     /// <summary>Menú Narrative > Setup: crea ítems y misiones y las asigna a MissionController.</summary>
-=======
-    /// <summary>Men� Narrative > Setup: crea �tems y misiones y las asigna a MissionsManager.</summary>
->>>>>>> Stashed changes
     public static class NarrativeSetup
     {
         static readonly string[] Items =
@@ -557,32 +455,18 @@ namespace Narrative.Scripts
 
         static readonly string[] Titles =
         {
-<<<<<<< Updated upstream
             "Reactivación", "Firma de datos", "Cerradura 1", "Credencial", "Cerradura 2", "Memoria", "Cerradura 3",
             "Origen", "Cerradura 4", "Segunda credencial", "Cerradura 5", "Semilla", "Laboratorio", "Acceso interno",
             "Cerradura 7", "Energía", "Nave", "Huida"
-=======
-            "Reactivaci�n", "Firma de datos", "Cerradura 1", "Credencial", "Cerradura 2", "Memoria", "Cerradura 3",
-            "Origen", "Cerradura 4", "Segunda credencial", "Cerradura 5", "Semilla", "Laboratorio", "Acceso interno",
-            "Cerradura 7", "Energ�a", "Nave", "Huida"
->>>>>>> Stashed changes
         };
 
         static readonly string[] Descs =
         {
-<<<<<<< Updated upstream
             "Sistemas en reinicio.", "Algo cercano emite información.", "Una puerta sellada espera.",
             "Hay equipo de acceso guardado.", "Otra puerta sellada.", "Fragmentos de datos aguardan.",
             "El complejo sigue cerrado.", "Más memoria, más adentro.", "Un cerrojo reconoce lo recuperado.",
             "Hay más equipo de acceso.", "Una cámara sellada.", "Algo sigue con vida.", "El laboratorio espera.",
             "El laboratorio guarda una llave.", "Un último sello interno.", "Se necesita combustible.",
-=======
-            "Sistemas en reinicio.", "Algo cercano emite informaci�n.", "Una puerta sellada espera.",
-            "Hay equipo de acceso guardado.", "Otra puerta sellada.", "Fragmentos de datos aguardan.",
-            "El complejo sigue cerrado.", "M�s memoria, m�s adentro.", "Un cerrojo reconoce lo recuperado.",
-            "Hay m�s equipo de acceso.", "Una c�mara sellada.", "Algo sigue con vida.", "El laboratorio espera.",
-            "El laboratorio guarda una llave.", "Un �ltimo sello interno.", "Se necesita combustible.",
->>>>>>> Stashed changes
             "La nave espera.", "Despegar."
         };
 
@@ -618,19 +502,11 @@ namespace Narrative.Scripts
                 return;
             }
             if (!EditorUtility.DisplayDialog("Narrative",
-<<<<<<< Updated upstream
                     "Se crearán 8 ítems y 18 misiones y se REEMPLAZARÁ MissionController.missions. ¿Continuar?",
                     "Continuar", "Cancelar")) return;
 
             Dir("Assets/Resources/Narrative/Items");
             Dir("Assets/Missions/Data");
-=======
-                    "Se crear�n 8 �tems y 18 misiones y se REEMPLAZAR� MissionsManager.allMissions. �Continuar?",
-                    "Continuar", "Cancelar")) return;
-
-            Dir("Assets/Resources/Narrative/Items"); // Resources: InventoryController resuelve �tems desde ah�
-            Dir("Assets/Narrative/Missions");
->>>>>>> Stashed changes
 
             var items = new ItemData[Items.Length];
             for (int i = 0; i < Items.Length; i++)
@@ -665,11 +541,7 @@ namespace Narrative.Scripts
 
             AssetDatabase.SaveAssets();
             EditorSceneManager.MarkSceneDirty(mm.gameObject.scene);
-<<<<<<< Updated upstream
             Debug.Log("[Narrative] Setup completo: 8 ítems, 18 misiones asignadas y NarrativeManager añadido.");
-=======
-            Debug.Log("[Narrative] Setup completo: 8 �tems, 18 misiones asignadas y NarrativeManager a�adido.");
->>>>>>> Stashed changes
         }
     }
 #endif
