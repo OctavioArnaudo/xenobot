@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8852671808814816536}
   - component: {fileID: 4151111184668260186}
   - component: {fileID: 8801186986259429418}
+  - component: {fileID: 4304695450027949174}
   m_Layer: 0
   m_Name: JetpackPrefab
   m_TagString: Untagged
@@ -29,7 +30,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 8, y: 8, z: 8}
+  m_LocalScale: {x: 5.3544, y: 4.95736, z: 5.99608}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 8756616269754810088}
@@ -94,6 +95,26 @@ MonoBehaviour:
   jetpackColor: {r: 0.3, g: 0.3, b: 0.4, a: 1}
   jetpackScale: 1
   lockOnUnequip: 1
+--- !u!114 &4304695450027949174
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4811940099931562289}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 83c4428a12005894aa17a2284c133809, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.SpawnController
+  ShowTopMostFoldoutHeaderGroup: 1
+  lootTable: []
+  itemsToSpawn:
+  - prefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada,
+      type: 3}
+    message: EXP
+  explosionForce: 10
+  spreadRadius: 2.5
 --- !u!1 &5510095078141222907
 GameObject:
   m_ObjectHideFlags: 0
