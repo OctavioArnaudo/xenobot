@@ -10,7 +10,6 @@ namespace Crafting.Scripts
     /// Generates a procedural 3D jetpack mesh.
     /// Implements IItemFunctional to handle auto-positioning when equipped.
     /// </summary>
-    [ExecuteAlways]
     public class JetpackController : MonoBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
     {
         [Header("Visuals (Procedural)")]
@@ -27,25 +26,6 @@ namespace Crafting.Scripts
         void Awake()
         {
             GenerateJetpackMesh();
-        }
-
-        void OnValidate()
-        {
-            #if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorApplication.delayCall += SafeGenerateMesh;
-            }
-            #endif
-        }
-
-        private void SafeGenerateMesh()
-        {
-            #if UNITY_EDITOR
-            UnityEditor.EditorApplication.delayCall -= SafeGenerateMesh;
-            if (this == null) return;
-            GenerateJetpackMesh();
-            #endif
         }
 
         [Header("Settings")]
@@ -85,6 +65,7 @@ namespace Crafting.Scripts
             }
         }
 
+        [ContextMenu("Generate Jetpack Mesh")]
         public void GenerateJetpackMesh()
         {
             Transform renderTransform = transform.Find("JetpackRender");
@@ -133,22 +114,37 @@ namespace Crafting.Scripts
                 }
             }
 
-            mf.sharedMesh = mesh;
+            if (Application.isPlaying)
+            {
+                mf.mesh = mesh;
+            }
+            else
+            {
+                mf.sharedMesh = mesh;
+            }
 
             Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
 
             if (mr.sharedMaterial == null || mr.sharedMaterial.shader != shader)
             {
-                mr.sharedMaterial = new Material(shader);
-                mr.sharedMaterial.name = "Jetpack_Material";
+                Material mat = new Material(shader);
+                mat.name = "Jetpack_Material";
+                if (Application.isPlaying)
+                    mr.material = mat;
+                else
+                    mr.sharedMaterial = mat;
             }
 
-            mr.sharedMaterial.color = jetpackColor;
-            if (mr.sharedMaterial.HasProperty("_BaseColor"))
-                mr.sharedMaterial.SetColor("_BaseColor", jetpackColor);
+            Material targetMat = Application.isPlaying ? mr.material : mr.sharedMaterial;
+            if (targetMat != null)
+            {
+                targetMat.color = jetpackColor;
+                if (targetMat.HasProperty("_BaseColor"))
+                    targetMat.SetColor("_BaseColor", jetpackColor);
 
-            if (mr.sharedMaterial.HasProperty("_Metallic")) mr.sharedMaterial.SetFloat("_Metallic", 0.7f);
-            if (mr.sharedMaterial.HasProperty("_Smoothness")) mr.sharedMaterial.SetFloat("_Smoothness", 0.6f);
+                if (targetMat.HasProperty("_Metallic")) targetMat.SetFloat("_Metallic", 0.7f);
+                if (targetMat.HasProperty("_Smoothness")) targetMat.SetFloat("_Smoothness", 0.6f);
+            }
         }
 
         private void AddBox(List<Vector3> verts, List<int> tris, Vector3 center, Vector3 size)

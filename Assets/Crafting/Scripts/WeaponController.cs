@@ -9,7 +9,6 @@ namespace Crafting.Scripts
     /// Specialized controller for Weapon visual representation.
     /// Optimized for a closer, more natural shooting position.
     /// </summary>
-    [ExecuteAlways]
     public class WeaponController : MonoBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
     {
         [Header("Visuals (Procedural)")]
@@ -32,25 +31,6 @@ namespace Crafting.Scripts
         void Awake()
         {
             GenerateWeaponMesh();
-        }
-
-        void OnValidate()
-        {
-            #if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorApplication.delayCall += SafeGenerateMesh;
-            }
-            #endif
-        }
-
-        private void SafeGenerateMesh()
-        {
-            #if UNITY_EDITOR
-            UnityEditor.EditorApplication.delayCall -= SafeGenerateMesh;
-            if (this == null) return;
-            GenerateWeaponMesh();
-            #endif
         }
 
         public void OnUseItem(GameObject player)
@@ -92,6 +72,7 @@ namespace Crafting.Scripts
             }
         }
 
+        [ContextMenu("Generate Weapon Mesh")]
         public void GenerateWeaponMesh()
         {
             Transform renderTransform = transform.Find("WeaponRender");
@@ -123,11 +104,29 @@ namespace Crafting.Scripts
                     DestroyImmediate(mf.sharedMesh);
                 }
             }
-            mf.sharedMesh = mesh;
+
+            if (Application.isPlaying)
+            {
+                mf.mesh = mesh;
+            }
+            else
+            {
+                mf.sharedMesh = mesh;
+            }
 
             Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            if (mr.sharedMaterial == null || mr.sharedMaterial.shader != shader) mr.sharedMaterial = new Material(shader);
-            mr.sharedMaterial.color = weaponColor;
+            if (mr.sharedMaterial == null || mr.sharedMaterial.shader != shader)
+            {
+                Material mat = new Material(shader);
+                if (Application.isPlaying) mr.material = mat;
+                else mr.sharedMaterial = mat;
+            }
+
+            Material targetMat = Application.isPlaying ? mr.material : mr.sharedMaterial;
+            if (targetMat != null)
+            {
+                targetMat.color = weaponColor;
+            }
 
             Transform muzTransform = visual.transform.Find("MuzzlePoint");
             if (muzTransform == null)
