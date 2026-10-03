@@ -55,7 +55,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -134,7 +134,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1234567894, guid: c1988241a7a980f4ba3564d1c323ec7d, type: 3}
       propertyPath: m_InScenePlaced
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1234567894, guid: c1988241a7a980f4ba3564d1c323ec7d, type: 3}
       propertyPath: GlobalObjectIdHash
@@ -151,8 +151,7 @@ PrefabInstance:
   m_SourcePrefab: {fileID: 100100000, guid: c1988241a7a980f4ba3564d1c323ec7d, type: 3}
 --- !u!4 &5179025019103205931 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 1234567892, guid: c1988241a7a980f4ba3564d1c323ec7d,
-    type: 3}
+  m_CorrespondingSourceObject: {fileID: 1234567892, guid: c1988241a7a980f4ba3564d1c323ec7d, type: 3}
   m_PrefabInstance: {fileID: 5179025020320995583}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &6488555208517993282
@@ -163,10 +162,21 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 598277302063295029}
     m_Modifications:
-    - target: {fileID: -4462217268978784622, guid: aabc063bcff4446f8fcd157cd4a33165,
-        type: 3}
+    - target: {fileID: -4462217268978784622, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}
+      propertyPath: m_InScenePlaced
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -4462217268978784622, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 1550360678
+      objectReference: {fileID: 0}
+    - target: {fileID: -4462217268978784622, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4462217268978784622, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 1861138598
       objectReference: {fileID: 0}
     - target: {fileID: 200001, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}
       propertyPath: m_Name
@@ -212,17 +222,42 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 200004, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 200001, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1336757475316071584}
   m_SourcePrefab: {fileID: 100100000, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}
 --- !u!4 &6488555208518061568 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 200002, guid: aabc063bcff4446f8fcd157cd4a33165,
-    type: 3}
+  m_CorrespondingSourceObject: {fileID: 200002, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}
   m_PrefabInstance: {fileID: 6488555208517993282}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &6488555208518061571 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 200001, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}
+  m_PrefabInstance: {fileID: 6488555208517993282}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1336757475316071584
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6488555208518061571}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccac4b6a7a2961643989f2862d555926, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Missions.Scripts.MissionController
+  ShowTopMostFoldoutHeaderGroup: 1
+  missionData: {fileID: 11400000, guid: f81b450690584dae8665369f97c5655d, type: 2}
+  missions: []
+  customTitle: 
+  customDescription: 
 --- !u!1001 &7439088425226676502
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -275,19 +310,55 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1004920072059250602, guid: bcb98aa31a1346ba8e6efc43685bb56f,
-        type: 3}
+    - target: {fileID: 1004920072059250602, guid: bcb98aa31a1346ba8e6efc43685bb56f, type: 3}
+      propertyPath: m_InScenePlaced
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1004920072059250602, guid: bcb98aa31a1346ba8e6efc43685bb56f, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 2980375851
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    - target: {fileID: 1004920072059250602, guid: bcb98aa31a1346ba8e6efc43685bb56f, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1004920072059250602, guid: bcb98aa31a1346ba8e6efc43685bb56f, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 1861138598
+      objectReference: {fileID: 0}
+    m_RemovedComponents:
+    - {fileID: 100004, guid: bcb98aa31a1346ba8e6efc43685bb56f, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 100001, guid: bcb98aa31a1346ba8e6efc43685bb56f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5276351569344226098}
   m_SourcePrefab: {fileID: 100100000, guid: bcb98aa31a1346ba8e6efc43685bb56f, type: 3}
 --- !u!4 &7439088425226645428 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 100002, guid: bcb98aa31a1346ba8e6efc43685bb56f,
-    type: 3}
+  m_CorrespondingSourceObject: {fileID: 100002, guid: bcb98aa31a1346ba8e6efc43685bb56f, type: 3}
   m_PrefabInstance: {fileID: 7439088425226676502}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &7439088425226645431 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 100001, guid: bcb98aa31a1346ba8e6efc43685bb56f, type: 3}
+  m_PrefabInstance: {fileID: 7439088425226676502}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5276351569344226098
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7439088425226645431}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccac4b6a7a2961643989f2862d555926, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Missions.Scripts.MissionController
+  ShowTopMostFoldoutHeaderGroup: 1
+  missionData: {fileID: 11400000, guid: faf7bd1c8a064b2181e4b6eb5c8857ee, type: 2}
+  missions: []
+  customTitle: 
+  customDescription: 

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 200002}
   - component: {fileID: 200003}
   - component: {fileID: -4462217268978784622}
-  - component: {fileID: 200004}
+  - component: {fileID: 65568881621820477}
   m_Layer: 0
   m_Name: Mission_02_Crafting
   m_TagString: Untagged
@@ -67,7 +67,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1550360678
+  GlobalObjectIdHash: 2973078882
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -82,7 +82,7 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &200004
+--- !u!114 &65568881621820477
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -91,12 +91,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 200001}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e04fca8f4c0720f42bbbb659ade89a2f, type: 3}
+  m_Script: {fileID: 11500000, guid: ccac4b6a7a2961643989f2862d555926, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Missions.Scripts.MissionsManager
+  m_EditorClassIdentifier: Assembly-CSharp::Missions.Scripts.MissionController
   ShowTopMostFoldoutHeaderGroup: 1
   missionData: {fileID: 11400000, guid: f81b450690584dae8665369f97c5655d, type: 2}
-  missions:
-  - {fileID: 11400000, guid: 9f000000000000000000000000000004, type: 2}
+  missions: []
   customTitle: 
   customDescription: 
