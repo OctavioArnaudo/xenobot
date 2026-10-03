@@ -54,6 +54,14 @@ namespace Missions.Scripts
         private string _currentVisibleMissionId = "";
         private float _lastTriggerTime = -1f;
 
+        private static bool s_IsQuitting;
+        private bool _isDestroyed;
+
+        private void OnApplicationQuit()
+        {
+            s_IsQuitting = true;
+        }
+
         private void Awake()
         {
             if (Instance == null)
@@ -73,6 +81,11 @@ namespace Missions.Scripts
 
         public override void OnDestroy()
         {
+            _isDestroyed = true;
+            if (_completedMissions != null)
+            {
+                _completedMissions.OnListChanged -= OnMissionsListChanged;
+            }
             base.OnDestroy();
             if (Instance == this)
             {
@@ -84,6 +97,15 @@ namespace Missions.Scripts
                 s_SharedTitleTMP = null;
                 s_SharedDescTMP = null;
             }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (_completedMissions != null)
+            {
+                _completedMissions.OnListChanged -= OnMissionsListChanged;
+            }
+            base.OnNetworkDespawn();
         }
 
         private void Start()
@@ -291,6 +313,8 @@ namespace Missions.Scripts
 
         public void UpdateMissionFlow()
         {
+            if (s_IsQuitting || _isDestroyed || !Application.isPlaying) return;
+
             var playerInv = InventoryController.LocalInstance;
 
             if (missions != null)
@@ -461,7 +485,7 @@ namespace Missions.Scripts
 
         private void CreateUI()
         {
-            if (!Application.isPlaying) return;
+            if (!Application.isPlaying || s_IsQuitting || _isDestroyed) return;
 
             if (s_SharedHudPanel != null)
             {
@@ -641,7 +665,7 @@ namespace Missions.Scripts
 
         public void ShowMissionHUD(MissionData mData)
         {
-            if (mData == null) return;
+            if (mData == null || s_IsQuitting || _isDestroyed || !Application.isPlaying) return;
 
             if (_hudPanel == null || _titleTMP == null) CreateUI();
 
@@ -664,6 +688,8 @@ namespace Missions.Scripts
 
         public void ShowMessage(string title, string description)
         {
+            if (s_IsQuitting || _isDestroyed || !Application.isPlaying) return;
+
             if (_hudPanel == null) CreateUI();
 
             if (s_SharedHudPanel != null)
