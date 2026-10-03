@@ -52,13 +52,32 @@ namespace Combating.Scripts
         {
             if (!Application.isPlaying)
             {
-                InitializePortals();
+#if UNITY_EDITOR
+                UnityEditor.EditorApplication.delayCall -= DelayInitializePortals;
+                UnityEditor.EditorApplication.delayCall += DelayInitializePortals;
+#endif
             }
         }
+
+#if UNITY_EDITOR
+        private void DelayInitializePortals()
+        {
+            if (this == null) return;
+            InitializePortals();
+        }
+#endif
 
         [ContextMenu("Reconstruir Portales")]
         public void InitializePortals()
         {
+            Rigidbody parentRb = GetComponent<Rigidbody>();
+            if (parentRb == null)
+            {
+                parentRb = gameObject.AddComponent<Rigidbody>();
+            }
+            parentRb.isKinematic = true;
+            parentRb.useGravity = false;
+
             EnsurePortalChildrenExist();
 
             if (portalA != null)
@@ -115,12 +134,15 @@ namespace Combating.Scripts
                 boxCol.center = Vector3.zero;
             }
             col.isTrigger = true;
-            TeleportTrigger trigger = portalTransform.GetComponent<TeleportTrigger>();
-            if (trigger == null)
+            var scripts = portalTransform.GetComponents<MonoBehaviour>();
+            foreach (var s in scripts)
             {
-                trigger = portalTransform.gameObject.AddComponent<TeleportTrigger>();
+                if (s == null)
+                {
+                    if (Application.isPlaying) Destroy(s);
+                    else DestroyImmediate(s);
+                }
             }
-            trigger.Initialize(this, isPortalA);
             SetupPortalVisual(portalTransform, color);
             SetupPortalLight(portalTransform, color);
         }
@@ -322,24 +344,20 @@ namespace Combating.Scripts
             Gizmos.DrawLine(portal.position, exitPoint);
         }
 
-        private class TeleportTrigger : MonoBehaviour
+        private void OnTriggerEnter(Collider other)
         {
-            private TeleportController controller;
-            private bool isPortalA;
-
-            public void Initialize(TeleportController controller, bool isPortalA)
+            if (isOnCooldown || portalA == null || portalB == null) return;
+            Collider colA = portalA.GetComponent<Collider>();
+            Collider colB = portalB.GetComponent<Collider>();
+            bool isA = colA != null && colA.bounds.Intersects(other.bounds);
+            bool isB = colB != null && colB.bounds.Intersects(other.bounds);
+            if (!isA && !isB)
             {
-                this.controller = controller;
-                this.isPortalA = isPortalA;
+                float distA = Vector3.SqrMagnitude(other.transform.position - portalA.position);
+                float distB = Vector3.SqrMagnitude(other.transform.position - portalB.position);
+                isA = distA <= distB;
             }
-
-            private void OnTriggerEnter(Collider other)
-            {
-                if (controller != null)
-                {
-                    controller.OnPortalTriggerEntered(other.gameObject, isPortalA);
-                }
-            }
+            OnPortalTriggerEntered(other.gameObject, isA);
         }
     }
 }
