@@ -12,16 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
   m_Name: Mission_s15_k8
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  missionId: s15_k8
   title: "Energ\xEDa"
   description: Se necesita combustible.
-  mode: 0
-  isFinalMission: 0
-  requiredLocation: 
-  requiredMissionIds: []
-  gatheringRequirements:
-  - item: {fileID: 11400000, guid: b1335446530684f47813ce73e267971e, type: 2}
+  missionRequirements: []
+  inventoryRequirements:
+  - item: {fileID: 11400000, guid: c965fbf0deadaa84db13d3f8a5e0ab86, type: 2}
     amount: 1
   craftingRequirements: []
-  requiredSkillIds: []
   missionPrefab: {fileID: 0}

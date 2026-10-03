@@ -12,16 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
   m_Name: Mission_s07_k4
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  missionId: s07_k4
   title: Origen
   description: "M\xE1s memoria, m\xE1s adentro."
-  mode: 0
-  isFinalMission: 0
-  requiredLocation: 
-  requiredMissionIds: []
-  gatheringRequirements:
-  - item: {fileID: 11400000, guid: 31f7d6dcd7793a94686e243eb3db1852, type: 2}
+  missionRequirements: []
+  inventoryRequirements:
+  - item: {fileID: 11400000, guid: dc5fdb0e4fa05684994e73d2f36c3288, type: 2}
     amount: 1
   craftingRequirements: []
-  requiredSkillIds: []
   missionPrefab: {fileID: 0}

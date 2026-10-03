@@ -12,14 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
   m_Name: Mission_s04_d2
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  missionId: s04_d2
   title: Cerradura 2
   description: Otra puerta sellada.
-  mode: 0
-  isFinalMission: 0
-  requiredLocation: 
-  requiredMissionIds: []
-  gatheringRequirements: []
+  missionRequirements: []
+  inventoryRequirements: []
   craftingRequirements: []
-  requiredSkillIds: []
   missionPrefab: {fileID: 0}

@@ -12,16 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
   m_Name: Mission_s05_k3
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  missionId: s05_k3
   title: Memoria
   description: Fragmentos de datos aguardan.
-  mode: 0
-  isFinalMission: 0
-  requiredLocation: 
-  requiredMissionIds: []
-  gatheringRequirements:
-  - item: {fileID: 11400000, guid: d4b336fb99ce46d4a94f1d8457f47ced, type: 2}
+  missionRequirements: []
+  inventoryRequirements:
+  - item: {fileID: 11400000, guid: c7ff2b724fdea774d8ceefb875f8b4d0, type: 2}
     amount: 1
   craftingRequirements: []
-  requiredSkillIds: []
   missionPrefab: {fileID: 0}

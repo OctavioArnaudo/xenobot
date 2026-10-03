@@ -12,16 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
   m_Name: Mission_s09_k5
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  missionId: s09_k5
   title: Segunda credencial
   description: "Hay m\xE1s equipo de acceso."
-  mode: 0
-  isFinalMission: 0
-  requiredLocation: 
-  requiredMissionIds: []
-  gatheringRequirements:
-  - item: {fileID: 11400000, guid: 3432712db6359294d970dee74b9ef7e3, type: 2}
+  missionRequirements: []
+  inventoryRequirements:
+  - item: {fileID: 11400000, guid: 947593c3a67b6484aabce2fab1691fa6, type: 2}
     amount: 1
   craftingRequirements: []
-  requiredSkillIds: []
   missionPrefab: {fileID: 0}
