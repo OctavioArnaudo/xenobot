@@ -350,7 +350,7 @@ namespace Combating.Scripts
                 else
                     Destroy(gameObject);
             }
-            else
+            else if (!IsNetworkActive)
             {
                 Destroy(gameObject);
             }

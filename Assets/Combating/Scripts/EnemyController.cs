@@ -411,10 +411,11 @@ namespace Combating.Scripts
             if (IsNetworkActive && IsServer)
             {
                 if (TryGetComponent<NetworkObject>(out var netObj) && netObj.IsSpawned)
-                    netObj.Despawn(false);
-                Destroy(gameObject);
+                    netObj.Despawn(true);
+                else
+                    Destroy(gameObject);
             }
-            else
+            else if (!IsNetworkActive)
             {
                 Destroy(gameObject);
             }

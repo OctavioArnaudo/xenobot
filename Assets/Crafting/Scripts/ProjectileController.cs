@@ -164,12 +164,14 @@ namespace Combating.Scripts
         public Team m_OwnerTeam;
         private bool m_HasHit = false;
         private Transform m_HomingTarget;
+        private float m_LifeTimer = 0f;
 
         private bool m_IsAttached = false;
         private Transform m_AttachedTarget;
         private Vector3 m_AttachedLocalPos;
 
         private static List<ProjectileController> s_ActiveAttachedBombs = new List<ProjectileController>();
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
         public ProjectileType EffectiveType => typeOverride.GetValue(DEFAULT_TYPE);
         public bool EffectiveAutoRandomize => autoRandomizeOverride.GetValue(DEFAULT_AUTO_RANDOMIZE);
@@ -253,7 +255,6 @@ namespace Combating.Scripts
             m_Direction = direction.sqrMagnitude > 0.01f ? direction.normalized : transform.forward;
             m_OwnerTeam = team;
 
-            // Detonar bombas explosivas adheridas de disparos anteriores al presionar el siguiente disparo
             DetonateOwnerAttachedBombs(owner);
 
             if (dmg > 0f && !damageOverride.useOverride)
@@ -274,8 +275,41 @@ namespace Combating.Scripts
 
             RefreshVisuals();
 
-            if (IsServer || NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
-                Destroy(gameObject, EffectiveLifeTime);
+            if (IsNetworkActive && IsServer)
+            {
+                if (m_Owner != null && m_Owner.TryGetComponent<NetworkObject>(out var ownerNetObj))
+                {
+                    SyncLaunchRpc(ownerNetObj.NetworkObjectId, m_Direction, EffectiveDamage, m_OwnerTeam);
+                }
+            }
+        }
+
+        [Rpc(SendTo.ClientsAndHost)]
+        private void SyncLaunchRpc(ulong ownerNetworkObjectId, Vector3 direction, float dmg, Team team)
+        {
+            m_Direction = direction;
+            m_OwnerTeam = team;
+            if (dmg > 0f && !damageOverride.useOverride)
+            {
+                damageOverride.useOverride = true;
+                damageOverride.value = dmg;
+            }
+
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(ownerNetworkObjectId, out var ownerNetObj))
+            {
+                m_Owner = ownerNetObj.gameObject;
+                if (m_Owner != null)
+                {
+                    Collider[] ownerCols = m_Owner.GetComponentsInChildren<Collider>();
+                    Collider myCol = GetComponent<Collider>();
+                    if (myCol != null)
+                    {
+                        foreach (var oc in ownerCols) Physics.IgnoreCollision(myCol, oc);
+                    }
+                }
+            }
+
+            RefreshVisuals();
         }
 
         private void RefreshVisuals()
@@ -345,8 +379,16 @@ namespace Combating.Scripts
                 }
                 else
                 {
-                    DetonateStickyBomb();
+                    if (!IsNetworkActive || IsServer) DetonateStickyBomb();
                 }
+                return;
+            }
+
+            m_LifeTimer += Time.deltaTime;
+            if (m_LifeTimer >= EffectiveLifeTime && !m_HasHit)
+            {
+                m_HasHit = true;
+                if (!IsNetworkActive || IsServer) FinalizeImpact();
                 return;
             }
 
@@ -354,7 +396,7 @@ namespace Combating.Scripts
 
             float moveDistance = EffectiveSpeed * Time.deltaTime;
 
-            if (moveDistance > 0.001f)
+            if (moveDistance > 0.001f && (!IsNetworkActive || IsServer))
             {
                 RaycastHit[] hits = Physics.SphereCastAll(transform.position, 0.5f, m_Direction, moveDistance, ~0, QueryTriggerInteraction.Collide);
                 System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
@@ -431,6 +473,7 @@ namespace Combating.Scripts
 
         private void OnTriggerEnter(Collider other)
         {
+            if (IsNetworkActive && !IsServer) return;
             if (m_HasHit || m_IsAttached) return;
             if (m_Owner != null && (other.gameObject == m_Owner || other.transform.IsChildOf(m_Owner.transform))) return;
 
@@ -495,14 +538,6 @@ namespace Combating.Scripts
                 s_ActiveAttachedBombs.Add(this);
             }
 
-            // Quitar NetworkObject antes de reemparentar localmente para evitar errores de Netcode
-            var netObjs = GetComponentsInChildren<NetworkObject>(true);
-            foreach (var no in netObjs)
-            {
-                if (Application.isPlaying) DestroyImmediate(no);
-            }
-
-            transform.SetParent(m_AttachedTarget);
             var col = GetComponent<Collider>();
             if (col != null) col.enabled = false;
         }
@@ -544,8 +579,14 @@ namespace Combating.Scripts
 
             if (impactVFX != null) Instantiate(impactVFX, transform.position, Quaternion.identity);
 
-            if (IsServer && IsSpawned) NetworkObject.Despawn();
-            else Destroy(gameObject);
+            if (IsNetworkActive && IsSpawned)
+            {
+                if (IsServer) NetworkObject.Despawn(true);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
 
         public override void OnDestroy()
