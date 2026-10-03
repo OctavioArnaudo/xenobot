@@ -48,25 +48,6 @@ namespace Combating.Scripts
             InitializePortals();
         }
 
-        private void OnValidate()
-        {
-            if (!Application.isPlaying)
-            {
-#if UNITY_EDITOR
-                UnityEditor.EditorApplication.delayCall -= DelayInitializePortals;
-                UnityEditor.EditorApplication.delayCall += DelayInitializePortals;
-#endif
-            }
-        }
-
-#if UNITY_EDITOR
-        private void DelayInitializePortals()
-        {
-            if (this == null) return;
-            InitializePortals();
-        }
-#endif
-
         [ContextMenu("Reconstruir Portales")]
         public void InitializePortals()
         {
@@ -184,7 +165,8 @@ namespace Combating.Scripts
             if (renderer != null)
             {
                 Material portalMat = CreateOrUpdatePortalMaterial(color);
-                renderer.sharedMaterial = portalMat;
+                if (Application.isPlaying) renderer.material = portalMat;
+                else renderer.sharedMaterial = portalMat;
             }
         }
 
