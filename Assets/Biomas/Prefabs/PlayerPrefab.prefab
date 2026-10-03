@@ -115,7 +115,6 @@ GameObject:
   - component: {fileID: 9193409881328918840}
   - component: {fileID: 8123456789012345678}
   - component: {fileID: 4229443801716868870}
-  - component: {fileID: 5793214265599024591}
   m_Layer: 0
   m_Name: PlayerPrefab
   m_TagString: Player
@@ -797,23 +796,6 @@ MonoBehaviour:
   minWidth: 250
   minHeight: 40
 --- !u!114 &4229443801716868870
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804703078109025515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ccac4b6a7a2961643989f2862d555926, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Missions.Scripts.MissionController
-  ShowTopMostFoldoutHeaderGroup: 1
-  missionData: {fileID: 0}
-  missions: []
-  customTitle: 
-  customDescription: 
---- !u!114 &5793214265599024591
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -5711,15 +5693,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2321158.8
+      value: 2323881.8
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4221.698
+      value: 4226.8267
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1379110.6
+      value: 1380666.6
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5767,15 +5749,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 2321158.8
+      value: 2323888.8
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4221.698
+      value: 4226.84
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1379110.6
+      value: 1380670.6
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
