@@ -150,7 +150,7 @@ namespace Narrative.Scripts
         const string Blocked = "Sellada. Nada de lo que llevo encima la abre todavía.";
 
         int _last = -1;
-        bool _ready, _logging, _finalDone, _blocked;
+        bool _ready, _logging, _finalDone, _blocked, _wasOpen;
         float _t0 = -1f, _poll;
         readonly Dictionary<int, int> _visits = new Dictionary<int, int>();
         readonly Dictionary<int, int> _lastVar = new Dictionary<int, int>();
@@ -261,6 +261,7 @@ namespace Narrative.Scripts
             if (!_ready) { Boot(); return; }
             if (!_logging && _q.Count > 0 && !DialogManager.Instance.IsOpen)
                 Show(_q.Dequeue());
+            Interact();
 
             if (Time.unscaledTime < _poll) return;
             _poll = Time.unscaledTime + 0.2f;
@@ -273,7 +274,46 @@ namespace Narrative.Scripts
                 foreach (var s in sites) s.fired = false;
                 for (int i = from; i <= w; i++) Completed(i);
             }
+            Keys();
             Visits();
+        }
+
+        // Cada misión se identifica por su título (MissionController). Se busca por nombre de asset: Mission_<Id>.
+        static Missions.Data.MissionData Mis(int i) =>
+            MissionController.Instance.missions.Find(m => m != null && m.name == "Mission_" + Id[i]);
+
+        static string Key(int i)
+        {
+            var m = Mis(i);
+            return m != null ? MissionController.Instance.GetMissionIdentifier(m) : Id[i];
+        }
+
+        // Llaves (pasos impares): se completan solas cuando el jugador local tiene el ítem.
+        void Keys()
+        {
+            int t = _last + 1;
+            if (_logging || t % 2 == 0 || t >= Id.Length - 1) return;
+            var m = Mis(t);
+            if (m != null && CheckRequirements(m, InventoryController.LocalInstance)) CompleteMission(Key(t));
+        }
+
+        // E abre la puerta que toca si el jugador está en su radio. Se ignora la E que cierra un diálogo.
+        void Interact()
+        {
+            bool open = DialogManager.Instance.IsOpen;
+            bool ok = !open && !_wasOpen && !_logging;
+            _wasOpen = open;
+            var inv = InventoryController.LocalInstance;
+            if (!ok || inv == null || Keyboard.current == null || !Keyboard.current.eKey.wasPressedThisFrame) return;
+            int t = _last + 1;
+            if (t <= 0 || t % 2 != 0 || t >= Id.Length - 1) return;
+            Vector3 p = inv.transform.position;
+            foreach (var s in sites)
+                if (s.door && s.step == t && s.at != null && (s.at.position - p).sqrMagnitude <= s.radius * s.radius)
+                {
+                    CompleteMission(Key(t));
+                    return;
+                }
         }
 
         void Boot()
@@ -291,7 +331,7 @@ namespace Narrative.Scripts
             foreach (var s in sites) if (s.door && s.step <= _last) Unlock(s);
             if (_last < 0)
             {
-                StartCoroutine(Log(Intro, null, 0.02f, 0.35f, 1.5f));
+                StartCoroutine(Log(Intro, () => CompleteMission(Key(0)), 0.02f, 0.35f, 1.5f));
             }
             else if (_last == 16) Finale();
         }
@@ -301,7 +341,7 @@ namespace Narrative.Scripts
             int w = -1;
             for (int i = 0; i < Id.Length; i++)
             {
-                if (IsMissionCompleted(Id[i])) w = i;
+                if (IsMissionCompleted(Key(i))) w = i;
                 else break;
             }
             return w;
@@ -329,7 +369,7 @@ namespace Narrative.Scripts
         {
             if (_finalDone) return;
             _finalDone = true;
-            StartCoroutine(Log(Final, null, 0.03f, 0.6f, 3f));
+            StartCoroutine(Log(Final, () => { CompleteMission(Key(17)); onEnd?.Invoke(); }, 0.03f, 0.6f, 3f));
         }
 
         void Visits()
@@ -353,8 +393,9 @@ namespace Narrative.Scripts
 
             if (s.door)
             {
+                if (s.step < t) return;
                 s.next = Time.time + s.cooldown;
-                _q.Enqueue(new[] { Blocked, Hint(t) });
+                _q.Enqueue(s.step == t ? new[] { "Cerradura compatible. Pulsa [E] para abrir." } : new[] { Blocked, Hint(t) });
                 return;
             }
 
