@@ -10,13 +10,16 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56cea44977970a24892b2a057869be41, type: 3}
-  m_Name: Item_Embrion
+  m_Name: Item_Embryo
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
-  itemName: Embrion
+  itemName: Embryo
   isPickable: 1
   isUsable: 0
   isQuitable: 0
-  isDropable: 0
+  isDropable: 1
   maxStack: 99
-  itemSprite: {fileID: 0}
-  itemPrefab: {fileID: 0}
+  defaultAmount: 1
+  itemSprite: {fileID: -5186256288729084416, guid: 45fb288c5a571d8408fa02d2c212cd81,
+    type: 3}
+  itemPrefab: {fileID: 8159852263142861819, guid: fde03d0d613562a40b6d5f29fae8f1fc,
+    type: 3}
