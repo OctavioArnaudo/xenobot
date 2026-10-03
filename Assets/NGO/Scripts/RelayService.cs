@@ -61,6 +61,15 @@ namespace NGO.Networking
 
         public static async Task<bool> JoinRelay(string joinCode)
         {
+            if (string.IsNullOrWhiteSpace(joinCode))
+            {
+                Debug.LogWarning("[RelayService] El código de sala está vacío o es nulo.");
+                return false;
+            }
+
+            // Normalizar el código eliminando espacios laterales y convirtiendo a mayúsculas
+            joinCode = joinCode.Trim().ToUpper();
+
             if (!await InitializeAsync()) return false;
             try
             {
@@ -75,6 +84,18 @@ namespace NGO.Networking
                     joinAllocation.HostConnectionData
                 );
                 return true;
+            }
+            catch (RelayServiceException rse)
+            {
+                if (rse.Reason == RelayExceptionReason.JoinCodeNotFound || rse.Message.Contains("Not Found"))
+                {
+                    Debug.LogError($"[RelayService] El código de sala '{joinCode}' no existe, fue mal escrito o la sesión ha expirado.");
+                }
+                else
+                {
+                    Debug.LogError($"[RelayService] Error de Unity Relay ({rse.Reason}): {rse.Message}");
+                }
+                return false;
             }
             catch (System.Exception e)
             {
