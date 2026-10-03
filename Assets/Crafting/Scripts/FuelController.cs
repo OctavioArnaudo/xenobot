@@ -7,7 +7,6 @@ namespace Crafting.Scripts
     /// Specialized script to handle fuel jerrycan visuals and logic.
     /// Implements IItemFunctional, IItemUseAction, and IItemPickupAction to restore fuel to the entity's tank.
     /// </summary>
-    [ExecuteAlways]
     public class FuelController : MonoBehaviour, IItemUseAction, IItemPickupAction
     {
         // Economy Reliability Constants

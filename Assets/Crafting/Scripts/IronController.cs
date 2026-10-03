@@ -8,7 +8,6 @@ namespace Crafting.Scripts
     /// Generates a 3D trapezoid (ingot) mesh procedurally.
     /// Requires NetworkObject and PickupController (pre-configured with Item_Iron).
     /// </summary>
-    [ExecuteAlways]
     [RequireComponent(typeof(NetworkObject))]
     [RequireComponent(typeof(PickupController))]
     public class IronController : MonoBehaviour
@@ -24,11 +23,6 @@ namespace Crafting.Scripts
             GenerateIronVisuals();
         }
 
-        void OnValidate()
-        {
-            SetupPickup();
-        }
-
         private void SetupPickup()
         {
             var pickup = GetComponent<PickupController>();
@@ -37,14 +31,11 @@ namespace Crafting.Scripts
 #if UNITY_EDITOR
                 string path = "Assets/Crafting/Data/Item_Iron.asset";
                 pickup.item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>(path);
-                if (pickup.item != null)
-                {
-                    UnityEditor.EditorUtility.SetDirty(pickup);
-                }
 #endif
             }
         }
 
+        [ContextMenu("Generate Iron Visuals")]
         public void GenerateIronVisuals()
         {
             foreach (Transform child in transform)
@@ -90,7 +81,9 @@ namespace Crafting.Scripts
             mesh.triangles = triangles;
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
-            mf.sharedMesh = mesh;
+
+            if (Application.isPlaying) mf.mesh = mesh;
+            else mf.sharedMesh = mesh;
 
             Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
             Material mat = new Material(shader);
@@ -101,13 +94,12 @@ namespace Crafting.Scripts
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", smoothness);
             else if (mat.HasProperty("_Glossiness")) mat.SetFloat("_Glossiness", smoothness);
 
-            mr.sharedMaterial = mat;
+            if (Application.isPlaying) mr.material = mat;
+            else mr.sharedMaterial = mat;
         }
 
         public void ApplyEffect(GameObject entity)
         {
-            // Iron is a material, but we implement IItemFunctional as requested.
-            Debug.Log($"[IronController] Iron item {gameObject.name} handled by inventory.");
         }
     }
 }

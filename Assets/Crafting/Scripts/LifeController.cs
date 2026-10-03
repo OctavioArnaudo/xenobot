@@ -8,7 +8,6 @@ namespace Crafting.Scripts
     /// Specialized controller for Life (Heart) visual representation and logic.
     /// Handles procedural mesh generation and healing effect.
     /// </summary>
-    [ExecuteAlways]
     [RequireComponent(typeof(NetworkObject))]
     public class LifeController : MonoBehaviour, IItemUseAction, IItemPickupAction
     {
@@ -29,11 +28,6 @@ namespace Crafting.Scripts
             GenerateLifeVisuals();
         }
 
-        void OnValidate()
-        {
-            SetupPickup();
-        }
-
         private void SetupPickup()
         {
             var pickup = GetComponent<PickupController>();
@@ -42,27 +36,20 @@ namespace Crafting.Scripts
 #if UNITY_EDITOR
                 string path = "Assets/Crafting/Data/Item_Life.asset";
                 pickup.item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>(path);
-                if (pickup.item != null) UnityEditor.EditorUtility.SetDirty(pickup);
 #endif
             }
         }
 
         public void ApplyEffect(GameObject entity)
         {
-            // Pure functionality: use HealthController directly
             HealthController health = entity.GetComponent<HealthController>() ?? entity.GetComponentInParent<HealthController>();
-
             if (health != null)
             {
                 health.Heal(HEAL_AMOUNT);
-                Debug.Log($"[LifeController] Healed {HEAL_AMOUNT} HP to {entity.name}.");
-            }
-            else
-            {
-                Debug.LogWarning($"[LifeController] No HealthController found on {entity.name}");
             }
         }
 
+        [ContextMenu("Generate Life Visuals")]
         public void GenerateLifeVisuals()
         {
             foreach (Transform child in transform)
@@ -116,7 +103,9 @@ namespace Crafting.Scripts
             mesh.vertices = vertices;
             mesh.triangles = triangles;
             mesh.RecalculateNormals();
-            mf.sharedMesh = mesh;
+
+            if (Application.isPlaying) mf.mesh = mesh;
+            else mf.sharedMesh = mesh;
 
             Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
             Material mat = new Material(shader);
@@ -129,7 +118,9 @@ namespace Crafting.Scripts
                 if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", 0.2f);
                 if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", 0.8f);
             }
-            mr.sharedMaterial = mat;
+
+            if (Application.isPlaying) mr.material = mat;
+            else mr.sharedMaterial = mat;
 
             Light lt = visual.GetComponent<Light>();
             if (lt == null) lt = visual.AddComponent<Light>();

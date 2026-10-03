@@ -7,7 +7,6 @@ namespace Crafting.Scripts
     /// Specialized script to handle experience orb visuals and logic.
     /// Implements IItemFunctional, IItemUseAction, and IItemPickupAction to add EXP to the player.
     /// </summary>
-    [ExecuteAlways]
     public class ExperienceController : MonoBehaviour, IItemUseAction, IItemPickupAction
     {
         // Economy Reliability Constants

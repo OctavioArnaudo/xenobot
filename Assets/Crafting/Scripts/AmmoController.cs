@@ -8,7 +8,6 @@ namespace Crafting.Scripts
     /// Controller for Ammo visual representation and reload logic.
     /// Implements IItemFunctional, IItemUseAction, and IItemPickupAction to restore ammunition to ShootController.
     /// </summary>
-    [ExecuteAlways]
     public class AmmoController : MonoBehaviour, IItemUseAction, IItemPickupAction
     {
         private const int DEFAULT_AMMO_AMOUNT = 30;
@@ -32,11 +31,6 @@ namespace Crafting.Scripts
             if (generateDefaultVisuals) GenerateAmmoVisuals();
         }
 
-        void OnValidate()
-        {
-            SetupPickup();
-        }
-
         private void SetupPickup()
         {
             var pickup = GetComponent<PickupController>();
@@ -45,7 +39,6 @@ namespace Crafting.Scripts
 #if UNITY_EDITOR
                 string path = "Assets/Crafting/Data/Item_Ammo.asset";
                 pickup.item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>(path);
-                if (pickup.item != null) UnityEditor.EditorUtility.SetDirty(pickup);
 #endif
             }
         }

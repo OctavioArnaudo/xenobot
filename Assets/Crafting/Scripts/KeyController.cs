@@ -9,7 +9,6 @@ namespace Crafting.Scripts
     /// Generates a 3D door key mesh procedurally.
     /// Requires NetworkObject and PickupController (pre-configured with Item_Key).
     /// </summary>
-    [ExecuteAlways]
     public class KeyController : MonoBehaviour, IItemUseAction, IItemPickupAction
     {
         [Header("Visual Settings")]
@@ -29,11 +28,6 @@ namespace Crafting.Scripts
             GenerateKeyVisuals();
         }
 
-        void OnValidate()
-        {
-            SetupPickup();
-        }
-
         private void SetupPickup()
         {
             var pickup = GetComponent<PickupController>();
@@ -42,7 +36,6 @@ namespace Crafting.Scripts
 #if UNITY_EDITOR
                 string path = "Assets/Crafting/Data/Item_Key.asset";
                 pickup.item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>(path);
-                if (pickup.item != null) UnityEditor.EditorUtility.SetDirty(pickup);
 #endif
             }
         }
