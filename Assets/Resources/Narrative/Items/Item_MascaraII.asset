@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
   itemName: Mascara II
   isPickable: 1
-  isUsable: 0
-  isQuitable: 0
-  isDropable: 0
-  maxStack: 99
+  isUsable: 1
+  isQuitable: 1
+  isDropable: 1
+  maxStack: 1
   defaultAmount: 1
-  itemSprite: {fileID: 0}
-  itemPrefab: {fileID: 0}
+  itemSprite: {fileID: -1297151952, guid: 0042ad87ea1ba9c43b339319e01902c4, type: 3}
+  itemPrefab: {fileID: 7349165637636185266, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}

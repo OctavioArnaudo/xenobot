@@ -153,14 +153,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 900052251
+  GlobalObjectIdHash: 2082353490
   InScenePlacedSourceGlobalObjectIdHash: 2082353490
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -569,21 +569,25 @@ MonoBehaviour:
   panelColor: {r: 0.05, g: 0.05, b: 0.05, a: 0.95}
   accentColor: {r: 1, g: 0.85, b: 0, a: 1}
   itemDatabase:
-  - {fileID: 11400000, guid: 6ac606d832f14c4fa3466276ffe3c0b4, type: 2}
+  - {fileID: 11400000, guid: 8505d470eefba1e4a98829d088722fa3, type: 2}
   - {fileID: 11400000, guid: bb42e76d6f734c5091156f6de5048962, type: 2}
   - {fileID: 11400000, guid: 9c17cf8896f842ca89037bfc4f46889c, type: 2}
   - {fileID: 11400000, guid: 75b6b99d3e052724095a1f53dea46401, type: 2}
   - {fileID: 11400000, guid: d7c9c3ed602c45bda00bb8572b645ef1, type: 2}
-  - {fileID: 11400000, guid: cc730feca3d9438aa9e28397df2e6fe4, type: 2}
+  - {fileID: 11400000, guid: c965fbf0deadaa84db13d3f8a5e0ab86, type: 2}
   - {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
   - {fileID: 11400000, guid: efd5d0a0c9077794ebff867795e6eea0, type: 2}
   - {fileID: 11400000, guid: 255df1421f3a00a4ebd8665f47c31710, type: 2}
   - {fileID: 11400000, guid: 9f41a1c295b64338a231ce89c6aa91e6, type: 2}
-  - {fileID: 11400000, guid: 82f936139cf00f24fbb2382cd48dd828, type: 2}
+  - {fileID: 11400000, guid: 947593c3a67b6484aabce2fab1691fa6, type: 2}
   - {fileID: 11400000, guid: 125d620cfc9627c489cc73f5df68953e, type: 2}
-  - {fileID: 11400000, guid: 3a97472931f85e148983e025719c89f4, type: 2}
+  - {fileID: 11400000, guid: ee539a5b5bb773046b1b4aa570af5a5c, type: 2}
   - {fileID: 11400000, guid: daed6fcceb87bce418b245a5c5b7f855, type: 2}
   - {fileID: 11400000, guid: 8eee5fae4dbf594448b2248a273b7ccf, type: 2}
+  - {fileID: 11400000, guid: 6103474d17b1f0340a811c78a4f15f5f, type: 2}
+  - {fileID: 11400000, guid: c7ff2b724fdea774d8ceefb875f8b4d0, type: 2}
+  - {fileID: 11400000, guid: dc5fdb0e4fa05684994e73d2f36c3288, type: 2}
+  - {fileID: 11400000, guid: faee2e7d1295d304d8d5c4ff9ff93a25, type: 2}
   dropDistance: 3.5
 --- !u!114 &6229371320334411257
 MonoBehaviour:
@@ -682,6 +686,7 @@ MonoBehaviour:
   dashCooldown: 1
   doubleTapTimeWindow: 0.25
   staminaCost: 20
+  dashTriggerName: dash
 --- !u!114 &6353754398152676254
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -770,6 +775,7 @@ MonoBehaviour:
   generatorScale: {x: 2.2, y: 2.2, z: 2.2}
   shieldActivateSound: {fileID: 8300000, guid: 0cacf9e8e361eb24e9101b28422f7c08, type: 3}
   shieldBlockSound: {fileID: 8300000, guid: 93331a7c9fe98494a84f18effb358899, type: 3}
+  shieldAnimTrigger: shield
   shieldAnimBool: isShieldActive
 --- !u!114 &8123456789012345678
 MonoBehaviour:
