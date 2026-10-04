@@ -526,23 +526,24 @@ namespace Missions.Scripts
             _hudPanel.transform.SetParent(canvasObj.transform, false);
 
             Image panelImg = _hudPanel.AddComponent<Image>();
-            panelImg.color = new Color(0, 0, 0, 0.85f);
+            panelImg.color = new Color(0f, 0f, 0f, 0.92f);
+            var border = _hudPanel.AddComponent<Outline>();
+            border.effectColor = new Color(0.25f, 1f, 0.4f);
+            border.effectDistance = new Vector2(5f, 5f);
 
             RectTransform rt = _hudPanel.GetComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0.5f, 1f);
-            rt.anchorMax = new Vector2(0.5f, 1f);
-            rt.pivot = new Vector2(0.5f, 1f);
-            rt.anchoredPosition = new Vector2(0, -10);
-            rt.sizeDelta = new Vector2(420, 90);
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(900, 500);
 
             // Título: posicionado en la parte superior del panel
-            _titleTMP = CreateTextElement("Title", _hudPanel.transform, 16, Color.yellow,
+            _titleTMP = CreateTextElement("Title", _hudPanel.transform, 48, new Color(0.25f, 1f, 0.4f),
                 new Vector2(0f, 0.55f), new Vector2(1f, 1f),
                 new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(-20, 0));
             _titleTMP.fontStyle = FontStyles.Bold;
 
             // Descripción: posicionada en la parte inferior del panel
-            _descTMP = CreateTextElement("Description", _hudPanel.transform, 13, Color.white,
+            _descTMP = CreateTextElement("Description", _hudPanel.transform, 32, Color.white,
                 new Vector2(0f, 0f), new Vector2(1f, 0.55f),
                 new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(-20, 0));
 
@@ -576,7 +577,7 @@ namespace Missions.Scripts
 
         private void Update()
         {
-            if (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.mKey.wasPressedThisFrame)
+            if (Instance == this && UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.jKey.wasPressedThisFrame)
             {
                 if (_hudPanel != null)
                 {
@@ -681,7 +682,6 @@ namespace Missions.Scripts
             string newId = GetMissionIdentifier(mData);
             _currentVisibleMissionId = newId;
 
-            _hudPanel.SetActive(true);
             if (_titleTMP != null) _titleTMP.text = mData.title;
             if (_descTMP != null) _descTMP.text = mData.description;
         }
@@ -701,14 +701,12 @@ namespace Missions.Scripts
 
             if (_hudPanel == null) return;
 
-            _hudPanel.SetActive(true);
             if (_titleTMP != null) _titleTMP.text = title;
             if (_descTMP != null) _descTMP.text = description;
         }
 
         public void HideMissionHUD()
         {
-            if (_hudPanel != null) _hudPanel.SetActive(false);
             _currentVisibleMissionId = "";
         }
     }
