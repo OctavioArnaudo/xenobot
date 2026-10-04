@@ -258,6 +258,7 @@ namespace Narrative.Scripts
         void Update()
         {
             Block();
+            if (MissionController.Instance == null) return; // el MissionController fue destruido: pausar sin errores
             if (!_ready) { Boot(); return; }
             if (!_logging && _q.Count > 0 && !DialogManager.Instance.IsOpen)
                 Show(_q.Dequeue());
@@ -273,6 +274,7 @@ namespace Narrative.Scripts
                 _last = w;
                 foreach (var s in sites) s.fired = false;
                 for (int i = from; i <= w; i++) Completed(i);
+                if (w < 16) MissionController.Instance.UpdateMissionFlow(); // el HUD de misión pasa a la siguiente
             }
             Keys();
             Visits();
@@ -494,17 +496,18 @@ namespace Narrative.Scripts
             var sb = new StringBuilder();
             foreach (var line in lines)
             {
-                foreach (char c in line)
+                for (int i = 0; i < line.Length; i++)
                 {
-                    sb.Append(c);
+                    if (Fast()) { sb.Append(line, i, line.Length - i); break; } // E: resto de la línea al instante
+                    sb.Append(line[i]);
                     t.text = sb.ToString() + "_";
-                    yield return new WaitForSecondsRealtime(Fast() ? 0.001f : charDelay);
+                    yield return new WaitForSecondsRealtime(charDelay);
                 }
                 sb.Append('\n');
                 t.text = sb.ToString();
-                yield return new WaitForSecondsRealtime(Fast() ? 0.02f : lineDelay);
+                yield return new WaitForSecondsRealtime(Fast() ? 0.04f : lineDelay);
             }
-            yield return new WaitForSecondsRealtime(hold);
+            for (float w = 0f; w < hold && !Fast(); w += Time.unscaledDeltaTime) yield return null;
 
             _panel.SetActive(false);
             _logging = false;
