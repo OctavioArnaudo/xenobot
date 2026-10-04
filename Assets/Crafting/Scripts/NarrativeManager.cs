@@ -423,7 +423,7 @@ namespace Narrative.Scripts
         {
             var inv = InventoryController.LocalInstance;
             if (inv == null) return;
-            bool want = _logging || (DialogManager.Instance != null && DialogManager.Instance.IsOpen);
+            bool want = (!_ready && _t0 >= 0f) || _logging || (DialogManager.Instance != null && DialogManager.Instance.IsOpen);
             if (want == _blocked) return;
             _blocked = want;
             var pi = inv.GetComponent<PlayerInput>();
@@ -443,26 +443,53 @@ namespace Narrative.Scripts
             r.offsetMax = new Vector2(-m, -m);
         }
 
+        // El panel se dibuja una sola vez al inicio; después solo se activa o desactiva.
+        GameObject _panel;
+        TextMeshProUGUI _txt;
+
+        void Start() => Build();
+
+        void Build()
+        {
+            var green = new Color(0.25f, 1f, 0.4f);
+            _panel = new GameObject("NarrativeLog", typeof(Canvas), typeof(CanvasScaler));
+            var c = _panel.GetComponent<Canvas>();
+            c.renderMode = RenderMode.ScreenSpaceOverlay;
+            c.sortingOrder = 500;
+            var cs = _panel.GetComponent<CanvasScaler>();
+            cs.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            cs.referenceResolution = new Vector2(1920, 1080);
+
+            var border = Box(_panel.transform, green, new Vector2(800, 380));
+            var inner = Box(border.transform, new Color(0f, 0f, 0f, 0.92f), new Vector2(792, 372));
+            var tx = new GameObject("tx", typeof(TextMeshProUGUI));
+            tx.transform.SetParent(inner.transform, false);
+            _txt = tx.GetComponent<TextMeshProUGUI>();
+            _txt.fontSize = 22;
+            _txt.color = green;
+            _txt.alignment = TextAlignmentOptions.TopLeft;
+            Fill(tx, 24);
+            _panel.SetActive(false);
+        }
+
+        static GameObject Box(Transform parent, Color col, Vector2 size)
+        {
+            var g = new GameObject("box", typeof(Image));
+            g.transform.SetParent(parent, false);
+            g.GetComponent<Image>().color = col;
+            g.GetComponent<RectTransform>().sizeDelta = size;
+            return g;
+        }
+
         IEnumerator Log(string[] lines, Action done, float charDelay, float lineDelay, float hold)
         {
             _logging = true;
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
 
-            var go = new GameObject("NarrativeLog", typeof(Canvas));
-            go.GetComponent<Canvas>().renderMode = RenderMode.ScreenSpaceOverlay;
-            go.GetComponent<Canvas>().sortingOrder = 500;
-            var bg = new GameObject("bg", typeof(Image));
-            bg.transform.SetParent(go.transform, false);
-            bg.GetComponent<Image>().color = Color.black;
-            Fill(bg, 0);
-            var tx = new GameObject("tx", typeof(TextMeshProUGUI));
-            tx.transform.SetParent(go.transform, false);
-            var t = tx.GetComponent<TextMeshProUGUI>();
-            t.fontSize = 26;
-            t.color = new Color(0.25f, 1f, 0.4f);
-            t.alignment = TextAlignmentOptions.TopLeft;
-            Fill(tx, 60);
+            var t = _txt;
+            t.text = "";
+            _panel.SetActive(true);
 
             var sb = new StringBuilder();
             foreach (var line in lines)
@@ -479,7 +506,7 @@ namespace Narrative.Scripts
             }
             yield return new WaitForSecondsRealtime(hold);
 
-            Destroy(go);
+            _panel.SetActive(false);
             _logging = false;
             Cursor.visible = false;
             Cursor.lockState = CursorLockMode.Locked;
