@@ -111,8 +111,6 @@ namespace Crafting.Scripts
             {
                 foreach (var slot in _offlineBag) ProcessSlot(slot);
             }
-
-            MarkCountDirty();
         }
 
         private void ProcessSlot(NetworkInventorySlot slot)
@@ -476,7 +474,7 @@ namespace Crafting.Scripts
                     if (!hasVisualModule)
                     {
                         // Si no tiene controladores visuales, asumimos que es un booster invisible
-                        foreach(var r in instance.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+                        foreach (var r in instance.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
                     }
 
                     // Quitar componentes de mundo inmediatos antes de reemparentar
@@ -545,7 +543,7 @@ namespace Crafting.Scripts
             else
             {
                 InternalRemoveItem(hash, 1);
-                if (_spawnController != null) _spawnController.SpawnDroppedItem(item.itemPrefab, dropPos, item.itemName);
+                if (_spawnController != null) _spawnController.SpawnDroppedItem(item.itemPrefab, dropPos, item.itemName, item);
             }
         }
 
@@ -556,17 +554,13 @@ namespace Crafting.Scripts
             if (data != null)
             {
                 InternalRemoveItem(hash, 1);
-                if (_spawnController != null) _spawnController.SpawnDroppedItem(data.itemPrefab, position, data.itemName);
+                if (_spawnController != null) _spawnController.SpawnDroppedItem(data.itemPrefab, position, data.itemName, data);
             }
         }
 
         public static Dictionary<string, (ItemData def, int qty)> GetBag() => LocalInstance?._localBag ?? new();
         public Dictionary<string, (ItemData def, int qty)> GetMyBag() => _localBag;
-        public static void MarkCountDirty()
-        {
-            s_CountDirty = true;
-            Missions.Scripts.MissionController.Instance?.UpdateMissionFlow();
-        }
+        public static void MarkCountDirty() => s_CountDirty = true;
         public static ItemData GetItemDataByCodeStatic(string code) => LocalInstance?.GetItemDataByCode(code);
     }
 }
