@@ -271,15 +271,16 @@ namespace Combating.Scripts
             }
         }
 
-        private void StartGroundSlam()
-        {
+        private void StartGroundSlam() {
             m_NextAttackTime = Time.time + EffectiveAttackCooldown;
             m_IsSlamming = true;
 
             Animator anim = GetComponentInChildren<Animator>();
-            if (anim != null && HasParameter(anim, "groundSlamStart"))
-            {
-                anim.SetTrigger("groundSlamStart");
+            if (anim != null) {
+                if (HasParameter(anim, "smashDown"))
+                    anim.SetTrigger("smashDown");
+                else if (HasParameter(anim, "groundSlamStart"))
+                    anim.SetTrigger("groundSlamStart");
             }
         }
 
