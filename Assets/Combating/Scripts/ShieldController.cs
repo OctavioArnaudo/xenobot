@@ -5,10 +5,8 @@ using Crafting.Scripts;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Combating.Scripts
-{
-    public enum ShieldInputMode
-    {
+namespace Combating.Scripts {
+    public enum ShieldInputMode {
         HoldToActivate, // Mantener botón central de la rueda para activar, soltar para desactivar
         TogglePress     // Pulsar/girar la rueda del mouse para alternar (activar/desactivar)
     }
@@ -19,8 +17,7 @@ namespace Combating.Scripts
     /// escalado por nivel (Jugador) y degradación inversa por ciclos (Enemigo).
     /// </summary>
     [ExecuteAlways]
-    public class ShieldController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
-    {
+    public class ShieldController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction {
         private const float DEFAULT_DAMAGE_REDUCTION = 0.50f;
         private const float DEFAULT_MAX_SHIELD_HEALTH = 150.0f;
         private const float DEFAULT_MAX_SHIELD_DURATION = 10.0f;
@@ -66,6 +63,10 @@ namespace Combating.Scripts
         public AudioClip shieldBlockSound;
 
         [Header("Animation")]
+        [Tooltip("Parámetro Trigger del Animator que reproduce UNA vez la animación del escudo y vuelve al BlendTree")]
+        public string shieldAnimTrigger = "shield";
+
+        [Tooltip("Parámetro Bool opcional (si no existe en el Animator, se ignora)")]
         public string shieldAnimBool = "isShieldActive";
 
         private Animator m_Animator;
@@ -90,10 +91,8 @@ namespace Combating.Scripts
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
-        private bool IsEnemy
-        {
-            get
-            {
+        private bool IsEnemy {
+            get {
                 if (m_Health != null) return m_Health.EffectiveTeam == Team.Enemy;
                 return CompareTag("Enemy") || GetComponent<EnemyController>() != null || GetComponentInParent<EnemyController>() != null;
             }
@@ -101,19 +100,15 @@ namespace Combating.Scripts
 
         // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
 
-        public float EffectiveDamageReduction
-        {
-            get
-            {
+        public float EffectiveDamageReduction {
+            get {
                 float baseVal = damageReductionOverride.GetValue(DEFAULT_DAMAGE_REDUCTION);
-                if (IsEnemy)
-                {
+                if (IsEnemy) {
                     float peak = Mathf.Min(0.90f, baseVal * 1.5f);
                     float cycleFactor = Mathf.Pow(0.80f, m_EnemyCycleCount);
                     return Mathf.Max(0.20f, peak * cycleFactor);
                 }
-                else
-                {
+                else {
                     int lvl = HudController.Instance != null ? HudController.Instance.Level : 1;
                     int bonus = Mathf.Max(0, lvl - 1);
                     return Mathf.Min(0.95f, baseVal + bonus * 0.05f);
@@ -121,19 +116,15 @@ namespace Combating.Scripts
             }
         }
 
-        public float EffectiveMaxShieldHealth
-        {
-            get
-            {
+        public float EffectiveMaxShieldHealth {
+            get {
                 float baseVal = maxShieldHealthOverride.GetValue(DEFAULT_MAX_SHIELD_HEALTH);
-                if (IsEnemy)
-                {
+                if (IsEnemy) {
                     float peak = baseVal * 1.6f;
                     float cycleFactor = Mathf.Pow(0.80f, m_EnemyCycleCount);
                     return Mathf.Max(40f, peak * cycleFactor);
                 }
-                else
-                {
+                else {
                     int lvl = HudController.Instance != null ? HudController.Instance.Level : 1;
                     int bonus = Mathf.Max(0, lvl - 1);
                     return baseVal + bonus * 30f;
@@ -141,19 +132,15 @@ namespace Combating.Scripts
             }
         }
 
-        public float EffectiveMaxShieldDuration
-        {
-            get
-            {
+        public float EffectiveMaxShieldDuration {
+            get {
                 float baseVal = maxShieldDurationOverride.GetValue(DEFAULT_MAX_SHIELD_DURATION);
-                if (IsEnemy)
-                {
+                if (IsEnemy) {
                     float peak = baseVal * 1.5f;
                     float cycleFactor = Mathf.Pow(0.80f, m_EnemyCycleCount);
                     return Mathf.Max(3f, peak * cycleFactor);
                 }
-                else
-                {
+                else {
                     int lvl = HudController.Instance != null ? HudController.Instance.Level : 1;
                     int bonus = Mathf.Max(0, lvl - 1);
                     return baseVal + bonus * 2f;
@@ -161,19 +148,15 @@ namespace Combating.Scripts
             }
         }
 
-        public float EffectiveCooldownDuration
-        {
-            get
-            {
+        public float EffectiveCooldownDuration {
+            get {
                 float baseVal = cooldownDurationOverride.GetValue(DEFAULT_COOLDOWN_DURATION);
-                if (IsEnemy)
-                {
+                if (IsEnemy) {
                     float peak = baseVal * 0.8f;
                     float cycleFactor = Mathf.Pow(0.80f, m_EnemyCycleCount);
                     return Mathf.Min(12f, peak / Mathf.Max(0.01f, cycleFactor));
                 }
-                else
-                {
+                else {
                     int lvl = HudController.Instance != null ? HudController.Instance.Level : 1;
                     int bonus = Mathf.Max(0, lvl - 1);
                     return Mathf.Max(1.5f, baseVal - bonus * 0.3f);
@@ -191,10 +174,8 @@ namespace Combating.Scripts
         public float CurrentShieldHealth => EffectiveInfiniteShield ? EffectiveMaxShieldHealth : m_CurrentShieldHealth;
         public float MaxShieldHealth => EffectiveMaxShieldHealth;
 
-        private void Awake()
-        {
-            if (Application.isPlaying)
-            {
+        private void Awake() {
+            if (Application.isPlaying) {
                 RefreshReferences();
             }
 
@@ -202,27 +183,21 @@ namespace Combating.Scripts
             m_CurrentShieldHealth = EffectiveMaxShieldHealth;
         }
 
-        private void Start()
-        {
-            if (Application.isPlaying)
-            {
+        private void Start() {
+            if (Application.isPlaying) {
                 if (autoUnlockOnStart) isUnlocked = true;
                 if (autoActivateOnStart) SetShieldState(true);
             }
-            else
-            {
+            else {
                 InitVisuals();
             }
         }
 
-        private void OnValidate()
-        {
+        private void OnValidate() {
 #if UNITY_EDITOR
-            UnityEditor.EditorApplication.delayCall += () =>
-            {
+            UnityEditor.EditorApplication.delayCall += () => {
                 if (this == null) return;
-                if (generateDefaultVisuals && shieldVisualObject == null)
-                {
+                if (generateDefaultVisuals && shieldVisualObject == null) {
                     GenerateShieldMesh();
                 }
                 UpdateVisualsState();
@@ -230,46 +205,37 @@ namespace Combating.Scripts
 #endif
         }
 
-        private void RefreshReferences()
-        {
+        private void RefreshReferences() {
             m_Animator = GetComponentInChildren<Animator>();
             m_Health = GetComponentInParent<HealthController>() ?? GetComponentInChildren<HealthController>();
         }
 
-        private void InitVisuals()
-        {
-            if (shieldVisualObject == null && generateDefaultVisuals)
-            {
+        private void InitVisuals() {
+            if (shieldVisualObject == null && generateDefaultVisuals) {
                 GenerateShieldMesh();
             }
 
             UpdateVisualsState();
         }
 
-        private void UpdateVisualsState()
-        {
-            if (shieldVisualObject != null)
-            {
+        private void UpdateVisualsState() {
+            if (shieldVisualObject != null) {
                 bool isPickupItem = GetComponent<PickupController>() != null || GetComponentInParent<PickupController>() != null;
                 bool shouldBeActive = isPickupItem || IsShieldActive || (!Application.isPlaying && previewInEditor);
 
-                if (shieldVisualObject.activeSelf != shouldBeActive)
-                {
+                if (shieldVisualObject.activeSelf != shouldBeActive) {
                     shieldVisualObject.SetActive(shouldBeActive);
                 }
             }
         }
 
-        private void Update()
-        {
-            if (GetComponent<PickupController>() != null || GetComponentInParent<PickupController>() != null)
-            {
+        private void Update() {
+            if (GetComponent<PickupController>() != null || GetComponentInParent<PickupController>() != null) {
                 UpdateVisualsState();
                 return;
             }
 
-            if (shieldVisualObject == null && generateDefaultVisuals)
-            {
+            if (shieldVisualObject == null && generateDefaultVisuals) {
                 GenerateShieldMesh();
             }
 
@@ -277,17 +243,14 @@ namespace Combating.Scripts
 
             if (!Application.isPlaying) return;
 
-            if (EffectiveInfiniteShield)
-            {
+            if (EffectiveInfiniteShield) {
                 m_CurrentShieldHealth = EffectiveMaxShieldHealth;
                 m_CooldownTimer = 0f;
             }
 
-            if (InCooldown)
-            {
+            if (InCooldown) {
                 m_CooldownTimer -= Time.deltaTime;
-                if (m_CooldownTimer <= 0f)
-                {
+                if (m_CooldownTimer <= 0f) {
                     m_CooldownTimer = 0f;
                     m_ActiveTimer = 0f;
                     m_CurrentShieldHealth = EffectiveMaxShieldHealth;
@@ -296,43 +259,36 @@ namespace Combating.Scripts
                 }
             }
 
-            if (IsShieldActive && !EffectiveInfiniteShield)
-            {
+            if (IsShieldActive && !EffectiveInfiniteShield) {
                 m_ActiveTimer += Time.deltaTime;
 
                 float drainRate = EffectiveMaxShieldHealth / Mathf.Max(0.1f, EffectiveMaxShieldDuration);
                 m_CurrentShieldHealth = Mathf.Max(0f, m_CurrentShieldHealth - (drainRate * Time.deltaTime));
 
-                if (m_ActiveTimer >= EffectiveMaxShieldDuration || m_CurrentShieldHealth <= 0f)
-                {
+                if (m_ActiveTimer >= EffectiveMaxShieldDuration || m_CurrentShieldHealth <= 0f) {
                     m_CurrentShieldHealth = 0f;
                     StartCooldown();
                 }
             }
 
-            if (m_HitFlashTimer > 0f)
-            {
+            if (m_HitFlashTimer > 0f) {
                 m_HitFlashTimer -= Time.deltaTime;
-                if (m_HitFlashTimer <= 0f)
-                {
+                if (m_HitFlashTimer <= 0f) {
                     RestoreShieldOriginalColors();
                 }
             }
 
             if (IsNetworkActive && !IsOwner) return;
 
-            if (Cursor.visible)
-            {
-                if (m_ActivatedByInput || IsShieldActive)
-                {
+            if (Cursor.visible) {
+                if (m_ActivatedByInput || IsShieldActive) {
                     SetShieldState(false);
                     m_ActivatedByInput = false;
                 }
                 return;
             }
 
-            if (Mouse.current != null && isUnlocked && (!InCooldown || EffectiveInfiniteShield) && m_CurrentShieldHealth > 0f)
-            {
+            if (Mouse.current != null && isUnlocked && (!InCooldown || EffectiveInfiniteShield) && m_CurrentShieldHealth > 0f) {
                 var middleButton = Mouse.current.middleButton;
                 float scrollValue = Mouse.current.scroll.ReadValue().y;
                 bool isScrolling = Mathf.Abs(scrollValue) > 0.01f;
@@ -341,28 +297,23 @@ namespace Combating.Scripts
                 bool middleIsPressed = middleButton != null && middleButton.isPressed;
                 bool middleReleasedThisFrame = middleButton != null && middleButton.wasReleasedThisFrame;
 
-                if (inputMode == ShieldInputMode.TogglePress)
-                {
-                    if (middlePressedThisFrame || isScrolling)
-                    {
+                if (inputMode == ShieldInputMode.TogglePress) {
+                    if (middlePressedThisFrame || isScrolling) {
                         SetShieldState(!IsShieldActive);
                         m_ActivatedByInput = IsShieldActive;
                     }
                 }
                 else // HoldToActivate
                 {
-                    if ((middlePressedThisFrame || isScrolling) && IsShieldActive && !m_ActivatedByInput)
-                    {
+                    if ((middlePressedThisFrame || isScrolling) && IsShieldActive && !m_ActivatedByInput) {
                         SetShieldState(false);
                         m_ActivatedByInput = false;
                     }
-                    else if (middleIsPressed)
-                    {
+                    else if (middleIsPressed) {
                         SetShieldState(true);
                         m_ActivatedByInput = true;
                     }
-                    else if (middleReleasedThisFrame || (!middleIsPressed && m_ActivatedByInput))
-                    {
+                    else if (middleReleasedThisFrame || (!middleIsPressed && m_ActivatedByInput)) {
                         SetShieldState(false);
                         m_ActivatedByInput = false;
                     }
@@ -370,67 +321,56 @@ namespace Combating.Scripts
             }
         }
 
-        private void LateUpdate()
-        {
-            if (shieldVisualObject != null && (IsShieldActive || (!Application.isPlaying && previewInEditor)))
-            {
+        private void LateUpdate() {
+            if (shieldVisualObject != null && (IsShieldActive || (!Application.isPlaying && previewInEditor))) {
                 shieldVisualObject.transform.localPosition = generatorOffset;
             }
         }
 
-        public void StartRechargeSequence()
-        {
+        public void StartRechargeSequence() {
             m_CooldownTimer = EffectiveCooldownDuration;
             m_ActiveTimer = 0f;
             SetShieldState(false);
             Debug.Log($"<color=cyan>[ShieldController]</color> Iniciando recarga de escudo ({EffectiveCooldownDuration}s)...");
         }
 
-        public void SetShieldState(bool active)
-        {
+        public void SetShieldState(bool active) {
             if (!isUnlocked && active) return;
 
             if (active && InCooldown && !EffectiveInfiniteShield) return;
 
-            if (active && m_CurrentShieldHealth <= 0f && !EffectiveInfiniteShield)
-            {
+            if (active && m_CurrentShieldHealth <= 0f && !EffectiveInfiniteShield) {
                 return;
             }
 
             if (IsShieldActive == active) return;
 
-            if (active)
-            {
+            if (active) {
                 m_ActiveTimer = 0f;
             }
 
-            if (IsNetworkActive)
-            {
+            if (IsNetworkActive) {
                 m_IsShieldActive.Value = active;
             }
-            else
-            {
+            else {
                 bool previous = m_OfflineShieldActive;
                 m_OfflineShieldActive = active;
                 OnShieldStateChanged(previous, active);
             }
         }
 
-        public void StartCooldown()
-        {
+        public void StartCooldown() {
             if (EffectiveInfiniteShield) return;
 
             SetShieldState(false);
 
             // Solo mostrar la recarga si es un enemigo o si el booleano infiniteShield está activo
-            if (IsEnemy || EffectiveInfiniteShield)
-            {
+            if (IsEnemy || EffectiveInfiniteShield) {
                 m_CooldownTimer = EffectiveCooldownDuration;
                 m_ActiveTimer = 0f;
                 if (IsEnemy) m_EnemyCycleCount++;
             }
-            else
-            {
+            else {
                 // Para el jugador al agotarse en combate sin usar un ítem, cae inmediatamente a 0/X sin mostrar efecto de recarga
                 m_CurrentShieldHealth = 0f;
                 m_CooldownTimer = 0f;
@@ -438,28 +378,48 @@ namespace Combating.Scripts
             }
         }
 
-        public override void OnNetworkSpawn()
-        {
+        public override void OnNetworkSpawn() {
             m_IsShieldActive.OnValueChanged += OnShieldStateChanged;
         }
 
-        public override void OnNetworkDespawn()
-        {
+        public override void OnNetworkDespawn() {
             m_IsShieldActive.OnValueChanged -= OnShieldStateChanged;
         }
 
-        private void OnShieldStateChanged(bool previousValue, bool newValue)
-        {
+        private void OnShieldStateChanged(bool previousValue, bool newValue) {
             UpdateVisualsState();
 
-            if (newValue && shieldActivateSound != null)
-            {
+            if (newValue && shieldActivateSound != null) {
                 AudioSource.PlayClipAtPoint(shieldActivateSound, transform.position);
             }
 
-            if (m_Animator != null && HasParameter(m_Animator, shieldAnimBool))
-            {
-                m_Animator.SetBool(shieldAnimBool, newValue);
+            UpdateShieldAnimation(newValue);
+        }
+
+        /// <summary>
+        /// Al activarse el escudo dispara el Trigger "shield" (la animación se reproduce una sola vez
+        /// y el Animator vuelve al BlendTree). Al desactivarse limpia el trigger para que no quede encolado.
+        /// </summary>
+        private void UpdateShieldAnimation(bool active) {
+            if (!Application.isPlaying) return;
+
+            if (m_Animator == null) m_Animator = GetComponentInChildren<Animator>();
+            if (m_Animator == null) return;
+
+            // Trigger de un solo disparo: se activa solo al ENCENDER el escudo
+            if (!string.IsNullOrEmpty(shieldAnimTrigger) && HasParameter(m_Animator, shieldAnimTrigger)) {
+                if (active) {
+                    m_Animator.ResetTrigger(shieldAnimTrigger);
+                    m_Animator.SetTrigger(shieldAnimTrigger);
+                }
+                else {
+                    m_Animator.ResetTrigger(shieldAnimTrigger);
+                }
+            }
+
+            // Bool opcional (solo se usa si existe en el Animator)
+            if (!string.IsNullOrEmpty(shieldAnimBool) && HasParameter(m_Animator, shieldAnimBool)) {
+                m_Animator.SetBool(shieldAnimBool, active);
             }
         }
 
@@ -471,8 +431,7 @@ namespace Combating.Scripts
 
         public void OnPickupItem(GameObject player) => isUnlocked = true;
 
-        public void OnUseItem(GameObject entity)
-        {
+        public void OnUseItem(GameObject entity) {
             if (entity == null) return;
 
             GameObject playerRoot = entity.transform.root.gameObject;
@@ -480,43 +439,36 @@ namespace Combating.Scripts
             ShieldController actualController = playerRoot.GetComponentsInChildren<ShieldController>(true)
                 .FirstOrDefault(s => s != null && s != this);
 
-            if (actualController != null)
-            {
+            if (actualController != null) {
                 actualController.isUnlocked = true;
                 actualController.StartRechargeSequence();
 
-                if (this != actualController && transform.IsChildOf(playerRoot.transform))
-                {
+                if (this != actualController && transform.IsChildOf(playerRoot.transform)) {
                     this.enabled = false;
                 }
             }
-            else
-            {
+            else {
                 this.isUnlocked = true;
                 StartRechargeSequence();
             }
         }
 
-        private Material GetHexagonPurpleMaterial()
-        {
+        private Material GetHexagonPurpleMaterial() {
             Material mat = null;
 
 #if UNITY_EDITOR
             string path = "Assets/Characters/Materials/Material_HexagonPurple1 1.mat";
             mat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>(path);
-            if (mat == null)
-            {
+            if (mat == null) {
                 mat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Characters/Materials/Material_HexagonPurple1.mat");
             }
 #endif
 
-            if (mat == null)
-            {
+            if (mat == null) {
                 mat = Resources.Load<Material>("Material_HexagonPurple1 1") ?? Resources.Load<Material>("Material_HexagonPurple1");
             }
 
-            if (mat == null)
-            {
+            if (mat == null) {
                 Shader shader = Shader.Find("Universal Render Pipeline/Lit") ??
                                Shader.Find("Universal Render Pipeline/Unlit") ??
                                Shader.Find("Standard");
@@ -525,8 +477,7 @@ namespace Combating.Scripts
                 Color purple = new Color(0.6f, 0.1f, 0.9f, 0.7f);
                 if (mat.HasProperty("_Color")) mat.color = purple;
                 if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", purple);
-                if (mat.HasProperty("_EmissionColor"))
-                {
+                if (mat.HasProperty("_EmissionColor")) {
                     mat.EnableKeyword("_EMISSION");
                     mat.SetColor("_EmissionColor", purple * 2.0f);
                 }
@@ -536,28 +487,23 @@ namespace Combating.Scripts
         }
 
         [ContextMenu("Re-Generate Shield Mesh")]
-        public void GenerateShieldMesh()
-        {
+        public void GenerateShieldMesh() {
             RefreshReferences();
 
             Transform targetParent = transform;
-            if (m_Animator != null && m_Animator.isHuman)
-            {
+            if (m_Animator != null && m_Animator.isHuman) {
                 Transform chestBone = m_Animator.GetBoneTransform(HumanBodyBones.Chest)
                                    ?? m_Animator.GetBoneTransform(HumanBodyBones.Spine);
-                if (chestBone != null)
-                {
+                if (chestBone != null) {
                     targetParent = chestBone;
                 }
             }
 
             Transform existing = transform.Find("ShieldRender") ?? targetParent.Find("ShieldRender");
-            if (existing != null)
-            {
+            if (existing != null) {
                 shieldVisualObject = existing.gameObject;
             }
-            else
-            {
+            else {
                 shieldVisualObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
                 shieldVisualObject.name = "ShieldRender";
                 shieldVisualObject.transform.SetParent(targetParent, false);
@@ -573,11 +519,9 @@ namespace Combating.Scripts
             shieldVisualObject.transform.localScale = generatorScale;
 
             var mr = shieldVisualObject.GetComponent<MeshRenderer>();
-            if (mr != null)
-            {
+            if (mr != null) {
                 Material hexMat = GetHexagonPurpleMaterial();
-                if (hexMat != null)
-                {
+                if (hexMat != null) {
                     mr.sharedMaterial = hexMat;
                 }
             }
@@ -585,22 +529,19 @@ namespace Combating.Scripts
             UpdateVisualsState();
         }
 
-        public float ProcessIncomingDamage(float damage)
-        {
+        public float ProcessIncomingDamage(float damage) {
             if (!IsShieldActive || (InCooldown && !EffectiveInfiniteShield)) return damage;
 
             float dr = EffectiveDamageReduction;
             float unmitigatedDamage = damage * (1f - dr);
 
-            if (!EffectiveInfiniteShield)
-            {
+            if (!EffectiveInfiniteShield) {
                 m_CurrentShieldHealth = Mathf.Max(0f, m_CurrentShieldHealth - damage);
             }
 
             TriggerShieldHitEffect();
 
-            if (!EffectiveInfiniteShield && m_CurrentShieldHealth <= 0f)
-            {
+            if (!EffectiveInfiniteShield && m_CurrentShieldHealth <= 0f) {
                 m_CurrentShieldHealth = 0f;
                 StartCooldown();
             }
@@ -608,39 +549,31 @@ namespace Combating.Scripts
             return unmitigatedDamage;
         }
 
-        public int ProcessIncomingDamage(int damage)
-        {
+        public int ProcessIncomingDamage(int damage) {
             if (!IsShieldActive || (InCooldown && !EffectiveInfiniteShield)) return damage;
 
             return Mathf.RoundToInt(ProcessIncomingDamage((float)damage));
         }
 
-        public int MitigateDamage(int damage)
-        {
+        public int MitigateDamage(int damage) {
             return ProcessIncomingDamage(damage);
         }
 
-        private void TriggerShieldHitEffect()
-        {
-            if (shieldBlockSound != null)
-            {
+        private void TriggerShieldHitEffect() {
+            if (shieldBlockSound != null) {
                 AudioSource.PlayClipAtPoint(shieldBlockSound, transform.position);
             }
 
-            if (shieldVisualObject != null)
-            {
+            if (shieldVisualObject != null) {
                 var mr = shieldVisualObject.GetComponent<MeshRenderer>();
-                if (mr != null)
-                {
+                if (mr != null) {
                     CacheShieldOriginalColors(mr);
-                    foreach (var mat in mr.materials)
-                    {
+                    foreach (var mat in mr.materials) {
                         if (mat == null) continue;
                         Color flash = new Color(1f, 1f, 1f, 0.95f);
                         if (mat.HasProperty("_Color")) mat.color = flash;
                         if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", flash);
-                        if (mat.HasProperty("_EmissionColor"))
-                        {
+                        if (mat.HasProperty("_EmissionColor")) {
                             mat.EnableKeyword("_EMISSION");
                             mat.SetColor("_EmissionColor", flash * 3.5f);
                         }
@@ -650,29 +583,24 @@ namespace Combating.Scripts
             }
         }
 
-        private void CacheShieldOriginalColors(MeshRenderer mr)
-        {
+        private void CacheShieldOriginalColors(MeshRenderer mr) {
             if (mr == null) return;
-            foreach (var mat in mr.materials)
-            {
+            foreach (var mat in mr.materials) {
                 if (mat == null || m_ShieldOriginalColors.ContainsKey(mat)) continue;
                 if (mat.HasProperty("_Color")) m_ShieldOriginalColors[mat] = mat.color;
                 else if (mat.HasProperty("_BaseColor")) m_ShieldOriginalColors[mat] = mat.GetColor("_BaseColor");
             }
         }
 
-        private void RestoreShieldOriginalColors()
-        {
-            foreach (var kvp in m_ShieldOriginalColors)
-            {
+        private void RestoreShieldOriginalColors() {
+            foreach (var kvp in m_ShieldOriginalColors) {
                 if (kvp.Key == null) continue;
                 if (kvp.Key.HasProperty("_Color")) kvp.Key.color = kvp.Value;
                 if (kvp.Key.HasProperty("_BaseColor")) kvp.Key.SetColor("_BaseColor", kvp.Value);
             }
         }
 
-        private bool HasParameter(Animator animator, string paramName)
-        {
+        private bool HasParameter(Animator animator, string paramName) {
             if (animator == null) return false;
             foreach (AnimatorControllerParameter param in animator.parameters)
                 if (param.name == paramName) return true;
