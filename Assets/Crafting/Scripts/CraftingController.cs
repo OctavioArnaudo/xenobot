@@ -85,6 +85,15 @@ namespace Crafting.Scripts
 
         public override void OnNetworkSpawn()
         {
+            bool isPlayer = CompareTag("Player") ||
+                            (transform.root != null && transform.root.CompareTag("Player")) ||
+                            GetComponentInParent<InventoryController>() != null;
+
+            if (isPlayer && IsOwner)
+            {
+                LocalInstance = this;
+            }
+
             if (IsServer && _completedTrades == null)
             {
                 _completedTrades = new NetworkList<FixedString32Bytes>();
@@ -189,32 +198,39 @@ namespace Crafting.Scripts
 
         private void Update()
         {
+            // Solo el jugador local (propietario) debe procesar la entrada del teclado
+            bool isPlayer = CompareTag("Player") ||
+                            (transform.root != null && transform.root.CompareTag("Player")) ||
+                            GetComponentInParent<InventoryController>() != null;
+
+            if (!isPlayer) return;
+            if (IsNetworkActive && !IsOwner) return;
+
             if (Keyboard.current == null) return;
 
-            // ACTIVACIÓN DEBUG (Tecla T)
-            if (Keyboard.current.tKey.wasPressedThisFrame)
+            // ACTIVACIÓN (Tecla T o C)
+            if (Keyboard.current.tKey.wasPressedThisFrame || Keyboard.current.cKey.wasPressedThisFrame)
+            {
+                ToggleCraftingUI();
+            }
+        }
+
+        private void ToggleCraftingUI()
+        {
+            var allControllers = Object.FindObjectsByType<CraftingController>(FindObjectsSortMode.None);
+            var nearbyZone = allControllers.FirstOrDefault(x => x != null && x.requireProximity && x._isPlayerInRange);
+
+            if (nearbyZone != null)
+            {
+                nearbyZone.SetOpen(!nearbyZone._open);
+            }
+            else if (LocalInstance != null)
+            {
+                LocalInstance.SetOpen(!LocalInstance._open);
+            }
+            else
             {
                 SetOpen(!_open);
-            }
-
-            // ACTIVACIÓN NORMAL (Tecla C)
-            if (Keyboard.current.cKey.wasPressedThisFrame)
-            {
-                var allControllers = Object.FindObjectsByType<CraftingController>(FindObjectsSortMode.None);
-                var nearbyZone = allControllers.FirstOrDefault(x => x != null && x.requireProximity && x._isPlayerInRange);
-
-                if (nearbyZone != null)
-                {
-                    nearbyZone.SetOpen(!nearbyZone._open);
-                }
-                else if (LocalInstance != null)
-                {
-                    LocalInstance.SetOpen(!LocalInstance._open);
-                }
-                else
-                {
-                    SetOpen(!_open);
-                }
             }
         }
 
@@ -239,9 +255,19 @@ namespace Crafting.Scripts
         }
 
         #region Trigger Proximity
+        private bool IsLocalPlayerCollider(Collider other)
+        {
+            var inv = other.GetComponentInParent<InventoryController>() ?? other.GetComponent<InventoryController>();
+            if (inv != null)
+            {
+                return InventoryController.LocalInstance == inv || (inv.IsSpawned && inv.IsOwner);
+            }
+            return other.CompareTag("Player");
+        }
+
         private void OnTriggerEnter(Collider other)
         {
-            if (other.CompareTag("Player") || other.GetComponentInParent<InventoryController>() != null)
+            if (IsLocalPlayerCollider(other))
             {
                 _isPlayerInRange = true;
             }
@@ -249,7 +275,7 @@ namespace Crafting.Scripts
 
         private void OnTriggerStay(Collider other)
         {
-            if (other.CompareTag("Player") || other.GetComponentInParent<InventoryController>() != null)
+            if (IsLocalPlayerCollider(other))
             {
                 _isPlayerInRange = true;
             }
@@ -257,7 +283,7 @@ namespace Crafting.Scripts
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.CompareTag("Player") || other.GetComponentInParent<InventoryController>() != null)
+            if (IsLocalPlayerCollider(other))
             {
                 if (requireProximity)
                 {
