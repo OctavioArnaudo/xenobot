@@ -160,7 +160,7 @@ namespace Missions.Scripts
             return hasInventory || hasCrafting;
         }
 
-        public void InjectNewMissions(MissionData particular, List<MissionData> complementarias)
+        public void InjectNewMissions(MissionData particular, List<MissionData> complementarias, bool forceActive = false)
         {
             if (missions == null) missions = new List<MissionData>();
 
@@ -182,6 +182,10 @@ namespace Missions.Scripts
                 if (!missions.Contains(particular))
                 {
                     missions.Insert(0, particular);
+                }
+                if ((forceActive || !IsMissionCompleted(particular)) && AreMissionRequirementsMet(particular))
+                {
+                    _currentActiveMission = particular;
                 }
             }
 
@@ -213,46 +217,83 @@ namespace Missions.Scripts
 
                 if (!completed)
                 {
-                    bool hasItems = HasItemRequirements(this.missionData);
-                    bool reqsMet = CheckRequirementsForPlayer(this.missionData, playerInv);
+                    bool missionReqsMet = AreMissionRequirementsMet(this.missionData);
 
-                    if (!hasItems || reqsMet)
-                    {
-                        if (NarrativeManager.Instance != null)
-                        {
-                            NarrativeManager.Instance.ExecuteMission(this.missionData, playerInv);
-                        }
-                        else
-                        {
-                            targetController.CompleteMission(this.missionData);
-                        }
-
-                        string titleToShow = !string.IsNullOrEmpty(customTitle) ? customTitle : this.missionData.title;
-                        string descToShow = !string.IsNullOrEmpty(customDescription) ? customDescription : this.missionData.description;
-                        targetController.ShowMessage(titleToShow, descToShow);
-                    }
-                    else
+                    if (!missionReqsMet)
                     {
                         if (!string.IsNullOrEmpty(customTitle) && !string.IsNullOrEmpty(customDescription))
                         {
                             targetController.ShowMessage(customTitle, customDescription);
                         }
+                    }
+                    else
+                    {
+                        targetController._currentActiveMission = this.missionData;
+
+                        bool hasItems = HasItemRequirements(this.missionData);
+                        bool reqsMet = CheckRequirementsForPlayer(this.missionData, playerInv);
+
+                        if (!hasItems || reqsMet)
+                        {
+                            if (NarrativeManager.Instance != null)
+                            {
+                                NarrativeManager.Instance.ExecuteMission(this.missionData, playerInv);
+                            }
+                            else
+                            {
+                                targetController.CompleteMission(this.missionData);
+                            }
+
+                            string titleToShow = !string.IsNullOrEmpty(customTitle) ? customTitle : this.missionData.title;
+                            string descToShow = !string.IsNullOrEmpty(customDescription) ? customDescription : this.missionData.description;
+                            targetController.ShowMessage(titleToShow, descToShow);
+                        }
                         else
                         {
-                            targetController.ShowMissionHUD(this.missionData);
+                            if (!string.IsNullOrEmpty(customTitle) && !string.IsNullOrEmpty(customDescription))
+                            {
+                                targetController.ShowMessage(customTitle, customDescription);
+                            }
+                            else
+                            {
+                                targetController.ShowMissionHUD(this.missionData);
+                            }
                         }
                     }
                 }
             }
+            else if (!string.IsNullOrEmpty(customTitle) && !string.IsNullOrEmpty(customDescription))
+            {
+                targetController.ShowMessage(customTitle, customDescription);
+            }
 
-            targetController.InjectNewMissions(this.missionData, this.missions);
+            targetController.InjectNewMissions(this.missionData, this.missions, forceActive: this.missionData != null && !IsMissionCompleted(this.missionData) && AreMissionRequirementsMet(this.missionData));
+        }
+
+        public bool AreMissionRequirementsMet(MissionData mData)
+        {
+            if (mData == null) return true;
+            if (mData.missionRequirements != null && mData.missionRequirements.Count > 0)
+            {
+                foreach (var req in mData.missionRequirements)
+                {
+                    if (req != null && !IsMissionCompleted(req))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return true;
         }
 
         public MissionData SelectNextMissionByPriority(MissionData current, List<MissionData> stack)
         {
-            if (stack == null || stack.Count == 0) return current;
+            if (stack == null || stack.Count == 0)
+            {
+                return (current != null && !IsMissionCompleted(current) && AreMissionRequirementsMet(current)) ? current : null;
+            }
 
-            if (current != null && !IsMissionCompleted(current))
+            if (current != null && !IsMissionCompleted(current) && AreMissionRequirementsMet(current))
             {
                 return current;
             }
@@ -268,47 +309,15 @@ namespace Missions.Scripts
 
             if (uncompleted.Count == 0) return null;
 
-            if (current != null)
-            {
-                foreach (var m in uncompleted)
-                {
-                    if (m.missionRequirements != null && m.missionRequirements.Contains(current))
-                    {
-                        return m;
-                    }
-                }
-            }
-
             foreach (var m in uncompleted)
             {
-                if (m.missionRequirements != null && m.missionRequirements.Count > 0)
-                {
-                    bool allReqsCompleted = true;
-                    foreach (var req in m.missionRequirements)
-                    {
-                        if (req != null && !IsMissionCompleted(req))
-                        {
-                            allReqsCompleted = false;
-                            break;
-                        }
-                    }
-
-                    if (allReqsCompleted)
-                    {
-                        return m;
-                    }
-                }
-            }
-
-            foreach (var m in uncompleted)
-            {
-                if (m.missionRequirements == null || m.missionRequirements.Count == 0)
+                if (AreMissionRequirementsMet(m))
                 {
                     return m;
                 }
             }
 
-            return uncompleted[0];
+            return null;
         }
 
         public void UpdateMissionFlow()
@@ -323,7 +332,7 @@ namespace Missions.Scripts
                 {
                     if (m == null) continue;
 
-                    if (!IsMissionCompleted(m) && HasItemRequirements(m))
+                    if (!IsMissionCompleted(m) && AreMissionRequirementsMet(m) && HasItemRequirements(m))
                     {
                         if (CheckRequirementsForPlayer(m, playerInv))
                         {
@@ -342,7 +351,7 @@ namespace Missions.Scripts
 
             MissionData nextMission = SelectNextMissionByPriority(_currentActiveMission, missions);
 
-            if (nextMission == null && this.missionData != null && !IsMissionCompleted(this.missionData))
+            if (nextMission == null && this.missionData != null && !IsMissionCompleted(this.missionData) && AreMissionRequirementsMet(this.missionData))
             {
                 nextMission = this.missionData;
             }
@@ -502,7 +511,9 @@ namespace Missions.Scripts
                 Canvas c = canvasObj.AddComponent<Canvas>();
                 c.renderMode = RenderMode.ScreenSpaceOverlay;
                 c.sortingOrder = 100;
-                canvasObj.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                var scaler = canvasObj.AddComponent<CanvasScaler>();
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                scaler.referenceResolution = new Vector2(1920, 1080);
                 canvasObj.AddComponent<GraphicRaycaster>();
             }
 
@@ -526,26 +537,23 @@ namespace Missions.Scripts
             _hudPanel.transform.SetParent(canvasObj.transform, false);
 
             Image panelImg = _hudPanel.AddComponent<Image>();
-            panelImg.color = new Color(0f, 0f, 0f, 0.92f);
-            var border = _hudPanel.AddComponent<Outline>();
-            border.effectColor = new Color(0.25f, 1f, 0.4f);
-            border.effectDistance = new Vector2(5f, 5f);
+            panelImg.color = new Color(0f, 0f, 0f, 0.88f); // Fondo negro idéntico a DialogManager
 
             RectTransform rt = _hudPanel.GetComponent<RectTransform>();
-            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = Vector2.zero;
-            rt.sizeDelta = new Vector2(900, 500);
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 1f); // Arriba Centro
+            rt.anchoredPosition = new Vector2(0f, -25f);
+            rt.sizeDelta = new Vector2(520f, 130f);
 
-            // Título: posicionado en la parte superior del panel
-            _titleTMP = CreateTextElement("Title", _hudPanel.transform, 48, new Color(0.25f, 1f, 0.4f),
-                new Vector2(0f, 0.55f), new Vector2(1f, 1f),
-                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(-20, 0));
+            // Título (Misión / Speaker): Letras amarillas idénticas a DialogManager
+            _titleTMP = CreateTextElement("Title", _hudPanel.transform, 20, Color.yellow,
+                new Vector2(0.04f, 0.60f), new Vector2(0.96f, 0.92f),
+                new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, TextAlignmentOptions.Center);
             _titleTMP.fontStyle = FontStyles.Bold;
 
-            // Descripción: posicionada en la parte inferior del panel
-            _descTMP = CreateTextElement("Description", _hudPanel.transform, 32, Color.white,
-                new Vector2(0f, 0f), new Vector2(1f, 0.55f),
-                new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(-20, 0));
+            // Descripción (Cuerpo): Letras blancas idénticas a DialogManager
+            _descTMP = CreateTextElement("Description", _hudPanel.transform, 15, Color.white,
+                new Vector2(0.04f, 0.08f), new Vector2(0.96f, 0.60f),
+                new Vector2(0.5f, 0.5f), Vector2.zero, Vector2.zero, TextAlignmentOptions.Center);
 
             s_SharedHudPanel = _hudPanel;
             s_SharedTitleTMP = _titleTMP;
@@ -555,14 +563,16 @@ namespace Missions.Scripts
         }
 
         private TextMeshProUGUI CreateTextElement(string name, Transform parent, int size, Color color,
-            Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Vector2 delta)
+            Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Vector2 delta,
+            TextAlignmentOptions alignment = TextAlignmentOptions.Center)
         {
             GameObject go = new GameObject(name);
             go.transform.SetParent(parent, false);
             TextMeshProUGUI tmp = go.AddComponent<TextMeshProUGUI>();
             tmp.fontSize = size;
             tmp.color = color;
-            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.alignment = alignment;
+            tmp.enableWordWrapping = true;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
 
             RectTransform rt = go.GetComponent<RectTransform>();
@@ -679,11 +689,15 @@ namespace Missions.Scripts
 
             if (_hudPanel == null) return;
 
+            _currentActiveMission = mData;
             string newId = GetMissionIdentifier(mData);
             _currentVisibleMissionId = newId;
 
             if (_titleTMP != null) _titleTMP.text = mData.title;
             if (_descTMP != null) _descTMP.text = mData.description;
+
+            _hudPanel.SetActive(true);
+            _hudPanel.transform.SetAsLastSibling();
         }
 
         public void ShowMessage(string title, string description)
@@ -703,11 +717,18 @@ namespace Missions.Scripts
 
             if (_titleTMP != null) _titleTMP.text = title;
             if (_descTMP != null) _descTMP.text = description;
+
+            _hudPanel.SetActive(true);
+            _hudPanel.transform.SetAsLastSibling();
         }
 
         public void HideMissionHUD()
         {
             _currentVisibleMissionId = "";
+            if (_hudPanel != null)
+            {
+                _hudPanel.SetActive(false);
+            }
         }
     }
 }

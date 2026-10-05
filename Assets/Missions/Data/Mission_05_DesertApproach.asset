@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
   m_Name: Mission_05_DesertApproach
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  title: "5. Horizonte \xC1rido"
-  description: Avanza por el desierto hacia la ciudad abandonada.
+  title: "3. Horizonte \xC1rido"
+  description: Avanza por el desierto hacia el laboratorio abandonado.
   missionRequirements:
-  - {fileID: 11400000, guid: 9f000000000000000000000000000005, type: 2}
+  - {fileID: 11400000, guid: f81b450690584dae8665369f97c5655d, type: 2}
   inventoryRequirements: []
   craftingRequirements: []
   missionPrefab: {fileID: 500001, guid: a3ce08dcf0c947aebf0d759f6a2fdc73, type: 3}
