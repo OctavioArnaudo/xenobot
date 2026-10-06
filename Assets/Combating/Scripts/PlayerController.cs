@@ -19,6 +19,7 @@ namespace Combating.Scripts
         [Header("Movement")]
         public float MoveSpeed = 2.0f;
         public float SprintSpeed = 5.335f;
+        public float SprintHoldThreshold = 0.25f; // <--- Tiempo mínimo manteniendo Shift para correr
         [Range(0.0f, 0.3f)] public float RotationSmoothTime = 0.12f;
         public float SpeedChangeRate = 10.0f;
         public AudioClip LandingAudioClip;
@@ -108,6 +109,8 @@ namespace Combating.Scripts
         private float _fallTimeoutDelta;
         private int _jumpsRemaining;
 
+        private float _shiftHoldTimer; // <--- Temporizador interno para medir el tiempo presionado
+
         // Animator Parameter Hashes (match Animator Controller exactly)
         private static readonly int _animIDSpeed = Animator.StringToHash("Speed");
         private static readonly int _animIDIsGrounded = Animator.StringToHash("isGrounded");
@@ -151,21 +154,18 @@ namespace Combating.Scripts
         #region Lifecycle
         private void Awake()
         {
-            // --- LÓGICA DE AUTO-LIMPIEZA RADICAL SEGURA ---
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
                 var nObj = GetComponent<NetworkObject>();
                 if (nObj == null || nObj.InScenePlaced == true)
                 {
-                    #if UNITY_EDITOR
-                    // Evitar que el Inspector de Unity explote al borrar el objeto seleccionado
+#if UNITY_EDITOR
                     if (UnityEditor.Selection.activeGameObject == gameObject)
                         UnityEditor.Selection.activeGameObject = null;
-                    #endif
+#endif
 
                     Debug.Log($"<color=orange>[Network]</color> Suplantando instancia offline '{gameObject.name}'.");
 
-                    // Desactivar inmediatamente para que el Inspector deje de procesarlo
                     gameObject.SetActive(false);
                     Destroy(gameObject);
                     return;
@@ -180,7 +180,6 @@ namespace Combating.Scripts
             }
             _inventory = GetComponent<InventoryController>();
 
-            // Force settings if they are broken in prefab
             EnableDoubleJump = true;
             if (JumpHeight < 1f) JumpHeight = 1.2f;
             if (DoubleJumpHeight < 1f) DoubleJumpHeight = 1.2f;
@@ -230,23 +229,18 @@ namespace Combating.Scripts
         {
             if (IsOwner)
             {
-                // --- LÓGICA DE SUPLANTACIÓN DEFINITIVA ---
-                // Buscamos todos los objetos con el tag "Player"
                 GameObject[] playersInScene = GameObject.FindGameObjectsWithTag("Player");
                 foreach (var p in playersInScene)
                 {
-                    if (p == gameObject) continue; // No nos borramos a nosotros mismos
+                    if (p == gameObject) continue;
 
                     NetworkObject nObj = p.GetComponent<NetworkObject>();
 
-                    // Si el objeto NO tiene NetworkObject, o si lo tiene pero fue puesto en escena manualmente (InScenePlaced),
-                    // es el impostor de debug.
                     if (nObj == null || nObj.InScenePlaced == true)
                     {
                         Debug.Log($"<color=cyan>[Network]</color> Suplantando player de escena '{p.name}'.");
 
-                        // Desactivar visuales y cámaras para que no estorben ni un frame
-                        foreach(var cam in p.GetComponentsInChildren<Camera>()) cam.enabled = false;
+                        foreach (var cam in p.GetComponentsInChildren<Camera>()) cam.enabled = false;
                         var vcam = p.GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
                         if (vcam != null) vcam.enabled = false;
 
@@ -420,7 +414,17 @@ namespace Combating.Scripts
                 _isJumpHeld = jumpHeld;
             }
 
-            sprint = _sprintAction != null && _sprintAction.IsPressed();
+            // --- LÓGICA DE SPRINT CON TIEMPO DE ESPERA (0.25s) ---
+            if (_sprintAction != null && _sprintAction.IsPressed())
+            {
+                _shiftHoldTimer += Time.deltaTime;
+                sprint = _shiftHoldTimer >= SprintHoldThreshold;
+            }
+            else
+            {
+                _shiftHoldTimer = 0f;
+                sprint = false;
+            }
 
             if (_fireAction != null)
             {
