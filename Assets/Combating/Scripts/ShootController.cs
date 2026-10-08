@@ -15,7 +15,7 @@ namespace Combating.Scripts
         private const float DEFAULT_PLAYER_FIRE_RATE = 8.0f;
         private const float DEFAULT_PLAYER_AIM_DISTANCE = 120f;
 
-        private const float DEFAULT_ENEMY_BASE_SHOOT_DAMAGE = 22f;
+        private const float DEFAULT_ENEMY_BASE_SHOOT_DAMAGE = 10f;
         private const float DEFAULT_ENEMY_BASE_FIRE_RATE = 5.0f;
         private const float DEFAULT_ENEMY_BASE_AIM_DISTANCE = 120f;
 

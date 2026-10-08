@@ -18,10 +18,10 @@ namespace Combating.Scripts
         private const float DEFAULT_PLAYER_SLAM_DAMAGE = 60f;
         private const float DEFAULT_PLAYER_SLAM_RADIUS = 5.5f;
 
-        private const float DEFAULT_ENEMY_BASE_MELEE_DAMAGE = 18f; // Daño balanceado para evitar un-shot kills
+        private const float DEFAULT_ENEMY_BASE_MELEE_DAMAGE = 9f; // Daño balanceado para evitar un-shot kills
         private const float DEFAULT_ENEMY_BASE_MELEE_RANGE = 3.8f;
         private const float DEFAULT_ENEMY_BASE_MELEE_COOLDOWN = 1.0f;
-        private const float DEFAULT_ENEMY_BASE_SLAM_DAMAGE = 35f;
+        private const float DEFAULT_ENEMY_BASE_SLAM_DAMAGE = 18f;
         private const float DEFAULT_ENEMY_BASE_SLAM_RADIUS = 4.0f;
         private const float DEFAULT_ROTATION_SPEED = 10f;
 
