@@ -129,6 +129,11 @@ namespace Combating.Scripts {
         public Optional<float> customItemSpawnScale;
         public Optional<float> customPropHealthMultiplier;
 
+        private const float MIN_BASE_HEALTH = 1.0f;
+        private const float MIN_BASE_DAMAGE = 1.0f;
+        private const float MIN_BASE_DEFENSE = 0.0f;
+        private const float MIN_BASE_SPEED = 1.0f;
+
         private const float DEFAULT_ITEM_SCALE = 1.0f;
         private const float DEFAULT_PROP_HEALTH_MULT = 1.0f;
 
@@ -363,66 +368,93 @@ namespace Combating.Scripts {
 
         #endregion
 
-        #region 3. Dynamic Values Instantiator & Mathematical Balance Engine
+        #region 3. Dynamic Values Instantiator & Multilateral Balance Engine
+
+        private float GetTotalEnemyThreatWeight()
+        {
+            float threat = 0f;
+            int totalEnemies = enemySpawnPoints.Count;
+            for (int i = 0; i < totalEnemies; i++)
+            {
+                HostType type = enemySpawnPoints[i].enemyTypeToSpawn;
+                threat += (1.0f + (int)type * 0.5f);
+            }
+            return Mathf.Max(MIN_BASE_HEALTH, threat * (1.0f + difficultyLevel * 0.1f) * aggroMultiplier);
+        }
+
+        private float GetTotalItemSupportCapacity()
+        {
+            int itemCount = Mathf.Max(1, itemSpawnPoints.Count);
+            return 1.0f + (itemCount * 0.1f);
+        }
 
         public EntityStats CalculateHostStats(HostType enemyType, int spawnIndex, int totalSpawns)
         {
-            int baseTypeVal = (int)enemyType;
-
-            float baseHealth = 50f + (baseTypeVal * 25f);
-            float baseDamage = 10f + (baseTypeVal * 7.5f);
-            float baseSpeed = 5f - (baseTypeVal * 0.5f);
-
+            int typeVal = (int)enemyType;
+            float typeFactor = 1.0f + (typeVal * 0.5f);
             float spatialFactor = totalSpawns > 1 ? (float)spawnIndex / (totalSpawns - 1) : 1f;
 
-            float scaledHealth = baseHealth * Mathf.Pow(growthFactor, difficultyLevel) * (1f + (spatialFactor * 0.2f * aggroMultiplier));
-            float scaledDamage = baseDamage * (1f + (difficultyLevel * 0.12f)) * aggroMultiplier;
-            float defenseRatio = Mathf.Clamp(Mathf.Log(difficultyLevel + baseTypeVal + 1) * 0.15f, 0.05f, 0.80f);
+            float itemCompensation = 1.0f + (itemSpawnPoints.Count * 0.05f);
+            float scaledHealth = MIN_BASE_HEALTH * typeFactor * Mathf.Pow(growthFactor, difficultyLevel) * itemCompensation * (1f + (spatialFactor * 0.2f * aggroMultiplier));
+            float scaledDamage = MIN_BASE_DAMAGE * typeFactor * (1f + (difficultyLevel * 0.1f)) * aggroMultiplier;
+            float defenseRatio = Mathf.Clamp(MIN_BASE_DEFENSE + (typeVal * 0.05f) + Mathf.Log(difficultyLevel + 1) * 0.08f, MIN_BASE_DEFENSE, 0.80f);
+            float moveSpeed = MIN_BASE_SPEED + Math.Max(0f, 4.0f - (typeVal * 0.5f));
 
             return new EntityStats
             {
                 maxHealth = scaledHealth,
                 currentHealth = scaledHealth,
                 attackDamage = scaledDamage,
-                moveSpeed = baseSpeed,
+                moveSpeed = moveSpeed,
                 defenseRatio = defenseRatio
             };
         }
 
         public EntityStats CalculateUserStats(UserType playerType)
         {
-            int baseTypeVal = (int)playerType;
+            int typeVal = (int)playerType;
+            float userFactor = 1.0f + (typeVal * 0.5f);
+            float threatToItemsRatio = GetTotalEnemyThreatWeight() / GetTotalItemSupportCapacity();
 
-            float baseHealth = 100f + (baseTypeVal * 40f);
-            float baseDamage = 20f + (baseTypeVal * 15f);
-
-            float scaledHealth = baseHealth * Mathf.Pow(growthFactor, difficultyLevel * 0.8f);
-            float scaledDamage = baseDamage * (1f + (difficultyLevel * 0.15f));
-            float defenseRatio = Mathf.Clamp(Mathf.Log(difficultyLevel + baseTypeVal + 2) * 0.18f, 0.1f, 0.85f);
+            float scaledHealth = MIN_BASE_HEALTH * userFactor * Mathf.Pow(growthFactor, difficultyLevel * 0.8f) * (1.0f + threatToItemsRatio * 0.15f);
+            float scaledDamage = MIN_BASE_DAMAGE * userFactor * (1.0f + (difficultyLevel * 0.12f)) * aggroMultiplier;
+            float defenseRatio = Mathf.Clamp(MIN_BASE_DEFENSE + (typeVal * 0.05f) + Mathf.Log(difficultyLevel + 1) * 0.1f, MIN_BASE_DEFENSE, 0.85f);
+            float moveSpeed = MIN_BASE_SPEED + 6.0f;
 
             return new EntityStats
             {
                 maxHealth = scaledHealth,
                 currentHealth = scaledHealth,
                 attackDamage = scaledDamage,
-                moveSpeed = 7.0f,
+                moveSpeed = moveSpeed,
                 defenseRatio = defenseRatio
             };
         }
 
+        public float CalculateItemValue(ItemType category)
+        {
+            float totalThreat = GetTotalEnemyThreatWeight();
+            int itemCount = Mathf.Max(1, itemSpawnPoints.Count);
+            float baseItemVal = (totalThreat / itemCount) * MIN_BASE_HEALTH;
+            float categoryFactor = 1.0f + ((int)category * 0.25f);
+            return baseItemVal * categoryFactor;
+        }
+
         public EntityStats CalculatePropStats(PropType category)
         {
-            int baseVal = (int)category;
-            float baseHp = 100f + (baseVal * 50f);
-            float scaledHp = baseHp * EffectivePropHealthMult * Mathf.Pow(growthFactor, difficultyLevel * 0.5f);
+            int propVal = (int)category;
+            float propFactor = 1.0f + (propVal * 1.0f);
+            float sceneThreat = GetTotalEnemyThreatWeight();
+
+            float scaledHp = MIN_BASE_HEALTH * propFactor * EffectivePropHealthMult * Mathf.Max(1.0f, sceneThreat * 0.5f);
 
             return new EntityStats
             {
                 maxHealth = scaledHp,
                 currentHealth = scaledHp,
-                attackDamage = 0f,
-                moveSpeed = 0f,
-                defenseRatio = 0.1f
+                attackDamage = MIN_BASE_DAMAGE - 1.0f,
+                moveSpeed = MIN_BASE_SPEED - 1.0f,
+                defenseRatio = MIN_BASE_DEFENSE + 0.1f
             };
         }
 
