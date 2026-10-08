@@ -12,16 +12,16 @@ namespace Combating.Scripts
     [RequireComponent(typeof(CharacterController))]
     public class MeleeController : NetworkBehaviour
     {
-        private const float DEFAULT_PLAYER_MELEE_DAMAGE = 40f;
+        private const float DEFAULT_PLAYER_MELEE_DAMAGE = 1f;
         private const float DEFAULT_PLAYER_MELEE_RANGE = 3.2f;
         private const float DEFAULT_PLAYER_MELEE_COOLDOWN = 0.8f;
-        private const float DEFAULT_PLAYER_SLAM_DAMAGE = 60f;
+        private const float DEFAULT_PLAYER_SLAM_DAMAGE = 1f;
         private const float DEFAULT_PLAYER_SLAM_RADIUS = 5.5f;
 
-        private const float DEFAULT_ENEMY_BASE_MELEE_DAMAGE = 9f; // Daño balanceado para evitar un-shot kills
+        private const float DEFAULT_ENEMY_BASE_MELEE_DAMAGE = 1f;
         private const float DEFAULT_ENEMY_BASE_MELEE_RANGE = 3.8f;
         private const float DEFAULT_ENEMY_BASE_MELEE_COOLDOWN = 1.0f;
-        private const float DEFAULT_ENEMY_BASE_SLAM_DAMAGE = 18f;
+        private const float DEFAULT_ENEMY_BASE_SLAM_DAMAGE = 1f;
         private const float DEFAULT_ENEMY_BASE_SLAM_RADIUS = 4.0f;
         private const float DEFAULT_ROTATION_SPEED = 10f;
 
@@ -105,10 +105,10 @@ namespace Combating.Scripts
         {
             get
             {
-                try { return slamDamage.GetValue(EffectiveAttackDamage * 1.4f); }
+                try { return slamDamage.GetValue(1f); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] slamDamage: {ex.Message}"); }
 
-                return EffectiveAttackDamage * 1.4f;
+                return 1f;
             }
         }
 
@@ -139,27 +139,6 @@ namespace Combating.Scripts
             if (pc != null || CompareTag("Player"))
             {
                 return DEFAULT_PLAYER_MELEE_DAMAGE;
-            }
-
-            var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
-            if (enemy != null)
-            {
-                float dmg = DEFAULT_ENEMY_BASE_MELEE_DAMAGE;
-
-                switch (enemy.activeArchetype)
-                {
-                    case AIArchetype.CargaFrenetica: dmg *= 1.3f; break;
-                    case AIArchetype.EmboscadaEnSigilo: dmg *= 1.4f; break;
-                    case AIArchetype.GuardiaConEscudo: dmg *= 1.2f; break;
-                    case AIArchetype.CargaDirecta: dmg *= 1.1f; break;
-                    default: dmg *= 1.0f; break;
-                }
-
-                int allies = CountNearbyAllies();
-                if (allies >= 3) dmg *= 0.75f;
-
-                // Cap de daño máximo por golpe para evitar muertes instantáneas (no one-shot)
-                return Mathf.Min(35f, dmg);
             }
 
             return DEFAULT_ENEMY_BASE_MELEE_DAMAGE;

@@ -22,7 +22,7 @@ public class MeleeEnemyAI : MonoBehaviour
     [SerializeField] private float backstepDistance = 2.5f; // Distancia de retroceso t�ctico
 
     [Header("Detecci�n de Impacto")]
-    [SerializeField] private float attackDamage = 9f;
+    [SerializeField] private float attackDamage = 1f;
     [SerializeField] private float attackRadius = 1.2f;
     [SerializeField] private Vector3 attackOffset = new Vector3(0, 1, 1);
     [SerializeField] private LayerMask playerLayer;

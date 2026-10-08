@@ -11,11 +11,11 @@ namespace Combating.Scripts
     /// </summary>
     public class ShootController : MonoBehaviour
     {
-        private const float DEFAULT_PLAYER_SHOOT_DAMAGE = 32f;
+        private const float DEFAULT_PLAYER_SHOOT_DAMAGE = 1f;
         private const float DEFAULT_PLAYER_FIRE_RATE = 8.0f;
         private const float DEFAULT_PLAYER_AIM_DISTANCE = 120f;
 
-        private const float DEFAULT_ENEMY_BASE_SHOOT_DAMAGE = 10f;
+        private const float DEFAULT_ENEMY_BASE_SHOOT_DAMAGE = 1f;
         private const float DEFAULT_ENEMY_BASE_FIRE_RATE = 5.0f;
         private const float DEFAULT_ENEMY_BASE_AIM_DISTANCE = 120f;
 
@@ -191,37 +191,6 @@ namespace Combating.Scripts
             if (pc != null || CompareTag("Player"))
             {
                 return DEFAULT_PLAYER_SHOOT_DAMAGE;
-            }
-
-            var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
-            if (enemy != null)
-            {
-                float dmg = DEFAULT_ENEMY_BASE_SHOOT_DAMAGE;
-
-                switch (enemy.activeArchetype)
-                {
-                    case AIArchetype.AtaqueYHuida:
-                    case AIArchetype.FlanqueoYCobertura:
-                        dmg *= 1.3f;
-                        break;
-                    case AIArchetype.CargaFrenetica:
-                        dmg *= 1.5f;
-                        break;
-                    case AIArchetype.EmboscadaEnSigilo:
-                        dmg *= 1.6f;
-                        break;
-                    case AIArchetype.InvocadorRefuerzos:
-                        dmg *= 1.1f;
-                        break;
-                    default:
-                        dmg *= 1.0f;
-                        break;
-                }
-
-                int allies = CountNearbyAllies();
-                if (allies >= 3) dmg *= 0.75f;
-
-                return dmg;
             }
 
             return DEFAULT_ENEMY_BASE_SHOOT_DAMAGE;
