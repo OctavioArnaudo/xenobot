@@ -11,7 +11,7 @@ namespace Combating.Scripts
     /// </summary>
     public class ShootController : MonoBehaviour
     {
-        private const float DEFAULT_PLAYER_SHOOT_DAMAGE = 1f;
+        private const float DEFAULT_PLAYER_SHOOT_DAMAGE = 2f;
         private const float DEFAULT_PLAYER_FIRE_RATE = 8.0f;
         private const float DEFAULT_PLAYER_AIM_DISTANCE = 120f;
 
@@ -190,7 +190,9 @@ namespace Combating.Scripts
             var pc = (m_Player != null) ? m_Player : (GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>());
             if (pc != null || CompareTag("Player"))
             {
-                return DEFAULT_PLAYER_SHOOT_DAMAGE;
+                var hud = GetComponent<HudController>() ?? GetComponentInParent<HudController>() ?? HudController.Instance;
+                int lvl = (hud != null) ? Mathf.Max(1, hud.Level) : 1;
+                return DEFAULT_PLAYER_SHOOT_DAMAGE + (lvl - 1);
             }
 
             return DEFAULT_ENEMY_BASE_SHOOT_DAMAGE;

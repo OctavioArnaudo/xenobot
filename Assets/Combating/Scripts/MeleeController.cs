@@ -12,10 +12,10 @@ namespace Combating.Scripts
     [RequireComponent(typeof(CharacterController))]
     public class MeleeController : NetworkBehaviour
     {
-        private const float DEFAULT_PLAYER_MELEE_DAMAGE = 1f;
+        private const float DEFAULT_PLAYER_MELEE_DAMAGE = 2f;
         private const float DEFAULT_PLAYER_MELEE_RANGE = 3.2f;
         private const float DEFAULT_PLAYER_MELEE_COOLDOWN = 0.8f;
-        private const float DEFAULT_PLAYER_SLAM_DAMAGE = 1f;
+        private const float DEFAULT_PLAYER_SLAM_DAMAGE = 2f;
         private const float DEFAULT_PLAYER_SLAM_RADIUS = 5.5f;
 
         private const float DEFAULT_ENEMY_BASE_MELEE_DAMAGE = 1f;
@@ -138,7 +138,9 @@ namespace Combating.Scripts
             var pc = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
             if (pc != null || CompareTag("Player"))
             {
-                return DEFAULT_PLAYER_MELEE_DAMAGE;
+                var hud = GetComponent<HudController>() ?? GetComponentInParent<HudController>() ?? HudController.Instance;
+                int lvl = (hud != null) ? Mathf.Max(1, hud.Level) : 1;
+                return DEFAULT_PLAYER_MELEE_DAMAGE + (lvl - 1);
             }
 
             return DEFAULT_ENEMY_BASE_MELEE_DAMAGE;
