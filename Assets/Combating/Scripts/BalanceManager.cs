@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace Combating.Scripts {
 
@@ -136,6 +137,11 @@ namespace Combating.Scripts {
 
         private const float DEFAULT_ITEM_SCALE = 1.0f;
         private const float DEFAULT_PROP_HEALTH_MULT = 1.0f;
+        private const float DEFAULT_CALIBRATION_DISTANCE = 20.0f;
+
+        [Header("Terrain & Navigation Setup")]
+        [SerializeField] private NavMeshSurface navMeshSurface;
+        [SerializeField] private float maxCalibrationDistance = DEFAULT_CALIBRATION_DISTANCE;
 
         public float EffectiveItemScale => customItemSpawnScale.GetValue(DEFAULT_ITEM_SCALE);
         public float EffectivePropHealthMult => customPropHealthMultiplier.GetValue(DEFAULT_PROP_HEALTH_MULT);
@@ -166,7 +172,44 @@ namespace Combating.Scripts {
             InitializeSceneSpawns();
         }
 
-        #region 1. Dynamic Generic Object Pool Pattern
+        #region 1. Dynamic Generic Object Pool Pattern & Terrain Calibration
+
+        public Vector3 CalibrateSpawnPosition(Vector3 rawPosition)
+        {
+            float maxDist = maxCalibrationDistance > 0f ? maxCalibrationDistance : DEFAULT_CALIBRATION_DISTANCE;
+
+            if (TryRaycastSurface(rawPosition, Vector3.down, maxDist, out Vector3 calYDown)) return calYDown;
+            if (TryRaycastSurface(rawPosition, Vector3.up, maxDist, out Vector3 calYUp)) return calYUp;
+
+            if (TryRaycastSurface(rawPosition, Vector3.back, maxDist, out Vector3 calZBack)) return calZBack;
+            if (TryRaycastSurface(rawPosition, Vector3.forward, maxDist, out Vector3 calZFwd)) return calZFwd;
+
+            if (TryRaycastSurface(rawPosition, Vector3.right, maxDist, out Vector3 calXRight)) return calXRight;
+            if (TryRaycastSurface(rawPosition, Vector3.left, maxDist, out Vector3 calXLeft)) return calXLeft;
+
+            if (NavMesh.SamplePosition(rawPosition, out NavMeshHit navHit, maxDist, NavMesh.AllAreas))
+            {
+                return navHit.position;
+            }
+
+            return rawPosition;
+        }
+
+        private bool TryRaycastSurface(Vector3 origin, Vector3 direction, float distance, out Vector3 result)
+        {
+            result = origin;
+            if (Physics.Raycast(origin, direction, out RaycastHit hit, distance))
+            {
+                if (NavMesh.SamplePosition(hit.point, out NavMeshHit navHit, 2.0f, NavMesh.AllAreas))
+                {
+                    result = navHit.position;
+                    return true;
+                }
+                result = hit.point;
+                return true;
+            }
+            return false;
+        }
 
         public GameObject SpawnFromPool(GameObject prefab, Vector3 position, Quaternion rotation)
         {
@@ -191,7 +234,8 @@ namespace Combating.Scripts {
                 instance.name = prefab.name;
             }
 
-            instance.transform.SetPositionAndRotation(position, rotation);
+            Vector3 calibratedPos = CalibrateSpawnPosition(position);
+            instance.transform.SetPositionAndRotation(calibratedPos, rotation);
             instance.SetActive(true);
 
             int instanceID = instance.GetInstanceID();
