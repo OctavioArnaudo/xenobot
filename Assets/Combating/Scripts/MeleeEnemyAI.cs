@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.AI;
+using Combating.Scripts;
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class MeleeEnemyAI : MonoBehaviour
