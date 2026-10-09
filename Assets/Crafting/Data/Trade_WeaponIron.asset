@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2356f660d376d6743a57175d6dd6110a, type: 3}
-  m_Name: Trade_JetpackAssembly
+  m_Name: Trade_WeaponIron
   m_EditorClassIdentifier: Assembly-CSharp::Trades.Data.TradeData
   inputs:
   - item: {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
@@ -20,7 +20,7 @@ MonoBehaviour:
     maxAmount: 5
     dropChance: 100
   outputs:
-  - item: {fileID: 11400000, guid: bb42e76d6f734c5091156f6de5048962, type: 2}
+  - item: {fileID: 11400000, guid: d7c9c3ed602c45bda00bb8572b645ef1, type: 2}
     amount: 1
     useRange: 0
     minAmount: 1

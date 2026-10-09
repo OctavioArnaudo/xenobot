@@ -29,7 +29,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2, y: 2, z: 2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -53,8 +53,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 18.387009, y: 7.9999657, z: 8.959638}
-  m_Center: {x: 0.16934967, y: 3.4999828, z: 0.9878993}
+  m_Size: {x: 93.31932, y: 33.301727, z: 34.261475}
+  m_Center: {x: 37.635506, y: 2.5268326, z: 0.98791504}
 --- !u!114 &-4462217268978784622
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -67,16 +67,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2973078882
-  InScenePlacedSourceGlobalObjectIdHash: 0
+  GlobalObjectIdHash: 1550360678
+  InScenePlacedSourceGlobalObjectIdHash: 1861138598
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 1
+  SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
