@@ -524,6 +524,9 @@ namespace Narrative.Scripts
         static readonly string[] Items =
             { "Chip Mapa", "Mascara I", "Chip Memoria I", "Chip Memoria II", "Mascara II", "Embrion", "Llave Lab", "Combustible" };
 
+        static readonly string[] AssetFileNames =
+            { "ChipMap", "Mask", "ChipMemoryI", "ChipMemoryII", "MaskVanguard", "Embryo", "Key", "Fuel" };
+
         static readonly string[] Titles =
         {
             "Reactivación", "Firma de datos", "Cerradura 1", "Credencial", "Cerradura 2", "Memoria", "Cerradura 3",
@@ -583,15 +586,10 @@ namespace Narrative.Scripts
             var items = new ItemData[Items.Length];
             for (int i = 0; i < Items.Length; i++)
             {
-                string cleanName = Items[i].Replace(" ", "");
-                if (cleanName == "MascaraI") cleanName = "Mask";
-                if (cleanName == "MascaraII") cleanName = "MaskVanguard";
-                var it = Asset<ItemData>("Assets/Resources/Crafting/Items/Data/Item_" + cleanName + ".asset");
-                it.itemName = Items[i];
+                string assetName = AssetFileNames[i];
+                var it = Asset<ItemData>("Assets/Resources/Crafting/Items/Data/Item_" + assetName + ".asset");
+                if (string.IsNullOrEmpty(it.itemName)) it.itemName = Items[i];
                 it.isPickable = true;
-                it.isDropable = false;
-                it.isUsable = false;
-                it.isQuitable = false;
                 EditorUtility.SetDirty(it);
                 items[i] = it;
             }
