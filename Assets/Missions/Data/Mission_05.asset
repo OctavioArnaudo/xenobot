@@ -10,14 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
-  m_Name: Mission_01_Gathering
+  m_Name: Mission_05
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  title: "1. Recolecci\xF3n Silvestre"
-  description: "Recolecta 5 unidades de Hierro. Evita enemigos o comb\xE1telos cuerpo
-    a cuerpo."
-  missionRequirements: []
-  inventoryRequirements:
-  - item: {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
-    amount: 5
+  title: "3. Horizonte \xC1rido"
+  description: Avanza por el desierto hacia el laboratorio abandonado.
+  missionRequirements:
+  - {fileID: 11400000, guid: f81b450690584dae8665369f97c5655d, type: 2}
+  inventoryRequirements: []
   craftingRequirements: []
-  missionPrefab: {fileID: 100001, guid: bcb98aa31a1346ba8e6efc43685bb56f, type: 3}
+  missionPrefab: {fileID: 500001, guid: a3ce08dcf0c947aebf0d759f6a2fdc73, type: 3}

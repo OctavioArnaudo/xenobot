@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &500001
+--- !u!1 &7690778578472770116
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,39 +8,39 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 500002}
-  - component: {fileID: 500003}
-  - component: {fileID: 4139200783392020626}
-  - component: {fileID: 914147242898025629}
+  - component: {fileID: 7690778578472770119}
+  - component: {fileID: 7690778578472770118}
+  - component: {fileID: 7338028504383011201}
+  - component: {fileID: 4075158071474504876}
   m_Layer: 0
-  m_Name: Mission_05_DesertApproach
+  m_Name: Mission_08
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &500002
+--- !u!4 &7690778578472770119
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 500001}
+  m_GameObject: {fileID: 7690778578472770116}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_LocalPosition: {x: -0.032917023, y: -0.9873898, z: 3.1152782}
+  m_LocalScale: {x: 5, y: 5, z: 5}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &500003
+--- !u!65 &7690778578472770118
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 500001}
+  m_GameObject: {fileID: 7690778578472770116}
   m_Material: {fileID: 0}
   m_IncludeLayers:
     serializedVersion: 2
@@ -55,19 +55,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &4139200783392020626
+--- !u!114 &7338028504383011201
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 500001}
+  m_GameObject: {fileID: 7690778578472770116}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 0
+  GlobalObjectIdHash: 640383562
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -82,20 +82,20 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &914147242898025629
+--- !u!114 &4075158071474504876
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 500001}
+  m_GameObject: {fileID: 7690778578472770116}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e04fca8f4c0720f42bbbb659ade89a2f, type: 3}
+  m_Script: {fileID: 11500000, guid: ccac4b6a7a2961643989f2862d555926, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Scripts.MissionController
   ShowTopMostFoldoutHeaderGroup: 1
-  missionData: {fileID: 11400000, guid: 18ad1a0b05d246e3b0338a958bda0fcc, type: 2}
+  missionData: {fileID: 0}
   missions: []
   customTitle: 
   customDescription: 

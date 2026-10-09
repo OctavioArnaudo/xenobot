@@ -11,9 +11,9 @@ GameObject:
   - component: {fileID: 300002}
   - component: {fileID: 300003}
   - component: {fileID: 2276963357691668652}
-  - component: {fileID: 6527399668941681565}
+  - component: {fileID: 2617052378919255700}
   m_Layer: 0
-  m_Name: Mission_03_UrbanCleanup
+  m_Name: Mission_03
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -67,7 +67,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 0
+  GlobalObjectIdHash: 3486274069
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -82,7 +82,7 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
---- !u!114 &6527399668941681565
+--- !u!114 &2617052378919255700
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -91,11 +91,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 300001}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e04fca8f4c0720f42bbbb659ade89a2f, type: 3}
+  m_Script: {fileID: 11500000, guid: ccac4b6a7a2961643989f2862d555926, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Scripts.MissionController
   ShowTopMostFoldoutHeaderGroup: 1
-  missionData: {fileID: 11400000, guid: 9f000000000000000000000000000004, type: 2}
+  missionData: {fileID: 0}
   missions: []
   customTitle: 
   customDescription: 

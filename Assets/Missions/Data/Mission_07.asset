@@ -10,13 +10,14 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56fb2b48ca121284f8b8e663d82d9e81, type: 3}
-  m_Name: Mission_02_Crafting
+  m_Name: Mission_07
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
-  title: "2. Elecci\xF3n Tecnol\xF3gica"
-  description: Acercate a la maquina. Usa el Hierro para craftear un Arma.
+  title: 7. Infiltracion
+  description: Usa la Llave para entrar a la base subterranea.
   missionRequirements:
-  - {fileID: 11400000, guid: faf7bd1c8a064b2181e4b6eb5c8857ee, type: 2}
-  inventoryRequirements: []
-  craftingRequirements:
-  - {fileID: 11400000, guid: c73dfdf4058e4f13b973f9ef61b0a184, type: 2}
-  missionPrefab: {fileID: 200001, guid: aabc063bcff4446f8fcd157cd4a33165, type: 3}
+  - {fileID: 11400000, guid: af7c02f85c154db59efb6d3a23fcce30, type: 2}
+  inventoryRequirements:
+  - item: {fileID: 11400000, guid: 6ac606d832f14c4fa3466276ffe3c0b4, type: 2}
+    amount: 1
+  craftingRequirements: []
+  missionPrefab: {fileID: 2782716079324928893, guid: a1957f42c3caff64c81c5b4c360defed, type: 3}
