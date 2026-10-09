@@ -10,17 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2356f660d376d6743a57175d6dd6110a, type: 3}
-  m_Name: Trade_AssembleMask
+  m_Name: Trade_FuelIron
   m_EditorClassIdentifier: Assembly-CSharp::Trades.Data.TradeData
   inputs:
   - item: {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
-    amount: 2
+    amount: 3
     useRange: 0
-    minAmount: 2
-    maxAmount: 2
+    minAmount: 3
+    maxAmount: 3
     dropChance: 100
   outputs:
-  - item: {fileID: 11400000, guid: 82f936139cf00f24fbb2382cd48dd828, type: 2}
+  - item: {fileID: 11400000, guid: cc730feca3d9438aa9e28397df2e6fe4, type: 2}
     amount: 1
     useRange: 0
     minAmount: 1

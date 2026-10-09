@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: Item_Fuel
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.ItemData
   itemName: Fuel
-  isPickupable: 1
+  isPickable: 1
   isUsable: 1
   isQuitable: 0
-  isDroppable: 1
-  isStackable: 1
+  isDropable: 1
   maxStack: 99
+  defaultAmount: 1
   itemSprite: {fileID: -1107185042, guid: 7762129f4830c1949ae045a80a44e810, type: 3}
   itemPrefab: {fileID: 7515981551043487918, guid: d102cbfac92ad6649995a11b43c6519f, type: 3}

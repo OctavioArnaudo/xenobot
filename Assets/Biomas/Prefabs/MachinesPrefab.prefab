@@ -42,6 +42,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7984630535249095175}
     m_Modifications:
+    - target: {fileID: 1136571742900105346, guid: 24c82aa203398844eb6fd10622842467, type: 3}
+      propertyPath: availableTrades.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1136571742900105346, guid: 24c82aa203398844eb6fd10622842467, type: 3}
+      propertyPath: 'availableTrades.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 0ccc0bb9781340c4a4d829b342a9ed8f, type: 2}
+    - target: {fileID: 1136571742900105346, guid: 24c82aa203398844eb6fd10622842467, type: 3}
+      propertyPath: 'availableTrades.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: c73dfdf4058e4f13b973f9ef61b0a184, type: 2}
     - target: {fileID: 6579760715437449415, guid: 24c82aa203398844eb6fd10622842467, type: 3}
       propertyPath: m_InScenePlaced
       value: 1
@@ -52,19 +64,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7024692861517375319, guid: 24c82aa203398844eb6fd10622842467, type: 3}
       propertyPath: m_Name
-      value: MachinePrefab (2)
+      value: MachinePrefab
       objectReference: {fileID: 0}
     - target: {fileID: 7099404438636371155, guid: 24c82aa203398844eb6fd10622842467, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 789.5
+      value: 1815
       objectReference: {fileID: 0}
     - target: {fileID: 7099404438636371155, guid: 24c82aa203398844eb6fd10622842467, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -39.1
+      value: 206
       objectReference: {fileID: 0}
     - target: {fileID: 7099404438636371155, guid: 24c82aa203398844eb6fd10622842467, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 656.3
+      value: 224
       objectReference: {fileID: 0}
     - target: {fileID: 7099404438636371155, guid: 24c82aa203398844eb6fd10622842467, type: 3}
       propertyPath: m_LocalRotation.w
@@ -112,6 +124,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7984630535249095175}
     m_Modifications:
+    - target: {fileID: 1136571742900105346, guid: 24c82aa203398844eb6fd10622842467, type: 3}
+      propertyPath: availableTrades.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1136571742900105346, guid: 24c82aa203398844eb6fd10622842467, type: 3}
+      propertyPath: 'availableTrades.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 0ccc0bb9781340c4a4d829b342a9ed8f, type: 2}
+    - target: {fileID: 1136571742900105346, guid: 24c82aa203398844eb6fd10622842467, type: 3}
+      propertyPath: 'availableTrades.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: c73dfdf4058e4f13b973f9ef61b0a184, type: 2}
     - target: {fileID: 6579760715437449415, guid: 24c82aa203398844eb6fd10622842467, type: 3}
       propertyPath: m_InScenePlaced
       value: 1
@@ -126,7 +150,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7024692861517375319, guid: 24c82aa203398844eb6fd10622842467, type: 3}
       propertyPath: m_Name
-      value: MachinePrefab (3)
+      value: MachinePrefab
       objectReference: {fileID: 0}
     - target: {fileID: 7099404438636371155, guid: 24c82aa203398844eb6fd10622842467, type: 3}
       propertyPath: m_LocalPosition.x
@@ -186,6 +210,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7984630535249095175}
     m_Modifications:
+    - target: {fileID: 1136571742900105346, guid: 24c82aa203398844eb6fd10622842467, type: 3}
+      propertyPath: availableTrades.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1136571742900105346, guid: 24c82aa203398844eb6fd10622842467, type: 3}
+      propertyPath: 'availableTrades.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 0ccc0bb9781340c4a4d829b342a9ed8f, type: 2}
+    - target: {fileID: 1136571742900105346, guid: 24c82aa203398844eb6fd10622842467, type: 3}
+      propertyPath: 'availableTrades.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: c73dfdf4058e4f13b973f9ef61b0a184, type: 2}
     - target: {fileID: 6579760715437449415, guid: 24c82aa203398844eb6fd10622842467, type: 3}
       propertyPath: m_InScenePlaced
       value: 1
@@ -196,7 +232,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7024692861517375319, guid: 24c82aa203398844eb6fd10622842467, type: 3}
       propertyPath: m_Name
-      value: MachinePrefab (1)
+      value: MachinePrefab
       objectReference: {fileID: 0}
     - target: {fileID: 7099404438636371155, guid: 24c82aa203398844eb6fd10622842467, type: 3}
       propertyPath: m_LocalPosition.x

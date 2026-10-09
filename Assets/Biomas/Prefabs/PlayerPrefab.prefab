@@ -352,6 +352,7 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   MoveSpeed: 15
   SprintSpeed: 30
+  SprintHoldThreshold: 0.25
   RotationSmoothTime: 0.12
   SpeedChangeRate: 10
   LandingAudioClip: {fileID: 8300000, guid: ef980d09b569380459e609fe90ef1db2, type: 3}
@@ -566,25 +567,16 @@ MonoBehaviour:
   panelColor: {r: 0.05, g: 0.05, b: 0.05, a: 0.95}
   accentColor: {r: 1, g: 0.85, b: 0, a: 1}
   itemDatabase:
-  - {fileID: 11400000, guid: 8505d470eefba1e4a98829d088722fa3, type: 2}
   - {fileID: 11400000, guid: bb42e76d6f734c5091156f6de5048962, type: 2}
   - {fileID: 11400000, guid: 9c17cf8896f842ca89037bfc4f46889c, type: 2}
   - {fileID: 11400000, guid: 75b6b99d3e052724095a1f53dea46401, type: 2}
   - {fileID: 11400000, guid: d7c9c3ed602c45bda00bb8572b645ef1, type: 2}
-  - {fileID: 11400000, guid: c965fbf0deadaa84db13d3f8a5e0ab86, type: 2}
   - {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
   - {fileID: 11400000, guid: efd5d0a0c9077794ebff867795e6eea0, type: 2}
   - {fileID: 11400000, guid: 255df1421f3a00a4ebd8665f47c31710, type: 2}
-  - {fileID: 11400000, guid: 9f41a1c295b64338a231ce89c6aa91e6, type: 2}
-  - {fileID: 11400000, guid: 947593c3a67b6484aabce2fab1691fa6, type: 2}
   - {fileID: 11400000, guid: 125d620cfc9627c489cc73f5df68953e, type: 2}
-  - {fileID: 11400000, guid: ee539a5b5bb773046b1b4aa570af5a5c, type: 2}
   - {fileID: 11400000, guid: daed6fcceb87bce418b245a5c5b7f855, type: 2}
   - {fileID: 11400000, guid: 8eee5fae4dbf594448b2248a273b7ccf, type: 2}
-  - {fileID: 11400000, guid: 6103474d17b1f0340a811c78a4f15f5f, type: 2}
-  - {fileID: 11400000, guid: c7ff2b724fdea774d8ceefb875f8b4d0, type: 2}
-  - {fileID: 11400000, guid: dc5fdb0e4fa05684994e73d2f36c3288, type: 2}
-  - {fileID: 11400000, guid: faee2e7d1295d304d8d5c4ff9ff93a25, type: 2}
   dropDistance: 3.5
 --- !u!114 &6229371320334411257
 MonoBehaviour:
@@ -681,7 +673,7 @@ MonoBehaviour:
   dashForce: 50
   dashDuration: 0.2
   dashCooldown: 1
-  doubleTapTimeWindow: 0.25
+  tapThreshold: 0.2
   staminaCost: 20
   dashTriggerName: dash
 --- !u!114 &6353754398152676254
@@ -5718,15 +5710,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3142769.8
+      value: 3261006.8
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 5769.096
+      value: 5991.7803
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1848602.6
+      value: 1916166.6
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5778,15 +5770,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3142769.8
+      value: 3261006.8
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 5769.096
+      value: 5991.7803
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1848602.6
+      value: 1916166.6
       objectReference: {fileID: 0}
     - target: {fileID: 8125438068294852295, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_Layer
