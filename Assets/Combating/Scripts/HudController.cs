@@ -342,6 +342,8 @@ namespace Combating.Scripts
                     m_OfflineExp -= m_OfflineExpToLevelUp;
                     LevelUp();
                 }
+            }
+        }
         public float EffectiveAttackPerLevel
         {
             get

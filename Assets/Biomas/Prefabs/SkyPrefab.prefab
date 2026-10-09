@@ -1,0 +1,88 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8290281214044165213
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3103291168873191822}
+  - component: {fileID: 6892104431568194403}
+  - component: {fileID: 5611848289658187026}
+  - component: {fileID: 3224995933172544990}
+  m_Layer: 3
+  m_Name: SkyPrefab
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3103291168873191822
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8290281214044165213}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 904, y: 60, z: -538}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6892104431568194403
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8290281214044165213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b8d2efb11a72ea7409dd3badf546f90b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SepiaAmbiente
+  luzAmbiente: {r: 1, g: 1, b: 1, a: 1}
+  luzDireccional: {r: 1, g: 0.58096313, b: 0.5613208, a: 1}
+  colorNiebla: {r: 1, g: 0.20289853, b: 0, a: 1}
+  densidadNiebla: 0
+  intensidadLuz: 1
+--- !u!114 &5611848289658187026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8290281214044165213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc2e40d5092c31341867dd3d9940733d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SepiaParticulas
+  areaSize: 1500
+  heightAbove: 35
+  fallSpeed: 1
+  count: 5000
+  minSize: 1.68
+  maxSize: 3.97
+  color: {r: 1, g: 0.08, b: 0.02, a: 0.9}
+--- !u!114 &3224995933172544990
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8290281214044165213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a723b2a544bc7347a61ed763c41d83e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SepiaTonemap
+  hueShift: -8
+  saturation: -25
+  contraste: 15
+  tinte: {r: 0.9, g: 0.55, b: 0.3, a: 1}
