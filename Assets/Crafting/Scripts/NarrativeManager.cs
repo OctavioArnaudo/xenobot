@@ -648,4 +648,3 @@ namespace Narrative.Scripts
     }
 #endif
 }
-}
