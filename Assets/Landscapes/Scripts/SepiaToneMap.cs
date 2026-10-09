@@ -21,17 +21,26 @@ public class SepiaTonemap : MonoBehaviour
 
     void OnEnable()
     {
-        _vol = gameObject.GetComponent<Volume>() ?? gameObject.AddComponent<Volume>();
+        EnsureVolume();
+        AplicarURP();
+    }
+
+    void OnValidate()
+    {
+        EnsureVolume();
+        AplicarURP();
+    }
+
+    void EnsureVolume()
+    {
+        if (_vol == null)
+            _vol = gameObject.GetComponent<Volume>() ?? gameObject.AddComponent<Volume>();
         _vol.isGlobal = true;
         _vol.priority = 10;
 
         if (_vol.profile == null)
             _vol.profile = ScriptableObject.CreateInstance<VolumeProfile>();
-
-        AplicarURP();
     }
-
-    void OnValidate() => AplicarURP();
 
     void AplicarURP()
     {
@@ -48,13 +57,11 @@ public class SepiaTonemap : MonoBehaviour
         ca.colorFilter.overrideState = true;
     }
 #else
-    // Fallback Built-in: ajuste por RenderSettings
     void OnEnable() => AplicarBuiltin();
     void OnValidate() => AplicarBuiltin();
 
     void AplicarBuiltin()
     {
-        // Sin post-process stack, al menos llevamos el skybox a tono sepia
         RenderSettings.skybox = null;
         var cam = Camera.main ?? FindFirstObjectByType<Camera>();
         if (cam != null)

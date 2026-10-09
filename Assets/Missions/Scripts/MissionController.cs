@@ -572,7 +572,7 @@ namespace Missions.Scripts
             tmp.fontSize = size;
             tmp.color = color;
             tmp.alignment = alignment;
-            tmp.enableWordWrapping = true;
+            tmp.textWrappingMode = TextWrappingModes.Normal;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
 
             RectTransform rt = go.GetComponent<RectTransform>();

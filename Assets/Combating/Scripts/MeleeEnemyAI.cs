@@ -107,7 +107,7 @@ public class MeleeEnemyAI : MonoBehaviour
                     // Retroceso t�ctico post-ataque
                     Vector3 retreatDir = (transform.position - target.position).normalized;
                     Vector3 retreatPos = GetValidNavMeshPosition(transform.position + retreatDir * backstepDistance);
-                    MoveTo(retreatPos, chaseSpeed * 0.9f);
+                    MoveTo(retreatPos, strafeSpeed);
                 }
                 break;
 
@@ -154,6 +154,12 @@ public class MeleeEnemyAI : MonoBehaviour
     {
         Vector3 hitCenter = transform.TransformPoint(attackOffset);
         Collider[] hits = Physics.OverlapSphere(hitCenter, attackRadius, playerLayer);
+        foreach (Collider hit in hits)
+        {
+            var health = hit.GetComponentInParent<HealthController>() ?? hit.GetComponentInChildren<HealthController>();
+            if (health != null) health.TakeDamage((int)attackDamage);
+        }
+        } /*
 
         foreach (Collider hit in hits)
         {
@@ -162,7 +168,7 @@ public class MeleeEnemyAI : MonoBehaviour
         }
     }
 
-    private void OnDrawGizmosSelected()
+    */ private void OnDrawGizmosSelected()
     {
         // Visualizar el �rea de impacto en la vista de Escena de Unity
         Gizmos.color = Color.red;
