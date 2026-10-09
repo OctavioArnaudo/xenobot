@@ -44,7 +44,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 5784953888524419839, guid: 16bdd9b25fc9a1f4699a872d2f82a05f, type: 3}
       propertyPath: m_Name
-      value: LabPrefab (2)
+      value: LabPrefab
       objectReference: {fileID: 0}
     - target: {fileID: 6754541206776718322, guid: 16bdd9b25fc9a1f4699a872d2f82a05f, type: 3}
       propertyPath: m_LocalPosition.x
@@ -100,10 +100,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: b92d530bf5cf92b4bb11cbc2a6b34bfd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 6754541206776718322, guid: 16bdd9b25fc9a1f4699a872d2f82a05f, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 9148098106258990586}
+    m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 7735553104164034834, guid: 16bdd9b25fc9a1f4699a872d2f82a05f, type: 3}
       insertIndex: -1
@@ -141,100 +138,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 0}
---- !u!1001 &2900009262416254510
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 5151628319631230740}
-    m_Modifications:
-    - target: {fileID: 989663402226558823, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: item
-      value: 
-      objectReference: {fileID: 11400000, guid: faee2e7d1295d304d8d5c4ff9ff93a25, type: 2}
-    - target: {fileID: 3754987662835441445, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_InScenePlaced
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3754987662835441445, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: GlobalObjectIdHash
-      value: 3262754732
-      objectReference: {fileID: 0}
-    - target: {fileID: 3754987662835441445, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: SceneMigrationSynchronization
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4712661246730171054, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_InScenePlaced
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 4712661246730171054, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: GlobalObjectIdHash
-      value: 643161696
-      objectReference: {fileID: 0}
-    - target: {fileID: 4712661246730171054, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: SceneMigrationSynchronization
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5773254948214700261, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: GlobalObjectIdHash
-      value: 1287611900
-      objectReference: {fileID: 0}
-    - target: {fileID: 6253940557535802324, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 1.2226868
-      objectReference: {fileID: 0}
-    - target: {fileID: 6253940557535802324, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: -0.73698425
-      objectReference: {fileID: 0}
-    - target: {fileID: 6253940557535802324, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -2.1864624
-      objectReference: {fileID: 0}
-    - target: {fileID: 6253940557535802324, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6253940557535802324, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6253940557535802324, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6253940557535802324, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6253940557535802324, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6253940557535802324, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6253940557535802324, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6722597849376803895, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-      propertyPath: m_Name
-      value: EmbryosPrefab
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
---- !u!4 &9148098106258990586 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6253940557535802324, guid: 67d4725857ea6b44a81a2fcef59a091b, type: 3}
-  m_PrefabInstance: {fileID: 2900009262416254510}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &5799843204067680383
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -449,7 +352,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5802640585711470966, guid: 147a8e3a982663940a5003b4ce8f1e5c, type: 3}
       propertyPath: m_Name
-      value: LabPrefab (3)
+      value: LabPrefab
       objectReference: {fileID: 0}
     - target: {fileID: 5820256349298454908, guid: 147a8e3a982663940a5003b4ce8f1e5c, type: 3}
       propertyPath: m_LocalPosition.x
@@ -1269,7 +1172,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5802640585711470966, guid: 147a8e3a982663940a5003b4ce8f1e5c, type: 3}
       propertyPath: m_Name
-      value: LabPrefab (1)
+      value: LabPrefab
       objectReference: {fileID: 0}
     - target: {fileID: 5802640585711470966, guid: 147a8e3a982663940a5003b4ce8f1e5c, type: 3}
       propertyPath: m_IsActive

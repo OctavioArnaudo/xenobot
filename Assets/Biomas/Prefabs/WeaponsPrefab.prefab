@@ -82,15 +82,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3247048204812752460, guid: 77f40f708cbe22245bfeb1c857a21fab, type: 3}
       propertyPath: m_Name
-      value: WeaponPrefab (1)
+      value: WeaponPrefab
       objectReference: {fileID: 0}
     - target: {fileID: 7066097209473102743, guid: 77f40f708cbe22245bfeb1c857a21fab, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 0}
     - target: {fileID: 7724144884245076613, guid: 77f40f708cbe22245bfeb1c857a21fab, type: 3}
+      propertyPath: m_InScenePlaced
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7724144884245076613, guid: 77f40f708cbe22245bfeb1c857a21fab, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 3056143032
+      value: 1588293279
       objectReference: {fileID: 0}
     - target: {fileID: 8526435744971455008, guid: 77f40f708cbe22245bfeb1c857a21fab, type: 3}
       propertyPath: m_Mesh
