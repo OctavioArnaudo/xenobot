@@ -342,6 +342,29 @@ namespace Combating.Scripts
                     m_OfflineExp -= m_OfflineExpToLevelUp;
                     LevelUp();
                 }
+        public float EffectiveAttackPerLevel
+        {
+            get
+            {
+                if (BalanceManager.Instance != null)
+                {
+                    var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                    if (stats.attackPerLevel > 0) return stats.attackPerLevel;
+                }
+                return attackPerLevel;
+            }
+        }
+
+        public float EffectiveDefensePerLevel
+        {
+            get
+            {
+                if (BalanceManager.Instance != null)
+                {
+                    var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                    if (stats.defensePerLevel > 0) return stats.defensePerLevel;
+                }
+                return defensePerLevel;
             }
         }
 
@@ -350,15 +373,15 @@ namespace Combating.Scripts
             if (IsNetworkActive)
             {
                 NetLevel.Value++;
-                NetAttack.Value += attackPerLevel;
-                NetDefense.Value += defensePerLevel;
+                NetAttack.Value += EffectiveAttackPerLevel;
+                NetDefense.Value += EffectiveDefensePerLevel;
                 NetExpToLevelUp.Value *= 1.2f;
             }
             else
             {
                 m_OfflineLevel++;
-                m_OfflineAttack += attackPerLevel;
-                m_OfflineDefense += defensePerLevel;
+                m_OfflineAttack += EffectiveAttackPerLevel;
+                m_OfflineDefense += EffectiveDefensePerLevel;
                 m_OfflineExpToLevelUp *= 1.2f;
             }
 

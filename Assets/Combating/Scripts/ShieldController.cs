@@ -118,6 +118,12 @@ namespace Combating.Scripts {
 
         public float EffectiveMaxShieldHealth {
             get {
+                if (maxShieldHealthOverride.useOverride) return maxShieldHealthOverride.value;
+                if (BalanceManager.Instance != null)
+                {
+                    var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                    if (stats.shieldCapacity > 0) return stats.shieldCapacity;
+                }
                 float baseVal = maxShieldHealthOverride.GetValue(DEFAULT_MAX_SHIELD_HEALTH);
                 if (IsEnemy) {
                     float peak = baseVal * 1.6f;

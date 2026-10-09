@@ -213,7 +213,12 @@ namespace Crafting.Scripts
                 NetworkObject netObj = GetComponent<NetworkObject>();
                 if (netObj != null && netObj.IsSpawned)
                 {
-                    if (netObj.InScenePlaced) { netObj.Despawn(false); Destroy(gameObject); }
+                    if (netObj.InScenePlaced)
+                    {
+                        netObj.Despawn(false);
+                        if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
+                        else gameObject.SetActive(false);
+                    }
                     else netObj.Despawn(true);
                 }
             }
@@ -223,7 +228,8 @@ namespace Crafting.Scripts
         {
             ApplyReward(inv, player);
             SpawnHardcodedEffect();
-            Destroy(gameObject);
+            if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
+            else gameObject.SetActive(false);
         }
 
         private void ApplyReward(InventoryController inv, GameObject player)

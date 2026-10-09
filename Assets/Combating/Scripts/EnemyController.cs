@@ -149,7 +149,15 @@ namespace Combating.Scripts
         {
             get
             {
-                try { return chaseSpeed.GetValue(DEFAULT_CHASE_SPEED); }
+                try
+                {
+                    if (chaseSpeed.useOverride) return chaseSpeed.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.moveSpeed > 0) return stats.moveSpeed;
+                    }
+                }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] ChaseSpeed: {ex.Message}"); }
                 return DEFAULT_CHASE_SPEED;
             }
@@ -169,7 +177,15 @@ namespace Combating.Scripts
         {
             get
             {
-                try { return wanderRadius.GetValue(DEFAULT_WANDER_RADIUS); }
+                try
+                {
+                    if (wanderRadius.useOverride) return wanderRadius.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.wanderRadius > 0) return stats.wanderRadius;
+                    }
+                }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] WanderRadius: {ex.Message}"); }
                 return DEFAULT_WANDER_RADIUS;
             }
@@ -179,7 +195,15 @@ namespace Combating.Scripts
         {
             get
             {
-                try { return detectionRange.GetValue(DEFAULT_DETECTION_RANGE); }
+                try
+                {
+                    if (detectionRange.useOverride) return detectionRange.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.detectionRadius > 0) return stats.detectionRadius;
+                    }
+                }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] DetectionRange: {ex.Message}"); }
                 return DEFAULT_DETECTION_RANGE;
             }
@@ -189,7 +213,15 @@ namespace Combating.Scripts
         {
             get
             {
-                try { return shootRange.GetValue(DEFAULT_SHOOT_RANGE); }
+                try
+                {
+                    if (shootRange.useOverride) return shootRange.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.shootRange > 0) return stats.shootRange;
+                    }
+                }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] ShootRange: {ex.Message}"); }
                 return DEFAULT_SHOOT_RANGE;
             }
@@ -425,12 +457,13 @@ namespace Combating.Scripts
             {
                 if (TryGetComponent<NetworkObject>(out var netObj) && netObj.IsSpawned)
                     netObj.Despawn(true);
-                else
-                    Destroy(gameObject);
+                else if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
+                else gameObject.SetActive(false);
             }
             else if (!IsNetworkActive)
             {
-                Destroy(gameObject);
+                if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
+                else gameObject.SetActive(false);
             }
         }
 

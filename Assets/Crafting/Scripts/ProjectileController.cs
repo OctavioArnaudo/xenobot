@@ -585,7 +585,8 @@ namespace Combating.Scripts
             }
             else
             {
-                Destroy(gameObject);
+                if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
+                else gameObject.SetActive(false);
             }
         }
 

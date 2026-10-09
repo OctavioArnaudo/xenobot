@@ -78,7 +78,15 @@ namespace Combating.Scripts
         {
             get
             {
-                try { return Damage.GetValue(CalculateDynamicShootDamage()); }
+                try
+                {
+                    if (Damage.useOverride) return Damage.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.attackDamage > 0) return stats.attackDamage;
+                    }
+                }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] Damage: {ex.Message}"); }
 
                 return CalculateDynamicShootDamage();
@@ -102,6 +110,12 @@ namespace Combating.Scripts
             {
                 try
                 {
+                    if (AimDistance.useOverride) return AimDistance.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.shootRange > 0) return stats.shootRange;
+                    }
                     var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
                     float defaultDist = (enemy != null) ? DEFAULT_ENEMY_BASE_AIM_DISTANCE : DEFAULT_PLAYER_AIM_DISTANCE;
                     return AimDistance.GetValue(defaultDist);
@@ -112,7 +126,19 @@ namespace Combating.Scripts
             }
         }
 
-        public int EffectiveMaxAmmo => maxAmmo.GetValue(DEFAULT_MAX_AMMO);
+        public int EffectiveMaxAmmo
+        {
+            get
+            {
+                if (maxAmmo.useOverride) return maxAmmo.value;
+                if (BalanceManager.Instance != null)
+                {
+                    var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                    if (stats.maxAmmo > 0) return stats.maxAmmo;
+                }
+                return DEFAULT_MAX_AMMO;
+            }
+        }
         public float EffectiveReloadDuration => reloadDuration.GetValue(DEFAULT_RELOAD_DURATION);
         public bool EffectiveInfiniteAmmo => infiniteAmmo.GetValue(DEFAULT_INFINITE_AMMO);
 

@@ -64,6 +64,12 @@ namespace Combating.Scripts
             {
                 try
                 {
+                    if (attackRange.useOverride) return attackRange.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.meleeRange > 0) return stats.meleeRange;
+                    }
                     var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
                     float defaultRange = (enemy != null) ? DEFAULT_ENEMY_BASE_MELEE_RANGE : DEFAULT_PLAYER_MELEE_RANGE;
                     return attackRange.GetValue(defaultRange);
@@ -78,7 +84,15 @@ namespace Combating.Scripts
         {
             get
             {
-                try { return attackDamage.GetValue(CalculateDynamicMeleeDamage()); }
+                try
+                {
+                    if (attackDamage.useOverride) return attackDamage.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.attackDamage > 0) return stats.attackDamage;
+                    }
+                }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] attackDamage: {ex.Message}"); }
 
                 return CalculateDynamicMeleeDamage();

@@ -6,7 +6,7 @@ using UnityEngine.AI;
 
 namespace Combating.Scripts {
 
-    #region Data Structures & Enums
+    #region Data Structures, Interfaces & Enums
 
     public enum UserType
     {
@@ -47,6 +47,38 @@ namespace Combating.Scripts {
         Defense
     }
 
+    public interface IBalanceCalibratable
+    {
+        void CalibrateStats(EntityStats stats);
+        EntityStats CurrentStats { get; }
+        event Action<EntityStats> OnStatsUpdated;
+    }
+
+    public interface ILootableEntity
+    {
+        ItemType LootCategory { get; }
+        int LootQuantity { get; }
+        int LootDropChance { get; }
+        void DropLootOnDeactivate();
+    }
+
+    public interface IPoolRecyclable
+    {
+        void PrepareForSpawn(Vector3 position, Quaternion rotation);
+        void RecycleEntity();
+        event Action OnEntityRecycled;
+    }
+
+    public interface IBalanceProvider
+    {
+        EntityStats GetEntityBalance(GameObject entity);
+        int DifficultyLevel { get; }
+        int AggroMultiplier { get; }
+        event Action<GameObject, EntityStats> OnEntityCalibrated;
+        event Action<GameObject, ItemType, int> OnLootDropped;
+        event Action<GameObject> OnEntityRecycled;
+    }
+
     [System.Serializable]
     public struct HostSpawnPointData
     {
@@ -80,17 +112,39 @@ namespace Combating.Scripts {
         public int moveSpeed;
         public int defenseRatio;
 
+        public int detectionRadius;
+        public int shootRange;
+        public int meleeRange;
+        public int wanderRadius;
+
+        public int maxAmmo;
+        public int shieldCapacity;
+        public int fuelCapacity;
+
+        public int expReward;
+        public int expToNextLevel;
+        public int attackPerLevel;
+        public int defensePerLevel;
+
+        public ItemType lootItemType;
+        public int lootQuantity;
+        public int lootDropChance;
+
         public override string ToString()
         {
-            return $"[HP: {maxHealth} | DMG: {attackDamage} | SPD: {moveSpeed} | DEF: {defenseRatio}%]";
+            return $"[HP: {maxHealth} | DMG: {attackDamage} | SPD: {moveSpeed} | DEF: {defenseRatio}% | DET: {detectionRadius} | SHOT: {shootRange} | EXP: {expReward} | LOOT: {lootItemType}x{lootQuantity}]";
         }
     }
 
     #endregion
 
-    public class BalanceManager : MonoBehaviour
+    public class BalanceManager : MonoBehaviour, IBalanceProvider
     {
         public static BalanceManager Instance { get; private set; }
+
+        public event Action<GameObject, EntityStats> OnEntityCalibrated;
+        public event Action<GameObject, ItemType, int> OnLootDropped;
+        public event Action<GameObject> OnEntityRecycled;
 
         [Header("Balance Parameters")]
         [Tooltip("Nivel o dificultad global de la escena actual.")]
@@ -101,6 +155,22 @@ namespace Combating.Scripts {
 
         [Tooltip("Escala matemática de progresión (Crecimiento Entero).")]
         [Range(1, 10)] public int growthFactor = 2;
+
+        public int DifficultyLevel => difficultyLevel;
+        public int AggroMultiplier => aggroMultiplier;
+
+        [Header("Progression & Experience Setup")]
+        public int baseExpToLevelUp = 100;
+        public int expGrowthMultiplier = 2;
+
+        [Header("Default Combat & Detection Parameters")]
+        public int defaultDetectionRadius = 15;
+        public int defaultShootRange = 20;
+        public int defaultMeleeRange = 3;
+        public int defaultWanderRadius = 10;
+        public int defaultMaxAmmo = 30;
+        public int defaultShieldCapacity = 50;
+        public int defaultFuelCapacity = 100;
 
         [Header("Spawn Setup")]
         [SerializeField] private List<HostSpawnPointData> enemySpawnPoints = new List<HostSpawnPointData>();
@@ -129,6 +199,7 @@ namespace Combating.Scripts {
         [Header("Optional Overrides")]
         public Optional<int> customItemSpawnScale;
         public Optional<int> customPropHealthMultiplier;
+        public Optional<int> customDetectionRadiusOverride;
 
         private const int MIN_BASE_HEALTH = 1;
         private const int MIN_BASE_DAMAGE = 1;
@@ -146,12 +217,10 @@ namespace Combating.Scripts {
         public int EffectiveItemScale => customItemSpawnScale.GetValue(DEFAULT_ITEM_SCALE);
         public int EffectivePropHealthMult => customPropHealthMultiplier.GetValue(DEFAULT_PROP_HEALTH_MULT);
 
-        // --- Dynamic Generic Object Pool ---
         private readonly Dictionary<string, Queue<GameObject>> _objectPools = new Dictionary<string, Queue<GameObject>>();
         private readonly Dictionary<int, string> _activeInstanceToKey = new Dictionary<int, string>();
         private Transform _poolParentTransform;
 
-        // --- Stat Registries ---
         private readonly Dictionary<GameObject, EntityStats> _activeStatsRegistry = new Dictionary<GameObject, EntityStats>();
 
         private void Awake()
@@ -238,6 +307,11 @@ namespace Combating.Scripts {
             instance.transform.SetPositionAndRotation(calibratedPos, rotation);
             instance.SetActive(true);
 
+            if (instance.TryGetComponent<IPoolRecyclable>(out var recyclable))
+            {
+                recyclable.PrepareForSpawn(calibratedPos, rotation);
+            }
+
             int instanceID = instance.GetInstanceID();
             _activeInstanceToKey[instanceID] = poolKey;
 
@@ -290,6 +364,29 @@ namespace Combating.Scripts {
         public void RecycleToPool(GameObject instance)
         {
             if (instance == null) return;
+
+            if (instance.TryGetComponent<ILootableEntity>(out var lootable))
+            {
+                lootable.DropLootOnDeactivate();
+            }
+            else if (_activeStatsRegistry.TryGetValue(instance, out EntityStats stats))
+            {
+                if (stats.lootQuantity > 0 && UnityEngine.Random.Range(0, 100) < stats.lootDropChance)
+                {
+                    for (int l = 0; l < stats.lootQuantity; l++)
+                    {
+                        SpawnItem(stats.lootItemType, instance.transform.position, instance.transform.rotation);
+                    }
+                    OnLootDropped?.Invoke(instance, stats.lootItemType, stats.lootQuantity);
+                }
+            }
+
+            if (instance.TryGetComponent<IPoolRecyclable>(out var recyclable))
+            {
+                recyclable.RecycleEntity();
+            }
+
+            OnEntityRecycled?.Invoke(instance);
 
             int instanceID = instance.GetInstanceID();
 
@@ -447,13 +544,45 @@ namespace Combating.Scripts {
             int speed = Math.Max(MIN_BASE_SPEED, MIN_BASE_SPEED + Math.Max(0, 4 - typeVal));
             int defense = Math.Min(80, Math.Max(MIN_BASE_DEFENSE, MIN_BASE_DEFENSE + (typeVal * 5) + (difficultyLevel * 2)));
 
+            int detRadius = Math.Max(1, customDetectionRadiusOverride.GetValue(defaultDetectionRadius + (typeVal * 5) + (difficultyLevel * 2)));
+            int sRange = enemyType == HostType.Range || enemyType == HostType.Hybrid ? Math.Max(1, defaultShootRange + (typeVal * 3)) : 0;
+            int mRange = enemyType == HostType.Melee || enemyType == HostType.Hybrid ? Math.Max(1, defaultMeleeRange + typeVal) : 0;
+            int wRadius = Math.Max(1, defaultWanderRadius + (typeVal * 2));
+
+            int ammo = Math.Max(1, defaultMaxAmmo + (typeVal * 10));
+            int shield = typeVal >= 2 ? Math.Max(1, defaultShieldCapacity + (typeVal * 15)) : 0;
+            int fuel = Math.Max(1, defaultFuelCapacity + (typeVal * 20));
+
+            int exp = Math.Max(1, (10 + (typeVal * 15)) * (1 + difficultyLevel) * aggroMultiplier);
+            int nextExp = Math.Max(1, baseExpToLevelUp * powGrowth);
+            int atkPerLvl = Math.Max(1, 1 + typeVal);
+            int defPerLvl = Math.Max(1, 1 + typeVal);
+
+            ItemType lootType = (ItemType)(typeVal % 4);
+            int lootQty = Math.Max(1, 1 + typeVal);
+            int dropChance = Math.Min(100, 50 + (typeVal * 15));
+
             return new EntityStats
             {
                 maxHealth = health,
                 currentHealth = health,
                 attackDamage = damage,
                 moveSpeed = speed,
-                defenseRatio = defense
+                defenseRatio = defense,
+                detectionRadius = detRadius,
+                shootRange = sRange,
+                meleeRange = mRange,
+                wanderRadius = wRadius,
+                maxAmmo = ammo,
+                shieldCapacity = shield,
+                fuelCapacity = fuel,
+                expReward = exp,
+                expToNextLevel = nextExp,
+                attackPerLevel = atkPerLvl,
+                defensePerLevel = defPerLvl,
+                lootItemType = lootType,
+                lootQuantity = lootQty,
+                lootDropChance = dropChance
             };
         }
 
@@ -471,13 +600,40 @@ namespace Combating.Scripts {
             int speed = Math.Max(MIN_BASE_SPEED, MIN_BASE_SPEED + 6);
             int defense = Math.Min(85, Math.Max(MIN_BASE_DEFENSE, MIN_BASE_DEFENSE + (typeVal * 5) + (difficultyLevel * 2)));
 
+            int detRadius = Math.Max(1, defaultDetectionRadius * 2);
+            int sRange = Math.Max(1, defaultShootRange * 2);
+            int mRange = Math.Max(1, defaultMeleeRange + userFactor);
+            int wRadius = 0;
+
+            int ammo = Math.Max(1, defaultMaxAmmo * userFactor);
+            int shield = Math.Max(1, defaultShieldCapacity * userFactor);
+            int fuel = Math.Max(1, defaultFuelCapacity * userFactor);
+
+            int nextExp = Math.Max(1, baseExpToLevelUp * expGrowthMultiplier);
+            int atkPerLvl = Math.Max(1, 2 + typeVal);
+            int defPerLvl = Math.Max(1, 2 + typeVal);
+
             return new EntityStats
             {
                 maxHealth = health,
                 currentHealth = health,
                 attackDamage = damage,
                 moveSpeed = speed,
-                defenseRatio = defense
+                defenseRatio = defense,
+                detectionRadius = detRadius,
+                shootRange = sRange,
+                meleeRange = mRange,
+                wanderRadius = wRadius,
+                maxAmmo = ammo,
+                shieldCapacity = shield,
+                fuelCapacity = fuel,
+                expReward = 0,
+                expToNextLevel = nextExp,
+                attackPerLevel = atkPerLvl,
+                defensePerLevel = defPerLvl,
+                lootItemType = ItemType.Thing,
+                lootQuantity = 0,
+                lootDropChance = 0
             };
         }
 
@@ -497,6 +653,7 @@ namespace Combating.Scripts {
             int sceneThreat = GetTotalEnemyThreatWeight();
 
             int health = Math.Max(MIN_BASE_HEALTH, MIN_BASE_HEALTH * propFactor * EffectivePropHealthMult * Math.Max(1, sceneThreat));
+            ItemType propLootType = category == PropType.Tree ? ItemType.Resource : ItemType.Thing;
 
             return new EntityStats
             {
@@ -504,13 +661,32 @@ namespace Combating.Scripts {
                 currentHealth = health,
                 attackDamage = 0,
                 moveSpeed = 0,
-                defenseRatio = 0
+                defenseRatio = 0,
+                detectionRadius = 0,
+                shootRange = 0,
+                meleeRange = 0,
+                wanderRadius = 0,
+                maxAmmo = 0,
+                shieldCapacity = 0,
+                fuelCapacity = 0,
+                expReward = propFactor * 5,
+                expToNextLevel = 0,
+                attackPerLevel = 0,
+                defensePerLevel = 0,
+                lootItemType = propLootType,
+                lootQuantity = Math.Max(1, propFactor),
+                lootDropChance = 100
             };
         }
 
         private void RegisterEntityStats(GameObject entity, EntityStats stats)
         {
             _activeStatsRegistry[entity] = stats;
+            if (entity.TryGetComponent<IBalanceCalibratable>(out var calibratable))
+            {
+                calibratable.CalibrateStats(stats);
+            }
+            OnEntityCalibrated?.Invoke(entity, stats);
         }
 
         public EntityStats? GetEntityStats(GameObject entity)
@@ -520,6 +696,11 @@ namespace Combating.Scripts {
                 return stats;
             }
             return null;
+        }
+
+        public EntityStats GetEntityBalance(GameObject entity)
+        {
+            return GetEntityStats(entity) ?? default;
         }
 
         #endregion

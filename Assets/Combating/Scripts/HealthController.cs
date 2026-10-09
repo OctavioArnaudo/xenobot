@@ -67,6 +67,11 @@ namespace Combating.Scripts
                 try
                 {
                     if (maxHealth > 0) return maxHealth;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.maxHealth > 0) return stats.maxHealth;
+                    }
                 }
                 catch (System.Exception ex)
                 {
@@ -315,6 +320,8 @@ namespace Combating.Scripts
             if (currentHealth.Value <= 0)
             {
                 OnDeath?.Invoke();
+                if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
+                else gameObject.SetActive(false);
             }
         }
 
@@ -327,6 +334,8 @@ namespace Combating.Scripts
             if (m_OfflineHealth <= 0)
             {
                 OnDeath?.Invoke();
+                if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
+                else gameObject.SetActive(false);
             }
         }
 
