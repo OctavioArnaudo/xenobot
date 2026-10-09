@@ -52,7 +52,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4020058620638717664, guid: ce94998347ebd47488f282a06477ffea, type: 3}
       propertyPath: m_Name
-      value: MaskPrefab (1)
+      value: MaskPrefab
       objectReference: {fileID: 0}
     - target: {fileID: 6437995149126846086, guid: ce94998347ebd47488f282a06477ffea, type: 3}
       propertyPath: m_LocalPosition.x
@@ -114,15 +114,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 489.01
+      value: -1359.77
       objectReference: {fileID: 0}
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 34.41
+      value: 334.41
       objectReference: {fileID: 0}
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -72.78
+      value: -26.47998
       objectReference: {fileID: 0}
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalRotation.w
@@ -162,8 +162,12 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7349165637636185266, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_Name
-      value: MaskPrefab (3)
+      value: MaskPrefab (ObjetoClave2)
       objectReference: {fileID: 0}
+    - target: {fileID: 7594978608402853676, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
+      propertyPath: item
+      value: 
+      objectReference: {fileID: 11400000, guid: 947593c3a67b6484aabce2fab1691fa6, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -184,15 +188,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3772765388619512562, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 492.77
+      value: -1341
       objectReference: {fileID: 0}
     - target: {fileID: 3772765388619512562, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 34.41
+      value: 334.41
       objectReference: {fileID: 0}
     - target: {fileID: 3772765388619512562, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -73.14
+      value: -31
       objectReference: {fileID: 0}
     - target: {fileID: 3772765388619512562, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_LocalRotation.w
@@ -222,13 +226,21 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6220167797272930570, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: item
+      value: 
+      objectReference: {fileID: 11400000, guid: ee539a5b5bb773046b1b4aa570af5a5c, type: 2}
     - target: {fileID: 6541982445443734164, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_Name
-      value: MaskPrefab (2)
+      value: MaskPrefab (ObjetoClave5)
+      objectReference: {fileID: 0}
+    - target: {fileID: 8646177470548912538, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: m_InScenePlaced
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8646177470548912538, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2953776419
+      value: 2373552565
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
