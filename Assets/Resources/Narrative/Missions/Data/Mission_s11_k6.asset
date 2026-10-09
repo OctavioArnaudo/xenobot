@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: Semilla
   description: Algo sigue con vida.
-  missionRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: 1d51b9844af810949b0a70fbc3334646, type: 2}
   inventoryRequirements:
-  - item: {fileID: 11400000, guid: faee2e7d1295d304d8d5c4ff9ff93a25, type: 2}
+  - item: {fileID: 11400000, guid: f2dc87eb286215b488d316a20b105b62, type: 2}
     amount: 1
   craftingRequirements: []
   missionPrefab: {fileID: 0}

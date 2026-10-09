@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: Credencial
   description: Hay equipo de acceso guardado.
-  missionRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: e85fb9596c02d5a41b0bd313d5c4cf4f, type: 2}
   inventoryRequirements:
-  - item: {fileID: 11400000, guid: ee539a5b5bb773046b1b4aa570af5a5c, type: 2}
+  - item: {fileID: 11400000, guid: 82f936139cf00f24fbb2382cd48dd828, type: 2}
     amount: 1
-  craftingRequirements: []
+  craftingRequirements:
+  - {fileID: 11400000, guid: 4a111111111111111111111111111102, type: 2}
   missionPrefab: {fileID: 0}

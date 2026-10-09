@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: Mission_s10_d5
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: Cerradura 5
-  description: "Una c\xE1mara sellada."
-  missionRequirements: []
+  description: Una cámara sellada.
+  missionRequirements:
+  - {fileID: 11400000, guid: 9b8b400ddf48a2a478b1540e3c1c9829, type: 2}
   inventoryRequirements: []
   craftingRequirements: []
   missionPrefab: {fileID: 0}

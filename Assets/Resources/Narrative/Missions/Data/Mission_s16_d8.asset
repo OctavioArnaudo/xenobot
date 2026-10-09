@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: Nave
   description: La nave espera.
-  missionRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: 63b4af8aea10c98459190bc70eeba18d, type: 2}
   inventoryRequirements: []
   craftingRequirements: []
   missionPrefab: {fileID: 0}

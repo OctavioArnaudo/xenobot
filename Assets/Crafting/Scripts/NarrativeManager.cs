@@ -518,7 +518,7 @@ namespace Narrative.Scripts
     }
 
 #if UNITY_EDITOR
-    /// <summary>Menú Narrative > Setup: crea ítems y misiones y las asigna a MissionController.</summary>
+    /// <summary>Menú Narrative > Setup: sincroniza ítems, recetas y misiones y las asigna a MissionController.</summary>
     public static class NarrativeSetup
     {
         static readonly string[] Items =
@@ -573,16 +573,20 @@ namespace Narrative.Scripts
                 return;
             }
             if (!EditorUtility.DisplayDialog("Narrative",
-                    "Se crearán 8 ítems y 18 misiones y se REEMPLAZARÁ MissionController.missions. ¿Continuar?",
+                    "Se sincronizarán ítems, recetas y 18 misiones encadenadas en MissionController.missions. ¿Continuar?",
                     "Continuar", "Cancelar")) return;
 
-            Dir("Assets/Resources/Narrative/Items");
-            Dir("Assets/Missions/Data");
+            Dir("Assets/Resources/Crafting/Items/Data");
+            Dir("Assets/Resources/Crafting/Trades/Data");
+            Dir("Assets/Resources/Narrative/Missions/Data");
 
             var items = new ItemData[Items.Length];
             for (int i = 0; i < Items.Length; i++)
             {
-                var it = Asset<ItemData>("Assets/Resources/Narrative/Items/Item_" + Items[i].Replace(" ", "") + ".asset");
+                string cleanName = Items[i].Replace(" ", "");
+                if (cleanName == "MascaraI") cleanName = "Mask";
+                if (cleanName == "MascaraII") cleanName = "MaskVanguard";
+                var it = Asset<ItemData>("Assets/Resources/Crafting/Items/Data/Item_" + cleanName + ".asset");
                 it.itemName = Items[i];
                 it.isPickable = true;
                 it.isDropable = false;
@@ -592,19 +596,46 @@ namespace Narrative.Scripts
                 items[i] = it;
             }
 
+            // Recetas
+            var tradeMap = AssetDatabase.LoadAssetAtPath<TradeData>("Assets/Resources/Crafting/Trades/Data/Trade_CraftChipMap.asset");
+            var tradeMask = AssetDatabase.LoadAssetAtPath<TradeData>("Assets/Resources/Crafting/Trades/Data/Trade_AssembleMask.asset");
+            var tradeFuel = AssetDatabase.LoadAssetAtPath<TradeData>("Assets/Resources/Crafting/Trades/Data/Trade_SynthesizeFuel.asset");
+
             var so = new SerializedObject(mm);
             var list = so.FindProperty("missions");
             list.arraySize = NarrativeManager.Id.Length;
+            Missions.Data.MissionData prevMission = null;
+
             for (int i = 0; i < NarrativeManager.Id.Length; i++)
             {
-                var m = Asset<Missions.Data.MissionData>("Assets/Missions/Data/Mission_" + NarrativeManager.Id[i] + ".asset");
+                var m = Asset<Missions.Data.MissionData>("Assets/Resources/Narrative/Missions/Data/Mission_" + NarrativeManager.Id[i] + ".asset");
                 m.title = Titles[i];
                 m.description = Descs[i];
+
+                // Prerrequisitos de misión
+                m.missionRequirements = new List<Missions.Data.MissionData>();
+                if (prevMission != null)
+                {
+                    m.missionRequirements.Add(prevMission);
+                }
+
+                // Requisitos de inventario y crafteo
                 m.inventoryRequirements = new List<ItemRequirement>();
+                m.craftingRequirements = new List<TradeData>();
+
                 if (i % 2 == 1 && i < 17)
-                    m.inventoryRequirements.Add(new ItemRequirement(items[i / 2], 1));
+                {
+                    var reqItem = items[i / 2];
+                    if (reqItem != null) m.inventoryRequirements.Add(new ItemRequirement(reqItem, 1));
+
+                    if (i == 1 && tradeMap != null) m.craftingRequirements.Add(tradeMap);
+                    else if (i == 3 && tradeMask != null) m.craftingRequirements.Add(tradeMask);
+                    else if (i == 15 && tradeFuel != null) m.craftingRequirements.Add(tradeFuel);
+                }
+
                 EditorUtility.SetDirty(m);
                 list.GetArrayElementAtIndex(i).objectReferenceValue = m;
+                prevMission = m;
             }
             so.ApplyModifiedProperties();
 
@@ -612,8 +643,9 @@ namespace Narrative.Scripts
 
             AssetDatabase.SaveAssets();
             EditorSceneManager.MarkSceneDirty(mm.gameObject.scene);
-            Debug.Log("[Narrative] Setup completo: 8 ítems, 18 misiones asignadas y NarrativeManager añadido.");
+            Debug.Log("[Narrative] Setup completo: 8 ítems, 3 recetas y 18 misiones encadenadas asignadas a MissionController.");
         }
     }
 #endif
+}
 }

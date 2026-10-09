@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: Huida
   description: Despegar.
-  missionRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: 8f0fea43fa1b75040b147dc5d88c2bc7, type: 2}
   inventoryRequirements: []
   craftingRequirements: []
   missionPrefab: {fileID: 0}

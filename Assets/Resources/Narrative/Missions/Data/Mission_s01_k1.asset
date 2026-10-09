@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: Firma de datos
   description: "Algo cercano emite informaci\xF3n."
-  missionRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: 38c53055736e25a4fad23f0691b46414, type: 2}
   inventoryRequirements:
-  - item: {fileID: 11400000, guid: 6103474d17b1f0340a811c78a4f15f5f, type: 2}
+  - item: {fileID: 11400000, guid: 69e16b7dab050c54e9519c6a9452288c, type: 2}
     amount: 1
-  craftingRequirements: []
+  craftingRequirements:
+  - {fileID: 11400000, guid: 4a111111111111111111111111111101, type: 2}
   missionPrefab: {fileID: 0}

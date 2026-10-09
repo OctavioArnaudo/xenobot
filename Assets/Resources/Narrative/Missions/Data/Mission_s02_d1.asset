@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: Cerradura 1
   description: Una puerta sellada espera.
-  missionRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: 5dba282fae10ceb4bbdefd1616ce6f9d, type: 2}
   inventoryRequirements: []
   craftingRequirements: []
   missionPrefab: {fileID: 0}

@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: "Energ\xEDa"
   description: Se necesita combustible.
-  missionRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: 53e8dec7261e8324a90af1680a4bd63c, type: 2}
   inventoryRequirements:
-  - item: {fileID: 11400000, guid: c965fbf0deadaa84db13d3f8a5e0ab86, type: 2}
+  - item: {fileID: 11400000, guid: cc730feca3d9438aa9e28397df2e6fe4, type: 2}
     amount: 1
-  craftingRequirements: []
+  craftingRequirements:
+  - {fileID: 11400000, guid: 4a111111111111111111111111111103, type: 2}
   missionPrefab: {fileID: 0}

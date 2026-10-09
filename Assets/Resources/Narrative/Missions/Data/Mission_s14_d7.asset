@@ -13,8 +13,9 @@ MonoBehaviour:
   m_Name: Mission_s14_d7
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: Cerradura 7
-  description: "Un \xFAltimo sello interno."
-  missionRequirements: []
+  description: Un último sello interno.
+  missionRequirements:
+  - {fileID: 11400000, guid: 7b3650c9356437e46b6a785dec6e4d60, type: 2}
   inventoryRequirements: []
   craftingRequirements: []
   missionPrefab: {fileID: 0}

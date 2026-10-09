@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: Acceso interno
   description: El laboratorio guarda una llave.
-  missionRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: 60dc4a2a139308e4699f63f2227455bb, type: 2}
   inventoryRequirements:
-  - item: {fileID: 11400000, guid: 8505d470eefba1e4a98829d088722fa3, type: 2}
+  - item: {fileID: 11400000, guid: 6ac606d832f14c4fa3466276ffe3c0b4, type: 2}
     amount: 1
   craftingRequirements: []
   missionPrefab: {fileID: 0}

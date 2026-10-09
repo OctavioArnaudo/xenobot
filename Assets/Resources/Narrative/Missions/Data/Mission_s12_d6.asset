@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: Laboratorio
   description: El laboratorio espera.
-  missionRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: 1019bb4cf391f7c4dac7da0d580876a7, type: 2}
   inventoryRequirements: []
   craftingRequirements: []
   missionPrefab: {fileID: 0}

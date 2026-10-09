@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: Memoria
   description: Fragmentos de datos aguardan.
-  missionRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: 63bccbf502a0b88458fc8179c19e93e3, type: 2}
   inventoryRequirements:
-  - item: {fileID: 11400000, guid: c7ff2b724fdea774d8ceefb875f8b4d0, type: 2}
+  - item: {fileID: 11400000, guid: d4b336fb99ce46d4a94f1d8457f47ced, type: 2}
     amount: 1
   craftingRequirements: []
   missionPrefab: {fileID: 0}

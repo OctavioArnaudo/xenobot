@@ -14,7 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Missions.Data.MissionData
   title: Cerradura 3
   description: El complejo sigue cerrado.
-  missionRequirements: []
+  missionRequirements:
+  - {fileID: 11400000, guid: 0e991453e678f6744b3b48e46194c40b, type: 2}
   inventoryRequirements: []
   craftingRequirements: []
   missionPrefab: {fileID: 0}
