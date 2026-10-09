@@ -56,8 +56,12 @@ public class SepiaTonemap : MonoBehaviour
     {
         // Sin post-process stack, al menos llevamos el skybox a tono sepia
         RenderSettings.skybox = null;
-        Camera.main.backgroundColor = new Color(0.06f, 0.02f, 0.01f);
-        Camera.main.clearFlags = CameraClearFlags.SolidColor;
+        var cam = Camera.main ?? FindFirstObjectByType<Camera>();
+        if (cam != null)
+        {
+            cam.backgroundColor = new Color(0.06f, 0.02f, 0.01f);
+            cam.clearFlags = CameraClearFlags.SolidColor;
+        }
     }
 #endif
 }
