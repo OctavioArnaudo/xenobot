@@ -27,20 +27,24 @@ namespace Combating.Scripts {
         [Header("Shield Settings")]
         public bool isUnlocked = true; // Permiso para usar el escudo
 
-        [Header("Sobrescrituras Opcionales del Inspector")]
         [Tooltip("Mitigación de daño: 1.0 = Bloqueo total, 0.5 = Mitiga el 50%")]
-        public Optional<float> damageReductionOverride;
+        public float DamageReduction;
+        public Optional<float> damageReduction;
 
         [Tooltip("Capacidad máxima de daño que absorbe el escudo activo antes de romperse")]
-        public Optional<float> maxShieldHealthOverride;
+        public float MaxShieldHealth;
+        public Optional<float> maxShieldHealth;
 
         [Tooltip("Duración máxima sostenida en segundos estando activo")]
-        public Optional<float> maxShieldDurationOverride;
+        public float MaxShieldDuration;
+        public Optional<float> maxShieldDuration;
 
         [Tooltip("Tiempo de enfriamiento/recarga en segundos tras agotarse o desactivarse")]
-        public Optional<float> cooldownDurationOverride;
+        public float CooldownDuration;
+        public Optional<float> cooldownDuration;
 
         [Tooltip("Si se activa, el escudo nunca se agota ni entra en cooldown")]
+        public bool InfiniteShield;
         public Optional<bool> infiniteShield;
 
         [Header("Activation & Input Settings")]
@@ -102,7 +106,7 @@ namespace Combating.Scripts {
 
         public float EffectiveDamageReduction {
             get {
-                float baseVal = damageReductionOverride.GetValue(DEFAULT_DAMAGE_REDUCTION);
+                float baseVal = damageReduction.GetValue(DEFAULT_DAMAGE_REDUCTION);
                 if (IsEnemy) {
                     float peak = Mathf.Min(0.90f, baseVal * 1.5f);
                     float cycleFactor = Mathf.Pow(0.80f, m_EnemyCycleCount);
@@ -118,13 +122,13 @@ namespace Combating.Scripts {
 
         public float EffectiveMaxShieldHealth {
             get {
-                if (maxShieldHealthOverride.useOverride) return maxShieldHealthOverride.value;
+                if (maxShieldHealth.use) return maxShieldHealth.value;
                 if (BalanceManager.Instance != null)
                 {
                     var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
                     if (stats.shieldCapacity > 0) return stats.shieldCapacity;
                 }
-                float baseVal = maxShieldHealthOverride.GetValue(DEFAULT_MAX_SHIELD_HEALTH);
+                float baseVal = maxShieldHealth.GetValue(DEFAULT_MAX_SHIELD_HEALTH);
                 if (IsEnemy) {
                     float peak = baseVal * 1.6f;
                     float cycleFactor = Mathf.Pow(0.80f, m_EnemyCycleCount);
@@ -140,7 +144,7 @@ namespace Combating.Scripts {
 
         public float EffectiveMaxShieldDuration {
             get {
-                float baseVal = maxShieldDurationOverride.GetValue(DEFAULT_MAX_SHIELD_DURATION);
+                float baseVal = maxShieldDuration.GetValue(DEFAULT_MAX_SHIELD_DURATION);
                 if (IsEnemy) {
                     float peak = baseVal * 1.5f;
                     float cycleFactor = Mathf.Pow(0.80f, m_EnemyCycleCount);
@@ -156,7 +160,7 @@ namespace Combating.Scripts {
 
         public float EffectiveCooldownDuration {
             get {
-                float baseVal = cooldownDurationOverride.GetValue(DEFAULT_COOLDOWN_DURATION);
+                float baseVal = cooldownDuration.GetValue(DEFAULT_COOLDOWN_DURATION);
                 if (IsEnemy) {
                     float peak = baseVal * 0.8f;
                     float cycleFactor = Mathf.Pow(0.80f, m_EnemyCycleCount);
@@ -178,7 +182,6 @@ namespace Combating.Scripts {
         public float CooldownRemaining => EffectiveInfiniteShield ? 0f : Mathf.Max(0f, m_CooldownTimer);
         public float CooldownProgress => InCooldown ? Mathf.Clamp01(1f - (m_CooldownTimer / Mathf.Max(0.01f, EffectiveCooldownDuration))) : 1f;
         public float CurrentShieldHealth => EffectiveInfiniteShield ? EffectiveMaxShieldHealth : m_CurrentShieldHealth;
-        public float MaxShieldHealth => EffectiveMaxShieldHealth;
 
         private void Awake() {
             if (Application.isPlaying) {

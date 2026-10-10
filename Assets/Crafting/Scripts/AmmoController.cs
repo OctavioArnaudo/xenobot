@@ -13,12 +13,13 @@ namespace Crafting.Scripts
         private const int DEFAULT_AMMO_AMOUNT = 30;
         private const float DEFAULT_DAMAGE_MULTIPLIER = 1.25f;
 
-        [Header("Sobrescrituras Opcionales del Inspector")]
+        public int AmmoAmountToAdd;
         public Optional<int> ammoAmountToAdd;
-        public Optional<float> damageMultiplierOverride;
+        public float DamageMultiplier;
+        public Optional<float> damageMultiplier;
 
         public int EffectiveAmmoAmount => ammoAmountToAdd.GetValue(DEFAULT_AMMO_AMOUNT);
-        public float EffectiveDamageMultiplier => damageMultiplierOverride.GetValue(DEFAULT_DAMAGE_MULTIPLIER);
+        public float EffectiveDamageMultiplier => damageMultiplier.GetValue(DEFAULT_DAMAGE_MULTIPLIER);
 
         [Header("Visual Settings")]
         public bool generateDefaultVisuals = true;

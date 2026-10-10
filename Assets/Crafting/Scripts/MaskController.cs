@@ -26,14 +26,16 @@ namespace Crafting.Scripts
         [Header("Settings de Máscara")]
         public string renderTag = "Render";
 
-        [Header("Sobrescrituras Opcionales del Inspector")]
-        public Optional<VisorType> visorTypeOverride;
-        public Optional<Vector3> headOffsetOverride;
-        public Optional<Vector3> headScaleOverride;
+        public VisorType VisorType;
+        public Optional<VisorType> visorType;
+        public Vector3 HeadOffset;
+        public Optional<Vector3> headOffset;
+        public Vector3 HeadScale;
+        public Optional<Vector3> headScale;
 
-        public VisorType EffectiveVisorType => visorTypeOverride.GetValue(DEFAULT_VISOR_TYPE);
-        public Vector3 EffectiveHeadOffset => headOffsetOverride.GetValue(DEFAULT_HEAD_BONE_OFFSET);
-        public Vector3 EffectiveHeadScale => headScaleOverride.GetValue(DEFAULT_HEAD_SCALE);
+        public VisorType EffectiveVisorType => visorType.GetValue(DEFAULT_VISOR_TYPE);
+        public Vector3 EffectiveHeadOffset => headOffset.GetValue(DEFAULT_HEAD_BONE_OFFSET);
+        public Vector3 EffectiveHeadScale => headScale.GetValue(DEFAULT_HEAD_SCALE);
 
         private bool _isEquipped = false;
         private GameObject _playerRoot;
@@ -123,8 +125,8 @@ namespace Crafting.Scripts
 
             // 7. Adjuntar la máscara a la cabeza (o arriba del cuerpo si es el root)
             Vector3 finalOffset = (headTransform == _playerRoot.transform || headTransform == taggedRender)
-                ? headOffsetOverride.GetValue(DEFAULT_ROOT_HEAD_OFFSET)
-                : headOffsetOverride.GetValue(DEFAULT_HEAD_BONE_OFFSET);
+                ? headOffset.GetValue(DEFAULT_ROOT_HEAD_OFFSET)
+                : headOffset.GetValue(DEFAULT_HEAD_BONE_OFFSET);
 
             transform.SetParent(headTransform, false);
             transform.localPosition = finalOffset;

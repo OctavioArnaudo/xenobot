@@ -25,22 +25,30 @@ namespace Combating.Scripts
         private const float DEFAULT_ENEMY_BASE_SLAM_RADIUS = 4.0f;
         private const float DEFAULT_ROTATION_SPEED = 10f;
 
-        [Header("Manual Melee Overrides")]
+        public float AttackRange;
         public Optional<float> attackRange;
+        public float AttackDamage;
         public Optional<float> attackDamage;
+        public float AttackCooldown;
         public Optional<float> attackCooldown;
         public LayerMask targetLayers;
 
-        [Header("Manual Ground Slam Overrides")]
+        [Header("Ground Slam")]
+        public float SlamHoldDuration;
         public Optional<float> slamHoldDuration;
+        public float SlamDamage;
         public Optional<float> slamDamage;
+        public float SlamRadius;
         public Optional<float> slamRadius;
+        public float SlamSpeed;
         public Optional<float> slamSpeed;
+        public float SlamKnockbackForce;
         public Optional<float> slamKnockbackForce;
         public ParticleSystem slamVfxPrefab;
         public AudioClip slamSound;
 
         [Header("Visuals & Audio Emphasis")]
+        public float RotationSpeedOverride;
         public Optional<float> rotationSpeedOverride;
         public ProjectileController swingVfxPrefab;
         public Renderer[] visualsToRotate;
@@ -64,7 +72,7 @@ namespace Combating.Scripts
             {
                 try
                 {
-                    if (attackRange.useOverride) return attackRange.value;
+                    if (attackRange.use) return attackRange.value;
                     if (BalanceManager.Instance != null)
                     {
                         var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
@@ -86,7 +94,7 @@ namespace Combating.Scripts
             {
                 try
                 {
-                    if (attackDamage.useOverride) return attackDamage.value;
+                    if (attackDamage.use) return attackDamage.value;
                     if (BalanceManager.Instance != null)
                     {
                         var stats = BalanceManager.Instance.GetEntityBalance(gameObject);

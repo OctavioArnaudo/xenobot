@@ -47,10 +47,7 @@ MonoBehaviour:
   difficultyLevel: 1
   aggroMultiplier: 1
   growthFactor: 2
-  userSpawnPoints:
-  - pointTransform: {fileID: 0}
-    playerTypeToSpawn: 0
-    customPrefab: {fileID: 0}
+  userSpawnPoints: []
   hostSpawnPoints:
   - pointTransform: {fileID: 0}
     enemyTypeToSpawn: 1

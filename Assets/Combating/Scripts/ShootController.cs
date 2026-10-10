@@ -30,12 +30,17 @@ namespace Combating.Scripts
         public GameObject Projectile;
         public Renderer[] visualsToRotate;
 
-        [Header("Sobrescrituras Opcionales del Inspector")]
-        public Optional<float> Damage;
-        public Optional<float> FireRate;
-        public Optional<float> AimDistance;
+        public float Damage;
+        public Optional<float> damage;
+        public float FireRate;
+        public Optional<float> fireRate;
+        public float AimDistance;
+        public Optional<float> aimDistance;
+        public int MaxAmmo;
         public Optional<int> maxAmmo;
+        public float ReloadDuration;
         public Optional<float> reloadDuration;
+        public bool InfiniteAmmo;
         public Optional<bool> infiniteAmmo;
 
         public LayerMask AimLayers = ~0;
@@ -80,7 +85,7 @@ namespace Combating.Scripts
             {
                 try
                 {
-                    if (Damage.useOverride) return Damage.value;
+                    if (damage.use) return damage.value;
                     if (BalanceManager.Instance != null)
                     {
                         var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
@@ -97,7 +102,7 @@ namespace Combating.Scripts
         {
             get
             {
-                try { return FireRate.GetValue(CalculateDynamicFireRate()); }
+                try { return fireRate.GetValue(CalculateDynamicFireRate()); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] FireRate: {ex.Message}"); }
 
                 return CalculateDynamicFireRate();
@@ -110,7 +115,7 @@ namespace Combating.Scripts
             {
                 try
                 {
-                    if (AimDistance.useOverride) return AimDistance.value;
+                    if (aimDistance.use) return aimDistance.value;
                     if (BalanceManager.Instance != null)
                     {
                         var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
@@ -118,7 +123,7 @@ namespace Combating.Scripts
                     }
                     var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
                     float defaultDist = (enemy != null) ? DEFAULT_ENEMY_BASE_AIM_DISTANCE : DEFAULT_PLAYER_AIM_DISTANCE;
-                    return AimDistance.GetValue(defaultDist);
+                    return aimDistance.GetValue(defaultDist);
                 }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] AimDistance: {ex.Message}"); }
 
@@ -130,7 +135,7 @@ namespace Combating.Scripts
         {
             get
             {
-                if (maxAmmo.useOverride) return maxAmmo.value;
+                if (maxAmmo.use) return maxAmmo.value;
                 if (BalanceManager.Instance != null)
                 {
                     var stats = BalanceManager.Instance.GetEntityBalance(gameObject);

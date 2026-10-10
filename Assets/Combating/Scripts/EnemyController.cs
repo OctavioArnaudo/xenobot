@@ -109,17 +109,26 @@ namespace Combating.Scripts
         [HideInInspector] public string activePhaseName = "Fase Inicial";
         [HideInInspector] public AIArchetype activeArchetype = AIArchetype.CargaDirecta;
 
-        [Header("Movement Overrides (useOverride = false -> Usar Balance Interno)")]
+        [Header("Movement")]
+        public float HoverHeight;
         public Optional<float> hoverHeight;
+        public float WanderSpeed;
         public Optional<float> wanderSpeed;
+        public float ChaseSpeed;
         public Optional<float> chaseSpeed;
+        public float TurnSpeed;
         public Optional<float> turnSpeed;
+        public float WanderRadius;
         public Optional<float> wanderRadius;
 
-        [Header("Perception & Range Overrides (useOverride = false -> Usar Balance Interno)")]
+        [Header("Perception & Range")]
+        public float DetectionRange;
         public Optional<float> detectionRange;
+        public float ShootRange;
         public Optional<float> shootRange;
+        public float MeleeRange;
         public Optional<float> meleeRange;
+        public float VisionAngleOverride;
         public Optional<float> visionAngleOverride;
 
         public float EffectiveVisionAngle => visionAngleOverride.GetValue(DEFAULT_VISION_ANGLE);
@@ -151,7 +160,7 @@ namespace Combating.Scripts
             {
                 try
                 {
-                    if (chaseSpeed.useOverride) return chaseSpeed.value;
+                    if (chaseSpeed.use) return chaseSpeed.value;
                     if (BalanceManager.Instance != null)
                     {
                         var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
@@ -179,7 +188,7 @@ namespace Combating.Scripts
             {
                 try
                 {
-                    if (wanderRadius.useOverride) return wanderRadius.value;
+                    if (wanderRadius.use) return wanderRadius.value;
                     if (BalanceManager.Instance != null)
                     {
                         var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
@@ -197,7 +206,7 @@ namespace Combating.Scripts
             {
                 try
                 {
-                    if (detectionRange.useOverride) return detectionRange.value;
+                    if (detectionRange.use) return detectionRange.value;
                     if (BalanceManager.Instance != null)
                     {
                         var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
@@ -215,7 +224,7 @@ namespace Combating.Scripts
             {
                 try
                 {
-                    if (shootRange.useOverride) return shootRange.value;
+                    if (shootRange.use) return shootRange.value;
                     if (BalanceManager.Instance != null)
                     {
                         var stats = BalanceManager.Instance.GetEntityBalance(gameObject);

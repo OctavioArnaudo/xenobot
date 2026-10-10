@@ -133,22 +133,34 @@ namespace Combating.Scripts
         private const float DEFAULT_DOT_DURATION = 3.5f;
 
         [Header("Tipo de Proyectil")]
-        public Optional<ProjectileType> typeOverride;
-        public Optional<bool> autoRandomizeOverride;
+        public ProjectileType Type;
+        public Optional<ProjectileType> type;
+        public bool AutoRandomize;
+        public Optional<bool> autoRandomize;
 
         [Header("Estadísticas Generales")]
-        public Optional<float> speedOverride;
-        public Optional<float> damageOverride;
-        public Optional<float> lifeTimeOverride;
-        public Optional<float> homingTurnSpeedOverride;
-        public Optional<float> detectionRadiusOverride;
-        public Optional<Color> colorOverride;
+        public Color Color;
+        public Optional<Color> color;
+        public float Damage;
+        public Optional<float> damage;
+        public float DetectionRadius;
+        public Optional<float> detectionRadius;
+        public float HomingTurnSpeed;
+        public Optional<float> homingTurnSpeed;
+        public float LifeTime;
+        public Optional<float> lifeTime;
+        public float Speed;
+        public Optional<float> speed;
 
         [Header("Efectos Especiales")]
-        public Optional<float> explosionRadiusOverride;
-        public Optional<float> freezeSlowAmountOverride;
-        public Optional<float> corrosionDamageOverride;
-        public Optional<float> dotDurationOverride;
+        public float CorrosionDamage;
+        public Optional<float> corrosionDamage;
+        public float DotDuration;
+        public Optional<float> dotDuration;
+        public float ExplosionRadius;
+        public Optional<float> explosionRadius;
+        public float FreezeSlowAmount;
+        public Optional<float> freezeSlowAmount;
 
         [Header("Visuales y Efectos de Impacto")]
         public GameObject visualsBalaFuego;
@@ -173,18 +185,18 @@ namespace Combating.Scripts
         private static List<ProjectileController> s_ActiveAttachedBombs = new List<ProjectileController>();
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
-        public ProjectileType EffectiveType => typeOverride.GetValue(DEFAULT_TYPE);
-        public bool EffectiveAutoRandomize => autoRandomizeOverride.GetValue(DEFAULT_AUTO_RANDOMIZE);
-        public float EffectiveSpeed => speedOverride.GetValue(EffectiveType == ProjectileType.RayoContinuo ? DEFAULT_SPEED * 2.2f : DEFAULT_SPEED);
-        public float EffectiveDamage => damageOverride.GetValue(DEFAULT_DAMAGE);
-        public float EffectiveLifeTime => lifeTimeOverride.GetValue(DEFAULT_LIFETIME);
-        public float EffectiveHomingTurnSpeed => homingTurnSpeedOverride.GetValue(DEFAULT_HOMING_TURN_SPEED);
-        public float EffectiveDetectionRadius => detectionRadiusOverride.GetValue(DEFAULT_DETECTION_RADIUS);
-        public float EffectiveExplosionRadius => explosionRadiusOverride.GetValue(DEFAULT_EXPLOSION_RADIUS);
-        public float EffectiveFreezeSlowAmount => freezeSlowAmountOverride.GetValue(DEFAULT_FREEZE_SLOW_AMOUNT);
-        public float EffectiveCorrosionDamage => corrosionDamageOverride.GetValue(DEFAULT_CORROSION_DAMAGE);
-        public float EffectiveDotDuration => dotDurationOverride.GetValue(DEFAULT_DOT_DURATION);
-        public Color EffectiveColor => colorOverride.GetValue(GetDefaultColorForType(EffectiveType));
+        public ProjectileType EffectiveType => type.GetValue(DEFAULT_TYPE);
+        public bool EffectiveAutoRandomize => autoRandomize.GetValue(DEFAULT_AUTO_RANDOMIZE);
+        public float EffectiveSpeed => speed.GetValue(EffectiveType == ProjectileType.RayoContinuo ? DEFAULT_SPEED * 2.2f : DEFAULT_SPEED);
+        public float EffectiveDamage => damage.GetValue(DEFAULT_DAMAGE);
+        public float EffectiveLifeTime => lifeTime.GetValue(DEFAULT_LIFETIME);
+        public float EffectiveHomingTurnSpeed => homingTurnSpeed.GetValue(DEFAULT_HOMING_TURN_SPEED);
+        public float EffectiveDetectionRadius => detectionRadius.GetValue(DEFAULT_DETECTION_RADIUS);
+        public float EffectiveExplosionRadius => explosionRadius.GetValue(DEFAULT_EXPLOSION_RADIUS);
+        public float EffectiveFreezeSlowAmount => freezeSlowAmount.GetValue(DEFAULT_FREEZE_SLOW_AMOUNT);
+        public float EffectiveCorrosionDamage => corrosionDamage.GetValue(DEFAULT_CORROSION_DAMAGE);
+        public float EffectiveDotDuration => dotDuration.GetValue(DEFAULT_DOT_DURATION);
+        public Color EffectiveColor => color.GetValue(GetDefaultColorForType(EffectiveType));
 
         private Color GetDefaultColorForType(ProjectileType type)
         {
@@ -206,8 +218,8 @@ namespace Combating.Scripts
             if (EffectiveAutoRandomize)
             {
                 ProjectileType randomType = (ProjectileType)Random.Range(0, 5);
-                typeOverride.useOverride = true;
-                typeOverride.value = randomType;
+                type.use = true;
+                type.value = randomType;
             }
         }
 
@@ -257,10 +269,10 @@ namespace Combating.Scripts
 
             DetonateOwnerAttachedBombs(owner);
 
-            if (dmg > 0f && !damageOverride.useOverride)
+            if (dmg > 0f && !damage.use)
             {
-                damageOverride.useOverride = true;
-                damageOverride.value = dmg;
+                damage.use = true;
+                damage.value = dmg;
             }
 
             if (m_Owner != null)
@@ -289,10 +301,10 @@ namespace Combating.Scripts
         {
             m_Direction = direction;
             m_OwnerTeam = team;
-            if (dmg > 0f && !damageOverride.useOverride)
+            if (dmg > 0f && !damage.use)
             {
-                damageOverride.useOverride = true;
-                damageOverride.value = dmg;
+                damage.use = true;
+                damage.value = dmg;
             }
 
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(ownerNetworkObjectId, out var ownerNetObj))
