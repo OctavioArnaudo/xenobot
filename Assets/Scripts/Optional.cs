@@ -6,13 +6,13 @@ using UnityEngine;
 [System.Serializable]
 public struct Optional<T>
 {
-    [Tooltip("Activar para sobrescribir manualmente el valor por defecto interno")]
-    public bool useOverride;
-    [Tooltip("Valor manual asignado si useOverride está activado (puede ser 0, false, Vector3.zero, etc.)")]
+    [Tooltip("Activar para sobrescribir manualmente el valor")]
+    public bool use;
+    [Tooltip("Valor manual asignado si use está activado")]
     public T value;
 
     public T GetValue(T defaultValue)
     {
-        return useOverride ? value : defaultValue;
+        return use ? value : defaultValue;
     }
 }
