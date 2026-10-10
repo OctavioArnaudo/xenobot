@@ -11,7 +11,7 @@ public struct Optional<T>
     [Tooltip("Valor manual asignado si use está activado")]
     public T value;
 
-    public T GetValue(T defaultValue)
+    public readonly T GetValue(T defaultValue)
     {
         return use ? value : defaultValue;
     }
