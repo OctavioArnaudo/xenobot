@@ -80,6 +80,14 @@ namespace Combating.Scripts {
     }
 
     [System.Serializable]
+    public struct UserSpawnPointData
+    {
+        public Transform pointTransform;
+        public UserType playerTypeToSpawn;
+        public GameObject customPrefab;
+    }
+
+    [System.Serializable]
     public struct HostSpawnPointData
     {
         public Transform pointTransform;
@@ -160,10 +168,10 @@ namespace Combating.Scripts {
         public int AggroMultiplier => aggroMultiplier;
 
         [Header("Spawn Setup")]
+        [SerializeField] private List<UserSpawnPointData> playerSpawnPoints = new List<UserSpawnPointData>();
         [SerializeField] private List<HostSpawnPointData> enemySpawnPoints = new List<HostSpawnPointData>();
         [SerializeField] private List<ItemSpawnPointData> itemSpawnPoints = new List<ItemSpawnPointData>();
         [SerializeField] private List<PropSpawnPointData> propSpawnPoints = new List<PropSpawnPointData>();
-        [SerializeField] private Transform playerSpawnPoint;
 
         [Header("Prefabs References - Characters")]
         [SerializeField] private GameObject playerPrefab;
@@ -408,11 +416,18 @@ namespace Combating.Scripts {
 
         public void InitializeSceneSpawns()
         {
-            if (playerPrefab != null && playerSpawnPoint != null)
+            int totalPlayers = playerSpawnPoints.Count;
+            for (int i = 0; i < totalPlayers; i++)
             {
-                GameObject player = SpawnFromPool(playerPrefab, playerSpawnPoint.position, playerSpawnPoint.rotation);
-                EntityStats playerStats = CalculateUserStats(UserType.Warrior);
-                RegisterEntityStats(player, playerStats);
+                UserSpawnPointData playerData = playerSpawnPoints[i];
+                GameObject playerPrefabToUse = playerData.customPrefab != null ? playerData.customPrefab : playerPrefab;
+
+                if (playerPrefabToUse != null && playerData.pointTransform != null)
+                {
+                    GameObject player = SpawnFromPool(playerPrefabToUse, playerData.pointTransform.position, playerData.pointTransform.rotation);
+                    EntityStats playerStats = CalculateUserStats(playerData.playerTypeToSpawn);
+                    RegisterEntityStats(player, playerStats);
+                }
             }
 
             int totalEnemies = enemySpawnPoints.Count;
