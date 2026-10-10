@@ -36,19 +36,11 @@ namespace Combating.Scripts {
         Plant = 2
     }
 
-    public enum StatType
-    {
-        Health,
-        Damage,
-        Speed,
-        Defense
-    }
-
     public interface IBalanceCalibratable
     {
-        void CalibrateStats(EntityStats stats);
-        EntityStats CurrentStats { get; }
-        event Action<EntityStats> OnStatsUpdated;
+        void CalibrateStats(StatSpawnPointData stats);
+        StatSpawnPointData CurrentStats { get; }
+        event Action<StatSpawnPointData> OnStatsUpdated;
     }
 
     public interface ILootableEntity
@@ -68,10 +60,10 @@ namespace Combating.Scripts {
 
     public interface IBalanceProvider
     {
-        EntityStats GetEntityBalance(GameObject entity);
+        StatSpawnPointData GetEntityBalance(GameObject entity);
         int DifficultyLevel { get; }
         int AggroMultiplier { get; }
-        event Action<GameObject, EntityStats> OnEntityCalibrated;
+        event Action<GameObject, StatSpawnPointData> OnEntityCalibrated;
         event Action<GameObject, ItemType, int> OnLootDropped;
         event Action<GameObject> OnEntityRecycled;
     }
@@ -122,7 +114,7 @@ namespace Combating.Scripts {
     }
 
     [System.Serializable]
-    public struct EntityStats
+    public struct StatSpawnPointData
     {
         public int maxHealth;
         public int currentHealth;
@@ -175,7 +167,7 @@ namespace Combating.Scripts {
     {
         public static BalanceManager Instance { get; private set; }
 
-        public event Action<GameObject, EntityStats> OnEntityCalibrated;
+        public event Action<GameObject, StatSpawnPointData> OnEntityCalibrated;
         public event Action<GameObject, ItemType, int> OnLootDropped;
         public event Action<GameObject> OnEntityRecycled;
 
@@ -198,8 +190,10 @@ namespace Combating.Scripts {
         [SerializeField] private List<ItemSpawnPointData> itemSpawnPoints = new List<ItemSpawnPointData>();
         [SerializeField] private List<PropSpawnPointData> propSpawnPoints = new List<PropSpawnPointData>();
 
-        [Header("Prefabs References - Hosts")]
+        [Header("Prefabs References - Users")]
         [SerializeField] private GameObject userPlayerPrefab;
+
+        [Header("Prefabs References - Hosts")]
         [SerializeField] private GameObject hostMeleePrefab;
         [SerializeField] private GameObject hostRangePrefab;
         [SerializeField] private GameObject hostHybridPrefab;
@@ -242,7 +236,7 @@ namespace Combating.Scripts {
         private readonly Dictionary<int, string> _activeInstanceToKey = new Dictionary<int, string>();
         private Transform _poolParentTransform;
 
-        private readonly Dictionary<GameObject, EntityStats> _activeStatsRegistry = new Dictionary<GameObject, EntityStats>();
+        private readonly Dictionary<GameObject, StatSpawnPointData> _activeStatsRegistry = new Dictionary<GameObject, StatSpawnPointData>();
 
         private void Awake()
         {
@@ -371,8 +365,8 @@ namespace Combating.Scripts {
             GameObject obj = SpawnFromPool(prefab, position, rotation);
             if (obj != null)
             {
-                EntityStats propStats = CalculatePropStats(category);
-                RegisterEntityStats(obj, propStats);
+                StatSpawnPointData propStats = CalculatePropStats(category);
+                RegisterStatSpawnPointData(obj, propStats);
             }
             return obj;
         }
@@ -391,7 +385,7 @@ namespace Combating.Scripts {
             {
                 lootable.DropLootOnDeactivate();
             }
-            else if (_activeStatsRegistry.TryGetValue(instance, out EntityStats stats))
+            else if (_activeStatsRegistry.TryGetValue(instance, out StatSpawnPointData stats))
             {
                 if (stats.lootQuantity > 0 && UnityEngine.Random.Range(0, 100) < stats.lootDropChance)
                 {
@@ -452,8 +446,8 @@ namespace Combating.Scripts {
                 if (playerPrefabToUse != null && playerData.pointTransform != null)
                 {
                     GameObject player = SpawnFromPool(playerPrefabToUse, playerData.pointTransform.position, playerData.pointTransform.rotation);
-                    EntityStats playerStats = CalculateUserStats(playerData.playerTypeToSpawn);
-                    RegisterEntityStats(player, playerStats);
+                    StatSpawnPointData playerStats = CalculateUserStats(playerData.playerTypeToSpawn);
+                    RegisterStatSpawnPointData(player, playerStats);
                 }
             }
 
@@ -466,8 +460,8 @@ namespace Combating.Scripts {
                 if (enemyPrefabToUse != null && spawnData.pointTransform != null)
                 {
                     GameObject enemy = SpawnFromPool(enemyPrefabToUse, spawnData.pointTransform.position, spawnData.pointTransform.rotation);
-                    EntityStats enemyStats = CalculateHostStats(spawnData.enemyTypeToSpawn, i, totalEnemies, spawnData);
-                    RegisterEntityStats(enemy, enemyStats);
+                    StatSpawnPointData enemyStats = CalculateHostStats(spawnData.enemyTypeToSpawn, i, totalEnemies, spawnData);
+                    RegisterStatSpawnPointData(enemy, enemyStats);
                 }
             }
 
@@ -481,8 +475,8 @@ namespace Combating.Scripts {
                     if (prefabToUse != null)
                     {
                         GameObject itemObj = SpawnFromPool(prefabToUse, itemData.pointTransform.position, itemData.pointTransform.rotation);
-                        EntityStats itemStats = CalculateItemStats(itemData.categoryToSpawn, itemData);
-                        RegisterEntityStats(itemObj, itemStats);
+                        StatSpawnPointData itemStats = CalculateItemStats(itemData.categoryToSpawn, itemData);
+                        RegisterStatSpawnPointData(itemObj, itemStats);
                     }
                 }
             }
@@ -497,8 +491,8 @@ namespace Combating.Scripts {
                     if (prefabToUse != null)
                     {
                         GameObject propObj = SpawnFromPool(prefabToUse, propData.pointTransform.position, propData.pointTransform.rotation);
-                        EntityStats propStats = CalculatePropStats(propData.categoryToSpawn, propData);
-                        RegisterEntityStats(propObj, propStats);
+                        StatSpawnPointData propStats = CalculatePropStats(propData.categoryToSpawn, propData);
+                        RegisterStatSpawnPointData(propObj, propStats);
                     }
                 }
             }
@@ -590,7 +584,7 @@ namespace Combating.Scripts {
             return Math.Max(1, SafeMultiply(baseItemVal, categoryFactor));
         }
 
-        public EntityStats CalculateHostStats(HostType enemyType, int spawnIndex, int totalSpawns, HostSpawnPointData spawnData = default)
+        public StatSpawnPointData CalculateHostStats(HostType enemyType, int spawnIndex, int totalSpawns, HostSpawnPointData spawnData = default)
         {
             int typeVal = (int)enemyType;
             int typeFactor = 1 + typeVal;
@@ -651,7 +645,7 @@ namespace Combating.Scripts {
             int rThreshold = spawnData.retreatHealthThreshold > 0 ? spawnData.retreatHealthThreshold : Math.Min(100, 15 + (typeVal * 5));
             int skillChance = spawnData.specialSkillChance > 0 ? spawnData.specialSkillChance : Math.Min(100, 10 + (typeVal * 15) + (difficultyLevel * 2));
 
-            return new EntityStats
+            return new StatSpawnPointData
             {
                 maxHealth = health,
                 currentHealth = health,
@@ -682,13 +676,13 @@ namespace Combating.Scripts {
             };
         }
 
-        public EntityStats CalculateItemStats(ItemType category, ItemSpawnPointData itemData = default)
+        public StatSpawnPointData CalculateItemStats(ItemType category, ItemSpawnPointData itemData = default)
         {
             int baseVal = CalculateItemValue(category);
             int mag = itemData.effectMagnitude > 0 ? itemData.effectMagnitude : baseVal;
             int rarity = itemData.itemRarity > 0 ? itemData.itemRarity : Math.Max(1, 100 - ((int)category * 20) - (difficultyLevel * 5));
 
-            return new EntityStats
+            return new StatSpawnPointData
             {
                 maxHealth = 1,
                 currentHealth = 1,
@@ -700,7 +694,7 @@ namespace Combating.Scripts {
             };
         }
 
-        public EntityStats CalculateUserStats(UserType playerType)
+        public StatSpawnPointData CalculateUserStats(UserType playerType)
         {
             int typeVal = (int)playerType;
             int userFactor = 1 + typeVal;
@@ -742,7 +736,7 @@ namespace Combating.Scripts {
             int atkPerLvl = Math.Max(1, 2 + typeVal);
             int defPerLvl = Math.Max(1, 2 + typeVal);
 
-            return new EntityStats
+            return new StatSpawnPointData
             {
                 maxHealth = health,
                 currentHealth = health,
@@ -766,7 +760,7 @@ namespace Combating.Scripts {
             };
         }
 
-        public EntityStats CalculatePropStats(PropType category, PropSpawnPointData propData = default)
+        public StatSpawnPointData CalculatePropStats(PropType category, PropSpawnPointData propData = default)
         {
             int propVal = (int)category;
             int propFactor = 1 + propVal;
@@ -783,7 +777,7 @@ namespace Combating.Scripts {
             int destRad = propData.destructionRadius > 0 ? propData.destructionRadius : (category == PropType.Building ? 10 : 0);
             int reqDmgType = propData.requiredDamageType > 0 ? propData.requiredDamageType : (category == PropType.Building ? 2 : 0);
 
-            return new EntityStats
+            return new StatSpawnPointData
             {
                 maxHealth = health,
                 currentHealth = health,
@@ -810,7 +804,7 @@ namespace Combating.Scripts {
             };
         }
 
-        private void RegisterEntityStats(GameObject entity, EntityStats stats)
+        private void RegisterStatSpawnPointData(GameObject entity, StatSpawnPointData stats)
         {
             _activeStatsRegistry[entity] = stats;
             if (entity.TryGetComponent<IBalanceCalibratable>(out var calibratable))
@@ -820,18 +814,18 @@ namespace Combating.Scripts {
             OnEntityCalibrated?.Invoke(entity, stats);
         }
 
-        public EntityStats? GetEntityStats(GameObject entity)
+        public StatSpawnPointData? GetStatSpawnPointData(GameObject entity)
         {
-            if (_activeStatsRegistry.TryGetValue(entity, out EntityStats stats))
+            if (_activeStatsRegistry.TryGetValue(entity, out StatSpawnPointData stats))
             {
                 return stats;
             }
             return null;
         }
 
-        public EntityStats GetEntityBalance(GameObject entity)
+        public StatSpawnPointData GetEntityBalance(GameObject entity)
         {
-            return GetEntityStats(entity) ?? default;
+            return GetStatSpawnPointData(entity) ?? default;
         }
 
         #endregion
