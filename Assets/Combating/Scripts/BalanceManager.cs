@@ -230,7 +230,6 @@ namespace Combating.Scripts {
 
         [Header("Terrain & Navigation Setup")]
         [SerializeField] private NavMeshSurface navMeshSurface;
-        [SerializeField] private float maxCalibrationDistance = DEFAULT_CALIBRATION_DISTANCE;
 
         private readonly Dictionary<string, Queue<GameObject>> _objectPools = new Dictionary<string, Queue<GameObject>>();
         private readonly Dictionary<int, string> _activeInstanceToKey = new Dictionary<int, string>();
@@ -258,9 +257,14 @@ namespace Combating.Scripts {
 
         #region 1. Dynamic Generic Object Pool Pattern & Terrain Calibration
 
+        private float CalculateCalibrationDistance()
+        {
+            return DEFAULT_CALIBRATION_DISTANCE + (difficultyLevel * 2.0f);
+        }
+
         public Vector3 CalibrateSpawnPosition(Vector3 rawPosition)
         {
-            float maxDist = maxCalibrationDistance > 0f ? maxCalibrationDistance : DEFAULT_CALIBRATION_DISTANCE;
+            float maxDist = CalculateCalibrationDistance();
 
             if (TryRaycastSurface(rawPosition, Vector3.down, maxDist, out Vector3 calYDown)) return calYDown;
             if (TryRaycastSurface(rawPosition, Vector3.up, maxDist, out Vector3 calYUp)) return calYUp;
