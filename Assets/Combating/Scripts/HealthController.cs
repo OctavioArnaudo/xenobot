@@ -16,11 +16,12 @@ namespace Combating.Scripts
         private const int DEFAULT_PLAYER_MAX_HEALTH = 250;
         private const int DEFAULT_ENEMY_BASE_HEALTH = 120;
 
-        [Header("Identity & Team Overrides (Neutral = Auto-detectar)")]
+        [Header("Identity & Team")]
         public Team team = Team.Neutral;
 
-        [Header("Manual Health Override (0 = Usar Balance Dinámico Interno)")]
-        public int maxHealth = 0;
+        [Header("Health")]
+        public int MaxHealth;
+        public Optional<int> maxHealth;
 
         [Header("Visual Feedback (Optional)")]
         public Renderer[] visualsToFlash;
@@ -66,7 +67,7 @@ namespace Combating.Scripts
             {
                 try
                 {
-                    if (maxHealth > 0) return maxHealth;
+                    if (maxHealth.use) return maxHealth.value;
                     if (BalanceManager.Instance != null)
                     {
                         var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
@@ -230,8 +231,19 @@ namespace Combating.Scripts
             base.OnNetworkDespawn();
         }
 
+        private void UpdateInspectorValues()
+        {
+            MaxHealth = EffectiveMaxHealth;
+        }
+
+        private void OnValidate()
+        {
+            UpdateInspectorValues();
+        }
+
         void Update()
         {
+            UpdateInspectorValues();
             if (m_DamageFlashTimer > 0)
             {
                 m_DamageFlashTimer -= Time.deltaTime;
@@ -275,7 +287,7 @@ namespace Combating.Scripts
 
         public void SetHealth(int newHealth)
         {
-            maxHealth = Mathf.Max(maxHealth, newHealth);
+            if (maxHealth.use) maxHealth.value = Mathf.Max(maxHealth.value, newHealth);
             if (IsNetworkActive && IsServer) currentHealth.Value = newHealth;
             else m_OfflineHealth = newHealth;
         }
