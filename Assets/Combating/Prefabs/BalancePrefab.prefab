@@ -47,39 +47,41 @@ MonoBehaviour:
   difficultyLevel: 1
   aggroMultiplier: 1
   growthFactor: 2
-  baseExpToLevelUp: 100
-  expGrowthMultiplier: 2
-  defaultDetectionRadius: 15
-  defaultShootRange: 20
-  defaultMeleeRange: 3
-  defaultWanderRadius: 10
-  defaultMaxAmmo: 30
-  defaultShieldCapacity: 50
-  defaultFuelCapacity: 100
-  enemySpawnPoints: []
+  userSpawnPoints:
+  - pointTransform: {fileID: 0}
+    playerTypeToSpawn: 0
+    customPrefab: {fileID: 0}
+  hostSpawnPoints:
+  - pointTransform: {fileID: 0}
+    enemyTypeToSpawn: 1
+    customPrefab: {fileID: 0}
+  - pointTransform: {fileID: 0}
+    enemyTypeToSpawn: 1
+    customPrefab: {fileID: 0}
+  - pointTransform: {fileID: 0}
+    enemyTypeToSpawn: 1
+    customPrefab: {fileID: 0}
+  - pointTransform: {fileID: 0}
+    enemyTypeToSpawn: 1
+    customPrefab: {fileID: 0}
+  - pointTransform: {fileID: 0}
+    enemyTypeToSpawn: 1
+    customPrefab: {fileID: 0}
+  - pointTransform: {fileID: 0}
+    enemyTypeToSpawn: 1
+    customPrefab: {fileID: 0}
   itemSpawnPoints: []
   propSpawnPoints: []
-  playerSpawnPoint: {fileID: 0}
-  playerPrefab: {fileID: 0}
-  enemyMeleePrefab: {fileID: 0}
-  enemyRangePrefab: {fileID: 0}
-  enemyHybridPrefab: {fileID: 0}
+  userPlayerPrefab: {fileID: 0}
+  hostMeleePrefab: {fileID: 0}
+  hostRangePrefab: {fileID: 0}
+  hostHybridPrefab: {fileID: 0}
   itemThingPrefab: {fileID: 0}
   itemResourcePrefab: {fileID: 0}
-  itemAbilityPrefab: {fileID: 0}
+  itemConsumiblePrefab: {fileID: 0}
   itemCostumePrefab: {fileID: 0}
-  buildingPrefab: {fileID: 0}
-  treePrefab: {fileID: 0}
-  rockPrefab: {fileID: 0}
-  propPrefab: {fileID: 0}
-  customItemSpawnScale:
-    useOverride: 0
-    value: 0
-  customPropHealthMultiplier:
-    useOverride: 0
-    value: 0
-  customDetectionRadiusOverride:
-    useOverride: 0
-    value: 0
+  propBuildingPrefab: {fileID: 0}
+  propTreePrefab: {fileID: 0}
+  propMineralPrefab: {fileID: 0}
+  propPlantPrefab: {fileID: 0}
   navMeshSurface: {fileID: 0}
-  maxCalibrationDistance: 20

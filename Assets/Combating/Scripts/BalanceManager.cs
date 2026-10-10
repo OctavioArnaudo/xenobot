@@ -4,7 +4,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-namespace Combating.Scripts {
+namespace Combating.Scripts
+{
 
     #region Data Structures, Interfaces & Enums
 
@@ -104,30 +105,36 @@ namespace Combating.Scripts {
     [System.Serializable]
     public struct StatSpawnPointData
     {
+        // Estadísticas Base
         public int maxHealth;
         public int currentHealth;
         public int attackDamage;
         public int moveSpeed;
         public int defenseRatio;
 
+        // Rangos y Detección
         public int detectionRadius;
         public int shootRange;
         public int meleeRange;
         public int wanderRadius;
 
+        // Capacidades de Combate y Soporte
         public int maxAmmo;
         public int shieldCapacity;
         public int fuelCapacity;
 
+        // Progresión y Experiencia
         public int expReward;
         public int expToNextLevel;
         public int attackPerLevel;
         public int defensePerLevel;
 
+        // Sistema de Botín
         public ItemType lootItemType;
         public int lootQuantity;
         public int lootDropChance;
 
+        // IA y Resistencias de Enemigos
         public int attackCooldown;
         public int physicalResistance;
         public int energyResistance;
@@ -136,8 +143,33 @@ namespace Combating.Scripts {
         public int retreatHealthThreshold;
         public int specialSkillChance;
 
+        // Movimiento Avanzado, Vuelo y Saltos (Solo Enteros)
+        public int jumpHeight;
+        public int maxJumps;
+        public int hasJetpack;              // 0 = Falso, 1 = Verdadero
+        public int jetpackConsumptionRate;
+        public int jetpackRechargeRate;
+
+        // Tipos de Ataques Avanzados
+        public int smashDamage;
+        public int smashRadius;
+        public int shootFireRate;
+        public int shootSpread;
+
+        // Mecánicas de Escudo Avanzadas
+        public int shieldRegenRate;
+        public int shieldRechargeDelay;
+        public int shieldBlockAngle;
+
+        // Restauración de Recursos (Ítems Específicos)
+        public int healthRestoreAmount;
+        public int fuelRestoreAmount;
+        public int shieldRestoreAmount;
+        public int ammoRestoreAmount;
         public int effectMagnitude;
         public int itemRarity;
+
+        // Propiedades de Elementos del Entorno (Props)
         public int customLootType;
         public int destructionDamage;
         public int destructionRadius;
@@ -145,7 +177,7 @@ namespace Combating.Scripts {
 
         public override string ToString()
         {
-            return $"[HP: {maxHealth} | DMG: {attackDamage} | SPD: {moveSpeed} | DEF: {defenseRatio}% | DET: {detectionRadius} | SHOT: {shootRange} | EXP: {expReward} | LOOT: {lootItemType}x{lootQuantity}]";
+            return $"[HP: {maxHealth} | DMG: {attackDamage} | SMASH: {smashDamage} | JUMP: {jumpHeight} (Max: {maxJumps}) | JETPACK: {hasJetpack}]";
         }
     }
 
@@ -160,13 +192,8 @@ namespace Combating.Scripts {
         public event Action<GameObject> OnEntityRecycled;
 
         [Header("Balance Parameters")]
-        [Tooltip("Nivel o dificultad global de la escena actual.")]
         [Range(1, 100)] public int difficultyLevel = 1;
-
-        [Tooltip("Factor global de agresividad de la escena.")]
         [Range(1, 10)] public int aggroMultiplier = 1;
-
-        [Tooltip("Escala matemática de progresión (Crecimiento Entero).")]
         [Range(1, 10)] public int growthFactor = 2;
 
         public int DifficultyLevel => difficultyLevel;
@@ -243,7 +270,7 @@ namespace Combating.Scripts {
             InitializeSceneSpawns();
         }
 
-        #region 1. Dynamic Generic Object Pool Pattern & Terrain Calibration
+        #region 1. Object Pool & Calibration
 
         private float CalculateCalibrationDistance()
         {
@@ -256,10 +283,8 @@ namespace Combating.Scripts {
 
             if (TryRaycastSurface(rawPosition, Vector3.down, maxDist, out Vector3 calYDown)) return calYDown;
             if (TryRaycastSurface(rawPosition, Vector3.up, maxDist, out Vector3 calYUp)) return calYUp;
-
             if (TryRaycastSurface(rawPosition, Vector3.back, maxDist, out Vector3 calZBack)) return calZBack;
             if (TryRaycastSurface(rawPosition, Vector3.forward, maxDist, out Vector3 calZFwd)) return calZFwd;
-
             if (TryRaycastSurface(rawPosition, Vector3.right, maxDist, out Vector3 calXRight)) return calXRight;
             if (TryRaycastSurface(rawPosition, Vector3.left, maxDist, out Vector3 calXLeft)) return calXLeft;
 
@@ -287,12 +312,10 @@ namespace Combating.Scripts {
             return false;
         }
 
-        // Clave de pool única basada en la instancia del Prefab y su nombre para evitar colisiones
         public GameObject SpawnFromPool(GameObject prefab, Vector3 position, Quaternion rotation)
         {
             if (prefab == null) return null;
 
-            // Se combina el ID único del prefab con su nombre para garantizar que nunca colisionen objetos con igual nombre base
             string poolKey = $"{prefab.GetInstanceID()}_{prefab.name}";
 
             if (!_objectPools.ContainsKey(poolKey))
@@ -345,12 +368,6 @@ namespace Combating.Scripts {
             return obj;
         }
 
-        public Transform SpawnItemTransform(ItemType category, Vector3 position, Quaternion rotation)
-        {
-            GameObject itemObj = SpawnItem(category, position, rotation);
-            return itemObj != null ? itemObj.transform : null;
-        }
-
         public GameObject SpawnProp(PropType category, Vector3 position, Quaternion rotation)
         {
             GameObject prefab = GetPrefabForPropType(category);
@@ -361,12 +378,6 @@ namespace Combating.Scripts {
                 RegisterStatSpawnPointData(obj, propStats);
             }
             return obj;
-        }
-
-        public Transform SpawnPropTransform(PropType category, Vector3 position, Quaternion rotation)
-        {
-            GameObject propObj = SpawnProp(category, position, rotation);
-            return propObj != null ? propObj.transform : null;
         }
 
         public void RecycleToPool(GameObject instance)
@@ -538,23 +549,14 @@ namespace Combating.Scripts {
                 threat += 1 + (int)type;
             }
 
-            // CORREGIDO: Uso de SafeMultiply para evitar overflow con enteros en la amenaza global
             int difficultyFactor = 1 + difficultyLevel;
             int baseThreat = SafeMultiply(threat, difficultyFactor);
             return Math.Max(MIN_BASE_HEALTH, SafeMultiply(baseThreat, aggroMultiplier));
         }
 
-        private int GetTotalItemSupportCapacity()
-        {
-            int itemCount = Math.Max(1, itemSpawnPoints.Count);
-            return 1 + itemCount;
-        }
-
-        // Constante agregada para limitar la salud máxima de los props y evitar desbordamientos o valores absurdos
         private const int MAX_PROP_HEALTH = 10000;
-        private const int MAX_ENTITY_HEALTH = 1000000; // Tope máximo para evitar desbordamiento de enteros
+        private const int MAX_ENTITY_HEALTH = 1000000;
 
-        // Función auxiliar estricta en enteros para evitar overflow en multiplicaciones grandes
         private int SafeMultiply(int a, int b)
         {
             long result = (long)a * b;
@@ -568,7 +570,6 @@ namespace Combating.Scripts {
             int totalThreat = GetTotalEnemyThreatWeight();
             int itemCount = Math.Max(1, itemSpawnPoints.Count);
 
-            // CORREGIDO: Uso de SafeMultiply para evitar overflow antes de dividir
             int scaledVal = SafeMultiply(totalThreat, 100) / itemCount;
             int baseItemVal = SafeMultiply(scaledVal / 100, MIN_BASE_HEALTH);
 
@@ -576,7 +577,7 @@ namespace Combating.Scripts {
             return Math.Max(1, SafeMultiply(baseItemVal, categoryFactor));
         }
 
-        public StatSpawnPointData CalculateHostStats(HostType enemyType, int spawnIndex, int totalSpawns, StatSpawnPointData spawnData = default)
+        public StatSpawnPointData CalculateHostStats(HostType enemyType, int spawnIndex, int totalSpawns)
         {
             int typeVal = (int)enemyType;
             int typeFactor = 1 + typeVal;
@@ -593,12 +594,10 @@ namespace Combating.Scripts {
             int baseHealthCalc = SafeMultiply(MIN_BASE_HEALTH, typeFactor);
             int healthStep1 = SafeMultiply(baseHealthCalc, powGrowth);
             int healthStep2 = SafeMultiply(healthStep1, itemCompensation);
-
             int spatialScaled = 10 + SafeMultiply(spatialFactor, aggroMultiplier);
             int healthStep3 = SafeMultiply(healthStep2, spatialScaled);
             int health = Math.Max(MIN_BASE_HEALTH, Math.Min(MAX_ENTITY_HEALTH, healthStep3 / 10));
 
-            // CORREGIDO: Daño protegido contra overflow con SafeMultiply
             int diffFactor = 1 + difficultyLevel;
             int damageStep1 = SafeMultiply(MIN_BASE_DAMAGE, typeFactor);
             int damageStep2 = SafeMultiply(damageStep1, diffFactor);
@@ -616,7 +615,6 @@ namespace Combating.Scripts {
             int shield = typeVal >= 2 ? Math.Max(1, BASE_SHIELD_CAPACITY + (typeVal * 15)) : 0;
             int fuel = Math.Max(1, BASE_FUEL_CAPACITY + (typeVal * 20));
 
-            // CORREGIDO: Experiencia protegida contra overflow
             int baseExp = 10 + SafeMultiply(typeVal, 15);
             int expStep = SafeMultiply(baseExp, diffFactor);
             int exp = Math.Max(1, SafeMultiply(expStep, aggroMultiplier));
@@ -629,13 +627,29 @@ namespace Combating.Scripts {
             int lootQty = Math.Max(1, 1 + typeVal);
             int dropChance = Math.Min(100, 50 + (typeVal * 15));
 
-            int cd = spawnData.attackCooldown > 0 ? spawnData.attackCooldown : Math.Max(100, 2000 - (typeVal * 300) - (difficultyLevel * 50));
-            int physRes = spawnData.physicalResistance > 0 ? spawnData.physicalResistance : Math.Min(90, (typeVal * 10) + (difficultyLevel * 2));
-            int nrgRes = spawnData.energyResistance > 0 ? spawnData.energyResistance : Math.Min(90, (typeVal * 8) + (difficultyLevel * 3));
-            int expRes = spawnData.explosiveResistance > 0 ? spawnData.explosiveResistance : Math.Min(90, (typeVal * 5) + (difficultyLevel * 4));
-            int rRadius = spawnData.retreatRadius > 0 ? spawnData.retreatRadius : Math.Max(1, BASE_WANDER_RADIUS + (typeVal * 3));
-            int rThreshold = spawnData.retreatHealthThreshold > 0 ? spawnData.retreatHealthThreshold : Math.Min(100, 15 + (typeVal * 5));
-            int skillChance = spawnData.specialSkillChance > 0 ? spawnData.specialSkillChance : Math.Min(100, 10 + (typeVal * 15) + (difficultyLevel * 2));
+            // Variables de Combate, Movimiento Aéreo, Escudos y Ataques Especiales (Enteros)
+            int cd = Math.Max(100, 2000 - (typeVal * 300) - (difficultyLevel * 50));
+            int physRes = Math.Min(90, (typeVal * 10) + (difficultyLevel * 2));
+            int nrgRes = Math.Min(90, (typeVal * 8) + (difficultyLevel * 3));
+            int expRes = Math.Min(90, (typeVal * 5) + (difficultyLevel * 4));
+            int rRadius = Math.Max(1, BASE_WANDER_RADIUS + (typeVal * 3));
+            int rThreshold = Math.Min(100, 15 + (typeVal * 5));
+            int skillChance = Math.Min(100, 10 + (typeVal * 15) + (difficultyLevel * 2));
+
+            int jHeight = 2;
+            int mJumps = typeVal >= 2 ? 2 : 1;
+            int jetpackFlag = typeVal == 3 ? 1 : 0;
+            int jpConsumption = SafeMultiply(5, typeFactor);
+            int jpRecharge = SafeMultiply(10, diffFactor);
+
+            int sDamage = SafeMultiply(damage, 2);
+            int sRadius = 5;
+            int fireRate = Math.Max(50, 1000 - SafeMultiply(typeVal, 100) - SafeMultiply(difficultyLevel, 10));
+            int spread = Math.Max(0, 15 - (typeVal * 3));
+
+            int sRegen = SafeMultiply(2, typeFactor);
+            int sDelay = Math.Max(1, 5 - typeVal);
+            int sAngle = 90;
 
             return new StatSpawnPointData
             {
@@ -664,15 +678,32 @@ namespace Combating.Scripts {
                 explosiveResistance = expRes,
                 retreatRadius = rRadius,
                 retreatHealthThreshold = rThreshold,
-                specialSkillChance = skillChance
+                specialSkillChance = skillChance,
+                jumpHeight = jHeight,
+                maxJumps = mJumps,
+                hasJetpack = jetpackFlag,
+                jetpackConsumptionRate = jpConsumption,
+                jetpackRechargeRate = jpRecharge,
+                smashDamage = sDamage,
+                smashRadius = sRadius,
+                shootFireRate = fireRate,
+                shootSpread = spread,
+                shieldRegenRate = sRegen,
+                shieldRechargeDelay = sDelay,
+                shieldBlockAngle = sAngle
             };
         }
 
-        public StatSpawnPointData CalculateItemStats(ItemType category, StatSpawnPointData itemData = default)
+        public StatSpawnPointData CalculateItemStats(ItemType category)
         {
             int baseVal = CalculateItemValue(category);
-            int mag = itemData.effectMagnitude > 0 ? itemData.effectMagnitude : baseVal;
-            int rarity = itemData.itemRarity > 0 ? itemData.itemRarity : Math.Max(1, 100 - ((int)category * 20) - (difficultyLevel * 5));
+            int mag = baseVal;
+            int rarity = Math.Max(1, 100 - ((int)category * 20) - (difficultyLevel * 5));
+
+            int hRest = category == ItemType.Consumible ? SafeMultiply(mag, 2) : 0;
+            int fRest = category == ItemType.Resource ? SafeMultiply(mag, 3) : 0;
+            int sRest = category == ItemType.Consumible ? SafeMultiply(mag, 2) : 0;
+            int aRest = category == ItemType.Thing ? SafeMultiply(mag, 5) : 0;
 
             return new StatSpawnPointData
             {
@@ -682,7 +713,11 @@ namespace Combating.Scripts {
                 itemRarity = rarity,
                 lootItemType = category,
                 lootQuantity = 1,
-                lootDropChance = 100
+                lootDropChance = 100,
+                healthRestoreAmount = hRest,
+                fuelRestoreAmount = fRest,
+                shieldRestoreAmount = sRest,
+                ammoRestoreAmount = aRest
             };
         }
 
@@ -706,7 +741,6 @@ namespace Combating.Scripts {
             int healthStep = SafeMultiply(healthCalc, powGrowth);
             int health = Math.Max(MIN_BASE_HEALTH, Math.Min(MAX_ENTITY_HEALTH, SafeMultiply(healthStep, threatToItemsRatio)));
 
-            // CORREGIDO: Daño del usuario protegido con SafeMultiply
             int diffFactor = 1 + difficultyLevel;
             int dmgStep1 = SafeMultiply(MIN_BASE_DAMAGE, userFactor);
             int dmgStep2 = SafeMultiply(dmgStep1, diffFactor);
@@ -728,6 +762,7 @@ namespace Combating.Scripts {
             int atkPerLvl = Math.Max(1, 2 + typeVal);
             int defPerLvl = Math.Max(1, 2 + typeVal);
 
+            // Estadísticas avanzadas del Jugador (User / XenoBot) con Jetpack y Doble Salto habilitados por defecto
             return new StatSpawnPointData
             {
                 maxHealth = health,
@@ -748,26 +783,37 @@ namespace Combating.Scripts {
                 defensePerLevel = defPerLvl,
                 lootItemType = ItemType.Thing,
                 lootQuantity = 0,
-                lootDropChance = 0
+                lootDropChance = 0,
+                jumpHeight = 3,
+                maxJumps = 2,
+                hasJetpack = 1,
+                jetpackConsumptionRate = 4,
+                jetpackRechargeRate = 12,
+                smashDamage = SafeMultiply(damage, 3),
+                smashRadius = 6,
+                shootFireRate = 200,
+                shootSpread = 2,
+                shieldRegenRate = 5,
+                shieldRechargeDelay = 2,
+                shieldBlockAngle = 180
             };
         }
 
-        public StatSpawnPointData CalculatePropStats(PropType category, StatSpawnPointData propData = default)
+        public StatSpawnPointData CalculatePropStats(PropType category)
         {
             int propVal = (int)category;
             int propFactor = 1 + propVal;
             int sceneThreat = GetTotalEnemyThreatWeight();
 
-            // CORREGIDO: Salud de props protegida con SafeMultiply para evitar desbordamientos
             int step1 = SafeMultiply(MIN_BASE_HEALTH, propFactor);
             int step2 = SafeMultiply(step1, DEFAULT_PROP_HEALTH_MULT);
             int rawHealth = SafeMultiply(step2, Math.Max(1, sceneThreat));
             int health = Math.Max(MIN_BASE_HEALTH, Math.Min(MAX_PROP_HEALTH, rawHealth));
 
-            ItemType propLootType = propData.customLootType > 0 ? (ItemType)propData.customLootType : (category == PropType.Tree ? ItemType.Resource : ItemType.Thing);
-            int destDmg = propData.destructionDamage > 0 ? propData.destructionDamage : (category == PropType.Building ? SafeMultiply(50, difficultyLevel) : 0);
-            int destRad = propData.destructionRadius > 0 ? propData.destructionRadius : (category == PropType.Building ? 10 : 0);
-            int reqDmgType = propData.requiredDamageType > 0 ? propData.requiredDamageType : (category == PropType.Building ? 2 : 0);
+            ItemType propLootType = category == PropType.Tree ? ItemType.Resource : ItemType.Thing;
+            int destDmg = category == PropType.Building ? SafeMultiply(50, difficultyLevel) : 0;
+            int destRad = category == PropType.Building ? 10 : 0;
+            int reqDmgType = category == PropType.Building ? 2 : 0;
 
             return new StatSpawnPointData
             {
