@@ -10,10 +10,7 @@ namespace Combating.Scripts {
 
     public enum UserType
     {
-        Novice = 0,
-        Warrior = 1,
-        Mage = 2,
-        Tank = 3
+        XenoBot = 0
     }
 
     public enum HostType
@@ -28,7 +25,7 @@ namespace Combating.Scripts {
     {
         Thing = 0,
         Resource = 1,
-        Ability = 2,
+        Consumible = 2,
         Costume = 3
     }
 
@@ -36,7 +33,7 @@ namespace Combating.Scripts {
     {
         Building = 0,
         Tree = 1,
-        Rock = 2
+        Plant = 2
     }
 
     public enum StatType
@@ -168,16 +165,16 @@ namespace Combating.Scripts {
         public int AggroMultiplier => aggroMultiplier;
 
         [Header("Spawn Setup")]
-        [SerializeField] private List<UserSpawnPointData> playerSpawnPoints = new List<UserSpawnPointData>();
-        [SerializeField] private List<HostSpawnPointData> enemySpawnPoints = new List<HostSpawnPointData>();
+        [SerializeField] private List<UserSpawnPointData> userSpawnPoints = new List<UserSpawnPointData>();
+        [SerializeField] private List<HostSpawnPointData> hostSpawnPoints = new List<HostSpawnPointData>();
         [SerializeField] private List<ItemSpawnPointData> itemSpawnPoints = new List<ItemSpawnPointData>();
         [SerializeField] private List<PropSpawnPointData> propSpawnPoints = new List<PropSpawnPointData>();
 
-        [Header("Prefabs References - Characters")]
-        [SerializeField] private GameObject playerPrefab;
-        [SerializeField] private GameObject enemyMeleePrefab;
-        [SerializeField] private GameObject enemyRangePrefab;
-        [SerializeField] private GameObject enemyHybridPrefab;
+        [Header("Prefabs References - Hosts")]
+        [SerializeField] private GameObject userPlayerPrefab;
+        [SerializeField] private GameObject hostMeleePrefab;
+        [SerializeField] private GameObject hostRangePrefab;
+        [SerializeField] private GameObject hostHybridPrefab;
 
         [Header("Prefabs References - Items")]
         [SerializeField] private GameObject itemThingPrefab;
@@ -185,11 +182,11 @@ namespace Combating.Scripts {
         [SerializeField] private GameObject itemAbilityPrefab;
         [SerializeField] private GameObject itemCostumePrefab;
 
-        [Header("Prefabs References - Props & Environment")]
-        [SerializeField] private GameObject buildingPrefab;
-        [SerializeField] private GameObject treePrefab;
-        [SerializeField] private GameObject rockPrefab;
-        [SerializeField] private GameObject propPrefab;
+        [Header("Prefabs References - Props")]
+        [SerializeField] private GameObject propBuildingPrefab;
+        [SerializeField] private GameObject propTreePrefab;
+        [SerializeField] private GameObject propRockPrefab;
+        [SerializeField] private GameObject propPlantPrefab;
 
         private const int MIN_BASE_HEALTH = 1;
         private const int MIN_BASE_DAMAGE = 1;
@@ -228,7 +225,7 @@ namespace Combating.Scripts {
             }
             Instance = this;
 
-            _poolParentTransform = new GameObject("[Dynamic_ObjectPool_Holder]").transform;
+            _poolParentTransform = new GameObject("[ObjectPool]").transform;
             _poolParentTransform.SetParent(transform);
         }
 
@@ -416,11 +413,11 @@ namespace Combating.Scripts {
 
         public void InitializeSceneSpawns()
         {
-            int totalPlayers = playerSpawnPoints.Count;
+            int totalPlayers = userSpawnPoints.Count;
             for (int i = 0; i < totalPlayers; i++)
             {
-                UserSpawnPointData playerData = playerSpawnPoints[i];
-                GameObject playerPrefabToUse = playerData.customPrefab != null ? playerData.customPrefab : playerPrefab;
+                UserSpawnPointData playerData = userSpawnPoints[i];
+                GameObject playerPrefabToUse = playerData.customPrefab != null ? playerData.customPrefab : userPlayerPrefab;
 
                 if (playerPrefabToUse != null && playerData.pointTransform != null)
                 {
@@ -430,10 +427,10 @@ namespace Combating.Scripts {
                 }
             }
 
-            int totalEnemies = enemySpawnPoints.Count;
+            int totalEnemies = hostSpawnPoints.Count;
             for (int i = 0; i < totalEnemies; i++)
             {
-                HostSpawnPointData spawnData = enemySpawnPoints[i];
+                HostSpawnPointData spawnData = hostSpawnPoints[i];
                 GameObject enemyPrefabToUse = GetPrefabForEnemyType(spawnData.enemyTypeToSpawn);
 
                 if (enemyPrefabToUse != null && spawnData.pointTransform != null)
@@ -479,10 +476,10 @@ namespace Combating.Scripts {
         {
             return type switch
             {
-                HostType.Melee => enemyMeleePrefab,
-                HostType.Range => enemyRangePrefab,
-                HostType.Hybrid => enemyHybridPrefab,
-                _ => enemyMeleePrefab
+                HostType.Melee => hostMeleePrefab,
+                HostType.Range => hostRangePrefab,
+                HostType.Hybrid => hostHybridPrefab,
+                _ => hostMeleePrefab
             };
         }
 
@@ -502,10 +499,10 @@ namespace Combating.Scripts {
         {
             return category switch
             {
-                PropType.Building => buildingPrefab,
-                PropType.Tree => treePrefab,
-                PropType.Rock => rockPrefab,
-                _ => propPrefab
+                PropType.Building => propBuildingPrefab,
+                PropType.Tree => propTreePrefab,
+                PropType.Rock => propRockPrefab,
+                _ => propPlantPrefab
             };
         }
 
@@ -516,10 +513,10 @@ namespace Combating.Scripts {
         private int GetTotalEnemyThreatWeight()
         {
             int threat = 0;
-            int totalEnemies = enemySpawnPoints.Count;
+            int totalEnemies = hostSpawnPoints.Count;
             for (int i = 0; i < totalEnemies; i++)
             {
-                HostType type = enemySpawnPoints[i].enemyTypeToSpawn;
+                HostType type = hostSpawnPoints[i].enemyTypeToSpawn;
                 threat += 1 + (int)type;
             }
             return Math.Max(MIN_BASE_HEALTH, threat * (1 + difficultyLevel) * aggroMultiplier);
