@@ -90,6 +90,13 @@ namespace Combating.Scripts {
         public Transform pointTransform;
         public HostType enemyTypeToSpawn;
         public GameObject customPrefab;
+        public int attackCooldown;
+        public int physicalResistance;
+        public int energyResistance;
+        public int explosiveResistance;
+        public int retreatRadius;
+        public int retreatHealthThreshold;
+        public int specialSkillChance;
     }
 
     [System.Serializable]
@@ -98,6 +105,8 @@ namespace Combating.Scripts {
         public Transform pointTransform;
         public ItemType categoryToSpawn;
         public GameObject customPrefab;
+        public int effectMagnitude;
+        public int itemRarity;
     }
 
     [System.Serializable]
@@ -106,6 +115,10 @@ namespace Combating.Scripts {
         public Transform pointTransform;
         public PropType categoryToSpawn;
         public GameObject customPrefab;
+        public int customLootType;
+        public int destructionDamage;
+        public int destructionRadius;
+        public int requiredDamageType;
     }
 
     [System.Serializable]
@@ -134,6 +147,21 @@ namespace Combating.Scripts {
         public ItemType lootItemType;
         public int lootQuantity;
         public int lootDropChance;
+
+        public int attackCooldown;
+        public int physicalResistance;
+        public int energyResistance;
+        public int explosiveResistance;
+        public int retreatRadius;
+        public int retreatHealthThreshold;
+        public int specialSkillChance;
+
+        public int effectMagnitude;
+        public int itemRarity;
+
+        public int destructionDamage;
+        public int destructionRadius;
+        public int requiredDamageType;
 
         public override string ToString()
         {
@@ -433,12 +461,12 @@ namespace Combating.Scripts {
             for (int i = 0; i < totalEnemies; i++)
             {
                 HostSpawnPointData spawnData = hostSpawnPoints[i];
-                GameObject enemyPrefabToUse = GetPrefabForEnemyType(spawnData.enemyTypeToSpawn);
+                GameObject enemyPrefabToUse = spawnData.customPrefab != null ? spawnData.customPrefab : GetPrefabForEnemyType(spawnData.enemyTypeToSpawn);
 
                 if (enemyPrefabToUse != null && spawnData.pointTransform != null)
                 {
                     GameObject enemy = SpawnFromPool(enemyPrefabToUse, spawnData.pointTransform.position, spawnData.pointTransform.rotation);
-                    EntityStats enemyStats = CalculateHostStats(spawnData.enemyTypeToSpawn, i, totalEnemies);
+                    EntityStats enemyStats = CalculateHostStats(spawnData.enemyTypeToSpawn, i, totalEnemies, spawnData);
                     RegisterEntityStats(enemy, enemyStats);
                 }
             }
@@ -452,7 +480,9 @@ namespace Combating.Scripts {
                     GameObject prefabToUse = itemData.customPrefab != null ? itemData.customPrefab : GetPrefabForItemType(itemData.categoryToSpawn);
                     if (prefabToUse != null)
                     {
-                        SpawnFromPool(prefabToUse, itemData.pointTransform.position, itemData.pointTransform.rotation);
+                        GameObject itemObj = SpawnFromPool(prefabToUse, itemData.pointTransform.position, itemData.pointTransform.rotation);
+                        EntityStats itemStats = CalculateItemStats(itemData.categoryToSpawn, itemData);
+                        RegisterEntityStats(itemObj, itemStats);
                     }
                 }
             }
@@ -467,7 +497,7 @@ namespace Combating.Scripts {
                     if (prefabToUse != null)
                     {
                         GameObject propObj = SpawnFromPool(prefabToUse, propData.pointTransform.position, propData.pointTransform.rotation);
-                        EntityStats propStats = CalculatePropStats(propData.categoryToSpawn);
+                        EntityStats propStats = CalculatePropStats(propData.categoryToSpawn, propData);
                         RegisterEntityStats(propObj, propStats);
                     }
                 }
@@ -560,7 +590,7 @@ namespace Combating.Scripts {
             return Math.Max(1, SafeMultiply(baseItemVal, categoryFactor));
         }
 
-        public EntityStats CalculateHostStats(HostType enemyType, int spawnIndex, int totalSpawns)
+        public EntityStats CalculateHostStats(HostType enemyType, int spawnIndex, int totalSpawns, HostSpawnPointData spawnData = default)
         {
             int typeVal = (int)enemyType;
             int typeFactor = 1 + typeVal;
@@ -613,6 +643,14 @@ namespace Combating.Scripts {
             int lootQty = Math.Max(1, 1 + typeVal);
             int dropChance = Math.Min(100, 50 + (typeVal * 15));
 
+            int cd = spawnData.attackCooldown > 0 ? spawnData.attackCooldown : Math.Max(100, 2000 - (typeVal * 300) - (difficultyLevel * 50));
+            int physRes = spawnData.physicalResistance > 0 ? spawnData.physicalResistance : Math.Min(90, (typeVal * 10) + (difficultyLevel * 2));
+            int nrgRes = spawnData.energyResistance > 0 ? spawnData.energyResistance : Math.Min(90, (typeVal * 8) + (difficultyLevel * 3));
+            int expRes = spawnData.explosiveResistance > 0 ? spawnData.explosiveResistance : Math.Min(90, (typeVal * 5) + (difficultyLevel * 4));
+            int rRadius = spawnData.retreatRadius > 0 ? spawnData.retreatRadius : Math.Max(1, BASE_WANDER_RADIUS + (typeVal * 3));
+            int rThreshold = spawnData.retreatHealthThreshold > 0 ? spawnData.retreatHealthThreshold : Math.Min(100, 15 + (typeVal * 5));
+            int skillChance = spawnData.specialSkillChance > 0 ? spawnData.specialSkillChance : Math.Min(100, 10 + (typeVal * 15) + (difficultyLevel * 2));
+
             return new EntityStats
             {
                 maxHealth = health,
@@ -633,7 +671,32 @@ namespace Combating.Scripts {
                 defensePerLevel = defPerLvl,
                 lootItemType = lootType,
                 lootQuantity = lootQty,
-                lootDropChance = dropChance
+                lootDropChance = dropChance,
+                attackCooldown = cd,
+                physicalResistance = physRes,
+                energyResistance = nrgRes,
+                explosiveResistance = expRes,
+                retreatRadius = rRadius,
+                retreatHealthThreshold = rThreshold,
+                specialSkillChance = skillChance
+            };
+        }
+
+        public EntityStats CalculateItemStats(ItemType category, ItemSpawnPointData itemData = default)
+        {
+            int baseVal = CalculateItemValue(category);
+            int mag = itemData.effectMagnitude > 0 ? itemData.effectMagnitude : baseVal;
+            int rarity = itemData.itemRarity > 0 ? itemData.itemRarity : Math.Max(1, 100 - ((int)category * 20) - (difficultyLevel * 5));
+
+            return new EntityStats
+            {
+                maxHealth = 1,
+                currentHealth = 1,
+                effectMagnitude = mag,
+                itemRarity = rarity,
+                lootItemType = category,
+                lootQuantity = 1,
+                lootDropChance = 100
             };
         }
 
@@ -703,7 +766,7 @@ namespace Combating.Scripts {
             };
         }
 
-        public EntityStats CalculatePropStats(PropType category)
+        public EntityStats CalculatePropStats(PropType category, PropSpawnPointData propData = default)
         {
             int propVal = (int)category;
             int propFactor = 1 + propVal;
@@ -715,7 +778,10 @@ namespace Combating.Scripts {
             int rawHealth = SafeMultiply(step2, Math.Max(1, sceneThreat));
             int health = Math.Max(MIN_BASE_HEALTH, Math.Min(MAX_PROP_HEALTH, rawHealth));
 
-            ItemType propLootType = category == PropType.Tree ? ItemType.Resource : ItemType.Thing;
+            ItemType propLootType = propData.customLootType > 0 ? (ItemType)propData.customLootType : (category == PropType.Tree ? ItemType.Resource : ItemType.Thing);
+            int destDmg = propData.destructionDamage > 0 ? propData.destructionDamage : (category == PropType.Building ? SafeMultiply(50, difficultyLevel) : 0);
+            int destRad = propData.destructionRadius > 0 ? propData.destructionRadius : (category == PropType.Building ? 10 : 0);
+            int reqDmgType = propData.requiredDamageType > 0 ? propData.requiredDamageType : (category == PropType.Building ? 2 : 0);
 
             return new EntityStats
             {
@@ -737,7 +803,10 @@ namespace Combating.Scripts {
                 defensePerLevel = 0,
                 lootItemType = propLootType,
                 lootQuantity = Math.Max(1, propFactor),
-                lootDropChance = 100
+                lootDropChance = 100,
+                destructionDamage = destDmg,
+                destructionRadius = destRad,
+                requiredDamageType = reqDmgType
             };
         }
 
