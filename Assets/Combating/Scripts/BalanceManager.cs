@@ -33,7 +33,8 @@ namespace Combating.Scripts {
     {
         Building = 0,
         Tree = 1,
-        Plant = 2
+        Plant = 2,
+        Mineral = 3
     }
 
     public interface IBalanceCalibratable
@@ -82,13 +83,6 @@ namespace Combating.Scripts {
         public Transform pointTransform;
         public HostType enemyTypeToSpawn;
         public GameObject customPrefab;
-        public int attackCooldown;
-        public int physicalResistance;
-        public int energyResistance;
-        public int explosiveResistance;
-        public int retreatRadius;
-        public int retreatHealthThreshold;
-        public int specialSkillChance;
     }
 
     [System.Serializable]
@@ -97,8 +91,6 @@ namespace Combating.Scripts {
         public Transform pointTransform;
         public ItemType categoryToSpawn;
         public GameObject customPrefab;
-        public int effectMagnitude;
-        public int itemRarity;
     }
 
     [System.Serializable]
@@ -107,10 +99,6 @@ namespace Combating.Scripts {
         public Transform pointTransform;
         public PropType categoryToSpawn;
         public GameObject customPrefab;
-        public int customLootType;
-        public int destructionDamage;
-        public int destructionRadius;
-        public int requiredDamageType;
     }
 
     [System.Serializable]
@@ -150,7 +138,7 @@ namespace Combating.Scripts {
 
         public int effectMagnitude;
         public int itemRarity;
-
+        public int customLootType;
         public int destructionDamage;
         public int destructionRadius;
         public int requiredDamageType;
@@ -464,7 +452,7 @@ namespace Combating.Scripts {
                 if (enemyPrefabToUse != null && spawnData.pointTransform != null)
                 {
                     GameObject enemy = SpawnFromPool(enemyPrefabToUse, spawnData.pointTransform.position, spawnData.pointTransform.rotation);
-                    StatSpawnPointData enemyStats = CalculateHostStats(spawnData.enemyTypeToSpawn, i, totalEnemies, spawnData);
+                    StatSpawnPointData enemyStats = CalculateHostStats(spawnData.enemyTypeToSpawn, i, totalEnemies);
                     RegisterStatSpawnPointData(enemy, enemyStats);
                 }
             }
@@ -479,7 +467,7 @@ namespace Combating.Scripts {
                     if (prefabToUse != null)
                     {
                         GameObject itemObj = SpawnFromPool(prefabToUse, itemData.pointTransform.position, itemData.pointTransform.rotation);
-                        StatSpawnPointData itemStats = CalculateItemStats(itemData.categoryToSpawn, itemData);
+                        StatSpawnPointData itemStats = CalculateItemStats(itemData.categoryToSpawn);
                         RegisterStatSpawnPointData(itemObj, itemStats);
                     }
                 }
@@ -495,7 +483,7 @@ namespace Combating.Scripts {
                     if (prefabToUse != null)
                     {
                         GameObject propObj = SpawnFromPool(prefabToUse, propData.pointTransform.position, propData.pointTransform.rotation);
-                        StatSpawnPointData propStats = CalculatePropStats(propData.categoryToSpawn, propData);
+                        StatSpawnPointData propStats = CalculatePropStats(propData.categoryToSpawn);
                         RegisterStatSpawnPointData(propObj, propStats);
                     }
                 }
@@ -588,7 +576,7 @@ namespace Combating.Scripts {
             return Math.Max(1, SafeMultiply(baseItemVal, categoryFactor));
         }
 
-        public StatSpawnPointData CalculateHostStats(HostType enemyType, int spawnIndex, int totalSpawns, HostSpawnPointData spawnData = default)
+        public StatSpawnPointData CalculateHostStats(HostType enemyType, int spawnIndex, int totalSpawns, StatSpawnPointData spawnData = default)
         {
             int typeVal = (int)enemyType;
             int typeFactor = 1 + typeVal;
@@ -680,7 +668,7 @@ namespace Combating.Scripts {
             };
         }
 
-        public StatSpawnPointData CalculateItemStats(ItemType category, ItemSpawnPointData itemData = default)
+        public StatSpawnPointData CalculateItemStats(ItemType category, StatSpawnPointData itemData = default)
         {
             int baseVal = CalculateItemValue(category);
             int mag = itemData.effectMagnitude > 0 ? itemData.effectMagnitude : baseVal;
@@ -764,7 +752,7 @@ namespace Combating.Scripts {
             };
         }
 
-        public StatSpawnPointData CalculatePropStats(PropType category, PropSpawnPointData propData = default)
+        public StatSpawnPointData CalculatePropStats(PropType category, StatSpawnPointData propData = default)
         {
             int propVal = (int)category;
             int propFactor = 1 + propVal;
