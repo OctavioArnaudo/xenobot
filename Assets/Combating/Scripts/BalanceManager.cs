@@ -273,11 +273,13 @@ namespace Combating.Scripts {
             return false;
         }
 
+        // Clave de pool única basada en la instancia del Prefab y su nombre para evitar colisiones
         public GameObject SpawnFromPool(GameObject prefab, Vector3 position, Quaternion rotation)
         {
             if (prefab == null) return null;
 
-            string poolKey = prefab.name;
+            // Se combina el ID único del prefab con su nombre para garantizar que nunca colisionen objetos con igual nombre base
+            string poolKey = $"{prefab.GetInstanceID()}_{prefab.name}";
 
             if (!_objectPools.ContainsKey(poolKey))
             {
@@ -519,7 +521,11 @@ namespace Combating.Scripts {
                 HostType type = hostSpawnPoints[i].enemyTypeToSpawn;
                 threat += 1 + (int)type;
             }
-            return Math.Max(MIN_BASE_HEALTH, threat * (1 + difficultyLevel) * aggroMultiplier);
+
+            // CORREGIDO: Uso de SafeMultiply para evitar overflow con enteros en la amenaza global
+            int difficultyFactor = 1 + difficultyLevel;
+            int baseThreat = SafeMultiply(threat, difficultyFactor);
+            return Math.Max(MIN_BASE_HEALTH, SafeMultiply(baseThreat, aggroMultiplier));
         }
 
         private int GetTotalItemSupportCapacity()
@@ -528,18 +534,60 @@ namespace Combating.Scripts {
             return 1 + itemCount;
         }
 
+        // Constante agregada para limitar la salud máxima de los props y evitar desbordamientos o valores absurdos
+        private const int MAX_PROP_HEALTH = 10000;
+        private const int MAX_ENTITY_HEALTH = 1000000; // Tope máximo para evitar desbordamiento de enteros
+
+        // Función auxiliar estricta en enteros para evitar overflow en multiplicaciones grandes
+        private int SafeMultiply(int a, int b)
+        {
+            long result = (long)a * b;
+            if (result > MAX_ENTITY_HEALTH) return MAX_ENTITY_HEALTH;
+            if (result < -MAX_ENTITY_HEALTH) return -MAX_ENTITY_HEALTH;
+            return (int)result;
+        }
+
+        public int CalculateItemValue(ItemType category)
+        {
+            int totalThreat = GetTotalEnemyThreatWeight();
+            int itemCount = Math.Max(1, itemSpawnPoints.Count);
+
+            // CORREGIDO: Uso de SafeMultiply para evitar overflow antes de dividir
+            int scaledVal = SafeMultiply(totalThreat, 100) / itemCount;
+            int baseItemVal = SafeMultiply(scaledVal / 100, MIN_BASE_HEALTH);
+
+            int categoryFactor = 1 + (int)category;
+            return Math.Max(1, SafeMultiply(baseItemVal, categoryFactor));
+        }
+
         public EntityStats CalculateHostStats(HostType enemyType, int spawnIndex, int totalSpawns)
         {
             int typeVal = (int)enemyType;
             int typeFactor = 1 + typeVal;
+
             int spatialFactor = totalSpawns > 1 ? (spawnIndex * 10 / (totalSpawns - 1)) : 10;
-
             int itemCompensation = 1 + itemSpawnPoints.Count;
-            int powGrowth = 1;
-            for (int p = 0; p < difficultyLevel; p++) powGrowth *= Math.Max(1, growthFactor);
 
-            int health = Math.Max(MIN_BASE_HEALTH, MIN_BASE_HEALTH * typeFactor * powGrowth * itemCompensation * (10 + (spatialFactor * aggroMultiplier)) / 10);
-            int damage = Math.Max(MIN_BASE_DAMAGE, MIN_BASE_DAMAGE * typeFactor * (1 + difficultyLevel) * aggroMultiplier);
+            int powGrowth = 1;
+            for (int p = 0; p < difficultyLevel; p++)
+            {
+                powGrowth = SafeMultiply(powGrowth, Math.Max(1, growthFactor));
+            }
+
+            int baseHealthCalc = SafeMultiply(MIN_BASE_HEALTH, typeFactor);
+            int healthStep1 = SafeMultiply(baseHealthCalc, powGrowth);
+            int healthStep2 = SafeMultiply(healthStep1, itemCompensation);
+
+            int spatialScaled = 10 + SafeMultiply(spatialFactor, aggroMultiplier);
+            int healthStep3 = SafeMultiply(healthStep2, spatialScaled);
+            int health = Math.Max(MIN_BASE_HEALTH, Math.Min(MAX_ENTITY_HEALTH, healthStep3 / 10));
+
+            // CORREGIDO: Daño protegido contra overflow con SafeMultiply
+            int diffFactor = 1 + difficultyLevel;
+            int damageStep1 = SafeMultiply(MIN_BASE_DAMAGE, typeFactor);
+            int damageStep2 = SafeMultiply(damageStep1, diffFactor);
+            int damage = Math.Max(MIN_BASE_DAMAGE, SafeMultiply(damageStep2, aggroMultiplier));
+
             int speed = Math.Max(MIN_BASE_SPEED, MIN_BASE_SPEED + Math.Max(0, 4 - typeVal));
             int defense = Math.Min(80, Math.Max(MIN_BASE_DEFENSE, MIN_BASE_DEFENSE + (typeVal * 5) + (difficultyLevel * 2)));
 
@@ -552,12 +600,16 @@ namespace Combating.Scripts {
             int shield = typeVal >= 2 ? Math.Max(1, BASE_SHIELD_CAPACITY + (typeVal * 15)) : 0;
             int fuel = Math.Max(1, BASE_FUEL_CAPACITY + (typeVal * 20));
 
-            int exp = Math.Max(1, (10 + (typeVal * 15)) * (1 + difficultyLevel) * aggroMultiplier);
-            int nextExp = Math.Max(1, BASE_EXP_TO_LEVEL * powGrowth);
+            // CORREGIDO: Experiencia protegida contra overflow
+            int baseExp = 10 + SafeMultiply(typeVal, 15);
+            int expStep = SafeMultiply(baseExp, diffFactor);
+            int exp = Math.Max(1, SafeMultiply(expStep, aggroMultiplier));
+
+            int nextExp = Math.Max(1, SafeMultiply(BASE_EXP_TO_LEVEL, powGrowth));
             int atkPerLvl = Math.Max(1, 1 + typeVal);
             int defPerLvl = Math.Max(1, 1 + typeVal);
 
-            ItemType lootType = (ItemType)(typeVal % 4);
+            ItemType lootType = (ItemType)(Math.Abs(spawnIndex + typeVal) % 4);
             int lootQty = Math.Max(1, 1 + typeVal);
             int dropChance = Math.Min(100, 50 + (typeVal * 15));
 
@@ -589,13 +641,28 @@ namespace Combating.Scripts {
         {
             int typeVal = (int)playerType;
             int userFactor = 1 + typeVal;
-            int threatToItemsRatio = GetTotalEnemyThreatWeight() / GetTotalItemSupportCapacity();
+
+            int totalThreat = GetTotalEnemyThreatWeight();
+            int itemCount = Math.Max(1, itemSpawnPoints.Count);
+            int scaledRatio = SafeMultiply(totalThreat, 100) / itemCount;
+            int threatToItemsRatio = Math.Max(1, scaledRatio / 100);
 
             int powGrowth = 1;
-            for (int p = 0; p < difficultyLevel; p++) powGrowth *= Math.Max(1, growthFactor);
+            for (int p = 0; p < difficultyLevel; p++)
+            {
+                powGrowth = SafeMultiply(powGrowth, Math.Max(1, growthFactor));
+            }
 
-            int health = Math.Max(MIN_BASE_HEALTH, MIN_BASE_HEALTH * userFactor * powGrowth * (1 + threatToItemsRatio));
-            int damage = Math.Max(MIN_BASE_DAMAGE, MIN_BASE_DAMAGE * userFactor * (1 + difficultyLevel) * aggroMultiplier);
+            int healthCalc = SafeMultiply(MIN_BASE_HEALTH, userFactor);
+            int healthStep = SafeMultiply(healthCalc, powGrowth);
+            int health = Math.Max(MIN_BASE_HEALTH, Math.Min(MAX_ENTITY_HEALTH, SafeMultiply(healthStep, threatToItemsRatio)));
+
+            // CORREGIDO: Daño del usuario protegido con SafeMultiply
+            int diffFactor = 1 + difficultyLevel;
+            int dmgStep1 = SafeMultiply(MIN_BASE_DAMAGE, userFactor);
+            int dmgStep2 = SafeMultiply(dmgStep1, diffFactor);
+            int damage = Math.Max(MIN_BASE_DAMAGE, SafeMultiply(dmgStep2, aggroMultiplier));
+
             int speed = Math.Max(MIN_BASE_SPEED, MIN_BASE_SPEED + 6);
             int defense = Math.Min(85, Math.Max(MIN_BASE_DEFENSE, MIN_BASE_DEFENSE + (typeVal * 5) + (difficultyLevel * 2)));
 
@@ -608,7 +675,7 @@ namespace Combating.Scripts {
             int shield = Math.Max(1, BASE_SHIELD_CAPACITY * userFactor);
             int fuel = Math.Max(1, BASE_FUEL_CAPACITY * userFactor);
 
-            int nextExp = Math.Max(1, BASE_EXP_TO_LEVEL * growthFactor);
+            int nextExp = Math.Max(1, SafeMultiply(BASE_EXP_TO_LEVEL, powGrowth));
             int atkPerLvl = Math.Max(1, 2 + typeVal);
             int defPerLvl = Math.Max(1, 2 + typeVal);
 
@@ -636,22 +703,18 @@ namespace Combating.Scripts {
             };
         }
 
-        public int CalculateItemValue(ItemType category)
-        {
-            int totalThreat = GetTotalEnemyThreatWeight();
-            int itemCount = Math.Max(1, itemSpawnPoints.Count);
-            int baseItemVal = (totalThreat / itemCount) * MIN_BASE_HEALTH;
-            int categoryFactor = 1 + (int)category;
-            return Math.Max(1, baseItemVal * categoryFactor);
-        }
-
         public EntityStats CalculatePropStats(PropType category)
         {
             int propVal = (int)category;
             int propFactor = 1 + propVal;
             int sceneThreat = GetTotalEnemyThreatWeight();
 
-            int health = Math.Max(MIN_BASE_HEALTH, MIN_BASE_HEALTH * propFactor * DEFAULT_PROP_HEALTH_MULT * Math.Max(1, sceneThreat));
+            // CORREGIDO: Salud de props protegida con SafeMultiply para evitar desbordamientos
+            int step1 = SafeMultiply(MIN_BASE_HEALTH, propFactor);
+            int step2 = SafeMultiply(step1, DEFAULT_PROP_HEALTH_MULT);
+            int rawHealth = SafeMultiply(step2, Math.Max(1, sceneThreat));
+            int health = Math.Max(MIN_BASE_HEALTH, Math.Min(MAX_PROP_HEALTH, rawHealth));
+
             ItemType propLootType = category == PropType.Tree ? ItemType.Resource : ItemType.Thing;
 
             return new EntityStats
@@ -668,7 +731,7 @@ namespace Combating.Scripts {
                 maxAmmo = 0,
                 shieldCapacity = 0,
                 fuelCapacity = 0,
-                expReward = propFactor * 5,
+                expReward = SafeMultiply(propFactor, 5),
                 expToNextLevel = 0,
                 attackPerLevel = 0,
                 defensePerLevel = 0,
