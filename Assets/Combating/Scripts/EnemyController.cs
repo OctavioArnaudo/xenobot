@@ -580,7 +580,7 @@ namespace Combating.Scripts
 
         private bool CheckTrigger(PhaseTrigger trigger)
         {
-            float hpPercent = m_Health != null ? ((float)m_Health.CurrentHP / Mathf.Max(1, m_Health.maxHealth)) * 100f : 100f;
+            float hpPercent = m_Health != null ? ((float)m_Health.CurrentHP / Mathf.Max(1, m_Health.MaxHealth)) * 100f : 100f;
             float distToTarget = m_Target != null ? Vector3.Distance(transform.position, m_Target.position) : 999f;
 
             switch (trigger.triggerType)
@@ -775,7 +775,7 @@ namespace Combating.Scripts
             ShieldController targetShield = m_Target.GetComponent<ShieldController>() ?? m_Target.GetComponentInParent<ShieldController>();
             ShootController targetShooter = m_Target.GetComponent<ShootController>() ?? m_Target.GetComponentInParent<ShootController>();
 
-            if (m_Health != null && (m_Health.CurrentHP / (float)m_Health.maxHealth) < 0.25f)
+            if (m_Health != null && (m_Health.CurrentHP / (float)m_Health.MaxHealth) < 0.25f)
             {
                 currentArchetype = AIArchetype.FlanqueoYCobertura;
                 return;
@@ -787,7 +787,7 @@ namespace Combating.Scripts
                 return;
             }
 
-            if (targetHealth != null && (targetHealth.CurrentHP / (float)targetHealth.maxHealth) < 0.20f)
+            if (targetHealth != null && (targetHealth.CurrentHP / (float)targetHealth.MaxHealth) < 0.20f)
             {
                 currentArchetype = AIArchetype.CargaFrenetica;
                 return;
