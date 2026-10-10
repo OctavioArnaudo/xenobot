@@ -159,19 +159,6 @@ namespace Combating.Scripts {
         public int DifficultyLevel => difficultyLevel;
         public int AggroMultiplier => aggroMultiplier;
 
-        [Header("Progression & Experience Setup")]
-        public int baseExpToLevelUp = 100;
-        public int expGrowthMultiplier = 2;
-
-        [Header("Default Combat & Detection Parameters")]
-        public int defaultDetectionRadius = 15;
-        public int defaultShootRange = 20;
-        public int defaultMeleeRange = 3;
-        public int defaultWanderRadius = 10;
-        public int defaultMaxAmmo = 30;
-        public int defaultShieldCapacity = 50;
-        public int defaultFuelCapacity = 100;
-
         [Header("Spawn Setup")]
         [SerializeField] private List<HostSpawnPointData> enemySpawnPoints = new List<HostSpawnPointData>();
         [SerializeField] private List<ItemSpawnPointData> itemSpawnPoints = new List<ItemSpawnPointData>();
@@ -196,15 +183,19 @@ namespace Combating.Scripts {
         [SerializeField] private GameObject rockPrefab;
         [SerializeField] private GameObject propPrefab;
 
-        [Header("Optional Overrides")]
-        public Optional<int> customItemSpawnScale;
-        public Optional<int> customPropHealthMultiplier;
-        public Optional<int> customDetectionRadiusOverride;
-
         private const int MIN_BASE_HEALTH = 1;
         private const int MIN_BASE_DAMAGE = 1;
         private const int MIN_BASE_DEFENSE = 0;
         private const int MIN_BASE_SPEED = 1;
+
+        private const int BASE_EXP_TO_LEVEL = 100;
+        private const int BASE_DETECTION_RADIUS = 15;
+        private const int BASE_SHOOT_RANGE = 20;
+        private const int BASE_MELEE_RANGE = 3;
+        private const int BASE_WANDER_RADIUS = 10;
+        private const int BASE_MAX_AMMO = 30;
+        private const int BASE_SHIELD_CAPACITY = 50;
+        private const int BASE_FUEL_CAPACITY = 100;
 
         private const int DEFAULT_ITEM_SCALE = 1;
         private const int DEFAULT_PROP_HEALTH_MULT = 1;
@@ -213,9 +204,6 @@ namespace Combating.Scripts {
         [Header("Terrain & Navigation Setup")]
         [SerializeField] private NavMeshSurface navMeshSurface;
         [SerializeField] private float maxCalibrationDistance = DEFAULT_CALIBRATION_DISTANCE;
-
-        public int EffectiveItemScale => customItemSpawnScale.GetValue(DEFAULT_ITEM_SCALE);
-        public int EffectivePropHealthMult => customPropHealthMultiplier.GetValue(DEFAULT_PROP_HEALTH_MULT);
 
         private readonly Dictionary<string, Queue<GameObject>> _objectPools = new Dictionary<string, Queue<GameObject>>();
         private readonly Dictionary<int, string> _activeInstanceToKey = new Dictionary<int, string>();
@@ -331,8 +319,7 @@ namespace Combating.Scripts {
             GameObject obj = SpawnFromPool(prefab, position, rotation);
             if (obj != null)
             {
-                float scale = EffectiveItemScale;
-                obj.transform.localScale = Vector3.one * scale;
+                obj.transform.localScale = Vector3.one * DEFAULT_ITEM_SCALE;
             }
             return obj;
         }
@@ -544,17 +531,17 @@ namespace Combating.Scripts {
             int speed = Math.Max(MIN_BASE_SPEED, MIN_BASE_SPEED + Math.Max(0, 4 - typeVal));
             int defense = Math.Min(80, Math.Max(MIN_BASE_DEFENSE, MIN_BASE_DEFENSE + (typeVal * 5) + (difficultyLevel * 2)));
 
-            int detRadius = Math.Max(1, customDetectionRadiusOverride.GetValue(defaultDetectionRadius + (typeVal * 5) + (difficultyLevel * 2)));
-            int sRange = enemyType == HostType.Range || enemyType == HostType.Hybrid ? Math.Max(1, defaultShootRange + (typeVal * 3)) : 0;
-            int mRange = enemyType == HostType.Melee || enemyType == HostType.Hybrid ? Math.Max(1, defaultMeleeRange + typeVal) : 0;
-            int wRadius = Math.Max(1, defaultWanderRadius + (typeVal * 2));
+            int detRadius = Math.Max(1, BASE_DETECTION_RADIUS + (typeVal * 5) + (difficultyLevel * 2));
+            int sRange = enemyType == HostType.Range || enemyType == HostType.Hybrid ? Math.Max(1, BASE_SHOOT_RANGE + (typeVal * 3)) : 0;
+            int mRange = enemyType == HostType.Melee || enemyType == HostType.Hybrid ? Math.Max(1, BASE_MELEE_RANGE + typeVal) : 0;
+            int wRadius = Math.Max(1, BASE_WANDER_RADIUS + (typeVal * 2));
 
-            int ammo = Math.Max(1, defaultMaxAmmo + (typeVal * 10));
-            int shield = typeVal >= 2 ? Math.Max(1, defaultShieldCapacity + (typeVal * 15)) : 0;
-            int fuel = Math.Max(1, defaultFuelCapacity + (typeVal * 20));
+            int ammo = Math.Max(1, BASE_MAX_AMMO + (typeVal * 10));
+            int shield = typeVal >= 2 ? Math.Max(1, BASE_SHIELD_CAPACITY + (typeVal * 15)) : 0;
+            int fuel = Math.Max(1, BASE_FUEL_CAPACITY + (typeVal * 20));
 
             int exp = Math.Max(1, (10 + (typeVal * 15)) * (1 + difficultyLevel) * aggroMultiplier);
-            int nextExp = Math.Max(1, baseExpToLevelUp * powGrowth);
+            int nextExp = Math.Max(1, BASE_EXP_TO_LEVEL * powGrowth);
             int atkPerLvl = Math.Max(1, 1 + typeVal);
             int defPerLvl = Math.Max(1, 1 + typeVal);
 
@@ -600,16 +587,16 @@ namespace Combating.Scripts {
             int speed = Math.Max(MIN_BASE_SPEED, MIN_BASE_SPEED + 6);
             int defense = Math.Min(85, Math.Max(MIN_BASE_DEFENSE, MIN_BASE_DEFENSE + (typeVal * 5) + (difficultyLevel * 2)));
 
-            int detRadius = Math.Max(1, defaultDetectionRadius * 2);
-            int sRange = Math.Max(1, defaultShootRange * 2);
-            int mRange = Math.Max(1, defaultMeleeRange + userFactor);
+            int detRadius = Math.Max(1, BASE_DETECTION_RADIUS * 2);
+            int sRange = Math.Max(1, BASE_SHOOT_RANGE * 2);
+            int mRange = Math.Max(1, BASE_MELEE_RANGE + userFactor);
             int wRadius = 0;
 
-            int ammo = Math.Max(1, defaultMaxAmmo * userFactor);
-            int shield = Math.Max(1, defaultShieldCapacity * userFactor);
-            int fuel = Math.Max(1, defaultFuelCapacity * userFactor);
+            int ammo = Math.Max(1, BASE_MAX_AMMO * userFactor);
+            int shield = Math.Max(1, BASE_SHIELD_CAPACITY * userFactor);
+            int fuel = Math.Max(1, BASE_FUEL_CAPACITY * userFactor);
 
-            int nextExp = Math.Max(1, baseExpToLevelUp * expGrowthMultiplier);
+            int nextExp = Math.Max(1, BASE_EXP_TO_LEVEL * growthFactor);
             int atkPerLvl = Math.Max(1, 2 + typeVal);
             int defPerLvl = Math.Max(1, 2 + typeVal);
 
@@ -652,7 +639,7 @@ namespace Combating.Scripts {
             int propFactor = 1 + propVal;
             int sceneThreat = GetTotalEnemyThreatWeight();
 
-            int health = Math.Max(MIN_BASE_HEALTH, MIN_BASE_HEALTH * propFactor * EffectivePropHealthMult * Math.Max(1, sceneThreat));
+            int health = Math.Max(MIN_BASE_HEALTH, MIN_BASE_HEALTH * propFactor * DEFAULT_PROP_HEALTH_MULT * Math.Max(1, sceneThreat));
             ItemType propLootType = category == PropType.Tree ? ItemType.Resource : ItemType.Thing;
 
             return new EntityStats
