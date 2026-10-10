@@ -202,7 +202,16 @@ namespace Combating.Scripts {
             }
         }
 
+        private void UpdateInspectorValues() {
+            DamageReduction = EffectiveDamageReduction;
+            MaxShieldHealth = EffectiveMaxShieldHealth;
+            MaxShieldDuration = EffectiveMaxShieldDuration;
+            CooldownDuration = EffectiveCooldownDuration;
+            InfiniteShield = EffectiveInfiniteShield;
+        }
+
         private void OnValidate() {
+            UpdateInspectorValues();
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.delayCall += () => {
                 if (this == null) return;
@@ -239,6 +248,7 @@ namespace Combating.Scripts {
         }
 
         private void Update() {
+            UpdateInspectorValues();
             if (GetComponent<PickupController>() != null || GetComponentInParent<PickupController>() != null) {
                 UpdateVisualsState();
                 return;
