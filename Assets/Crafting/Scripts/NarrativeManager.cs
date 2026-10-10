@@ -47,6 +47,20 @@ namespace Narrative.Scripts
         }
 
         public List<Site> sites = new List<Site>();
+
+        [Serializable]
+        public class Side
+        {
+            [Tooltip("Misión secundaria o de tutorial.")]
+            public Missions.Data.MissionData mission;
+            [Tooltip("Se activa al completarse este paso de la historia. 0 = justo tras el texto inicial.")]
+            public int fromStep;
+            [Tooltip("Se encienden al activarse (por ejemplo, el trigger de la misión). Déjalos apagados en la escena.")]
+            public GameObject[] enable;
+            [NonSerialized] public bool on;
+        }
+
+        public List<Side> side = new List<Side>();
         [Min(1)] public int visitsPerLevel = 2;
         public UnityEvent onEnd;
 
@@ -276,8 +290,43 @@ namespace Narrative.Scripts
                 for (int i = from; i <= w; i++) Completed(i);
                 if (w < 16) MissionController.Instance.UpdateMissionFlow(); // el HUD de misión pasa a la siguiente
             }
+            Sides();
             Keys();
             Visits();
+        }
+
+        // Secundarias y tutoriales: se suman a la lista de misiones cuando la historia llega a su paso.
+        void Sides()
+        {
+            if (side.Count == 0) return;
+            var mc = MissionController.Instance;
+            bool pending = false;
+            foreach (var s in side)
+            {
+                if (s.mission == null) continue;
+                if (!s.on && _last >= s.fromStep)
+                {
+                    s.on = true;
+                    if (s.enable != null) foreach (var g in s.enable) if (g != null) g.SetActive(true);
+                    if (!mc.missions.Contains(s.mission)) mc.missions.Add(s.mission);
+                }
+                if (s.on && !IsMissionCompleted(s.mission)) pending = true;
+            }
+            if (pending) mc.UpdateMissionFlow(); // completa recolecciones y recetas ya cumplidas
+            Panel();
+        }
+
+        // Panel de J: misión principal actual y hasta 3 secundarias activas.
+        void Panel()
+        {
+            var m = Mis(Mathf.Clamp(_last + 1, 0, Id.Length - 1));
+            if (m == null) return;
+            var sb = new StringBuilder(m.description);
+            int n = 0;
+            foreach (var s in side)
+                if (s.on && s.mission != null && n < 3 && !IsMissionCompleted(s.mission))
+                    sb.Append(n++ == 0 ? "\n\nSecundarias:\n• " : "\n• ").Append(s.mission.title);
+            MissionController.Instance.ShowMessage(m.title, sb.ToString());
         }
 
         // Cada misión se identifica por su título (MissionController). Se busca por nombre de asset: Mission_<Id>.
