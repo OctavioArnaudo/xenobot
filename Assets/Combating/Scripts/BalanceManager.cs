@@ -179,13 +179,13 @@ namespace Combating.Scripts {
         [Header("Prefabs References - Items")]
         [SerializeField] private GameObject itemThingPrefab;
         [SerializeField] private GameObject itemResourcePrefab;
-        [SerializeField] private GameObject itemAbilityPrefab;
+        [SerializeField] private GameObject itemConsumiblePrefab;
         [SerializeField] private GameObject itemCostumePrefab;
 
         [Header("Prefabs References - Props")]
         [SerializeField] private GameObject propBuildingPrefab;
         [SerializeField] private GameObject propTreePrefab;
-        [SerializeField] private GameObject propRockPrefab;
+        [SerializeField] private GameObject propMineralPrefab;
         [SerializeField] private GameObject propPlantPrefab;
 
         private const int MIN_BASE_HEALTH = 1;
@@ -489,7 +489,7 @@ namespace Combating.Scripts {
             {
                 ItemType.Thing => itemThingPrefab,
                 ItemType.Resource => itemResourcePrefab,
-                ItemType.Ability => itemAbilityPrefab,
+                ItemType.Consumible => itemConsumiblePrefab,
                 ItemType.Costume => itemCostumePrefab,
                 _ => itemThingPrefab
             };
@@ -501,8 +501,8 @@ namespace Combating.Scripts {
             {
                 PropType.Building => propBuildingPrefab,
                 PropType.Tree => propTreePrefab,
-                PropType.Rock => propRockPrefab,
-                _ => propPlantPrefab
+                PropType.Plant => propPlantPrefab,
+                _ => propMineralPrefab
             };
         }
 
