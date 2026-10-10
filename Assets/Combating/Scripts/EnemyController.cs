@@ -476,8 +476,27 @@ namespace Combating.Scripts
             }
         }
 
+        private void UpdateInspectorValues()
+        {
+            HoverHeight = EffectiveHoverHeight;
+            WanderSpeed = EffectiveWanderSpeed;
+            ChaseSpeed = EffectiveChaseSpeed;
+            TurnSpeed = EffectiveTurnSpeed;
+            WanderRadius = EffectiveWanderRadius;
+            DetectionRange = EffectiveDetectionRange;
+            ShootRange = EffectiveShootRange;
+            MeleeRange = EffectiveMeleeRange;
+            VisionAngleOverride = EffectiveVisionAngle;
+        }
+
+        private void OnValidate()
+        {
+            UpdateInspectorValues();
+        }
+
         void Update()
         {
+            UpdateInspectorValues();
             if (!CanExecuteLogic) return;
 
             if (m_Health != null && m_Health.CurrentHP <= 0)

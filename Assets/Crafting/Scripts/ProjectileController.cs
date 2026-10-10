@@ -381,8 +381,30 @@ namespace Combating.Scripts
             }
         }
 
+        private void UpdateInspectorValues()
+        {
+            Type = EffectiveType;
+            AutoRandomize = EffectiveAutoRandomize;
+            Color = EffectiveColor;
+            Damage = EffectiveDamage;
+            DetectionRadius = EffectiveDetectionRadius;
+            HomingTurnSpeed = EffectiveHomingTurnSpeed;
+            LifeTime = EffectiveLifeTime;
+            Speed = EffectiveSpeed;
+            CorrosionDamage = EffectiveCorrosionDamage;
+            DotDuration = EffectiveDotDuration;
+            ExplosionRadius = EffectiveExplosionRadius;
+            FreezeSlowAmount = EffectiveFreezeSlowAmount;
+        }
+
+        private void OnValidate()
+        {
+            UpdateInspectorValues();
+        }
+
         private void Update()
         {
+            UpdateInspectorValues();
             if (m_IsAttached)
             {
                 if (m_AttachedTarget != null)

@@ -37,6 +37,23 @@ namespace Crafting.Scripts
         public Vector3 EffectiveHeadOffset => headOffset.GetValue(DEFAULT_HEAD_BONE_OFFSET);
         public Vector3 EffectiveHeadScale => headScale.GetValue(DEFAULT_HEAD_SCALE);
 
+        private void UpdateInspectorValues()
+        {
+            VisorType = EffectiveVisorType;
+            HeadOffset = EffectiveHeadOffset;
+            HeadScale = EffectiveHeadScale;
+        }
+
+        private void OnValidate()
+        {
+            UpdateInspectorValues();
+        }
+
+        private void Update()
+        {
+            UpdateInspectorValues();
+        }
+
         private bool _isEquipped = false;
         private GameObject _playerRoot;
         private Camera _mainCamCache;

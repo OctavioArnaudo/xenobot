@@ -307,8 +307,24 @@ namespace Combating.Scripts
             }
         }
 
+        private void UpdateInspectorValues()
+        {
+            Damage = EffectiveDamage;
+            FireRate = EffectiveFireRate;
+            AimDistance = EffectiveAimDistance;
+            MaxAmmo = EffectiveMaxAmmo;
+            ReloadDuration = EffectiveReloadDuration;
+            InfiniteAmmo = EffectiveInfiniteAmmo;
+        }
+
+        private void OnValidate()
+        {
+            UpdateInspectorValues();
+        }
+
         void Update()
         {
+            UpdateInspectorValues();
             // Evitar procesamiento duplicado si existe un ShootController principal en la raíz
             if (transform != transform.root)
             {

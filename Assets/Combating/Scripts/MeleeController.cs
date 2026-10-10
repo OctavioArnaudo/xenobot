@@ -188,8 +188,27 @@ namespace Combating.Scripts
                 visualsToRotate = GetComponentsInChildren<Renderer>();
         }
 
+        private void UpdateInspectorValues()
+        {
+            AttackRange = EffectiveAttackRange;
+            AttackDamage = EffectiveAttackDamage;
+            AttackCooldown = EffectiveAttackCooldown;
+            SlamHoldDuration = EffectiveSlamHoldDuration;
+            SlamDamage = EffectiveSlamDamage;
+            SlamRadius = EffectiveSlamRadius;
+            SlamSpeed = EffectiveSlamSpeed;
+            SlamKnockbackForce = EffectiveSlamKnockbackForce;
+            RotationSpeedOverride = EffectiveRotationSpeed;
+        }
+
+        private void OnValidate()
+        {
+            UpdateInspectorValues();
+        }
+
         void Update()
         {
+            UpdateInspectorValues();
             if (IsNetworkActive && !IsOwner) return;
 
             if (m_IsSlamming)

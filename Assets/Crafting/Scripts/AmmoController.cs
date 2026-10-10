@@ -26,6 +26,22 @@ namespace Crafting.Scripts
         public Color brassColor = new Color(0.9f, 0.7f, 0.2f); // Gold / Brass
         public Color tipColor = new Color(0.8f, 0.2f, 0.1f);   // Red tracer tip
 
+        private void UpdateInspectorValues()
+        {
+            AmmoAmountToAdd = EffectiveAmmoAmount;
+            DamageMultiplier = EffectiveDamageMultiplier;
+        }
+
+        private void OnValidate()
+        {
+            UpdateInspectorValues();
+        }
+
+        private void Update()
+        {
+            UpdateInspectorValues();
+        }
+
         void Awake()
         {
             SetupPickup();
