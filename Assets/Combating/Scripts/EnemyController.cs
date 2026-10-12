@@ -303,7 +303,19 @@ namespace Combating.Scripts
             {
                 m_Agent.updateRotation = false;
                 EnemyCategory cat = GetCurrentCategory();
-                m_Agent.baseOffset = (cat == EnemyCategory.Melee) ? 0f : EffectiveHoverHeight;
+                float groundOffset = 0f;
+                if (BalanceManager.Instance != null)
+                {
+                    groundOffset = BalanceManager.Instance.GetVerticalGroundOffset(gameObject);
+                }
+                else
+                {
+                    CapsuleCollider cap = GetComponent<CapsuleCollider>();
+                    if (cap != null) groundOffset = Mathf.Max(0f, -(cap.center.y - cap.height * 0.5f));
+                    else groundOffset = 0.9f;
+                }
+
+                m_Agent.baseOffset = (cat == EnemyCategory.Melee) ? groundOffset : (groundOffset + EffectiveHoverHeight);
 
                 if (cat == EnemyCategory.Melee)
                 {

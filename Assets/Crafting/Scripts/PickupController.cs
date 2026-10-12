@@ -40,9 +40,15 @@ namespace Crafting.Scripts
             _spawnTime = Time.time;
             _grounded = false;
             _timer = 0f;
-            _startPos = position;
 
-            transform.SetPositionAndRotation(position, rotation);
+            float groundOffset = 0.4f;
+            if (BalanceManager.Instance != null)
+            {
+                groundOffset = BalanceManager.Instance.GetVerticalGroundOffset(gameObject) + 0.35f;
+            }
+            _startPos = position + Vector3.up * Mathf.Max(0.35f, groundOffset);
+
+            transform.SetPositionAndRotation(_startPos, rotation);
 
             if (TryGetComponent<Rigidbody>(out var rb))
             {
@@ -198,7 +204,12 @@ namespace Crafting.Scripts
                     rb.isKinematic = true;
                     rb.useGravity = false;
                     _grounded = true;
-                    _startPos = transform.position + Vector3.up * 0.4f;
+                    float groundOffset = 0.4f;
+                    if (BalanceManager.Instance != null)
+                    {
+                        groundOffset = BalanceManager.Instance.GetVerticalGroundOffset(gameObject) + 0.35f;
+                    }
+                    _startPos = transform.position + Vector3.up * Mathf.Max(0.25f, groundOffset);
                 }
             }
         }

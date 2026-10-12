@@ -334,23 +334,67 @@ namespace Combating.Scripts
             return DEFAULT_CALIBRATION_DISTANCE + (difficultyLevel * 2.0f);
         }
 
-        public Vector3 CalibrateSpawnPosition(Vector3 rawPosition)
+        public float GetVerticalGroundOffset(GameObject entity)
         {
-            float maxDist = CalculateCalibrationDistance();
+            if (entity == null) return 0f;
 
-            if (TryRaycastSurface(rawPosition, Vector3.down, maxDist, out Vector3 calYDown)) return calYDown;
-            if (TryRaycastSurface(rawPosition, Vector3.up, maxDist, out Vector3 calYUp)) return calYUp;
-            if (TryRaycastSurface(rawPosition, Vector3.back, maxDist, out Vector3 calZBack)) return calZBack;
-            if (TryRaycastSurface(rawPosition, Vector3.forward, maxDist, out Vector3 calZFwd)) return calZFwd;
-            if (TryRaycastSurface(rawPosition, Vector3.right, maxDist, out Vector3 calXRight)) return calXRight;
-            if (TryRaycastSurface(rawPosition, Vector3.left, maxDist, out Vector3 calXLeft)) return calXLeft;
-
-            if (NavMesh.SamplePosition(rawPosition, out NavMeshHit navHit, maxDist, NavMesh.AllAreas))
+            if (entity.TryGetComponent<CharacterController>(out var cc))
             {
-                return navHit.position;
+                float bottomOffset = cc.center.y - (cc.height * 0.5f);
+                if (bottomOffset < 0f) return -bottomOffset;
+            }
+            else if (entity.TryGetComponent<CapsuleCollider>(out var cap))
+            {
+                float bottomOffset = cap.center.y - (cap.height * 0.5f);
+                if (bottomOffset < 0f) return -bottomOffset;
+            }
+            else if (entity.TryGetComponent<BoxCollider>(out var box))
+            {
+                float bottomOffset = box.center.y - (box.size.y * 0.5f);
+                if (bottomOffset < 0f) return -bottomOffset;
+            }
+            else if (entity.TryGetComponent<SphereCollider>(out var sphere))
+            {
+                float bottomOffset = sphere.center.y - sphere.radius;
+                if (bottomOffset < 0f) return -bottomOffset;
             }
 
-            return rawPosition;
+            Renderer r = entity.GetComponentInChildren<Renderer>();
+            if (r != null)
+            {
+                float extentsY = r.bounds.extents.y;
+                float pivotToCenterY = r.bounds.center.y - entity.transform.position.y;
+                float bottomRelPivot = pivotToCenterY - extentsY;
+                if (bottomRelPivot < 0f) return -bottomRelPivot;
+            }
+
+            return 0.4f;
+        }
+
+        public Vector3 CalibrateSpawnPosition(Vector3 rawPosition, GameObject entity = null)
+        {
+            float maxDist = CalculateCalibrationDistance();
+            Vector3 surfacePos = rawPosition;
+
+            if (TryRaycastSurface(rawPosition, Vector3.down, maxDist, out Vector3 calYDown)) surfacePos = calYDown;
+            else if (TryRaycastSurface(rawPosition, Vector3.up, maxDist, out Vector3 calYUp)) surfacePos = calYUp;
+            else if (TryRaycastSurface(rawPosition, Vector3.back, maxDist, out Vector3 calZBack)) surfacePos = calZBack;
+            else if (TryRaycastSurface(rawPosition, Vector3.forward, maxDist, out Vector3 calZFwd)) surfacePos = calZFwd;
+            else if (TryRaycastSurface(rawPosition, Vector3.right, maxDist, out Vector3 calXRight)) surfacePos = calXRight;
+            else if (TryRaycastSurface(rawPosition, Vector3.left, maxDist, out Vector3 calXLeft)) surfacePos = calXLeft;
+            else if (NavMesh.SamplePosition(rawPosition, out NavMeshHit navHit, maxDist, NavMesh.AllAreas)) surfacePos = navHit.position;
+
+            if (entity != null)
+            {
+                float verticalOffset = GetVerticalGroundOffset(entity);
+                if (entity.GetComponent<ILootableEntity>() != null || entity.GetComponent<Crafting.Scripts.PickupController>() != null)
+                {
+                    verticalOffset += 0.35f;
+                }
+                return surfacePos + Vector3.up * verticalOffset;
+            }
+
+            return surfacePos;
         }
 
         private bool TryRaycastSurface(Vector3 origin, Vector3 direction, float distance, out Vector3 result)
@@ -392,7 +436,7 @@ namespace Combating.Scripts
                 instance.name = prefab.name;
             }
 
-            Vector3 calibratedPos = CalibrateSpawnPosition(position);
+            Vector3 calibratedPos = CalibrateSpawnPosition(position, instance);
             instance.transform.SetPositionAndRotation(calibratedPos, rotation);
             instance.SetActive(true);
 
@@ -618,7 +662,7 @@ namespace Combating.Scripts
                 {
                     if (existingPlayer != null && playerData.pointTransform != null)
                     {
-                        player.transform.SetPositionAndRotation(CalibrateSpawnPosition(playerData.pointTransform.position), playerData.pointTransform.rotation);
+                        player.transform.SetPositionAndRotation(CalibrateSpawnPosition(playerData.pointTransform.position, player), playerData.pointTransform.rotation);
                     }
                     StatSpawnPointData playerStats = CalculateUserStats(playerData.playerTypeToSpawn);
                     RegisterStatSpawnPointData(player, playerStats);
@@ -643,7 +687,7 @@ namespace Combating.Scripts
                 {
                     if (existingEnemy != null && spawnData.pointTransform != null)
                     {
-                        enemy.transform.SetPositionAndRotation(CalibrateSpawnPosition(spawnData.pointTransform.position), spawnData.pointTransform.rotation);
+                        enemy.transform.SetPositionAndRotation(CalibrateSpawnPosition(spawnData.pointTransform.position, enemy), spawnData.pointTransform.rotation);
                     }
                     StatSpawnPointData enemyStats = CalculateHostStats(spawnData.enemyTypeToSpawn, i, totalEnemies);
                     RegisterStatSpawnPointData(enemy, enemyStats);
@@ -669,7 +713,7 @@ namespace Combating.Scripts
                     {
                         if (existingItem != null)
                         {
-                            itemObj.transform.SetPositionAndRotation(CalibrateSpawnPosition(itemData.pointTransform.position), itemData.pointTransform.rotation);
+                            itemObj.transform.SetPositionAndRotation(CalibrateSpawnPosition(itemData.pointTransform.position, itemObj), itemData.pointTransform.rotation);
                         }
                         itemObj.transform.localScale = Vector3.one * DEFAULT_ITEM_SCALE;
                         StatSpawnPointData itemStats = CalculateItemStats(itemData.categoryToSpawn);
@@ -697,7 +741,7 @@ namespace Combating.Scripts
                     {
                         if (existingProp != null)
                         {
-                            propObj.transform.SetPositionAndRotation(CalibrateSpawnPosition(propData.pointTransform.position), propData.pointTransform.rotation);
+                            propObj.transform.SetPositionAndRotation(CalibrateSpawnPosition(propData.pointTransform.position, propObj), propData.pointTransform.rotation);
                         }
                         StatSpawnPointData propStats = CalculatePropStats(propData.categoryToSpawn);
                         RegisterStatSpawnPointData(propObj, propStats);
