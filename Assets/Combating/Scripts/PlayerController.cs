@@ -254,8 +254,6 @@ namespace Combating.Scripts
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
         private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
         #endregion
-        private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
-        #endregion
 
         #region Lifecycle
         private void Awake()
