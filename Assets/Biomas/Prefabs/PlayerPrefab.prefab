@@ -114,7 +114,6 @@ GameObject:
   - component: {fileID: 6353754398152676254}
   - component: {fileID: 9193409881328918840}
   - component: {fileID: 8123456789012345678}
-  - component: {fileID: 4229443801716868870}
   m_Layer: 3
   m_Name: PlayerPrefab
   m_TagString: Player
@@ -414,7 +413,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 1
-  maxHealth: 0
+  MaxHealth: 250
+  maxHealth:
+    use: 0
+    value: 0
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -595,23 +597,29 @@ MonoBehaviour:
   Muzzle: {fileID: 3596114446979786384}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage:
-    useOverride: 0
+  Damage: 2
+  damage:
+    use: 0
     value: 0
-  FireRate:
-    useOverride: 0
+  FireRate: 8
+  fireRate:
+    use: 0
     value: 0
-  AimDistance:
-    useOverride: 0
+  AimDistance: 120
+  aimDistance:
+    use: 0
     value: 0
+  MaxAmmo: 30
   maxAmmo:
-    useOverride: 0
+    use: 0
     value: 0
+  ReloadDuration: 1.8
   reloadDuration:
-    useOverride: 0
+    use: 0
     value: 0
+  InfiniteAmmo: 0
   infiniteAmmo:
-    useOverride: 1
+    use: 0
     value: 0
   AimLayers:
     serializedVersion: 2
@@ -689,37 +697,46 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
+  AttackRange: 3.2
   attackRange:
-    useOverride: 0
+    use: 0
     value: 0
+  AttackDamage: 2
   attackDamage:
-    useOverride: 0
+    use: 0
     value: 0
+  AttackCooldown: 0.8
   attackCooldown:
-    useOverride: 0
+    use: 0
     value: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 64
+  SlamHoldDuration: 0.25
   slamHoldDuration:
-    useOverride: 0
+    use: 0
     value: 0
+  SlamDamage: 1
   slamDamage:
-    useOverride: 0
+    use: 0
     value: 0
+  SlamRadius: 5.5
   slamRadius:
-    useOverride: 0
+    use: 0
     value: 0
+  SlamSpeed: 35
   slamSpeed:
-    useOverride: 0
+    use: 0
     value: 0
+  SlamKnockbackForce: 600
   slamKnockbackForce:
-    useOverride: 0
+    use: 0
     value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
+  RotationSpeedOverride: 10
   rotationSpeedOverride:
-    useOverride: 0
+    use: 0
     value: 0
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
@@ -738,20 +755,25 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ShieldController
   ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 1
-  damageReductionOverride:
-    useOverride: 0
+  DamageReduction: 0.5
+  damageReduction:
+    use: 0
     value: 0
-  maxShieldHealthOverride:
-    useOverride: 0
+  MaxShieldHealth: 150
+  maxShieldHealth:
+    use: 0
     value: 0
-  maxShieldDurationOverride:
-    useOverride: 0
+  MaxShieldDuration: 10
+  maxShieldDuration:
+    use: 0
     value: 0
-  cooldownDurationOverride:
-    useOverride: 0
+  CooldownDuration: 5
+  cooldownDuration:
+    use: 0
     value: 0
+  InfiniteShield: 0
   infiniteShield:
-    useOverride: 1
+    use: 0
     value: 0
   inputMode: 0
   autoUnlockOnStart: 0
@@ -790,41 +812,6 @@ MonoBehaviour:
   accentColor: {r: 1, g: 0.85, b: 0, a: 1}
   minWidth: 250
   minHeight: 40
---- !u!114 &4229443801716868870
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1804703078109025515}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ccac4b6a7a2961643989f2862d555926, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Missions.Scripts.MissionController
-  ShowTopMostFoldoutHeaderGroup: 1
-  missionData: {fileID: 0}
-  missions:
-  - {fileID: 11400000, guid: 38c53055736e25a4fad23f0691b46414, type: 2}
-  - {fileID: 11400000, guid: 5dba282fae10ceb4bbdefd1616ce6f9d, type: 2}
-  - {fileID: 11400000, guid: e85fb9596c02d5a41b0bd313d5c4cf4f, type: 2}
-  - {fileID: 11400000, guid: 9d7271c85dc696a48b0289cc4a4b54e2, type: 2}
-  - {fileID: 11400000, guid: 63bccbf502a0b88458fc8179c19e93e3, type: 2}
-  - {fileID: 11400000, guid: 0e991453e678f6744b3b48e46194c40b, type: 2}
-  - {fileID: 11400000, guid: e5c5fb3c9b58c1a4ca5e14d7e03b8522, type: 2}
-  - {fileID: 11400000, guid: 5b9105a722e67e74eaf6cbb26f2f459e, type: 2}
-  - {fileID: 11400000, guid: 577030db359e5b94f8358ca98ad167d9, type: 2}
-  - {fileID: 11400000, guid: 9b8b400ddf48a2a478b1540e3c1c9829, type: 2}
-  - {fileID: 11400000, guid: 1d51b9844af810949b0a70fbc3334646, type: 2}
-  - {fileID: 11400000, guid: 1019bb4cf391f7c4dac7da0d580876a7, type: 2}
-  - {fileID: 11400000, guid: 60dc4a2a139308e4699f63f2227455bb, type: 2}
-  - {fileID: 11400000, guid: 7b3650c9356437e46b6a785dec6e4d60, type: 2}
-  - {fileID: 11400000, guid: 53e8dec7261e8324a90af1680a4bd63c, type: 2}
-  - {fileID: 11400000, guid: 63b4af8aea10c98459190bc70eeba18d, type: 2}
-  - {fileID: 11400000, guid: 8f0fea43fa1b75040b147dc5d88c2bc7, type: 2}
-  - {fileID: 11400000, guid: 84e28645e2e3e5f4fa5f4a115865fb21, type: 2}
-  customTitle: 
-  customDescription: 
 --- !u!1 &3596114446979786384
 GameObject:
   m_ObjectHideFlags: 0
@@ -5710,15 +5697,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3261006.8
+      value: 3346210.8
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 5991.7803
+      value: 6152.251
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1916166.6
+      value: 1964854.6
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5770,15 +5757,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3261006.8
+      value: 3346210.8
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 5991.7803
+      value: 6152.251
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1916166.6
+      value: 1964854.6
       objectReference: {fileID: 0}
     - target: {fileID: 8125438068294852295, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_Layer
