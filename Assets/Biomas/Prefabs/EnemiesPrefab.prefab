@@ -2517,43 +2517,8 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 723652270610644478, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8776726371384340586}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
---- !u!1 &3111223007138345397 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 723652270610644478, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
-  m_PrefabInstance: {fileID: 2389059756127292491}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &8776726371384340586
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3111223007138345397}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ffbbe02735bbef45b03882b20699741, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MeleeEnemyAI
-  target: {fileID: 0}
-  animator: {fileID: 0}
-  meleeRange: 2
-  chaseSpeed: 3.5
-  strafeSpeed: 2
-  windUpTime: 0.4
-  attackDuration: 0.3
-  recoveryTime: 1.2
-  backstepDistance: 2.5
-  attackDamage: 1
-  attackRadius: 1.2
-  attackOffset: {x: 0, y: 1, z: 1}
-  playerLayer:
-    serializedVersion: 2
-    m_Bits: 0
 --- !u!4 &5813065336813210081 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8181788382255728042, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
@@ -2961,9 +2926,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4523929736768128810, guid: e238cf6a6f6fbb649beffde238aa7539, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4852021861331765357}
-    - targetCorrespondingSourceObject: {fileID: 4523929736768128810, guid: e238cf6a6f6fbb649beffde238aa7539, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2426908376984677775}
   m_SourcePrefab: {fileID: 100100000, guid: e238cf6a6f6fbb649beffde238aa7539, type: 3}
 --- !u!4 &1724431245096122765 stripped
 Transform:
@@ -3109,33 +3071,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &2426908376984677775
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1845358734894520005}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ffbbe02735bbef45b03882b20699741, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MeleeEnemyAI
-  target: {fileID: 0}
-  animator: {fileID: 0}
-  meleeRange: 2
-  chaseSpeed: 3.5
-  strafeSpeed: 2
-  windUpTime: 0.4
-  attackDuration: 0.3
-  recoveryTime: 1.2
-  backstepDistance: 2.5
-  attackDamage: 15
-  attackRadius: 1.2
-  attackOffset: {x: 0, y: 1, z: 1}
-  playerLayer:
-    serializedVersion: 2
-    m_Bits: 8
 --- !u!1001 &3226195499155389918
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3854,9 +3789,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7283187735413012561, guid: 447d71548ad4d5a4fbcbe6758c6c8e33, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4952215207361731556}
-    - targetCorrespondingSourceObject: {fileID: 7283187735413012561, guid: 447d71548ad4d5a4fbcbe6758c6c8e33, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6112036048159649048}
   m_SourcePrefab: {fileID: 100100000, guid: 447d71548ad4d5a4fbcbe6758c6c8e33, type: 3}
 --- !u!4 &4617549951048278737 stripped
 Transform:
@@ -4002,33 +3934,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &6112036048159649048
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6754591886330147668}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ffbbe02735bbef45b03882b20699741, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MeleeEnemyAI
-  target: {fileID: 0}
-  animator: {fileID: 0}
-  meleeRange: 2
-  chaseSpeed: 3.5
-  strafeSpeed: 2
-  windUpTime: 0.4
-  attackDuration: 0.3
-  recoveryTime: 1.2
-  backstepDistance: 2.5
-  attackDamage: 15
-  attackRadius: 1.2
-  attackOffset: {x: 0, y: 1, z: 1}
-  playerLayer:
-    serializedVersion: 2
-    m_Bits: 8
 --- !u!1001 &4522564682378629627
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4182,9 +4087,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4281512449517671952, guid: 6225b99028d297440904f6d450ff4348, type: 3}
       insertIndex: -1
       addedObject: {fileID: 750096837095163764}
-    - targetCorrespondingSourceObject: {fileID: 4281512449517671952, guid: 6225b99028d297440904f6d450ff4348, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7489438420216635944}
   m_SourcePrefab: {fileID: 100100000, guid: 6225b99028d297440904f6d450ff4348, type: 3}
 --- !u!1 &408029308784609259 stripped
 GameObject:
@@ -4417,33 +4319,6 @@ MonoBehaviour:
   shieldBlockSound: {fileID: 0}
   shieldAnimTrigger: shield
   shieldAnimBool: isShieldActive
---- !u!114 &7489438420216635944
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 408029308784609259}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ffbbe02735bbef45b03882b20699741, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MeleeEnemyAI
-  target: {fileID: 0}
-  animator: {fileID: 0}
-  meleeRange: 2
-  chaseSpeed: 3.5
-  strafeSpeed: 2
-  windUpTime: 0.4
-  attackDuration: 0.3
-  recoveryTime: 1.2
-  backstepDistance: 2.5
-  attackDamage: 1
-  attackRadius: 1.2
-  attackOffset: {x: 0, y: 1, z: 1}
-  playerLayer:
-    serializedVersion: 2
-    m_Bits: 0
 --- !u!1 &5630633374476518528 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 8135585211120751995, guid: 6225b99028d297440904f6d450ff4348, type: 3}
@@ -4648,9 +4523,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7172297618246715720, guid: 6fd0b095a6f6b65479143189b953fe2b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 5010455203965673494}
-    - targetCorrespondingSourceObject: {fileID: 7172297618246715720, guid: 6fd0b095a6f6b65479143189b953fe2b, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1152133902559783542}
   m_SourcePrefab: {fileID: 100100000, guid: 6fd0b095a6f6b65479143189b953fe2b, type: 3}
 --- !u!1 &2643765418115801179 stripped
 GameObject:
@@ -4791,33 +4663,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1152133902559783542
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2643765418115801179}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ffbbe02735bbef45b03882b20699741, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MeleeEnemyAI
-  target: {fileID: 0}
-  animator: {fileID: 0}
-  meleeRange: 2
-  chaseSpeed: 3.5
-  strafeSpeed: 2
-  windUpTime: 0.4
-  attackDuration: 0.3
-  recoveryTime: 1.2
-  backstepDistance: 2.5
-  attackDamage: 15
-  attackRadius: 1.2
-  attackOffset: {x: 0, y: 1, z: 1}
-  playerLayer:
-    serializedVersion: 2
-    m_Bits: 8
 --- !u!4 &4064020329722629085 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 9178293125933540046, guid: 6fd0b095a6f6b65479143189b953fe2b, type: 3}
@@ -4959,9 +4804,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7172297618246715720, guid: 6fd0b095a6f6b65479143189b953fe2b, type: 3}
       insertIndex: -1
       addedObject: {fileID: 6945300862528936495}
-    - targetCorrespondingSourceObject: {fileID: 7172297618246715720, guid: 6fd0b095a6f6b65479143189b953fe2b, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5600520411943133899}
   m_SourcePrefab: {fileID: 100100000, guid: 6fd0b095a6f6b65479143189b953fe2b, type: 3}
 --- !u!1 &2607178232962838391 stripped
 GameObject:
@@ -5102,33 +4944,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &5600520411943133899
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2607178232962838391}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ffbbe02735bbef45b03882b20699741, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MeleeEnemyAI
-  target: {fileID: 0}
-  animator: {fileID: 0}
-  meleeRange: 2
-  chaseSpeed: 3.5
-  strafeSpeed: 2
-  windUpTime: 0.4
-  attackDuration: 0.3
-  recoveryTime: 1.2
-  backstepDistance: 2.5
-  attackDamage: 1
-  attackRadius: 1.2
-  attackOffset: {x: 0, y: 1, z: 1}
-  playerLayer:
-    serializedVersion: 2
-    m_Bits: 0
 --- !u!4 &4105110898701829361 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 9178293125933540046, guid: 6fd0b095a6f6b65479143189b953fe2b, type: 3}
@@ -5536,9 +5351,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7283187735413012561, guid: 447d71548ad4d5a4fbcbe6758c6c8e33, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4446916434948005360}
-    - targetCorrespondingSourceObject: {fileID: 7283187735413012561, guid: 447d71548ad4d5a4fbcbe6758c6c8e33, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 3315862331142116370}
   m_SourcePrefab: {fileID: 100100000, guid: 447d71548ad4d5a4fbcbe6758c6c8e33, type: 3}
 --- !u!4 &2475500213177205747 stripped
 Transform:
@@ -5684,33 +5496,6 @@ CharacterController:
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &3315862331142116370
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4608109222419206774}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ffbbe02735bbef45b03882b20699741, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MeleeEnemyAI
-  target: {fileID: 0}
-  animator: {fileID: 0}
-  meleeRange: 2
-  chaseSpeed: 3.5
-  strafeSpeed: 2
-  windUpTime: 0.4
-  attackDuration: 0.3
-  recoveryTime: 1.2
-  backstepDistance: 2.5
-  attackDamage: 15
-  attackRadius: 1.2
-  attackOffset: {x: 0, y: 1, z: 1}
-  playerLayer:
-    serializedVersion: 2
-    m_Bits: 8
 --- !u!1001 &7708911382726627318
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5853,9 +5638,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4523929736768128810, guid: e238cf6a6f6fbb649beffde238aa7539, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8195003607730490232}
-    - targetCorrespondingSourceObject: {fileID: 4523929736768128810, guid: e238cf6a6f6fbb649beffde238aa7539, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2515667756862604036}
   m_SourcePrefab: {fileID: 100100000, guid: e238cf6a6f6fbb649beffde238aa7539, type: 3}
 --- !u!1 &6067391238708316380 stripped
 GameObject:
@@ -6043,33 +5825,6 @@ MonoBehaviour:
   shieldBlockSound: {fileID: 0}
   shieldAnimTrigger: shield
   shieldAnimBool: isShieldActive
---- !u!114 &2515667756862604036
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6067391238708316380}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ffbbe02735bbef45b03882b20699741, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::MeleeEnemyAI
-  target: {fileID: 0}
-  animator: {fileID: 0}
-  meleeRange: 2
-  chaseSpeed: 3.5
-  strafeSpeed: 2
-  windUpTime: 0.4
-  attackDuration: 0.3
-  recoveryTime: 1.2
-  backstepDistance: 2.5
-  attackDamage: 15
-  attackRadius: 1.2
-  attackOffset: {x: 0, y: 1, z: 1}
-  playerLayer:
-    serializedVersion: 2
-    m_Bits: 8
 --- !u!4 &6503719880158766996 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3511212089469347938, guid: e238cf6a6f6fbb649beffde238aa7539, type: 3}
