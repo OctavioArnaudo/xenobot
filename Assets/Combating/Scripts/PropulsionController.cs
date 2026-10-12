@@ -25,12 +25,18 @@ namespace Combating.Scripts
         public bool allowRegen = true;    // Recarga automática
 
         [Header("Manual Flight & Fuel Overrides")]
-        public float maxFuel = 0f;
-        public float jetpackForce = 0f;
-        public float hoverForce = 0f;
-        public float fuelConsumption = 0f;
-        public float fuelRegen = 0f;
-        public float maxUpwardVelocity = 0f;
+        public float MaxFuel;
+        public Optional<float> maxFuel;
+        public float JetpackForce;
+        public Optional<float> jetpackForce;
+        public float HoverForce;
+        public Optional<float> hoverForce;
+        public float FuelConsumption;
+        public Optional<float> fuelConsumption;
+        public float FuelRegen;
+        public Optional<float> fuelRegen;
+        public float MaxUpwardVelocity;
+        public Optional<float> maxUpwardVelocity;
 
         [Header("Network Synchronized Data")]
         public NetworkVariable<float> maxJetpackFuel = new NetworkVariable<float>(120f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -51,11 +57,21 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (maxFuel > 0f) return maxFuel; }
+                try
+                {
+                    if (maxFuel.use) return maxFuel.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.fuelCapacity > 0) return stats.fuelCapacity;
+                    }
+                    var pc = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
+                    float defaultFuel = (pc != null || CompareTag("Player")) ? DEFAULT_PLAYER_MAX_FUEL : DEFAULT_ENEMY_MAX_FUEL;
+                    return maxFuel.GetValue(defaultFuel);
+                }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] maxFuel: {ex.Message}"); }
 
-                var pc = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
-                return (pc != null || CompareTag("Player")) ? DEFAULT_PLAYER_MAX_FUEL : DEFAULT_ENEMY_MAX_FUEL;
+                return DEFAULT_PLAYER_MAX_FUEL;
             }
         }
 
@@ -63,7 +79,7 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (jetpackForce > 0f) return jetpackForce; }
+                try { return jetpackForce.GetValue(DEFAULT_JETPACK_FORCE); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] jetpackForce: {ex.Message}"); }
                 return DEFAULT_JETPACK_FORCE;
             }
@@ -73,7 +89,7 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (hoverForce > 0f) return hoverForce; }
+                try { return hoverForce.GetValue(DEFAULT_HOVER_FORCE); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] hoverForce: {ex.Message}"); }
                 return DEFAULT_HOVER_FORCE;
             }
@@ -83,7 +99,16 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (fuelConsumption > 0f) return fuelConsumption; }
+                try
+                {
+                    if (fuelConsumption.use) return fuelConsumption.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.jetpackConsumptionRate > 0) return stats.jetpackConsumptionRate;
+                    }
+                    return fuelConsumption.GetValue(DEFAULT_FUEL_CONSUMPTION);
+                }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] fuelConsumption: {ex.Message}"); }
                 return DEFAULT_FUEL_CONSUMPTION;
             }
@@ -93,7 +118,16 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (fuelRegen > 0f) return fuelRegen; }
+                try
+                {
+                    if (fuelRegen.use) return fuelRegen.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.jetpackRechargeRate > 0) return stats.jetpackRechargeRate;
+                    }
+                    return fuelRegen.GetValue(DEFAULT_FUEL_REGEN);
+                }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] fuelRegen: {ex.Message}"); }
                 return DEFAULT_FUEL_REGEN;
             }
@@ -103,10 +137,30 @@ namespace Combating.Scripts
         {
             get
             {
-                try { if (maxUpwardVelocity > 0f) return maxUpwardVelocity; }
+                try { return maxUpwardVelocity.GetValue(12f); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] maxUpwardVelocity: {ex.Message}"); }
                 return 12f;
             }
+        }
+
+        private void UpdateInspectorValues()
+        {
+            MaxFuel = EffectiveMaxFuel;
+            JetpackForce = EffectiveJetpackForce;
+            HoverForce = EffectiveHoverForce;
+            FuelConsumption = EffectiveFuelConsumption;
+            FuelRegen = EffectiveFuelRegen;
+            MaxUpwardVelocity = EffectiveMaxUpwardVelocity;
+        }
+
+        private void OnValidate()
+        {
+            UpdateInspectorValues();
+        }
+
+        void Update()
+        {
+            UpdateInspectorValues();
         }
 
         public float JetpackFuel => IsNetworkActive ? currentJetpackFuel.Value : m_OfflineJetpack;

@@ -15,23 +15,45 @@ namespace Combating.Scripts
 #endif
     public class PlayerController : NetworkBehaviour
     {
+        private const float DEFAULT_MOVE_SPEED = 2.0f;
+        private const float DEFAULT_SPRINT_SPEED = 5.335f;
+        private const float DEFAULT_SPRINT_HOLD_THRESHOLD = 0.25f;
+        private const float DEFAULT_ROTATION_SMOOTH_TIME = 0.12f;
+        private const float DEFAULT_SPEED_CHANGE_RATE = 10.0f;
+        private const float DEFAULT_JUMP_HEIGHT = 1.2f;
+        private const float DEFAULT_DOUBLE_JUMP_HEIGHT = 1.2f;
+        private const int DEFAULT_MAX_JUMPS = 2;
+        private const float DEFAULT_GRAVITY = -15.0f;
+        private const float DEFAULT_GROUNDED_RADIUS = 0.15f;
+        private const float DEFAULT_GROUNDED_OFFSET = -0.14f;
+
         #region Variables: Movement Settings
         [Header("Movement")]
-        public float MoveSpeed = 2.0f;
-        public float SprintSpeed = 5.335f;
-        public float SprintHoldThreshold = 0.25f; // <--- Tiempo mínimo manteniendo Shift para correr
-        [Range(0.0f, 0.3f)] public float RotationSmoothTime = 0.12f;
-        public float SpeedChangeRate = 10.0f;
+        public float MoveSpeed;
+        public Optional<float> moveSpeed;
+        public float SprintSpeed;
+        public Optional<float> sprintSpeed;
+        public float SprintHoldThreshold;
+        public Optional<float> sprintHoldThreshold;
+        [Range(0.0f, 0.3f)] public float RotationSmoothTime;
+        public Optional<float> rotationSmoothTime;
+        public float SpeedChangeRate;
+        public Optional<float> speedChangeRate;
         public AudioClip LandingAudioClip;
         public AudioClip[] FootstepAudioClips;
         [Range(0, 1)] public float FootstepAudioVolume = 0.5f;
-        public float JumpHeight = 1.2f;
 
-        [Header("Double Jump")]
+        [Header("Jump Physics & Overrides")]
+        public float JumpHeight;
+        public Optional<float> jumpHeight;
         public bool EnableDoubleJump = true;
-        public float DoubleJumpHeight = 1.2f;
+        public float DoubleJumpHeight;
+        public Optional<float> doubleJumpHeight;
+        public int MaxJumps;
+        public Optional<int> maxJumps;
 
-        public float Gravity = -15.0f;
+        public float Gravity;
+        public Optional<float> gravity;
         public float JumpTimeout = 0.50f;
         public float FallTimeout = 0.15f;
         #endregion
@@ -39,8 +61,10 @@ namespace Combating.Scripts
         #region Variables: Ground Check
         [Header("Ground Check")]
         public bool Grounded = true;
-        public float GroundedOffset = -0.14f;
-        public float GroundedRadius = 0.15f;
+        public float GroundedOffset;
+        public Optional<float> groundedOffset;
+        public float GroundedRadius;
+        public Optional<float> groundedRadius;
         public LayerMask GroundLayers;
         #endregion
 
@@ -91,6 +115,87 @@ namespace Combating.Scripts
         public bool cursorInputForLook = true;
         #endregion
 
+        #region Effective Statistics Resolvers with Optional & Fallback Protection
+
+        public float EffectiveMoveSpeed
+        {
+            get
+            {
+                try
+                {
+                    if (moveSpeed.use) return moveSpeed.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.moveSpeed > 0) return stats.moveSpeed;
+                    }
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] moveSpeed: {ex.Message}"); }
+                return DEFAULT_MOVE_SPEED;
+            }
+        }
+
+        public float EffectiveSprintSpeed
+        {
+            get
+            {
+                try
+                {
+                    if (sprintSpeed.use) return sprintSpeed.value;
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] sprintSpeed: {ex.Message}"); }
+                return DEFAULT_SPRINT_SPEED;
+            }
+        }
+
+        public float EffectiveSprintHoldThreshold => sprintHoldThreshold.GetValue(DEFAULT_SPRINT_HOLD_THRESHOLD);
+        public float EffectiveRotationSmoothTime => rotationSmoothTime.GetValue(DEFAULT_ROTATION_SMOOTH_TIME);
+        public float EffectiveSpeedChangeRate => speedChangeRate.GetValue(DEFAULT_SPEED_CHANGE_RATE);
+
+        public float EffectiveJumpHeight
+        {
+            get
+            {
+                try
+                {
+                    if (jumpHeight.use) return jumpHeight.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.jumpHeight > 0) return stats.jumpHeight;
+                    }
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] jumpHeight: {ex.Message}"); }
+                return DEFAULT_JUMP_HEIGHT;
+            }
+        }
+
+        public float EffectiveDoubleJumpHeight => doubleJumpHeight.GetValue(DEFAULT_DOUBLE_JUMP_HEIGHT);
+
+        public int EffectiveMaxJumps
+        {
+            get
+            {
+                try
+                {
+                    if (maxJumps.use) return maxJumps.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.maxJumps > 0) return stats.maxJumps;
+                    }
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] maxJumps: {ex.Message}"); }
+                return DEFAULT_MAX_JUMPS;
+            }
+        }
+
+        public float EffectiveGravity => gravity.GetValue(DEFAULT_GRAVITY);
+        public float EffectiveGroundedRadius => groundedRadius.GetValue(DEFAULT_GROUNDED_RADIUS);
+        public float EffectiveGroundedOffset => groundedOffset.GetValue(DEFAULT_GROUNDED_OFFSET);
+
+        #endregion
+
         #region Internal State
         private float _cinemachineTargetYaw;
         private float _cinemachineTargetPitch;
@@ -109,9 +214,8 @@ namespace Combating.Scripts
         private float _fallTimeoutDelta;
         private int _jumpsRemaining;
 
-        private float _shiftHoldTimer; // <--- Temporizador interno para medir el tiempo presionado
+        private float _shiftHoldTimer;
 
-        // Animator Parameter Hashes (match Animator Controller exactly)
         private static readonly int _animIDSpeed = Animator.StringToHash("Speed");
         private static readonly int _animIDIsGrounded = Animator.StringToHash("isGrounded");
         private static readonly int _animIDJump = Animator.StringToHash("Jump");
@@ -148,6 +252,8 @@ namespace Combating.Scripts
 
         private bool IsCurrentDeviceMouse => _playerInput != null && _playerInput.currentControlScheme == "KeyboardMouse";
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
+        #endregion
         private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
         #endregion
 

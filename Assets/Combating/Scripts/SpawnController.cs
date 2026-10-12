@@ -19,11 +19,35 @@ namespace Combating.Scripts
     /// </summary>
     public class SpawnController : NetworkBehaviour
     {
+        private const float DEFAULT_EXPLOSION_FORCE = 10f;
+        private const float DEFAULT_SPREAD_RADIUS = 2.5f;
+
         [Header("Spawn Settings")]
         public List<ItemData> lootTable = new List<ItemData>();
         public List<SpawnableItem> itemsToSpawn = new List<SpawnableItem>();
-        public float explosionForce = 10f;
-        public float spreadRadius = 2.5f;
+        public float ExplosionForce;
+        public Optional<float> explosionForce;
+        public float SpreadRadius;
+        public Optional<float> spreadRadius;
+
+        public float EffectiveExplosionForce => explosionForce.GetValue(DEFAULT_EXPLOSION_FORCE);
+        public float EffectiveSpreadRadius => spreadRadius.GetValue(DEFAULT_SPREAD_RADIUS);
+
+        private void UpdateInspectorValues()
+        {
+            ExplosionForce = EffectiveExplosionForce;
+            SpreadRadius = EffectiveSpreadRadius;
+        }
+
+        private void OnValidate()
+        {
+            UpdateInspectorValues();
+        }
+
+        private void Update()
+        {
+            UpdateInspectorValues();
+        }
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
@@ -84,7 +108,7 @@ namespace Combating.Scripts
                 cube.transform.localScale = Vector3.one * Random.Range(0.1f, 0.25f);
 
                 var rb = cube.AddComponent<Rigidbody>();
-                rb.AddExplosionForce(explosionForce, transform.position, spreadRadius);
+                rb.AddExplosionForce(EffectiveExplosionForce, transform.position, EffectiveSpreadRadius);
 
                 var r = cube.GetComponent<Renderer>();
                 r.material.color = Color.Lerp(Color.red, Color.black, Random.value);
@@ -97,11 +121,9 @@ namespace Combating.Scripts
         {
             if (prefab == null) return;
 
-            // Offset higher and to the side to avoid immediate re-pickup
             Vector3 offset = transform.right * 1.2f + transform.up * 1.5f;
             Vector3 spawnPos = origin + offset;
 
-            // Impulse away from the center
             Vector3 impulse = (transform.right + transform.up).normalized * 3f;
 
             SpawnSingleItem(prefab, spawnPos, message, impulse, data);
@@ -111,7 +133,17 @@ namespace Combating.Scripts
         {
             if (prefab == null) return;
 
-            GameObject spawned = Instantiate(prefab, position, Quaternion.identity);
+            GameObject spawned = null;
+            if (BalanceManager.Instance != null)
+            {
+                spawned = BalanceManager.Instance.SpawnFromPool(prefab, position, Quaternion.identity);
+            }
+            else
+            {
+                spawned = Instantiate(prefab, position, Quaternion.identity);
+            }
+
+            if (spawned == null) return;
 
             // Inyectar datos en el PickupController si se proporcionan
             var pickup = spawned.GetComponent<PickupController>();
