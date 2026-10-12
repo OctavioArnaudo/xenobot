@@ -10,8 +10,20 @@ namespace Combating.Scripts
     /// <summary>
     /// Universal controller for Health, Team, and Shield Mitigation.
     /// </summary>
-    public class HealthController : NetworkBehaviour
+    public class HealthController : NetworkBehaviour, IBalanceCalibratable
     {
+        public StatSpawnPointData CurrentStats { get; private set; }
+        public event System.Action<StatSpawnPointData> OnStatsUpdated;
+
+        public void CalibrateStats(StatSpawnPointData stats)
+        {
+            CurrentStats = stats;
+            if (stats.maxHealth > 0)
+            {
+                SetHealth(stats.maxHealth);
+            }
+            OnStatsUpdated?.Invoke(stats);
+        }
         // --- Internal Hardcoded Health Defaults ---
         private const int DEFAULT_PLAYER_MAX_HEALTH = 250;
         private const int DEFAULT_ENEMY_BASE_HEALTH = 120;
@@ -68,6 +80,7 @@ namespace Combating.Scripts
                 try
                 {
                     if (maxHealth.use) return maxHealth.value;
+                    if (CurrentStats.maxHealth > 0) return CurrentStats.maxHealth;
                     if (BalanceManager.Instance != null)
                     {
                         var stats = BalanceManager.Instance.GetEntityBalance(gameObject);

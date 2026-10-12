@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using Unity.Netcode;
 
 namespace Combating.Scripts
 {
@@ -251,6 +252,7 @@ namespace Combating.Scripts
         private Transform _poolParentTransform;
 
         private readonly Dictionary<GameObject, StatSpawnPointData> _activeStatsRegistry = new Dictionary<GameObject, StatSpawnPointData>();
+        private readonly HashSet<GameObject> _assignedSceneObjects = new HashSet<GameObject>();
 
         private void Awake()
         {
@@ -265,9 +267,64 @@ namespace Combating.Scripts
             _poolParentTransform.SetParent(transform);
         }
 
+        private void OnEnable()
+        {
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnClientConnectedCallback += OnNetworkClientConnected;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnClientConnectedCallback -= OnNetworkClientConnected;
+            }
+        }
+
         private void Start()
         {
             InitializeSceneSpawns();
+        }
+
+        private void Update()
+        {
+            CheckAndRegisterUnregisteredPlayers();
+        }
+
+        private void OnNetworkClientConnected(ulong clientId)
+        {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+            {
+                if (NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject != null)
+                {
+                    RegisterNetworkPlayer(client.PlayerObject.gameObject);
+                }
+            }
+        }
+
+        public void RegisterNetworkPlayer(GameObject playerObject, UserType userType = UserType.XenoBot)
+        {
+            if (playerObject == null) return;
+            if (!_activeStatsRegistry.ContainsKey(playerObject))
+            {
+                StatSpawnPointData playerStats = CalculateUserStats(userType);
+                RegisterStatSpawnPointData(playerObject, playerStats);
+            }
+        }
+
+        private void CheckAndRegisterUnregisteredPlayers()
+        {
+            GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+            for (int i = 0; i < players.Length; i++)
+            {
+                GameObject p = players[i];
+                if (p != null && p.activeInHierarchy && !_activeStatsRegistry.ContainsKey(p))
+                {
+                    RegisterNetworkPlayer(p);
+                }
+            }
         }
 
         #region 1. Object Pool & Calibration
@@ -409,16 +466,24 @@ namespace Combating.Scripts
 
             int instanceID = instance.GetInstanceID();
 
+            if (_activeStatsRegistry.ContainsKey(instance))
+            {
+                _activeStatsRegistry.Remove(instance);
+            }
+
+            bool isNetworkActive = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+            bool isNetworkObj = instance.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsSpawned;
+
+            if (isNetworkActive && isNetworkObj && NetworkManager.Singleton.IsServer)
+            {
+                netObj.Despawn(false);
+            }
+
             if (_activeInstanceToKey.TryGetValue(instanceID, out string poolKey))
             {
                 instance.SetActive(false);
                 instance.transform.SetParent(_poolParentTransform);
                 _objectPools[poolKey].Enqueue(instance);
-
-                if (_activeStatsRegistry.ContainsKey(instance))
-                {
-                    _activeStatsRegistry.Remove(instance);
-                }
             }
             else
             {
@@ -438,17 +503,123 @@ namespace Combating.Scripts
 
         #region 2. Spawn Manager Pattern
 
+        private GameObject TryFindExistingSceneEntity(Transform pointTransform, string tagFilter, System.Type componentType, HashSet<GameObject> assignedSet)
+        {
+            if (pointTransform == null) return null;
+
+            GameObject ptGo = pointTransform.gameObject;
+            if (ptGo != null && ptGo.activeInHierarchy && !assignedSet.Contains(ptGo))
+            {
+                if (IsMatchingEntity(ptGo, tagFilter, componentType))
+                {
+                    assignedSet.Add(ptGo);
+                    return ptGo;
+                }
+            }
+
+            foreach (Transform child in pointTransform)
+            {
+                GameObject childGo = child.gameObject;
+                if (childGo != null && childGo.activeInHierarchy && !assignedSet.Contains(childGo))
+                {
+                    if (IsMatchingEntity(childGo, tagFilter, componentType))
+                    {
+                        assignedSet.Add(childGo);
+                        return childGo;
+                    }
+                }
+            }
+
+            Collider[] colliders = Physics.OverlapSphere(pointTransform.position, 2.5f);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                GameObject colGo = colliders[i].gameObject;
+                if (colGo == null || !colGo.activeInHierarchy || assignedSet.Contains(colGo)) continue;
+                if (_poolParentTransform != null && colGo.transform.IsChildOf(_poolParentTransform)) continue;
+
+                if (IsMatchingEntity(colGo, tagFilter, componentType))
+                {
+                    assignedSet.Add(colGo);
+                    return colGo;
+                }
+            }
+
+            return null;
+        }
+
+        private bool IsMatchingEntity(GameObject go, string tagFilter, System.Type componentType)
+        {
+            if (go == null) return false;
+            if (!string.IsNullOrEmpty(tagFilter) && go.CompareTag(tagFilter)) return true;
+            if (componentType != null && go.GetComponent(componentType) != null) return true;
+            return false;
+        }
+
+        public void ScanAndRegisterExistingSceneEntities(HashSet<GameObject> assignedSet = null)
+        {
+            HashSet<GameObject> assigned = assignedSet ?? _assignedSceneObjects;
+
+            GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+            for (int i = 0; i < players.Length; i++)
+            {
+                GameObject p = players[i];
+                if (p != null && p.activeInHierarchy && !_activeStatsRegistry.ContainsKey(p) && !assigned.Contains(p))
+                {
+                    if (_poolParentTransform != null && p.transform.IsChildOf(_poolParentTransform)) continue;
+                    RegisterNetworkPlayer(p);
+                    assigned.Add(p);
+                }
+            }
+
+            GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+            for (int i = 0; i < enemies.Length; i++)
+            {
+                GameObject e = enemies[i];
+                if (e != null && e.activeInHierarchy && !_activeStatsRegistry.ContainsKey(e) && !assigned.Contains(e))
+                {
+                    if (_poolParentTransform != null && e.transform.IsChildOf(_poolParentTransform)) continue;
+                    HostType hostType = HostType.Melee;
+                    if (e.TryGetComponent<EnemyController>(out var enemyCtrl))
+                    {
+                        hostType = enemyCtrl.activeArchetype switch
+                        {
+                            AIArchetype.FlanqueoYCobertura => HostType.Range,
+                            AIArchetype.AtaqueYHuida => HostType.Range,
+                            AIArchetype.InvocadorRefuerzos => HostType.Hybrid,
+                            _ => HostType.Melee
+                        };
+                    }
+                    StatSpawnPointData enemyStats = CalculateHostStats(hostType, i, Mathf.Max(1, enemies.Length));
+                    RegisterStatSpawnPointData(e, enemyStats);
+                    assigned.Add(e);
+                }
+            }
+        }
+
         public void InitializeSceneSpawns()
         {
+            _assignedSceneObjects.Clear();
+
             int totalPlayers = userSpawnPoints.Count;
             for (int i = 0; i < totalPlayers; i++)
             {
                 UserSpawnPointData playerData = userSpawnPoints[i];
                 GameObject playerPrefabToUse = playerData.customPrefab != null ? playerData.customPrefab : userPlayerPrefab;
 
-                if (playerPrefabToUse != null && playerData.pointTransform != null)
+                GameObject existingPlayer = TryFindExistingSceneEntity(playerData.pointTransform, "Player", typeof(PlayerController), _assignedSceneObjects);
+                GameObject player = existingPlayer;
+
+                if (player == null && playerPrefabToUse != null && playerData.pointTransform != null)
                 {
-                    GameObject player = SpawnFromPool(playerPrefabToUse, playerData.pointTransform.position, playerData.pointTransform.rotation);
+                    player = SpawnFromPool(playerPrefabToUse, playerData.pointTransform.position, playerData.pointTransform.rotation);
+                }
+
+                if (player != null)
+                {
+                    if (existingPlayer != null && playerData.pointTransform != null)
+                    {
+                        player.transform.SetPositionAndRotation(CalibrateSpawnPosition(playerData.pointTransform.position), playerData.pointTransform.rotation);
+                    }
                     StatSpawnPointData playerStats = CalculateUserStats(playerData.playerTypeToSpawn);
                     RegisterStatSpawnPointData(player, playerStats);
                 }
@@ -460,9 +631,20 @@ namespace Combating.Scripts
                 HostSpawnPointData spawnData = hostSpawnPoints[i];
                 GameObject enemyPrefabToUse = spawnData.customPrefab != null ? spawnData.customPrefab : GetPrefabForEnemyType(spawnData.enemyTypeToSpawn);
 
-                if (enemyPrefabToUse != null && spawnData.pointTransform != null)
+                GameObject existingEnemy = TryFindExistingSceneEntity(spawnData.pointTransform, "Enemy", typeof(EnemyController), _assignedSceneObjects);
+                GameObject enemy = existingEnemy;
+
+                if (enemy == null && enemyPrefabToUse != null && spawnData.pointTransform != null)
                 {
-                    GameObject enemy = SpawnFromPool(enemyPrefabToUse, spawnData.pointTransform.position, spawnData.pointTransform.rotation);
+                    enemy = SpawnFromPool(enemyPrefabToUse, spawnData.pointTransform.position, spawnData.pointTransform.rotation);
+                }
+
+                if (enemy != null)
+                {
+                    if (existingEnemy != null && spawnData.pointTransform != null)
+                    {
+                        enemy.transform.SetPositionAndRotation(CalibrateSpawnPosition(spawnData.pointTransform.position), spawnData.pointTransform.rotation);
+                    }
                     StatSpawnPointData enemyStats = CalculateHostStats(spawnData.enemyTypeToSpawn, i, totalEnemies);
                     RegisterStatSpawnPointData(enemy, enemyStats);
                 }
@@ -475,9 +657,21 @@ namespace Combating.Scripts
                 if (itemData.pointTransform != null)
                 {
                     GameObject prefabToUse = itemData.customPrefab != null ? itemData.customPrefab : GetPrefabForItemType(itemData.categoryToSpawn);
-                    if (prefabToUse != null)
+                    GameObject existingItem = TryFindExistingSceneEntity(itemData.pointTransform, null, typeof(ILootableEntity), _assignedSceneObjects);
+                    GameObject itemObj = existingItem;
+
+                    if (itemObj == null && prefabToUse != null)
                     {
-                        GameObject itemObj = SpawnFromPool(prefabToUse, itemData.pointTransform.position, itemData.pointTransform.rotation);
+                        itemObj = SpawnFromPool(prefabToUse, itemData.pointTransform.position, itemData.pointTransform.rotation);
+                    }
+
+                    if (itemObj != null)
+                    {
+                        if (existingItem != null)
+                        {
+                            itemObj.transform.SetPositionAndRotation(CalibrateSpawnPosition(itemData.pointTransform.position), itemData.pointTransform.rotation);
+                        }
+                        itemObj.transform.localScale = Vector3.one * DEFAULT_ITEM_SCALE;
                         StatSpawnPointData itemStats = CalculateItemStats(itemData.categoryToSpawn);
                         RegisterStatSpawnPointData(itemObj, itemStats);
                     }
@@ -491,14 +685,27 @@ namespace Combating.Scripts
                 if (propData.pointTransform != null)
                 {
                     GameObject prefabToUse = propData.customPrefab != null ? propData.customPrefab : GetPrefabForPropType(propData.categoryToSpawn);
-                    if (prefabToUse != null)
+                    GameObject existingProp = TryFindExistingSceneEntity(propData.pointTransform, null, null, _assignedSceneObjects);
+                    GameObject propObj = existingProp;
+
+                    if (propObj == null && prefabToUse != null)
                     {
-                        GameObject propObj = SpawnFromPool(prefabToUse, propData.pointTransform.position, propData.pointTransform.rotation);
+                        propObj = SpawnFromPool(prefabToUse, propData.pointTransform.position, propData.pointTransform.rotation);
+                    }
+
+                    if (propObj != null)
+                    {
+                        if (existingProp != null)
+                        {
+                            propObj.transform.SetPositionAndRotation(CalibrateSpawnPosition(propData.pointTransform.position), propData.pointTransform.rotation);
+                        }
                         StatSpawnPointData propStats = CalculatePropStats(propData.categoryToSpawn);
                         RegisterStatSpawnPointData(propObj, propStats);
                     }
                 }
             }
+
+            ScanAndRegisterExistingSceneEntities(_assignedSceneObjects);
         }
 
         private GameObject GetPrefabForEnemyType(HostType type)

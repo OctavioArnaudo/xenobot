@@ -227,6 +227,11 @@ namespace Combating.Scripts
 
         public override void OnNetworkSpawn()
         {
+            if (BalanceManager.Instance != null)
+            {
+                BalanceManager.Instance.RegisterNetworkPlayer(gameObject);
+            }
+
             if (IsOwner)
             {
                 GameObject[] playersInScene = GameObject.FindGameObjectsWithTag("Player");
