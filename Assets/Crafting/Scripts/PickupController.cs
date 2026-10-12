@@ -10,8 +10,10 @@ namespace Crafting.Scripts
     /// Handles all items generically using ItemType and prefab logic.
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
-    public class PickupController : NetworkBehaviour
+    public class PickupController : NetworkBehaviour, IPoolRecyclable
     {
+        public event System.Action OnEntityRecycled;
+
         [Header("Data Configuration")]
         public ItemData item;
 
@@ -32,6 +34,49 @@ namespace Crafting.Scripts
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
+        public void PrepareForSpawn(Vector3 position, Quaternion rotation)
+        {
+            _taken = false;
+            _spawnTime = Time.time;
+            _grounded = false;
+            _timer = 0f;
+            _startPos = position;
+
+            transform.SetPositionAndRotation(position, rotation);
+
+            if (TryGetComponent<Rigidbody>(out var rb))
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+                rb.velocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
+            CreateMasterTrigger();
+            UpdateFloatingName();
+        }
+
+        public void RecycleEntity()
+        {
+            _taken = true;
+            OnEntityRecycled?.Invoke();
+        }
+
+        private void OnEnable()
+        {
+            _taken = false;
+            _spawnTime = Time.time;
+            _grounded = false;
+            ActiveCount++;
+            InventoryController.MarkCountDirty();
+        }
+
+        private void OnDisable()
+        {
+            ActiveCount--;
+            InventoryController.MarkCountDirty();
+        }
+
         void Awake()
         {
             _spawnTime = Time.time;
@@ -40,13 +85,11 @@ namespace Crafting.Scripts
 
         private void CreateMasterTrigger()
         {
-            // 1. Force a trigger for player detection
             SphereCollider sc = GetComponent<SphereCollider>();
             if (sc == null) sc = gameObject.AddComponent<SphereCollider>();
             sc.isTrigger = true;
             sc.radius = 1.2f;
 
-            // 2. Ensure a solid collider for ground collision
             BoxCollider bc = GetComponent<BoxCollider>();
             if (bc == null)
             {
@@ -55,7 +98,6 @@ namespace Crafting.Scripts
                 bc.isTrigger = false;
             }
 
-            // 3. Ensure a Rigidbody for trigger detection
             Rigidbody rb = GetComponent<Rigidbody>();
             if (rb == null)
             {
@@ -69,9 +111,6 @@ namespace Crafting.Scripts
         {
             _startPos = transform.position;
             _spawnTime = Time.time;
-            ActiveCount++;
-            InventoryController.MarkCountDirty();
-
             UpdateFloatingName();
         }
 
@@ -213,14 +252,11 @@ namespace Crafting.Scripts
                 NetworkObject netObj = GetComponent<NetworkObject>();
                 if (netObj != null && netObj.IsSpawned)
                 {
-                    if (netObj.InScenePlaced)
-                    {
-                        netObj.Despawn(false);
-                        if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
-                        else gameObject.SetActive(false);
-                    }
-                    else netObj.Despawn(true);
+                    netObj.Despawn(false);
                 }
+
+                if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
+                else gameObject.SetActive(false);
             }
         }
 
