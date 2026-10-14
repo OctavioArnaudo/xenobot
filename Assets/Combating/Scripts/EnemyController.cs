@@ -303,7 +303,7 @@ namespace Combating.Scripts
             {
                 m_Agent.updateRotation = false;
                 EnemyCategory cat = GetCurrentCategory();
-                float groundOffset = 0f;
+                float groundOffset = 0.9f;
                 if (BalanceManager.Instance != null)
                 {
                     groundOffset = BalanceManager.Instance.GetVerticalGroundOffset(gameObject);
@@ -311,9 +311,9 @@ namespace Combating.Scripts
                 else
                 {
                     CapsuleCollider cap = GetComponent<CapsuleCollider>();
-                    if (cap != null) groundOffset = Mathf.Max(0f, -(cap.center.y - cap.height * 0.5f));
-                    else groundOffset = 0.9f;
+                    if (cap != null) groundOffset = Mathf.Max(0.8f, -(cap.center.y - cap.height * 0.5f));
                 }
+                groundOffset = Mathf.Max(0.85f, groundOffset);
 
                 m_Agent.baseOffset = (cat == EnemyCategory.Melee) ? groundOffset : (groundOffset + EffectiveHoverHeight);
 
@@ -330,7 +330,6 @@ namespace Combating.Scripts
                 _hasAnimGrounded = HasParameter(m_Animator, _animIDIsGrounded);
             }
 
-            // Auto-detect combat controllers
             if (m_Shooter == null) m_Shooter = GetComponent<ShootController>();
             if (m_Melee == null) m_Melee = GetComponent<MeleeController>();
             if (m_Health == null) m_Health = GetComponent<HealthController>();
@@ -350,6 +349,11 @@ namespace Combating.Scripts
 
             InitializePhasesIfNeeded();
             ValidateRequiredControllers();
+        }
+
+        private void Start()
+        {
+            EnsureAgentOnNavMesh();
         }
 
         private void InitializePhasesIfNeeded()
@@ -506,6 +510,49 @@ namespace Combating.Scripts
             UpdateInspectorValues();
         }
 
+        private bool EnsureAgentOnNavMesh()
+        {
+            if (m_Agent == null) return false;
+
+            if (m_Agent.isOnNavMesh) return true;
+
+            float[] searchRadii = new float[] { 2.0f, 5.0f, 12.0f, 25.0f, 50.0f };
+            foreach (float radius in searchRadii)
+            {
+                if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, radius, NavMesh.AllAreas))
+                {
+                    float groundOffset = 0.9f;
+                    if (BalanceManager.Instance != null)
+                    {
+                        groundOffset = BalanceManager.Instance.GetVerticalGroundOffset(gameObject);
+                    }
+                    else if (TryGetComponent<CapsuleCollider>(out var cap))
+                    {
+                        groundOffset = Mathf.Max(0.8f, -(cap.center.y - cap.height * 0.5f));
+                    }
+                    groundOffset = Mathf.Max(0.85f, groundOffset);
+
+                    Vector3 validPos = hit.position + Vector3.up * groundOffset;
+
+                    m_Agent.enabled = false;
+                    transform.position = validPos;
+                    m_Agent.enabled = true;
+
+                    if (m_Agent.isOnNavMesh)
+                    {
+                        return true;
+                    }
+
+                    if (m_Agent.Warp(hit.position))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         void Update()
         {
             UpdateInspectorValues();
@@ -515,6 +562,11 @@ namespace Combating.Scripts
             {
                 OnEnemyDeath();
                 return;
+            }
+
+            if (m_Agent != null && !m_Agent.isOnNavMesh)
+            {
+                EnsureAgentOnNavMesh();
             }
 
             UpdateHoverOffsetForCategory();
@@ -671,19 +723,31 @@ namespace Combating.Scripts
         private void UpdateHoverOffsetForCategory()
         {
             if (m_Agent == null) return;
+
+            float groundOffset = 0.9f;
+            if (BalanceManager.Instance != null)
+            {
+                groundOffset = BalanceManager.Instance.GetVerticalGroundOffset(gameObject);
+            }
+            else if (TryGetComponent<CapsuleCollider>(out var cap))
+            {
+                groundOffset = Mathf.Max(0.8f, -(cap.center.y - cap.height * 0.5f));
+            }
+            groundOffset = Mathf.Max(0.85f, groundOffset);
+
             EnemyCategory cat = GetCurrentCategory();
             if (cat == EnemyCategory.Melee)
             {
-                m_Agent.baseOffset = 0f;
+                m_Agent.baseOffset = groundOffset;
             }
             else if (cat == EnemyCategory.Ranged)
             {
-                m_Agent.baseOffset = EffectiveHoverHeight;
+                m_Agent.baseOffset = groundOffset + EffectiveHoverHeight;
             }
             else
             {
                 bool isMeleeClose = m_Target != null && Vector3.Distance(transform.position, m_Target.position) <= EffectiveMeleeRange * 1.5f;
-                m_Agent.baseOffset = isMeleeClose ? 0f : EffectiveHoverHeight;
+                m_Agent.baseOffset = isMeleeClose ? groundOffset : (groundOffset + EffectiveHoverHeight);
             }
         }
 
@@ -860,13 +924,17 @@ namespace Combating.Scripts
         }
 
         // --- Helper de Navegación Segura ---
-        private Vector3 GetValidNavMeshPosition(Vector3 desiredPosition, float sampleRadius = 8.0f)
+        private Vector3 GetValidNavMeshPosition(Vector3 desiredPosition, float sampleRadius = 12.0f)
         {
             if (NavMesh.SamplePosition(desiredPosition, out NavMeshHit hit, sampleRadius, NavMesh.AllAreas))
             {
                 return hit.position;
             }
-            return transform.position;
+            if (NavMesh.SamplePosition(transform.position, out NavMeshHit selfHit, 25.0f, NavMesh.AllAreas))
+            {
+                return selfHit.position;
+            }
+            return desiredPosition;
         }
 
         // --- Archetype Implementations (Exaggerated & Category-Agnostic) ---
@@ -1332,7 +1400,9 @@ namespace Combating.Scripts
 
         private void Wander(float speedMult = 1.0f)
         {
-            if (m_Agent == null || !m_Agent.isOnNavMesh || m_Agent.pathPending || m_Agent.remainingDistance > 1f) return;
+            if (m_Agent == null) return;
+            if (!m_Agent.isOnNavMesh && !EnsureAgentOnNavMesh()) return;
+            if (m_Agent.pathPending || m_Agent.remainingDistance > 1f) return;
 
             Vector3 randomPos = _startPosition + Random.insideUnitSphere * EffectiveWanderRadius;
             Vector3 navPos = GetValidNavMeshPosition(randomPos, EffectiveWanderRadius);
@@ -1346,7 +1416,14 @@ namespace Combating.Scripts
 
         private void MoveTo(Vector3 position, float speed)
         {
-            if (m_Agent != null && m_Agent.isOnNavMesh)
+            if (m_Agent == null) return;
+
+            if (!m_Agent.isOnNavMesh)
+            {
+                if (!EnsureAgentOnNavMesh()) return;
+            }
+
+            if (m_Agent.isOnNavMesh)
             {
                 m_Agent.speed = speed;
                 m_Agent.isStopped = false;
