@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 433327213296501066}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.12, y: -16.4, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -90,7 +90,7 @@ Transform:
   m_GameObject: {fileID: 1630021695492789648}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -36.4, y: -8.7, z: 32.3}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -484,7 +484,7 @@ Transform:
   m_GameObject: {fileID: 5798857226344050831}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.1, y: -14.4, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -750,7 +750,7 @@ Transform:
   m_GameObject: {fileID: 8052838108513990363}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.16, y: -11.54, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1380,8 +1380,14 @@ MonoBehaviour:
     message: IRON
   - prefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}
     message: HP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!143 &6693920129805793369
 CharacterController:
   m_ObjectHideFlags: 0
@@ -2021,8 +2027,14 @@ MonoBehaviour:
     message: IRON
   - prefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}
     message: HP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!143 &1462404208963986389
 CharacterController:
   m_ObjectHideFlags: 0
@@ -2062,7 +2074,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 626157933196567872, guid: 76196561333b78f41b0173e97e0f0cfc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 247.99998
+      value: 235.2
       objectReference: {fileID: 0}
     - target: {fileID: 626157933196567872, guid: 76196561333b78f41b0173e97e0f0cfc, type: 3}
       propertyPath: m_LocalPosition.z
@@ -2295,8 +2307,14 @@ MonoBehaviour:
     message: IRON
   - prefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}
     message: HP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!143 &3888456634406127712
 CharacterController:
   m_ObjectHideFlags: 0
@@ -2770,8 +2788,14 @@ MonoBehaviour:
     message: IRON
   - prefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}
     message: HP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!143 &853865174227680481
 CharacterController:
   m_ObjectHideFlags: 0
@@ -3044,8 +3068,14 @@ MonoBehaviour:
     message: IRON
   - prefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}
     message: HP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!143 &4852021861331765357
 CharacterController:
   m_ObjectHideFlags: 0
@@ -3081,15 +3111,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 1225209186806331939, guid: 6d99e2ff44675ce4a8150aeaff4db9f2, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -2764
+      value: -2764.7
       objectReference: {fileID: 0}
     - target: {fileID: 1225209186806331939, guid: 6d99e2ff44675ce4a8150aeaff4db9f2, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 247.99998
+      value: 236.6
       objectReference: {fileID: 0}
     - target: {fileID: 1225209186806331939, guid: 6d99e2ff44675ce4a8150aeaff4db9f2, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -629
+      value: -629.1
       objectReference: {fileID: 0}
     - target: {fileID: 1225209186806331939, guid: 6d99e2ff44675ce4a8150aeaff4db9f2, type: 3}
       propertyPath: m_LocalRotation.w
@@ -3318,8 +3348,14 @@ MonoBehaviour:
     message: IRON
   - prefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}
     message: HP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!143 &3908284124582998568
 CharacterController:
   m_ObjectHideFlags: 0
@@ -3907,8 +3943,14 @@ MonoBehaviour:
     message: IRON
   - prefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}
     message: HP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!143 &4952215207361731556
 CharacterController:
   m_ObjectHideFlags: 0
@@ -4270,8 +4312,14 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   lootTable: []
   itemsToSpawn: []
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!114 &750096837095163764
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4473,7 +4521,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9178293125933540046, guid: 6fd0b095a6f6b65479143189b953fe2b, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 246.66
+      value: 237.3
       objectReference: {fileID: 0}
     - target: {fileID: 9178293125933540046, guid: 6fd0b095a6f6b65479143189b953fe2b, type: 3}
       propertyPath: m_LocalPosition.z
@@ -4636,8 +4684,14 @@ MonoBehaviour:
     message: IRON
   - prefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}
     message: HP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!143 &5010455203965673494
 CharacterController:
   m_ObjectHideFlags: 0
@@ -4917,8 +4971,14 @@ MonoBehaviour:
     message: IRON
   - prefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}
     message: HP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!143 &6945300862528936495
 CharacterController:
   m_ObjectHideFlags: 0
@@ -5190,8 +5250,14 @@ MonoBehaviour:
     message: IRON
   - prefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}
     message: HP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!143 &6193915614424638749
 CharacterController:
   m_ObjectHideFlags: 0
@@ -5469,8 +5535,14 @@ MonoBehaviour:
     message: IRON
   - prefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}
     message: HP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!143 &4446916434948005360
 CharacterController:
   m_ObjectHideFlags: 0
@@ -5751,8 +5823,14 @@ MonoBehaviour:
     message: IRON
   - prefab: {fileID: 5694781636559472691, guid: 87936a3914e5937408fc8070585303c6, type: 3}
     message: HP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!143 &831878527476402312
 CharacterController:
   m_ObjectHideFlags: 0
