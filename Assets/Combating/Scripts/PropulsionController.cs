@@ -24,6 +24,10 @@ namespace Combating.Scripts
         public bool infiniteFuel = false; // Combustible infinito
         public bool allowRegen = true;    // Recarga automática
 
+        [Header("Control Settings")]
+        [Tooltip("Tiempo en segundos que se debe mantener presionada la tecla Espacio en el aire para activar el jetpack.")]
+        public float JetpackHoldThreshold = 0.25f;
+
         [Header("Manual Flight & Fuel Overrides")]
         public float MaxFuel;
         public Optional<float> maxFuel;
@@ -50,6 +54,8 @@ namespace Combating.Scripts
         private HealthController m_Health;
         private bool m_IsUsingJetpack = false;
         private bool m_JetpackDepleted = false;
+
+        private float m_SpaceHoldTimer = 0f; // Temporizador para la pulsación sostenida de Espacio
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
@@ -262,20 +268,37 @@ namespace Combating.Scripts
             bool isOwner = IsNetworkActive ? m_Player.IsOwner : true;
             if (!isOwner) return false;
 
-            bool isBPressed = Keyboard.current != null && Keyboard.current.bKey.isPressed;
+            // Detectar la barra espaciadora
+            bool isSpacePressed = Keyboard.current != null && Keyboard.current.spaceKey.isPressed;
 
             m_IsUsingJetpack = false;
+
+            // Si está en el suelo, reiniciar estados y recargar combustible
             if (isGrounded)
             {
                 m_JetpackDepleted = false;
+                m_SpaceHoldTimer = 0f;
                 if (allowRegen) AddFuel(EffectiveFuelRegen * Time.deltaTime);
                 return false;
             }
 
-            if (!isBPressed) m_JetpackDepleted = false;
+            // Calcular tiempo en que se mantiene presionado el Espacio en el aire
+            if (isSpacePressed)
+            {
+                m_SpaceHoldTimer += Time.deltaTime;
+            }
+            else
+            {
+                m_SpaceHoldTimer = 0f;
+                m_JetpackDepleted = false;
+            }
+
             if (!infiniteFuel && JetpackFuel <= 0) m_JetpackDepleted = true;
 
-            if (isBPressed && (infiniteFuel || (!m_JetpackDepleted && JetpackFuel > 0)))
+            // Se activa solo si se mantiene Espacio por encima del umbral (ej. 0.25s) y hay combustible
+            bool shouldFly = isSpacePressed && m_SpaceHoldTimer >= JetpackHoldThreshold;
+
+            if (shouldFly && (infiniteFuel || (!m_JetpackDepleted && JetpackFuel > 0)))
             {
                 m_IsUsingJetpack = true;
                 if (verticalVelocity < -2f) verticalVelocity = Mathf.MoveTowards(verticalVelocity, 0, Time.deltaTime * 20f);
@@ -285,7 +308,10 @@ namespace Combating.Scripts
 
                 if (!infiniteFuel) UseFuel(EffectiveFuelConsumption * Time.deltaTime);
             }
-            else if (allowRegen) AddFuel((EffectiveFuelRegen * 0.2f) * Time.deltaTime);
+            else if (allowRegen)
+            {
+                AddFuel((EffectiveFuelRegen * 0.2f) * Time.deltaTime);
+            }
 
             Animator anim = m_Player != null ? m_Player.GetComponentInChildren<Animator>() : GetComponentInChildren<Animator>();
             if (anim != null && HasParameter(anim, "isFlying"))
