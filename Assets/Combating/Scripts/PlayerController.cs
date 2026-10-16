@@ -721,7 +721,7 @@ namespace Combating.Scripts
 
                 if (_vcam3rdPerson != null)
                 {
-                    float targetDistance = aim ? 1.1f : 5.2f;
+                    float targetDistance = aim ? 0.3f : 5.2f;
                     Vector3 targetShoulderOffset = aim ? new Vector3(0.55f, 0.05f, 0.0f) : new Vector3(0.35f, 0.0f, 0.0f);
 
                     _vcam3rdPerson.CameraDistance = Mathf.Lerp(_vcam3rdPerson.CameraDistance, targetDistance, Time.deltaTime * 10f);
