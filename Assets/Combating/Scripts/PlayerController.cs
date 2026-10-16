@@ -63,6 +63,10 @@ namespace Combating.Scripts
         public GameObject crosshairUI;
         public float aimFOV = 40f;
         public float normalFOV = 60f;
+        public float aimCameraDistance = 0.1f;
+        public float defaultCameraDistance = 5.2f;
+        public Vector3 aimShoulderOffset = new Vector3(0.55f, 0.05f, 0.4f);
+        public Vector3 defaultShoulderOffset = new Vector3(0.35f, 0.0f, 0.0f);
         public bool toggleAim = false; // Si es true, hace toggle de la vista al presionar Click Derecho. Si es false, requiere mantener presionado.
         #endregion
 
@@ -721,8 +725,8 @@ namespace Combating.Scripts
 
                 if (_vcam3rdPerson != null)
                 {
-                    float targetDistance = aim ? 0.3f : 5.2f;
-                    Vector3 targetShoulderOffset = aim ? new Vector3(0.55f, 0.05f, 0.0f) : new Vector3(0.35f, 0.0f, 0.0f);
+                    float targetDistance = aim ? aimCameraDistance : defaultCameraDistance;
+                    Vector3 targetShoulderOffset = aim ? aimShoulderOffset : defaultShoulderOffset;
 
                     _vcam3rdPerson.CameraDistance = Mathf.Lerp(_vcam3rdPerson.CameraDistance, targetDistance, Time.deltaTime * 10f);
                     _vcam3rdPerson.ShoulderOffset = Vector3.Lerp(_vcam3rdPerson.ShoulderOffset, targetShoulderOffset, Time.deltaTime * 10f);

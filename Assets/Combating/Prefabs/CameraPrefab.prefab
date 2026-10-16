@@ -122,7 +122,9 @@ MonoBehaviour:
   BottomClamp: -60
   MinLookAtHeight: 0.5
   DefaultShoulderOffset: {x: 0, y: 0.25, z: -3.2}
-  AimShoulderOffset: {x: 0.65, y: 0.25, z: -1.3}
+  AimShoulderOffset: {x: 0.65, y: 0.25, z: 0.4}
+  DefaultCameraDistance: 5.2
+  AimCameraDistance: 0.1
   NormalFOV: 60
   AimFOV: 40
   TransitionSpeed: 10
