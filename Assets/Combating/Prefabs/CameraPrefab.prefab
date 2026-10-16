@@ -9,8 +9,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1937826373450112504}
-  - component: {fileID: 6036423215409245336}
-  m_Layer: 0
+  - component: {fileID: 2976886222073052115}
+  - component: {fileID: 2915479964643457852}
+  - component: {fileID: 8394970026939628830}
+  m_Layer: 3
   m_Name: CameraPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -34,7 +36,76 @@ Transform:
   - {fileID: 7644128114918405436}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6036423215409245336
+--- !u!114 &2976886222073052115
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 165653068685440053}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f9dfa5b682dcd46bda6128250e975f58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineCamera
+  Priority:
+    Enabled: 0
+    m_Value: 0
+  OutputChannel: 1
+  StandbyUpdate: 2
+  m_StreamingVersion: 20241001
+  m_LegacyPriority: 0
+  Target:
+    TrackingTarget: {fileID: 0}
+    LookAtTarget: {fileID: 0}
+    CustomLookAtTarget: 0
+  Lens:
+    FieldOfView: 40
+    OrthographicSize: 10
+    NearClipPlane: 0.1
+    FarClipPlane: 5000
+    Dutch: 0
+    ModeOverride: 0
+    PhysicalProperties:
+      GateFit: 2
+      SensorSize: {x: 21.946, y: 16.002}
+      LensShift: {x: 0, y: 0}
+      FocusDistance: 10
+      Iso: 200
+      ShutterSpeed: 0.005
+      Aperture: 16
+      BladeCount: 5
+      Curvature: {x: 2, y: 11}
+      BarrelClipping: 0.25
+      Anamorphism: 0
+  BlendHint: 0
+--- !u!114 &2915479964643457852
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 165653068685440053}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 625c14eee3ad46c99df7c7c891ef668a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Cinemachine::Unity.Cinemachine.CinemachineThirdPersonFollow
+  Damping: {x: 0.1, y: 0.5, z: 0.3}
+  ShoulderOffset: {x: 0.5, y: -0.4, z: 0}
+  VerticalArmLength: 0.4
+  CameraSide: 1
+  CameraDistance: 2
+  AvoidObstacles:
+    Enabled: 0
+    CollisionFilter:
+      serializedVersion: 2
+      m_Bits: 1
+    IgnoreTag: 
+    CameraRadius: 0.2
+    DampingIntoCollision: 0
+    DampingFromCollision: 0.5
+--- !u!114 &8394970026939628830
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -46,10 +117,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 276e72741208bb247ba023b9afdc74fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.CameraController
-  LookSensitivity: {x: 12, y: 8}
+  LookSensitivity: {x: 1, y: 0.8}
   TopClamp: 85
   BottomClamp: -60
-  MinLookAtHeight: 7
+  MinLookAtHeight: 0.5
+  DefaultShoulderOffset: {x: 0, y: 0.25, z: -3.2}
+  AimShoulderOffset: {x: 0.65, y: 0.25, z: -1.3}
+  NormalFOV: 60
+  AimFOV: 40
+  TransitionSpeed: 10
+  AlignPlayerWithCamera: 1
+  PlayerRotationSpeed: 15
 --- !u!1 &2822161570840248216
 GameObject:
   m_ObjectHideFlags: 0
@@ -62,7 +140,7 @@ GameObject:
   - component: {fileID: 253170685021520562}
   - component: {fileID: 8748527482762270374}
   - component: {fileID: 5609757954350777272}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: PlayerCamera
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -77,8 +155,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2822161570840248216}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.0004093441, y: 0.863352, z: -0.00070032687, w: -0.5046016}
-  m_LocalPosition: {x: 166184.84, y: 262.24728, z: 98512.33}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1442, y: 333, z: 3.5000005}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -115,8 +193,8 @@ Camera:
     y: 0
     width: 1
     height: 1
-  near clip plane: 0.2
-  far clip plane: 500
+  near clip plane: 0.1
+  far clip plane: 5000
   field of view: 40
   orthographic: 0
   orthographic size: 10
@@ -223,7 +301,7 @@ GameObject:
   - component: {fileID: 4734979929227880831}
   - component: {fileID: 6764144626826325857}
   - component: {fileID: 5379374267052886239}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: PlayerTarget
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -238,8 +316,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8125438068294852295}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.0004093441, y: 0.863352, z: -0.00070032687, w: -0.5046016}
-  m_LocalPosition: {x: 166184.84, y: 262.24728, z: 98512.33}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1441.8, y: 333, z: -4.4999995}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
