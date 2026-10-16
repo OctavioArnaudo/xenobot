@@ -238,7 +238,7 @@ namespace Combating.Scripts
         private CharacterController _controller;
         private GameObject _mainCamera;
         private Unity.Cinemachine.CinemachineCamera _vcamCache;
-        private Unity.Cinemachine.Cinemachine3rdPersonFollow _vcam3rdPerson;
+        private Unity.Cinemachine.CinemachineThirdPersonFollow _vcam3rdPerson;
 
         private HealthController _health;
         private PropulsionController _jetpack;
@@ -560,7 +560,7 @@ namespace Combating.Scripts
 
             if (_vcamCache != null)
             {
-                _vcam3rdPerson = _vcamCache.GetComponent<Unity.Cinemachine.Cinemachine3rdPersonFollow>();
+                _vcam3rdPerson = _vcamCache.GetComponent<Unity.Cinemachine.CinemachineThirdPersonFollow>();
 
                 if (CinemachineCameraTarget != null)
                 {
@@ -718,7 +718,7 @@ namespace Combating.Scripts
 
                 if (_vcam3rdPerson == null)
                 {
-                    _vcam3rdPerson = _vcamCache.GetComponent<Unity.Cinemachine.Cinemachine3rdPersonFollow>();
+                    _vcam3rdPerson = _vcamCache.GetComponent<Unity.Cinemachine.CinemachineThirdPersonFollow>();
                 }
 
                 if (_vcam3rdPerson != null)

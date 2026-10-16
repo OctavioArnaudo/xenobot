@@ -1,9 +1,9 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 using Unity.Netcode;
+using Crafting.Scripts;
 
 namespace Combating.Scripts
 {
@@ -373,7 +373,7 @@ namespace Combating.Scripts
 
         public Vector3 CalibrateSpawnPosition(Vector3 rawPosition, GameObject entity = null)
         {
-            if (entity != null && entity.GetComponent<Combating.Scripts.ProjectileController>() != null)
+            if (entity != null && entity.GetComponent<ProjectileController>() != null)
             {
                 return rawPosition;
             }

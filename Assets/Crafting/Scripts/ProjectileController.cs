@@ -1,9 +1,9 @@
 using UnityEngine;
 using Unity.Netcode;
-using Crafting.Scripts;
+using Combating.Scripts;
 using System.Collections.Generic;
 
-namespace Combating.Scripts
+namespace Crafting.Scripts
 {
     public enum ProjectileType
     {

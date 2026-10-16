@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 using Unity.Netcode;
+using Crafting.Scripts;
 
 namespace Combating.Scripts
 {

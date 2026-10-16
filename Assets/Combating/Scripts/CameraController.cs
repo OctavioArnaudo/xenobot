@@ -90,7 +90,7 @@ namespace Combating.Scripts
                 float targetFOV = isAiming ? AimFOV : NormalFOV;
                 _vcam.Lens.FieldOfView = Mathf.Lerp(_vcam.Lens.FieldOfView, targetFOV, Time.deltaTime * TransitionSpeed);
 
-                var thirdPersonFollow = _vcam.GetComponent<Unity.Cinemachine.Cinemachine3rdPersonFollow>();
+                var thirdPersonFollow = _vcam.GetComponent<Unity.Cinemachine.CinemachineThirdPersonFollow>();
                 if (thirdPersonFollow != null)
                 {
                     float targetDistance = isAiming ? 1.3f : 3.5f;
