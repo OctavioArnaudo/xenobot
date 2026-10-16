@@ -97,8 +97,14 @@ MonoBehaviour:
   itemsToSpawn:
   - prefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}
     message: EXP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!114 &8349920114768079060
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -112,15 +118,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.MaskController
   renderTag: Render
-  visorTypeOverride:
-    useOverride: 1
-    value: 1
-  headOffsetOverride:
-    useOverride: 1
-    value: {x: 0.03, y: 0.85, z: 0.98}
-  headScaleOverride:
-    useOverride: 1
-    value: {x: 1, y: 1, z: 1}
+  VisorType: 0
+  visorType:
+    use: 0
+    value: 0
+  HeadOffset: {x: 0, y: 0.05, z: 0.08}
+  headOffset:
+    use: 0
+    value: {x: 0, y: 0, z: 0}
+  HeadScale: {x: 0.35, y: 0.35, z: 0.35}
+  headScale:
+    use: 0
+    value: {x: 0, y: 0, z: 0}
 --- !u!1001 &300894419315349279
 PrefabInstance:
   m_ObjectHideFlags: 0

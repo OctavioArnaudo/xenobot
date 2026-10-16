@@ -110,7 +110,7 @@ MeshCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 5
-  m_Convex: 0
+  m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: -7449918442484362642, guid: 9df1f45507e0c4b4e8c780dbf67df0d7, type: 3}
 --- !u!1 &4020058620638717664
@@ -210,8 +210,14 @@ MonoBehaviour:
   itemsToSpawn:
   - prefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}
     message: EXP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!114 &1888491341270129377
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -225,12 +231,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.MaskController
   renderTag: Render
-  visorTypeOverride:
-    useOverride: 0
+  VisorType: 0
+  visorType:
+    use: 0
     value: 0
-  headOffsetOverride:
-    useOverride: 0
+  HeadOffset: {x: 0, y: 0.05, z: 0.08}
+  headOffset:
+    use: 0
     value: {x: 0, y: 0, z: 0}
-  headScaleOverride:
-    useOverride: 0
+  HeadScale: {x: 0.35, y: 0.35, z: 0.35}
+  headScale:
+    use: 0
     value: {x: 0, y: 0, z: 0}

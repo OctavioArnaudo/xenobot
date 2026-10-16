@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1961220955648061191}
+  - component: {fileID: 1005608650513637639}
   m_Layer: 0
   m_Name: MasksPrefab
   m_TagString: Untagged
@@ -34,6 +35,33 @@ Transform:
   - {fileID: 5484798552382296769}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1005608650513637639
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5347753683310602171}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1622122613
+  InScenePlacedSourceGlobalObjectIdHash: 2385884697
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!1001 &878188556593546020
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -50,9 +78,17 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 89931319
       objectReference: {fileID: 0}
+    - target: {fileID: 1945186437379167726, guid: ce94998347ebd47488f282a06477ffea, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2385884697
+      objectReference: {fileID: 0}
     - target: {fileID: 4020058620638717664, guid: ce94998347ebd47488f282a06477ffea, type: 3}
       propertyPath: m_Name
       value: MaskPrefab
+      objectReference: {fileID: 0}
+    - target: {fileID: 4020058620638717664, guid: ce94998347ebd47488f282a06477ffea, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6437995149126846086, guid: ce94998347ebd47488f282a06477ffea, type: 3}
       propertyPath: m_LocalPosition.x
@@ -160,14 +196,18 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 3560855515
       objectReference: {fileID: 0}
+    - target: {fileID: 5244958483593408444, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2385884697
+      objectReference: {fileID: 0}
     - target: {fileID: 7349165637636185266, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_Name
       value: MaskPrefab (ObjetoClave2)
       objectReference: {fileID: 0}
-    - target: {fileID: 7594978608402853676, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
-      propertyPath: item
-      value: 
-      objectReference: {fileID: 11400000, guid: 8eee5fae4dbf594448b2248a273b7ccf, type: 2}
+    - target: {fileID: 7349165637636185266, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -226,13 +266,13 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6220167797272930570, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
-      propertyPath: item
-      value: 
-      objectReference: {fileID: 11400000, guid: 3a97472931f85e148983e025719c89f4, type: 2}
     - target: {fileID: 6541982445443734164, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_Name
       value: MaskPrefab (ObjetoClave5)
+      objectReference: {fileID: 0}
+    - target: {fileID: 6541982445443734164, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8646177470548912538, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_InScenePlaced
@@ -241,6 +281,10 @@ PrefabInstance:
     - target: {fileID: 8646177470548912538, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 2373552565
+      objectReference: {fileID: 0}
+    - target: {fileID: 8646177470548912538, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 2385884697
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

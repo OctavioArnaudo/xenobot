@@ -48,14 +48,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2953776419
+  GlobalObjectIdHash: 2373552565
   InScenePlacedSourceGlobalObjectIdHash: 1155652179
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -97,8 +97,14 @@ MonoBehaviour:
   itemsToSpawn:
   - prefab: {fileID: 6201454485445601518, guid: f5fc2d6c20f3206419be2ca5cfc18ada, type: 3}
     message: EXP
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!114 &5536139387566288626
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -112,15 +118,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.MaskController
   renderTag: Render
-  visorTypeOverride:
-    useOverride: 0
+  VisorType: 0
+  visorType:
+    use: 0
     value: 0
-  headOffsetOverride:
-    useOverride: 1
-    value: {x: -3.86, y: 1.14, z: 0.83}
-  headScaleOverride:
-    useOverride: 1
-    value: {x: 1, y: 1, z: 1}
+  HeadOffset: {x: 0, y: 0.05, z: 0.08}
+  headOffset:
+    use: 0
+    value: {x: 0, y: 0, z: 0}
+  HeadScale: {x: 0.35, y: 0.35, z: 0.35}
+  headScale:
+    use: 0
+    value: {x: 0, y: 0, z: 0}
 --- !u!1001 &8121945998329889359
 PrefabInstance:
   m_ObjectHideFlags: 0
