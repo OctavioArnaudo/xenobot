@@ -16,9 +16,9 @@ namespace Combating.Scripts
 
         [Header("Over-The-Shoulder Settings")]
         public Vector3 DefaultShoulderOffset = new Vector3(0.35f, 0.0f, -5.2f);
-        public Vector3 AimShoulderOffset = new Vector3(0.55f, 0.05f, 0.4f);
+        public Vector3 AimShoulderOffset = new Vector3(0.55f, 0.05f, 0.8f);
         public float DefaultCameraDistance = 5.2f;
-        public float AimCameraDistance = 0.1f;
+        public float AimCameraDistance = 0.0f;
         public float NormalFOV = 60f;
         public float AimFOV = 40f;
         public float TransitionSpeed = 10f;

@@ -63,11 +63,11 @@ namespace Combating.Scripts
         public GameObject crosshairUI;
         public float aimFOV = 40f;
         public float normalFOV = 60f;
-        public float aimCameraDistance = 0.1f;
+        public float aimCameraDistance = 0.0f;
         public float defaultCameraDistance = 5.2f;
-        public Vector3 aimShoulderOffset = new Vector3(0.55f, 0.05f, 0.4f);
+        public Vector3 aimShoulderOffset = new Vector3(0.55f, 0.05f, 0.8f);
         public Vector3 defaultShoulderOffset = new Vector3(0.35f, 0.0f, 0.0f);
-        public bool toggleAim = false; // Si es true, hace toggle de la vista al presionar Click Derecho. Si es false, requiere mantener presionado.
+        public bool toggleAim = false;
         #endregion
 
         #region Variables: Ground Check
