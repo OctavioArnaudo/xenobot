@@ -373,6 +373,11 @@ namespace Combating.Scripts
 
         public Vector3 CalibrateSpawnPosition(Vector3 rawPosition, GameObject entity = null)
         {
+            if (entity != null && entity.GetComponent<Crafting.Scripts.ProjectileController>() != null)
+            {
+                return rawPosition;
+            }
+
             float maxDist = CalculateCalibrationDistance();
             Vector3 surfacePos = rawPosition;
 

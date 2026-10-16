@@ -288,6 +288,17 @@ namespace Combating.Scripts
                 var mr = GetComponentInChildren<MeshRenderer>();
                 if (mr != null) visualsToRotate = new Renderer[] { mr };
             }
+
+            if (Muzzle == null)
+            {
+                Transform muzzleChild = transform.Find("Muzzle") ?? transform.Find("muzzle");
+                Muzzle = muzzleChild != null ? muzzleChild.gameObject : gameObject;
+            }
+
+            if (!isUnlocked && Projectile != null)
+            {
+                isUnlocked = true;
+            }
         }
 
         private void UpdateInspectorValues()

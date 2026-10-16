@@ -707,24 +707,16 @@ namespace Combating.Scripts
             }
 
             // Interceptar el Click Izquierdo según el modo de combate activo
-            if (aim)
+            if (_shooter != null && (_shooter.isUnlocked || _shooter.Projectile != null))
             {
-                // MODO DISPARO A RANGO
-                if (_shooter != null && _shooter.isUnlocked)
+                if (_shooter.HoldToFire ? fireHeld : fire)
                 {
-                    if (_shooter.HoldToFire ? fireHeld : fire)
-                    {
-                        _shooter.TryFire();
-                    }
+                    _shooter.TryFire();
                 }
             }
-            else
+            else if (_melee != null && fire)
             {
-                // MODO MELEE
-                if (_melee != null && fire)
-                {
-                    _melee.PerformMeleeAction();
-                }
+                _melee.PerformMeleeAction();
             }
         }
 
