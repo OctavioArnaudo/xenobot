@@ -58,6 +58,13 @@ namespace Combating.Scripts
         public float FallTimeout = 0.15f;
         #endregion
 
+        #region Variables: Aiming & Combat UI
+        [Header("Aiming & Combat Mode")]
+        public GameObject crosshairUI;
+        public float aimFOV = 40f;
+        public float normalFOV = 60f;
+        #endregion
+
         #region Variables: Ground Check
         [Header("Ground Check")]
         public bool Grounded = true;
@@ -115,8 +122,7 @@ namespace Combating.Scripts
         public bool cursorInputForLook = true;
         #endregion
 
-        #region Effective Statistics Resolvers with Optional & Fallback Protection
-
+        #region Effective Statistics Resolvers
         public float EffectiveMoveSpeed
         {
             get
@@ -193,7 +199,6 @@ namespace Combating.Scripts
         public float EffectiveGravity => gravity.GetValue(DEFAULT_GRAVITY);
         public float EffectiveGroundedRadius => groundedRadius.GetValue(DEFAULT_GROUNDED_RADIUS);
         public float EffectiveGroundedOffset => groundedOffset.GetValue(DEFAULT_GROUNDED_OFFSET);
-
         #endregion
 
         #region Internal State
@@ -235,6 +240,8 @@ namespace Combating.Scripts
         private HealthController _health;
         private PropulsionController _jetpack;
         private InventoryController _inventory;
+        private ShootController _shooter;
+        private MeleeController _melee;
 
         private bool _isJumpHeld;
         private const float _threshold = 0.01f;
@@ -263,13 +270,6 @@ namespace Combating.Scripts
                 var nObj = GetComponent<NetworkObject>();
                 if (nObj == null || nObj.InScenePlaced == true)
                 {
-#if UNITY_EDITOR
-                    if (UnityEditor.Selection.activeGameObject == gameObject)
-                        UnityEditor.Selection.activeGameObject = null;
-#endif
-
-                    Debug.Log($"<color=orange>[Network]</color> Suplantando instancia offline '{gameObject.name}'.");
-
                     gameObject.SetActive(false);
                     Destroy(gameObject);
                     return;
@@ -347,8 +347,6 @@ namespace Combating.Scripts
 
                     if (nObj == null || nObj.InScenePlaced == true)
                     {
-                        Debug.Log($"<color=cyan>[Network]</color> Suplantando player de escena '{p.name}'.");
-
                         foreach (var cam in p.GetComponentsInChildren<Camera>()) cam.enabled = false;
                         var vcam = p.GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
                         if (vcam != null) vcam.enabled = false;
@@ -357,8 +355,7 @@ namespace Combating.Scripts
                     }
                 }
 
-                NetworkObject myNetObj = GetComponentInParent<NetworkObject>();
-                if (myNetObj == null) myNetObj = GetComponent<NetworkObject>();
+                NetworkObject myNetObj = GetComponentInParent<NetworkObject>() ?? GetComponent<NetworkObject>();
                 if (myNetObj != null) myNetObj.transform.SetParent(null);
 
                 SetupPlayerLocal();
@@ -436,8 +433,6 @@ namespace Combating.Scripts
             if (_isDead) return;
             _isDead = true;
 
-            Debug.Log($"<color=red>[PlayerDeath]</color> {gameObject.name} ha muerto. Desplegando menú de derrota.");
-
             SpawnDeathVisuals();
 
             var defeatMenu = FindFirstObjectByType<Menus.Scripts.DefeatMenu>();
@@ -489,81 +484,12 @@ namespace Combating.Scripts
             UpdateInputState();
 #endif
 
+            HandleAimingAndCombat();
             GroundedCheck();
             HandleRespawn();
             JumpAndGravity();
             Move();
             UpdateAnimatorParameters();
-        }
-
-        private void RefreshInputActions()
-        {
-            if (_playerInput == null || _playerInput.actions == null) return;
-
-            _moveAction = _playerInput.actions.FindAction("Move") ?? _playerInput.actions.FindAction("Player/Move");
-            _lookAction = _playerInput.actions.FindAction("Look") ?? _playerInput.actions.FindAction("Player/Look");
-            _jumpAction = _playerInput.actions.FindAction("Jump") ?? _playerInput.actions.FindAction("Player/Jump");
-            _fireAction = _playerInput.actions.FindAction("Fire") ?? _playerInput.actions.FindAction("Player/Fire");
-            _sprintAction = _playerInput.actions.FindAction("Sprint") ?? _playerInput.actions.FindAction("Player/Sprint");
-            _aimAction = _playerInput.actions.FindAction("Aim") ?? _playerInput.actions.FindAction("Player/Aim");
-            _crouchAction = _playerInput.actions.FindAction("Crouch") ?? _playerInput.actions.FindAction("Player/Crouch");
-            _reloadAction = _playerInput.actions.FindAction("Reload") ?? _playerInput.actions.FindAction("Player/Reload");
-            _nextWeaponAction = _playerInput.actions.FindAction("NextWeapon") ?? _playerInput.actions.FindAction("Player/NextWeapon");
-        }
-
-        private void UpdateInputState()
-        {
-            if (_moveAction != null) move = _moveAction.ReadValue<Vector2>();
-            if (_lookAction != null) look = _lookAction.ReadValue<Vector2>();
-
-            if (_jumpAction != null)
-            {
-                if (_jumpAction.WasPressedThisFrame()) jump = true;
-                jumpHeld = _jumpAction.IsPressed();
-                _isJumpHeld = jumpHeld;
-            }
-
-            // --- LÓGICA DE SPRINT CON TIEMPO DE ESPERA (0.25s) ---
-            if (_sprintAction != null && _sprintAction.IsPressed())
-            {
-                _shiftHoldTimer += Time.deltaTime;
-                sprint = _shiftHoldTimer >= SprintHoldThreshold;
-            }
-            else
-            {
-                _shiftHoldTimer = 0f;
-                sprint = false;
-            }
-
-            if (_fireAction != null)
-            {
-                if (_fireAction.WasPressedThisFrame()) fire = true;
-                fireHeld = _fireAction.IsPressed();
-                if (_fireAction.WasReleasedThisFrame()) fireReleased = true;
-            }
-
-            aim = _aimAction != null && _aimAction.IsPressed();
-            if (_crouchAction != null && _crouchAction.WasPressedThisFrame()) crouch = true;
-            if (_reloadAction != null && _reloadAction.WasPressedThisFrame()) reload = true;
-
-            if (_nextWeaponAction != null)
-            {
-                float val = _nextWeaponAction.ReadValue<float>();
-                switchWeapon = val > 0 ? 1 : (val < 0 ? -1 : 0);
-            }
-
-            selectWeapon = 0;
-            if (Keyboard.current != null)
-            {
-                for (int i = 1; i <= 9; i++)
-                {
-                    if (Keyboard.current[Key.Digit1 + (i - 1)].wasPressedThisFrame)
-                    {
-                        selectWeapon = i;
-                        break;
-                    }
-                }
-            }
         }
 
         private void LateUpdate()
@@ -648,9 +574,9 @@ namespace Combating.Scripts
         public void RefreshFunctionalComponents()
         {
             _jetpack = GetComponentInChildren<PropulsionController>();
+            _shooter = GetComponentInChildren<ShootController>();
+            _melee = GetComponentInChildren<MeleeController>();
 
-            // Improved animator discovery: Prioritize main render children
-            // to prevent locking onto equipment or dropped items.
             _animator = null;
             _renderTransform = transform.Find("PlayerRender") ?? transform.Find("Render") ?? transform.Find("EnemyRender");
 
@@ -667,7 +593,7 @@ namespace Combating.Scripts
             if (_hasAnimator)
             {
                 _animator.enabled = true;
-                _animator.applyRootMotion = false; // Disable root motion via code
+                _animator.applyRootMotion = false;
                 AssignAnimationIDs();
             }
             SetupCamera();
@@ -679,7 +605,129 @@ namespace Combating.Scripts
         }
         #endregion
 
-        #region Input Handling
+        #region Input & Aiming Combat Logic
+        private void RefreshInputActions()
+        {
+            if (_playerInput == null || _playerInput.actions == null) return;
+
+            _moveAction = _playerInput.actions.FindAction("Move") ?? _playerInput.actions.FindAction("Player/Move");
+            _lookAction = _playerInput.actions.FindAction("Look") ?? _playerInput.actions.FindAction("Player/Look");
+            _jumpAction = _playerInput.actions.FindAction("Jump") ?? _playerInput.actions.FindAction("Player/Jump");
+            _fireAction = _playerInput.actions.FindAction("Fire") ?? _playerInput.actions.FindAction("Player/Fire");
+            _sprintAction = _playerInput.actions.FindAction("Sprint") ?? _playerInput.actions.FindAction("Player/Sprint");
+            _aimAction = _playerInput.actions.FindAction("Aim") ?? _playerInput.actions.FindAction("Player/Aim");
+            _crouchAction = _playerInput.actions.FindAction("Crouch") ?? _playerInput.actions.FindAction("Player/Crouch");
+            _reloadAction = _playerInput.actions.FindAction("Reload") ?? _playerInput.actions.FindAction("Player/Reload");
+            _nextWeaponAction = _playerInput.actions.FindAction("NextWeapon") ?? _playerInput.actions.FindAction("Player/NextWeapon");
+        }
+
+        private void UpdateInputState()
+        {
+            if (_moveAction != null) move = _moveAction.ReadValue<Vector2>();
+            if (_lookAction != null) look = _lookAction.ReadValue<Vector2>();
+
+            if (_jumpAction != null)
+            {
+                if (_jumpAction.WasPressedThisFrame()) jump = true;
+                jumpHeld = _jumpAction.IsPressed();
+                _isJumpHeld = jumpHeld;
+            }
+
+            if (_sprintAction != null && _sprintAction.IsPressed())
+            {
+                _shiftHoldTimer += Time.deltaTime;
+                sprint = _shiftHoldTimer >= SprintHoldThreshold;
+            }
+            else
+            {
+                _shiftHoldTimer = 0f;
+                sprint = false;
+            }
+
+            // Click Izquierdo -> fuego / ataque melee
+            if (_fireAction != null)
+            {
+                fire = _fireAction.WasPressedThisFrame();
+                fireHeld = _fireAction.IsPressed();
+                fireReleased = _fireAction.WasReleasedThisFrame();
+            }
+            else if (Mouse.current != null)
+            {
+                fire = Mouse.current.leftButton.wasPressedThisFrame;
+                fireHeld = Mouse.current.leftButton.isPressed;
+                fireReleased = Mouse.current.leftButton.wasReleasedThisFrame;
+            }
+
+            // Click Derecho -> Apuntar
+            if (_aimAction != null)
+            {
+                aim = _aimAction.IsPressed();
+            }
+            else if (Mouse.current != null)
+            {
+                aim = Mouse.current.rightButton.isPressed;
+            }
+
+            if (_crouchAction != null && _crouchAction.WasPressedThisFrame()) crouch = true;
+            if (_reloadAction != null && _reloadAction.WasPressedThisFrame()) reload = true;
+
+            if (_nextWeaponAction != null)
+            {
+                float val = _nextWeaponAction.ReadValue<float>();
+                switchWeapon = val > 0 ? 1 : (val < 0 ? -1 : 0);
+            }
+
+            selectWeapon = 0;
+            if (Keyboard.current != null)
+            {
+                for (int i = 1; i <= 9; i++)
+                {
+                    if (Keyboard.current[Key.Digit1 + (i - 1)].wasPressedThisFrame)
+                    {
+                        selectWeapon = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void HandleAimingAndCombat()
+        {
+            if (Cursor.visible) return;
+
+            // Actualizar visibilidad de la mira UI y Zoom de Cámara
+            if (crosshairUI != null)
+            {
+                crosshairUI.SetActive(aim);
+            }
+
+            if (_mainCamera != null && _mainCamera.TryGetComponent<Camera>(out var camComp))
+            {
+                camComp.fieldOfView = Mathf.Lerp(camComp.fieldOfView, aim ? aimFOV : normalFOV, Time.deltaTime * 10f);
+            }
+
+            // Interceptar el Click Izquierdo según el modo de combate activo
+            if (aim)
+            {
+                // MODO DISPARO A RANGO
+                if (_shooter != null && _shooter.isUnlocked)
+                {
+                    if (_shooter.HoldToFire ? fireHeld : fire)
+                    {
+                        _shooter.TryFire();
+                    }
+                }
+            }
+            else
+            {
+                // MODO MELEE
+                if (_melee != null && fire)
+                {
+                    _melee.PerformMeleeAction();
+                }
+            }
+        }
+
 #if ENABLE_INPUT_SYSTEM
         public void OnJump(InputValue value)
         {
@@ -748,14 +796,11 @@ namespace Combating.Scripts
             }
             else
             {
-                GameObject projObj = BalanceManager.Instance != null ? BalanceManager.Instance.SpawnFromPool(prefab, spawnPos, Quaternion.LookRotation(direction)) : Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
-                if (projObj != null)
+                GameObject projObj = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
+                ProjectileController projectile = projObj.GetComponent<ProjectileController>();
+                if (projectile != null)
                 {
-                    ProjectileController projectile = projObj.GetComponent<ProjectileController>();
-                    if (projectile != null)
-                    {
-                        projectile.Launch(gameObject, direction, damage, team);
-                    }
+                    projectile.Launch(gameObject, direction, damage, team);
                 }
             }
         }
@@ -773,17 +818,18 @@ namespace Combating.Scripts
 
             if (projectilePrefab != null)
             {
-                GameObject projObj = BalanceManager.Instance != null ? BalanceManager.Instance.SpawnFromPool(projectilePrefab, spawnPos, Quaternion.LookRotation(direction)) : Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
-                if (projObj != null)
+                GameObject projObj = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
+                ProjectileController projectile = projObj.GetComponent<ProjectileController>();
+                if (projectile != null)
                 {
-                    ProjectileController projectile = projObj.GetComponent<ProjectileController>();
-                    if (projectile != null)
-                    {
-                        projectile.Launch(gameObject, direction, damage, team);
-                    }
-
-                    if (projObj.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
+                    projectile.Launch(gameObject, direction, damage, team);
                 }
+
+                if (projObj.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerController] El servidor no encontró un ShootController con proyectil asignado.");
             }
         }
         #endregion
@@ -791,17 +837,13 @@ namespace Combating.Scripts
         #region Movement Logic
         private void GroundedCheck()
         {
-            // If moving up fast, we're definitely not grounded
             if (_verticalVelocity > 0.1f) { Grounded = false; return; }
 
-            // USE A SPHERE AT THE BASE: This is the most un-breakable check.
-            // Even if the mesh/animator goes crazy, transform.position is the physical truth.
             Vector3 spherePos = transform.position + Vector3.up * GroundedRadius;
 
             LayerMask mask = GroundLayers;
             if (mask == 0) mask = ~((1 << 3) | (1 << 2));
 
-            // Absolute check using physics sphere + controller's internal state
             Grounded = Physics.CheckSphere(spherePos, GroundedRadius * 1.1f, mask, QueryTriggerInteraction.Ignore)
                        || (_controller != null && _controller.isGrounded);
         }
@@ -843,7 +885,6 @@ namespace Combating.Scripts
             float targetSpeed = sprint ? SprintSpeed : MoveSpeed;
             if (move == Vector2.zero) targetSpeed = 0.0f;
 
-            // Simple speed lerp
             _speed = Mathf.Lerp(_speed, targetSpeed, Time.deltaTime * SpeedChangeRate);
             _animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, Time.deltaTime * SpeedChangeRate);
 
@@ -852,7 +893,6 @@ namespace Combating.Scripts
                 if (_mainCamera == null) _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
                 float camYaw = (_mainCamera != null) ? _mainCamera.transform.eulerAngles.y : 0f;
 
-                // CAMERA-RELATIVE MOVEMENT: Combine input angle with camera yaw
                 _targetRotation = Mathf.Atan2(move.x, move.y) * Mathf.Rad2Deg + camYaw;
 
                 float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
@@ -877,12 +917,10 @@ namespace Combating.Scripts
 
                 if (_verticalVelocity < 0.0f)
                 {
-                    // AGGRESSIVE GLUE: Higher negative force to keep character flush with floor
                     _verticalVelocity = -8f;
                     _jumpsRemaining = EnableDoubleJump ? 2 : 1;
                 }
 
-                // Simple Jump
                 if (jump && _jumpsRemaining > 0)
                 {
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
@@ -893,7 +931,6 @@ namespace Combating.Scripts
             }
             else
             {
-                // Air Jump (Double Jump)
                 if (jump && EnableDoubleJump && _jumpsRemaining > 0)
                 {
                     _verticalVelocity = Mathf.Sqrt(DoubleJumpHeight * -2f * Gravity);
@@ -903,11 +940,9 @@ namespace Combating.Scripts
                 }
             }
 
-            // Always apply gravity
             if (_verticalVelocity > -_terminalVelocity)
                 _verticalVelocity += Gravity * Time.deltaTime;
 
-            // CRITICAL: Always clear jump input at the end of the frame
             jump = false;
         }
         #endregion
@@ -960,32 +995,24 @@ namespace Combating.Scripts
                 if (!_hasAnimator) return;
             }
 
-            // Forced Activation
             if (!_animator.enabled) _animator.enabled = true;
-            _animator.applyRootMotion = false; // Disable root motion to prevent wandering
+            _animator.applyRootMotion = false;
 
-            // SNAP MESH TO BASE: If the animator moves the mesh away, force it back
-            // and apply a tiny negative offset to hide the Unity "Skin Width" gap
             if (_renderTransform != null)
             {
                 _renderTransform.localPosition = new Vector3(0, -0.05f, 0);
                 _renderTransform.localRotation = Quaternion.identity;
             }
 
-            // Normalized Speed (0 to 1)
-            // We ensure that moving at MoveSpeed already shows a clear walking animation (0.5)
-            // and SprintSpeed reaches the full running intensity (1.0)
             float speedFactor = 0f;
             if (_animationBlend > 0.01f)
             {
                 if (sprint)
                 {
-                    // Map from MoveSpeed to SprintSpeed -> 0.5 to 1.0
                     speedFactor = Mathf.Lerp(0.5f, 1.0f, (_animationBlend - MoveSpeed) / Mathf.Max(0.1f, SprintSpeed - MoveSpeed));
                 }
                 else
                 {
-                    // Map from 0 to MoveSpeed -> 0.1 to 0.5
                     speedFactor = Mathf.Lerp(0.1f, 0.5f, _animationBlend / MoveSpeed);
                 }
             }

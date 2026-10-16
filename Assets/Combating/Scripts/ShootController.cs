@@ -45,7 +45,7 @@ namespace Combating.Scripts
 
         public LayerMask AimLayers = ~0;
         public bool HoldToFire = true;
-        public bool UsePlayerInput = true;
+        public bool UsePlayerInput = false; // Control delegado al PlayerController
 
         [Header("Ammo Runtime State")]
         public int currentAmmo = 30;
@@ -76,8 +76,6 @@ namespace Combating.Scripts
         }
 
         public Team EffectiveTeam => m_Health != null ? m_Health.EffectiveTeam : (transform.root.CompareTag("Player") ? Team.Player : (transform.root.CompareTag("Enemy") ? Team.Enemy : Team.Neutral));
-
-        // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
 
         public float EffectiveDamage
         {
@@ -191,7 +189,6 @@ namespace Combating.Scripts
                     {
                         InventoryController.RemoveItem(itemDef.itemName);
                         AddAmmo(ammoComp.EffectiveAmmoAmount, ammoComp.EffectiveDamageMultiplier);
-                        Debug.Log($"<color=green>[ShootController]</color> Recarga consumida de inventario (+{ammoComp.EffectiveAmmoAmount} balas, Mult: x{ammoComp.EffectiveDamageMultiplier:F2})");
                         return true;
                     }
                 }
@@ -204,7 +201,6 @@ namespace Combating.Scripts
             if (EffectiveInfiniteAmmo) return false;
             if (isReloading || currentAmmo >= EffectiveMaxAmmo) return false;
 
-            // Si es el jugador y NO posee ítems de munición en inventario, NO iniciar simulación de recarga ni mostrar "RECARGANDO"
             if (m_Player != null && !HasAmmoInInventory())
             {
                 return false;
@@ -212,7 +208,6 @@ namespace Combating.Scripts
 
             isReloading = true;
             m_ReloadTimer = 0f;
-            Debug.Log($"<color=yellow>[ShootController]</color> Recargando... ({EffectiveReloadDuration}s)");
             return true;
         }
 
@@ -253,17 +248,6 @@ namespace Combating.Scripts
             return DEFAULT_ENEMY_BASE_FIRE_RATE;
         }
 
-        private int CountNearbyAllies()
-        {
-            int count = 0;
-            var enemies = GameObject.FindGameObjectsWithTag("Enemy");
-            foreach (var e in enemies)
-            {
-                if (e != gameObject && Vector3.Distance(transform.position, e.transform.position) <= 25f) count++;
-            }
-            return count;
-        }
-
         void Awake()
         {
             RefreshReferences();
@@ -274,7 +258,6 @@ namespace Combating.Scripts
             m_Player = player.GetComponent<PlayerController>();
             m_Health = player.GetComponent<HealthController>();
             RefreshReferences();
-            Debug.Log($"[ShootController] Vinculado a {player.name}. Player detected: {m_Player != null}");
         }
 
         private void RefreshReferences()
@@ -325,7 +308,7 @@ namespace Combating.Scripts
         void Update()
         {
             UpdateInspectorValues();
-            // Evitar procesamiento duplicado si existe un ShootController principal en la raíz
+
             if (transform != transform.root)
             {
                 var rootShooter = transform.root.GetComponent<ShootController>();
@@ -348,77 +331,25 @@ namespace Combating.Scripts
                 if (m_ReloadTimer >= EffectiveReloadDuration)
                 {
                     bool consumedFromInventory = AutoReloadFromInventory();
-                    if (consumedFromInventory)
+                    if (!consumedFromInventory && m_Player != null)
                     {
-                        Debug.Log("<color=green>[ShootController]</color> Recarga completa con munición del inventario.");
+                        currentAmmo = 0;
                     }
-                    else
+                    else if (m_Player == null)
                     {
-                        if (m_Player == null)
-                        {
-                            currentAmmo = EffectiveMaxAmmo;
-                            Debug.Log("<color=green>[ShootController]</color> Recarga completa (Enemigo).");
-                        }
-                        else
-                        {
-                            currentAmmo = 0;
-                        }
+                        currentAmmo = EffectiveMaxAmmo;
                     }
 
                     isReloading = false;
                     m_ReloadTimer = 0f;
                 }
             }
-
-            if (!isUnlocked || !UsePlayerInput) return;
-
-            bool canHandleInput = (m_Player != null) ? (IsNetworkActive ? m_Player.IsOwner : true) : true;
-            if (!canHandleInput) return;
-
-            if (m_Player == null) RefreshReferences();
-
-            if (m_Player != null)
-            {
-                bool wantsReload = m_Player.reload;
-                if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame) wantsReload = true;
-                if (wantsReload)
-                {
-                    TryReload();
-                    m_Player.reload = false;
-                }
-            }
-
-            if (m_Player != null && WantsToFire())
-            {
-                TryFire();
-            }
-        }
-
-        bool WantsToFire()
-        {
-            if (m_Player == null) return false;
-
-            if (InventoryController.LocalInstance != null && Cursor.visible) return false;
-
-            bool inputActive = false;
-
-            if (Mouse.current != null)
-            {
-                inputActive = HoldToFire
-                    ? Mouse.current.rightButton.isPressed
-                    : Mouse.current.rightButton.wasPressedThisFrame;
-            }
-
-            if (!inputActive && m_Player != null)
-            {
-                inputActive = m_Player.aim;
-            }
-
-            return inputActive;
         }
 
         public bool TryFire()
         {
+            if (!isUnlocked) return false;
+
             if (Projectile == null || Muzzle == null)
             {
                 RefreshReferences();
@@ -450,6 +381,8 @@ namespace Combating.Scripts
 
         public bool FireAt(Vector3 targetPosition)
         {
+            if (!isUnlocked) return false;
+
             if (Projectile == null || Muzzle == null)
             {
                 RefreshReferences();
@@ -482,6 +415,21 @@ namespace Combating.Scripts
 
             ExecuteFire(direction, originPos);
             return true;
+        }
+
+        private void RotateVisualsTowards(Vector3 targetPosition)
+        {
+            if (visualsToRotate == null) return;
+            Vector3 direction = (targetPosition - transform.position).normalized;
+            if (direction.sqrMagnitude > 0.001f)
+            {
+                Quaternion targetFullRotation = Quaternion.LookRotation(direction);
+                foreach (var r in visualsToRotate)
+                {
+                    if (r != null)
+                        r.transform.rotation = Quaternion.Slerp(r.transform.rotation, targetFullRotation, rotationSpeed * Time.deltaTime);
+                }
+            }
         }
 
         private void ExecuteFire(Vector3 direction, Vector3 spawnPos)
@@ -547,21 +495,6 @@ namespace Combating.Scripts
             {
                 var netObj = projGO.GetComponent<NetworkObject>();
                 if (netObj != null) netObj.Spawn();
-            }
-        }
-
-        private void RotateVisualsTowards(Vector3 targetPosition)
-        {
-            if (visualsToRotate == null) return;
-            Vector3 direction = (targetPosition - transform.position).normalized;
-            if (direction.sqrMagnitude > 0.001f)
-            {
-                Quaternion targetFullRotation = Quaternion.LookRotation(direction);
-                foreach (var r in visualsToRotate)
-                {
-                    if (r != null)
-                        r.transform.rotation = Quaternion.Slerp(r.transform.rotation, targetFullRotation, rotationSpeed * Time.deltaTime);
-                }
             }
         }
 
