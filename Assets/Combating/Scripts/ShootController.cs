@@ -483,7 +483,9 @@ namespace Combating.Scripts
 
         private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool isServer)
         {
-            GameObject projGO = Instantiate(Projectile, spawnPos, Quaternion.LookRotation(direction));
+            GameObject projGO = BalanceManager.Instance != null
+                ? BalanceManager.Instance.SpawnFromPool(Projectile, spawnPos, Quaternion.LookRotation(direction))
+                : Instantiate(Projectile, spawnPos, Quaternion.LookRotation(direction));
 
             var proj = projGO.GetComponent<ProjectileController>();
             if (proj != null)
