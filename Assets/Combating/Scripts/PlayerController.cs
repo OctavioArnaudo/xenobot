@@ -237,6 +237,8 @@ namespace Combating.Scripts
         private Transform _renderTransform;
         private CharacterController _controller;
         private GameObject _mainCamera;
+        private Unity.Cinemachine.CinemachineCamera _vcamCache;
+        private Unity.Cinemachine.Cinemachine3rdPersonFollow _vcam3rdPerson;
 
         private HealthController _health;
         private PropulsionController _jetpack;
@@ -552,23 +554,21 @@ namespace Combating.Scripts
         {
             _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
             GameObject root = transform.root.gameObject;
-            CinemachineCamera vcam = null;
 
-            foreach (var cam in root.GetComponentsInChildren<CinemachineCamera>(true))
+            _vcamCache = root.GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>(true);
+            if (_vcamCache == null) _vcamCache = FindFirstObjectByType<Unity.Cinemachine.CinemachineCamera>();
+
+            if (_vcamCache != null)
             {
-                if (cam.transform.IsChildOf(root.transform))
+                _vcam3rdPerson = _vcamCache.GetComponent<Unity.Cinemachine.Cinemachine3rdPersonFollow>();
+
+                if (CinemachineCameraTarget != null)
                 {
-                    vcam = cam;
-                    break;
+                    _vcamCache.Follow = CinemachineCameraTarget.transform;
+                    _vcamCache.LookAt = CinemachineCameraTarget.transform;
+                    _vcamCache.enabled = CanExecuteLocalLogic;
+                    _vcamCache.Priority = CanExecuteLocalLogic ? 100 : 0;
                 }
-            }
-
-            if (vcam != null && CinemachineCameraTarget != null)
-            {
-                vcam.Follow = CinemachineCameraTarget.transform;
-                vcam.LookAt = CinemachineCameraTarget.transform;
-                vcam.enabled = CanExecuteLocalLogic;
-                vcam.Priority = CanExecuteLocalLogic ? 100 : 0;
             }
         }
 
@@ -703,18 +703,39 @@ namespace Combating.Scripts
         {
             if (Cursor.visible) return;
 
-            // Actualizar visibilidad de la mira UI y Zoom de Cámara
             if (crosshairUI != null)
             {
                 crosshairUI.SetActive(aim);
             }
 
-            if (_mainCamera != null && _mainCamera.TryGetComponent<Camera>(out var camComp))
+            if (_vcamCache == null) SetupCamera();
+
+            float targetFOV = aim ? aimFOV : normalFOV;
+
+            if (_vcamCache != null)
             {
-                camComp.fieldOfView = Mathf.Lerp(camComp.fieldOfView, aim ? aimFOV : normalFOV, Time.deltaTime * 10f);
+                _vcamCache.Lens.FieldOfView = Mathf.Lerp(_vcamCache.Lens.FieldOfView, targetFOV, Time.deltaTime * 10f);
+
+                if (_vcam3rdPerson == null)
+                {
+                    _vcam3rdPerson = _vcamCache.GetComponent<Unity.Cinemachine.Cinemachine3rdPersonFollow>();
+                }
+
+                if (_vcam3rdPerson != null)
+                {
+                    float targetDistance = aim ? 1.3f : 3.5f;
+                    Vector3 targetShoulderOffset = aim ? new Vector3(0.65f, 0.1f, 0.0f) : new Vector3(0.0f, 0.0f, 0.0f);
+
+                    _vcam3rdPerson.CameraDistance = Mathf.Lerp(_vcam3rdPerson.CameraDistance, targetDistance, Time.deltaTime * 10f);
+                    _vcam3rdPerson.ShoulderOffset = Vector3.Lerp(_vcam3rdPerson.ShoulderOffset, targetShoulderOffset, Time.deltaTime * 10f);
+                }
             }
 
-            // Interceptar el Click Izquierdo según el modo de combate activo
+            if (_mainCamera != null && _mainCamera.TryGetComponent<Camera>(out var camComp))
+            {
+                camComp.fieldOfView = Mathf.Lerp(camComp.fieldOfView, targetFOV, Time.deltaTime * 10f);
+            }
+
             if (_shooter != null && (_shooter.isUnlocked || _shooter.Projectile != null))
             {
                 if (_shooter.HoldToFire ? fireHeld : fire)

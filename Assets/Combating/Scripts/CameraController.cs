@@ -89,6 +89,16 @@ namespace Combating.Scripts
             {
                 float targetFOV = isAiming ? AimFOV : NormalFOV;
                 _vcam.Lens.FieldOfView = Mathf.Lerp(_vcam.Lens.FieldOfView, targetFOV, Time.deltaTime * TransitionSpeed);
+
+                var thirdPersonFollow = _vcam.GetComponent<Unity.Cinemachine.Cinemachine3rdPersonFollow>();
+                if (thirdPersonFollow != null)
+                {
+                    float targetDistance = isAiming ? 1.3f : 3.5f;
+                    Vector3 targetShoulderOffset = isAiming ? AimShoulderOffset : Vector3.zero;
+
+                    thirdPersonFollow.CameraDistance = Mathf.Lerp(thirdPersonFollow.CameraDistance, targetDistance, Time.deltaTime * TransitionSpeed);
+                    thirdPersonFollow.ShoulderOffset = Vector3.Lerp(thirdPersonFollow.ShoulderOffset, targetShoulderOffset, Time.deltaTime * TransitionSpeed);
+                }
             }
         }
 
