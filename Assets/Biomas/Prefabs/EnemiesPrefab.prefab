@@ -1292,7 +1292,7 @@ MonoBehaviour:
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 5027030347244565460}
-  Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Projectile: {fileID: 0}
   visualsToRotate: []
   Damage: 1
   damage:
@@ -1447,6 +1447,7 @@ MonoBehaviour:
   infiniteShield:
     use: 0
     value: 0
+  healAmountOnBlock: 5
   inputMode: 0
   autoUnlockOnStart: 0
   autoActivateOnStart: 0
@@ -1939,7 +1940,7 @@ MonoBehaviour:
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 3831307437880435059}
-  Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Projectile: {fileID: 0}
   visualsToRotate: []
   Damage: 1
   damage:
@@ -2219,7 +2220,7 @@ MonoBehaviour:
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 6379814195262186618}
-  Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Projectile: {fileID: 0}
   visualsToRotate: []
   Damage: 1
   damage:
@@ -2431,6 +2432,10 @@ PrefabInstance:
     - target: {fileID: 4549520992404632733, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
       propertyPath: FireRate
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 4549520992404632733, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
+      propertyPath: Projectile
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 4549520992404632733, guid: 117eca68efa016e45b964d72b545e94a, type: 3}
       propertyPath: isUnlocked
@@ -2700,7 +2705,7 @@ MonoBehaviour:
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 215122690192891280}
-  Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Projectile: {fileID: 0}
   visualsToRotate: []
   Damage: 1
   damage:
@@ -3260,7 +3265,7 @@ MonoBehaviour:
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 4284258703486034231}
-  Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Projectile: {fileID: 0}
   visualsToRotate: []
   Damage: 1
   damage:
@@ -4150,7 +4155,7 @@ MonoBehaviour:
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 5630633374476518528}
-  Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Projectile: {fileID: 0}
   visualsToRotate: []
   Damage: 1
   damage:
@@ -4354,6 +4359,7 @@ MonoBehaviour:
   infiniteShield:
     use: 0
     value: 0
+  healAmountOnBlock: 5
   inputMode: 0
   autoUnlockOnStart: 0
   autoActivateOnStart: 0
@@ -5162,7 +5168,7 @@ MonoBehaviour:
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 6882175535980379663}
-  Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Projectile: {fileID: 0}
   visualsToRotate: []
   Damage: 1
   damage:
@@ -5890,6 +5896,7 @@ MonoBehaviour:
   infiniteShield:
     use: 0
     value: 0
+  healAmountOnBlock: 5
   inputMode: 0
   autoUnlockOnStart: 0
   autoActivateOnStart: 0

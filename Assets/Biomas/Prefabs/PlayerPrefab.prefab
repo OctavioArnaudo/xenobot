@@ -350,22 +350,59 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.PlayerController
   ShowTopMostFoldoutHeaderGroup: 1
   MoveSpeed: 15
+  moveSpeed:
+    use: 0
+    value: 0
   SprintSpeed: 30
+  sprintSpeed:
+    use: 0
+    value: 0
   SprintHoldThreshold: 0.25
+  sprintHoldThreshold:
+    use: 0
+    value: 0
   RotationSmoothTime: 0.12
+  rotationSmoothTime:
+    use: 0
+    value: 0
   SpeedChangeRate: 10
+  speedChangeRate:
+    use: 0
+    value: 0
   LandingAudioClip: {fileID: 8300000, guid: ef980d09b569380459e609fe90ef1db2, type: 3}
   FootstepAudioClips: []
   FootstepAudioVolume: 0.5
   JumpHeight: 5
+  jumpHeight:
+    use: 0
+    value: 0
   EnableDoubleJump: 1
   DoubleJumpHeight: 6
+  doubleJumpHeight:
+    use: 0
+    value: 0
+  MaxJumps: 0
+  maxJumps:
+    use: 0
+    value: 0
   Gravity: -30
+  gravity:
+    use: 0
+    value: 0
   JumpTimeout: 0.5
   FallTimeout: 0.15
+  crosshairUI: {fileID: 0}
+  aimFOV: 40
+  normalFOV: 60
   Grounded: 1
   GroundedOffset: -0.14
+  groundedOffset:
+    use: 0
+    value: 0
   GroundedRadius: 0.28
+  groundedRadius:
+    use: 0
+    value: 0
   GroundLayers:
     serializedVersion: 2
     m_Bits: 128
@@ -534,8 +571,14 @@ MonoBehaviour:
     message: OIL
   - prefab: {fileID: 4565876727797725469, guid: 79cf1ecc78b30454c856d973bbd7b7de, type: 3}
     message: IRON
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!114 &2530033462702487630
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -595,7 +638,7 @@ MonoBehaviour:
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 3596114446979786384}
-  Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
+  Projectile: {fileID: 0}
   visualsToRotate: []
   Damage: 2
   damage:
@@ -649,12 +692,31 @@ MonoBehaviour:
   isUnlocked: 1
   infiniteFuel: 0
   allowRegen: 0
-  maxFuel: 0
-  jetpackForce: 60
-  hoverForce: 25
-  fuelConsumption: 30
-  fuelRegen: 15
-  maxUpwardVelocity: 12
+  JetpackHoldThreshold: 0.15
+  MaxFuel: 120
+  maxFuel:
+    use: 0
+    value: 0
+  JetpackForce: 60
+  jetpackForce:
+    use: 0
+    value: 0
+  HoverForce: 25
+  hoverForce:
+    use: 0
+    value: 0
+  FuelConsumption: 28
+  fuelConsumption:
+    use: 0
+    value: 0
+  FuelRegen: 16
+  fuelRegen:
+    use: 0
+    value: 0
+  MaxUpwardVelocity: 12
+  maxUpwardVelocity:
+    use: 0
+    value: 0
   maxJetpackFuel:
     UpdateTraits:
       MinSecondsBetweenUpdates: 0
@@ -775,6 +837,7 @@ MonoBehaviour:
   infiniteShield:
     use: 0
     value: 0
+  healAmountOnBlock: 5
   inputMode: 0
   autoUnlockOnStart: 0
   autoActivateOnStart: 0
@@ -5697,15 +5760,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3346210.8
+      value: 3597370.8
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 6152.251
+      value: 6625.2783
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1964854.6
+      value: 2109062.5
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
@@ -5757,15 +5820,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 3346210.8
+      value: 3597377.8
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 6152.251
+      value: 6625.2915
       objectReference: {fileID: 0}
     - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 1964854.6
+      value: 2109066.8
       objectReference: {fileID: 0}
     - target: {fileID: 8125438068294852295, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_Layer
