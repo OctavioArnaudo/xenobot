@@ -15,10 +15,10 @@ namespace Combating.Scripts
         public float MinLookAtHeight = 0.5f;
 
         [Header("Over-The-Shoulder Settings")]
-        public Vector3 DefaultShoulderOffset = new Vector3(0.75f, 0.2f, -2.5f);
-        public Vector3 AimShoulderOffset = new Vector3(0.5f, 0.1f, -1.5f);
+        public Vector3 DefaultShoulderOffset = new Vector3(0.0f, 0.25f, -3.2f);
+        public Vector3 AimShoulderOffset = new Vector3(0.65f, 0.25f, -1.3f);
         public float NormalFOV = 60f;
-        public float AimFOV = 45f;
+        public float AimFOV = 40f;
         public float TransitionSpeed = 10f;
 
         [Header("Player Rotation Alignment")]
@@ -37,7 +37,7 @@ namespace Combating.Scripts
         private CinemachineBrain _brain;
         private Vector3 _currentOffset;
 
-        // Verificación con namespace correcto
+        // Verificaciï¿½n con namespace correcto
         private bool HasInputAuthority =>            (_hub.GetComponent<PlayerController>() != null) &&
                 (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening || _hub.IsOwner);
 
@@ -72,7 +72,8 @@ namespace Combating.Scripts
 
             if (_vcam == null) RefreshCameraLink();
 
-            bool isAiming = false;
+            PlayerController player = _hub.GetComponent<PlayerController>() ?? _hub.GetComponentInChildren<PlayerController>();
+            bool isAiming = player != null && player.aim;
 
             _pitch = Mathf.Clamp(_pitch, BottomClamp, TopClamp);
 
@@ -115,7 +116,7 @@ namespace Combating.Scripts
             Vector3 finalTargetPos = basePosition + (cameraRotation * _currentOffset);
             _target.transform.position = finalTargetPos;
 
-            // Dibuja una línea roja en la ventana Scene desde la cabeza hacia el objetivo de la cámara
+            // Dibuja una lï¿½nea roja en la ventana Scene desde la cabeza hacia el objetivo de la cï¿½mara
             Debug.DrawLine(basePosition, finalTargetPos, Color.red);
         }
 
