@@ -509,17 +509,17 @@ namespace Combating.Scripts
             Animator anim = GetComponentInChildren<Animator>();
             if (anim != null)
             {
-                Transform bone = anim.GetBoneTransform(HumanBodyBones.Head) ??
-                                 anim.GetBoneTransform(HumanBodyBones.Neck) ??
+                Transform bone = anim.GetBoneTransform(HumanBodyBones.UpperChest) ??
                                  anim.GetBoneTransform(HumanBodyBones.Chest) ??
-                                 anim.transform.Find("head") ??
-                                 anim.transform.Find("Head") ??
+                                 anim.GetBoneTransform(HumanBodyBones.Neck) ??
+                                 anim.GetBoneTransform(HumanBodyBones.Head) ??
                                  anim.transform.Find("spine") ??
-                                 anim.transform.Find("Chest");
+                                 anim.transform.Find("Chest") ??
+                                 anim.transform.Find("head");
 
                 if (bone != null)
                 {
-                    CinemachineCameraTarget.transform.position = bone.position + Vector3.up * 0.4f;
+                    CinemachineCameraTarget.transform.position = bone.position + Vector3.up * 0.1f;
                 }
             }
         }
@@ -722,7 +722,7 @@ namespace Combating.Scripts
                 if (_vcam3rdPerson != null)
                 {
                     float targetDistance = aim ? 2.2f : 4.2f;
-                    Vector3 targetShoulderOffset = aim ? new Vector3(0.85f, 0.35f, 0.0f) : new Vector3(0.35f, 0.15f, 0.0f);
+                    Vector3 targetShoulderOffset = aim ? new Vector3(0.85f, 0.08f, 0.0f) : new Vector3(0.35f, 0.0f, 0.0f);
 
                     _vcam3rdPerson.CameraDistance = Mathf.Lerp(_vcam3rdPerson.CameraDistance, targetDistance, Time.deltaTime * 10f);
                     _vcam3rdPerson.ShoulderOffset = Vector3.Lerp(_vcam3rdPerson.ShoulderOffset, targetShoulderOffset, Time.deltaTime * 10f);

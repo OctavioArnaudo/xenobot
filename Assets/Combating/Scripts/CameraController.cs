@@ -15,8 +15,8 @@ namespace Combating.Scripts
         public float MinLookAtHeight = 0.5f;
 
         [Header("Over-The-Shoulder Settings")]
-        public Vector3 DefaultShoulderOffset = new Vector3(0.35f, 0.15f, -4.2f);
-        public Vector3 AimShoulderOffset = new Vector3(0.85f, 0.35f, -2.2f);
+        public Vector3 DefaultShoulderOffset = new Vector3(0.35f, 0.0f, -4.2f);
+        public Vector3 AimShoulderOffset = new Vector3(0.85f, 0.08f, -2.2f);
         public float NormalFOV = 60f;
         public float AimFOV = 45f;
         public float TransitionSpeed = 10f;
@@ -94,7 +94,7 @@ namespace Combating.Scripts
                 if (thirdPersonFollow != null)
                 {
                     float targetDistance = isAiming ? 2.2f : 4.2f;
-                    Vector3 targetShoulderOffset = isAiming ? AimShoulderOffset : new Vector3(0.35f, 0.15f, 0.0f);
+                    Vector3 targetShoulderOffset = isAiming ? AimShoulderOffset : new Vector3(0.35f, 0.0f, 0.0f);
 
                     thirdPersonFollow.CameraDistance = Mathf.Lerp(thirdPersonFollow.CameraDistance, targetDistance, Time.deltaTime * TransitionSpeed);
                     thirdPersonFollow.ShoulderOffset = Vector3.Lerp(thirdPersonFollow.ShoulderOffset, targetShoulderOffset, Time.deltaTime * TransitionSpeed);
@@ -109,7 +109,7 @@ namespace Combating.Scripts
             if (_target == null) _target = transform.Find("PlayerTarget")?.gameObject ?? transform.Find("Target")?.gameObject ?? gameObject;
 
 
-            Vector3 basePosition = _hub.transform.position + Vector3.up * 1.6f;
+            Vector3 basePosition = _hub.transform.position + Vector3.up * 1.35f;
 
             float minY = _hub.transform.position.y + MinLookAtHeight;
             if (basePosition.y < minY) basePosition.y = minY;
