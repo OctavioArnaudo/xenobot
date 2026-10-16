@@ -118,8 +118,12 @@ namespace Combating.Scripts
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(SphereCollider))]
-    public class ProjectileController : NetworkBehaviour
+    public class ProjectileController : NetworkBehaviour, IPoolRecyclable
     {
+        public event System.Action OnEntityRecycled;
+        private static readonly List<ProjectileController> s_ActiveProjectiles = new List<ProjectileController>();
+        private const int MAX_SIMULTANEOUS_PROJECTILES = 40;
+
         private const ProjectileType DEFAULT_TYPE = ProjectileType.BalaFuego;
         private const bool DEFAULT_AUTO_RANDOMIZE = false;
         private const float DEFAULT_SPEED = 45f;
@@ -251,6 +255,30 @@ namespace Combating.Scripts
             }
         }
 
+        public void PrepareForSpawn(Vector3 position, Quaternion rotation)
+        {
+            m_LifeTimer = 0f;
+            m_HasHit = false;
+            m_IsAttached = false;
+            m_AttachedTarget = null;
+            m_HomingTarget = null;
+
+            var col = GetComponent<Collider>();
+            if (col != null) col.enabled = true;
+
+            TrailRenderer[] trails = GetComponentsInChildren<TrailRenderer>();
+            foreach (var tr in trails) tr.Clear();
+
+            transform.SetPositionAndRotation(position, rotation);
+        }
+
+        public void RecycleEntity()
+        {
+            s_ActiveAttachedBombs.Remove(this);
+            s_ActiveProjectiles.Remove(this);
+            OnEntityRecycled?.Invoke();
+        }
+
         public static void DetonateOwnerAttachedBombs(GameObject owner)
         {
             if (owner == null) return;
@@ -263,6 +291,22 @@ namespace Combating.Scripts
 
         public void Launch(GameObject owner, Vector3 direction, float dmg, Team team)
         {
+            if (s_ActiveProjectiles.Count >= MAX_SIMULTANEOUS_PROJECTILES && s_ActiveProjectiles[0] != null)
+            {
+                s_ActiveProjectiles[0].FinalizeImpact();
+            }
+
+            if (!s_ActiveProjectiles.Contains(this))
+            {
+                s_ActiveProjectiles.Add(this);
+            }
+
+            m_LifeTimer = 0f;
+            m_HasHit = false;
+            m_IsAttached = false;
+            m_AttachedTarget = null;
+            m_HomingTarget = null;
+
             m_Owner = owner;
             m_Direction = direction.sqrMagnitude > 0.01f ? direction.normalized : transform.forward;
             m_OwnerTeam = team;
@@ -624,10 +668,17 @@ namespace Combating.Scripts
             }
         }
 
+        private void OnDisable()
+        {
+            s_ActiveAttachedBombs.Remove(this);
+            s_ActiveProjectiles.Remove(this);
+        }
+
         public override void OnDestroy()
         {
             base.OnDestroy();
             s_ActiveAttachedBombs.Remove(this);
+            s_ActiveProjectiles.Remove(this);
         }
     }
 }
