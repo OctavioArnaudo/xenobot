@@ -63,6 +63,7 @@ namespace Combating.Scripts
         public GameObject crosshairUI;
         public float aimFOV = 40f;
         public float normalFOV = 60f;
+        public bool toggleAim = false; // Si es true, hace toggle de la vista al presionar Click Derecho. Si es false, requiere mantener presionado.
         #endregion
 
         #region Variables: Ground Check
@@ -645,27 +646,34 @@ namespace Combating.Scripts
             }
 
             // Click Izquierdo -> fuego / ataque melee
-            if (_fireAction != null)
-            {
-                fire = _fireAction.WasPressedThisFrame();
-                fireHeld = _fireAction.IsPressed();
-                fireReleased = _fireAction.WasReleasedThisFrame();
-            }
-            else if (Mouse.current != null)
-            {
-                fire = Mouse.current.leftButton.wasPressedThisFrame;
-                fireHeld = Mouse.current.leftButton.isPressed;
-                fireReleased = Mouse.current.leftButton.wasReleasedThisFrame;
-            }
+            bool actionFire = _fireAction != null && _fireAction.WasPressedThisFrame();
+            bool mouseFire = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+            fire = actionFire || mouseFire;
 
-            // Click Derecho -> Apuntar
-            if (_aimAction != null)
+            bool actionFireHeld = _fireAction != null && _fireAction.IsPressed();
+            bool mouseFireHeld = Mouse.current != null && Mouse.current.leftButton.isPressed;
+            fireHeld = actionFireHeld || mouseFireHeld;
+
+            bool actionFireReleased = _fireAction != null && _fireAction.WasReleasedThisFrame();
+            bool mouseFireReleased = Mouse.current != null && Mouse.current.leftButton.wasReleasedThisFrame;
+            fireReleased = actionFireReleased || mouseFireReleased;
+
+            // Click Derecho -> Apuntar (Soporta Mantener o Alternar / Toggle)
+            bool aimPressedThisFrame = (_aimAction != null && _aimAction.WasPressedThisFrame()) ||
+                                      (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame);
+            bool aimIsHeld = (_aimAction != null && _aimAction.IsPressed()) ||
+                             (Mouse.current != null && Mouse.current.rightButton.isPressed);
+
+            if (toggleAim)
             {
-                aim = _aimAction.IsPressed();
+                if (aimPressedThisFrame)
+                {
+                    aim = !aim;
+                }
             }
-            else if (Mouse.current != null)
+            else
             {
-                aim = Mouse.current.rightButton.isPressed;
+                aim = aimIsHeld;
             }
 
             if (_crouchAction != null && _crouchAction.WasPressedThisFrame()) crouch = true;
@@ -761,7 +769,17 @@ namespace Combating.Scripts
             fireHeld = isPressed;
             fireReleased = !isPressed;
         }
-        public void InputAim(InputValue value) => aim = value.isPressed;
+        public void InputAim(InputValue value)
+        {
+            if (toggleAim)
+            {
+                if (value.isPressed) aim = !aim;
+            }
+            else
+            {
+                aim = value.isPressed;
+            }
+        }
         public void InputCrouch(InputValue value) => crouch = value.isPressed;
         public void InputReload(InputValue value) => reload = value.isPressed;
         public void InputNextWeapon(InputValue value) => switchWeapon = (int)value.Get<float>();
