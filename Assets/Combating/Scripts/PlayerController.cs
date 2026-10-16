@@ -748,11 +748,14 @@ namespace Combating.Scripts
             }
             else
             {
-                GameObject projObj = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
-                ProjectileController projectile = projObj.GetComponent<ProjectileController>();
-                if (projectile != null)
+                GameObject projObj = BalanceManager.Instance != null ? BalanceManager.Instance.SpawnFromPool(prefab, spawnPos, Quaternion.LookRotation(direction)) : Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
+                if (projObj != null)
                 {
-                    projectile.Launch(gameObject, direction, damage, team);
+                    ProjectileController projectile = projObj.GetComponent<ProjectileController>();
+                    if (projectile != null)
+                    {
+                        projectile.Launch(gameObject, direction, damage, team);
+                    }
                 }
             }
         }
@@ -770,18 +773,17 @@ namespace Combating.Scripts
 
             if (projectilePrefab != null)
             {
-                GameObject projObj = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
-                ProjectileController projectile = projObj.GetComponent<ProjectileController>();
-                if (projectile != null)
+                GameObject projObj = BalanceManager.Instance != null ? BalanceManager.Instance.SpawnFromPool(projectilePrefab, spawnPos, Quaternion.LookRotation(direction)) : Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
+                if (projObj != null)
                 {
-                    projectile.Launch(gameObject, direction, damage, team);
-                }
+                    ProjectileController projectile = projObj.GetComponent<ProjectileController>();
+                    if (projectile != null)
+                    {
+                        projectile.Launch(gameObject, direction, damage, team);
+                    }
 
-                if (projObj.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
-            }
-            else
-            {
-                Debug.LogWarning("[PlayerController] El servidor no encontró un ShootController con proyectil asignado.");
+                    if (projObj.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
+                }
             }
         }
         #endregion
