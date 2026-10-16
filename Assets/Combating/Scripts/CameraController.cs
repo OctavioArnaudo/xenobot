@@ -15,10 +15,10 @@ namespace Combating.Scripts
         public float MinLookAtHeight = 0.5f;
 
         [Header("Over-The-Shoulder Settings")]
-        public Vector3 DefaultShoulderOffset = new Vector3(0.0f, 0.25f, -3.2f);
-        public Vector3 AimShoulderOffset = new Vector3(0.65f, 0.25f, -1.3f);
+        public Vector3 DefaultShoulderOffset = new Vector3(0.35f, 0.15f, -4.2f);
+        public Vector3 AimShoulderOffset = new Vector3(0.85f, 0.35f, -2.2f);
         public float NormalFOV = 60f;
-        public float AimFOV = 40f;
+        public float AimFOV = 45f;
         public float TransitionSpeed = 10f;
 
         [Header("Player Rotation Alignment")]
@@ -93,8 +93,8 @@ namespace Combating.Scripts
                 var thirdPersonFollow = _vcam.GetComponent<Unity.Cinemachine.CinemachineThirdPersonFollow>();
                 if (thirdPersonFollow != null)
                 {
-                    float targetDistance = isAiming ? 1.3f : 3.5f;
-                    Vector3 targetShoulderOffset = isAiming ? AimShoulderOffset : Vector3.zero;
+                    float targetDistance = isAiming ? 2.2f : 4.2f;
+                    Vector3 targetShoulderOffset = isAiming ? AimShoulderOffset : new Vector3(0.35f, 0.15f, 0.0f);
 
                     thirdPersonFollow.CameraDistance = Mathf.Lerp(thirdPersonFollow.CameraDistance, targetDistance, Time.deltaTime * TransitionSpeed);
                     thirdPersonFollow.ShoulderOffset = Vector3.Lerp(thirdPersonFollow.ShoulderOffset, targetShoulderOffset, Time.deltaTime * TransitionSpeed);
