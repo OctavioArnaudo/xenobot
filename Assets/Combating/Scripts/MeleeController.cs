@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
@@ -56,6 +57,7 @@ namespace Combating.Scripts
 
         private HealthController m_Health;
         private CharacterController m_CharacterController;
+        private PlayerController m_Player;
         private float m_NextAttackTime;
         private bool m_IsSlamming;
 
@@ -168,21 +170,11 @@ namespace Combating.Scripts
             return DEFAULT_ENEMY_BASE_MELEE_DAMAGE;
         }
 
-        private int CountNearbyAllies()
-        {
-            int count = 0;
-            var enemies = GameObject.FindGameObjectsWithTag("Enemy");
-            foreach (var e in enemies)
-            {
-                if (e != gameObject && Vector3.Distance(transform.position, e.transform.position) <= 25f) count++;
-            }
-            return count;
-        }
-
         void Awake()
         {
             m_Health = GetComponent<HealthController>() ?? GetComponentInParent<HealthController>();
             m_CharacterController = GetComponent<CharacterController>();
+            m_Player = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
 
             if (visualsToRotate == null || visualsToRotate.Length == 0)
                 visualsToRotate = GetComponentsInChildren<Renderer>();
@@ -225,6 +217,15 @@ namespace Combating.Scripts
         private void HandleInput()
         {
             if (Mouse.current == null) return;
+
+            // BLOQUEO DE MELEE SI EL JUGADOR ESTÁ APUNTANDO
+            if (m_Player == null) m_Player = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
+            if (m_Player != null && (m_Player.aim || Mouse.current.rightButton.isPressed))
+            {
+                m_IsHoldingClick = false;
+                m_HoldTimer = 0f;
+                return;
+            }
 
             if (Mouse.current.leftButton.wasPressedThisFrame)
             {
@@ -277,7 +278,6 @@ namespace Combating.Scripts
             Team myTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") ? Team.Player : Team.Enemy);
             if (targetHealth.EffectiveTeam == myTeam) return;
 
-            // Transmitir daño melee al colisionar con cualquier parte del cuerpo/render del rival
             float damage = EffectiveAttackDamage;
             targetHealth.TakeDamage((int)damage);
 
@@ -293,12 +293,14 @@ namespace Combating.Scripts
             }
         }
 
-        private void StartGroundSlam() {
+        private void StartGroundSlam()
+        {
             m_NextAttackTime = Time.time + EffectiveAttackCooldown;
             m_IsSlamming = true;
 
             Animator anim = GetComponentInChildren<Animator>();
-            if (anim != null) {
+            if (anim != null)
+            {
                 if (HasParameter(anim, "smashDown"))
                     anim.SetTrigger("smashDown");
                 else if (HasParameter(anim, "groundSlamStart"))

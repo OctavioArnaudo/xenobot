@@ -361,6 +361,13 @@ namespace Combating.Scripts
         {
             if (!isUnlocked) return false;
 
+            // SI ES EL JUGADOR: Solo disparar si se está apuntando con click derecho
+            if (m_Player == null) m_Player = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
+            if (m_Player != null && !m_Player.aim && (Mouse.current == null || !Mouse.current.rightButton.isPressed))
+            {
+                return false;
+            }
+
             if (Projectile == null || Muzzle == null)
             {
                 RefreshReferences();
