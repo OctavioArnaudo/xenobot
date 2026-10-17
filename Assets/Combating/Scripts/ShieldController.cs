@@ -16,7 +16,7 @@ namespace Combating.Scripts
     /// <summary>
     /// Sistema de escudo de energía esférico con mitigación de daño, colisionadores de impacto,
     /// capacidad de resistencia, drenado en tiempo real, recarga exclusiva al USAR desde inventario,
-    /// escalado por nivel (Jugador) y degradación inversa por ciclos (Enemigo).
+    /// escalado por nivel (Jugador), degradación inversa por ciclos (Enemigo) y función de Shield Bash.
     /// </summary>
     [ExecuteAlways]
     public class ShieldController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
@@ -49,6 +49,21 @@ namespace Combating.Scripts
         [Tooltip("Si se activa, el escudo nunca se agota ni entra en cooldown")]
         public bool InfiniteShield;
         public Optional<bool> infiniteShield;
+
+        [Header("Shield Bash Settings")]
+        [Tooltip("Daño infligido al embestir con el escudo activo durante un dash")]
+        public float shieldBashDamage = 15.0f;
+        public Optional<float> customBashDamage;
+
+        [Tooltip("Fuerza de empuje/knockback aplicada a los enemigos al embestirlos")]
+        public float shieldBashKnockbackForce = 500.0f;
+
+        [Tooltip("Radio de impacto frontal al realizar el Shield Bash")]
+        public float bashRadius = 2.5f;
+
+        public LayerMask bashTargetLayers = ~0;
+        public AudioClip bashSound;
+        public ParticleSystem bashVfxPrefab;
 
         [Header("Heal Settings")]
         [Tooltip("Vida que se recupera automáticamente al bloquear daño con el escudo")]
@@ -90,6 +105,7 @@ namespace Combating.Scripts
         private float m_CooldownTimer;
         private int m_EnemyCycleCount = 0;
         private float m_HitFlashTimer;
+        private float m_LastBashTime;
         private Dictionary<Material, Color> m_ShieldOriginalColors = new Dictionary<Material, Color>();
 
         private readonly NetworkVariable<bool> m_IsShieldActive = new NetworkVariable<bool>(
@@ -112,6 +128,16 @@ namespace Combating.Scripts
         }
 
         // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
+
+        public float EffectiveShieldBashDamage
+        {
+            get
+            {
+                if (customBashDamage.use) return customBashDamage.value;
+                int lvl = HudController.Instance != null ? HudController.Instance.Level : 1;
+                return shieldBashDamage + (lvl - 1) * 3f;
+            }
+        }
 
         public float EffectiveDamageReduction
         {
@@ -405,6 +431,92 @@ namespace Combating.Scripts
             }
         }
 
+        #region Shield Bash Logic
+        /// <summary>
+        /// Ejecuta el golpe / embestida con el escudo activo (Shield Bash).
+        /// Daña a los enemigos frontales y les aplica knockback.
+        /// </summary>
+        public bool ExecuteShieldBashHitCheck()
+        {
+            if (!IsShieldActive) return false;
+
+            if (Time.time - m_LastBashTime < 0.35f) return false;
+            m_LastBashTime = Time.time;
+
+            Vector3 bashCenter = transform.position + transform.forward * (bashRadius * 0.75f) + Vector3.up * 0.8f;
+            int mask = (bashTargetLayers.value != 0) ? bashTargetLayers.value : ~0;
+
+            Collider[] hits = Physics.OverlapSphere(bashCenter, bashRadius, mask, QueryTriggerInteraction.Collide);
+            Team myTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") ? Team.Player : Team.Enemy);
+            bool hasHitAny = false;
+
+            foreach (Collider hit in hits)
+            {
+                if (hit.gameObject == gameObject || hit.transform.IsChildOf(transform)) continue;
+
+                var targetHealth = hit.GetComponentInParent<HealthController>() ?? hit.GetComponent<HealthController>();
+                if (targetHealth != null && targetHealth.EffectiveTeam != myTeam && targetHealth.CurrentHP > 0)
+                {
+                    float damage = EffectiveShieldBashDamage;
+                    targetHealth.TakeDamage((int)damage);
+                    hasHitAny = true;
+
+                    Vector3 knockbackDir = (hit.transform.position - transform.position).normalized;
+                    knockbackDir.y = 0.2f;
+
+                    Rigidbody rb = hit.GetComponent<Rigidbody>() ?? hit.GetComponentInParent<Rigidbody>();
+                    if (rb != null && !rb.isKinematic)
+                    {
+                        rb.AddForce(knockbackDir * shieldBashKnockbackForce, ForceMode.Impulse);
+                    }
+                }
+            }
+
+            if (hasHitAny || hits.Length > 0)
+            {
+                TriggerShieldBashVisualEffects(bashCenter);
+            }
+
+            return hasHitAny;
+        }
+
+        private void TriggerShieldBashVisualEffects(Vector3 position)
+        {
+            if (bashSound != null)
+            {
+                AudioSource.PlayClipAtPoint(bashSound, position);
+            }
+
+            if (bashVfxPrefab != null)
+            {
+                Instantiate(bashVfxPrefab, position, Quaternion.LookRotation(transform.forward));
+            }
+
+            TriggerShieldHitEffect();
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            TryBashImpact(other.gameObject);
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            TryBashImpact(collision.gameObject);
+        }
+
+        private void TryBashImpact(GameObject hitObject)
+        {
+            if (!IsShieldActive || hitObject == gameObject || hitObject.transform.IsChildOf(transform)) return;
+
+            HealthController targetHealth = hitObject.GetComponentInParent<HealthController>() ?? hitObject.GetComponent<HealthController>();
+            if (targetHealth != null)
+            {
+                ExecuteShieldBashHitCheck();
+            }
+        }
+        #endregion
+
         public void StartRechargeSequence()
         {
             m_CooldownTimer = EffectiveCooldownDuration;
@@ -649,7 +761,7 @@ namespace Combating.Scripts
             if (m_Health == null) RefreshReferences();
             if (m_Health != null && healAmountOnBlock > 0f)
             {
-                m_Health.Heal(Mathf.RoundToInt(healAmountOnBlock)); // Conversión de float a int
+                m_Health.Heal(Mathf.RoundToInt(healAmountOnBlock));
             }
 
             TriggerShieldHitEffect();
@@ -732,6 +844,13 @@ namespace Combating.Scripts
             foreach (AnimatorControllerParameter param in animator.parameters)
                 if (param.name == paramName) return true;
             return false;
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            Gizmos.color = Color.cyan;
+            Vector3 bashCenter = transform.position + transform.forward * (bashRadius * 0.75f) + Vector3.up * 0.8f;
+            Gizmos.DrawWireSphere(bashCenter, bashRadius);
         }
     }
 }
