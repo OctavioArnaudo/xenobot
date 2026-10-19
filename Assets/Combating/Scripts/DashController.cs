@@ -17,11 +17,43 @@ namespace Combating.Scripts
         public float dashCooldown = 1f;
 
         [Header("Tap / Hold Settings")]
-        [Tooltip("Tiempo máximo en segundos que debe durar la pulsación de Shift para considerarse un Tap.")]
+        [Tooltip("Tiempo mï¿½ximo en segundos que debe durar la pulsaciï¿½n de Shift para considerarse un Tap.")]
         [SerializeField] private float tapThreshold = 0.2f;
 
+        private const float DEFAULT_STAMINA_COST = 8f;
+
         [Header("Stamina / Fuel Cost")]
-        public float staminaCost = 20f;
+        public float StaminaCost;
+        public Optional<float> staminaCost;
+
+        public float EffectiveStaminaCost
+        {
+            get
+            {
+                try
+                {
+                    if (staminaCost.use) return staminaCost.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.jetpackConsumptionRate > 0) return stats.jetpackConsumptionRate * 2f;
+                    }
+                    return staminaCost.GetValue(DEFAULT_STAMINA_COST);
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] StaminaCost: {ex.Message}"); }
+                return DEFAULT_STAMINA_COST;
+            }
+        }
+
+        private void UpdateInspectorValues()
+        {
+            StaminaCost = EffectiveStaminaCost;
+        }
+
+        private void OnValidate()
+        {
+            UpdateInspectorValues();
+        }
 
         [Header("Animation Settings")]
         [SerializeField] private string dashTriggerName = "dash";
@@ -55,7 +87,7 @@ namespace Combating.Scripts
             m_Health = player.GetComponent<HealthController>();
             m_Propulsion = player.GetComponent<PropulsionController>() ?? player.GetComponentInChildren<PropulsionController>();
             RefreshReferences();
-            Debug.Log("[DashController] Lógica de Dash de red activada para el jugador.");
+            Debug.Log("[DashController] Lï¿½gica de Dash de red activada para el jugador.");
         }
 
         private void RefreshReferences()
@@ -77,6 +109,7 @@ namespace Combating.Scripts
 
         void Update()
         {
+            UpdateInspectorValues();
             if (m_Player == null || m_CharController == null || m_Animator == null) RefreshReferences();
             if (m_Player == null || m_CharController == null) return;
 
@@ -107,13 +140,13 @@ namespace Combating.Scripts
                 m_IsWaitingForShiftRelease = true;
             }
 
-            // 2. Si se mantiene presionado más allá del tiempo de Tap, se cancela el Dash (Hold)
+            // 2. Si se mantiene presionado mï¿½s allï¿½ del tiempo de Tap, se cancela el Dash (Hold)
             if (m_IsWaitingForShiftRelease && (Time.time - m_ShiftPressStartTime) > tapThreshold)
             {
                 m_IsWaitingForShiftRelease = false;
             }
 
-            // 3. Al soltar Shift, se evalúa si fue Tap y si el jugador se está moviendo con WASD
+            // 3. Al soltar Shift, se evalï¿½a si fue Tap y si el jugador se estï¿½ moviendo con WASD
             if (m_IsWaitingForShiftRelease && (leftShift.wasReleasedThisFrame || rightShift.wasReleasedThisFrame))
             {
                 m_IsWaitingForShiftRelease = false;
@@ -139,7 +172,7 @@ namespace Combating.Scripts
         }
 
         /// <summary>
-        /// Calcula la dirección según el WASD presionado y ejecuta el Dash.
+        /// Calcula la direcciï¿½n segï¿½n el WASD presionado y ejecuta el Dash.
         /// </summary>
         public void PerformShiftDash()
         {
@@ -170,6 +203,9 @@ namespace Combating.Scripts
         private void TryStartDash(Vector3 localDirection)
         {
             Vector3 worldDirection = transform.TransformDirection(localDirection).normalized;
+            if (m_Propulsion == null) RefreshReferences();
+            float cost = EffectiveStaminaCost;
+            if (m_Propulsion != null && cost > 0 && m_Propulsion.JetpackFuel < cost) return;
 
             if (IsNetworkActive)
             {
@@ -177,6 +213,7 @@ namespace Combating.Scripts
             }
             else
             {
+                if (m_Propulsion != null && cost > 0) m_Propulsion.UseFuel(cost);
                 ExecuteLocalDash(worldDirection);
             }
         }
@@ -185,10 +222,11 @@ namespace Combating.Scripts
         private void RequestDashServerRpc(Vector3 worldDirection)
         {
             if (m_Propulsion == null) RefreshReferences();
-            if (m_Propulsion != null && staminaCost > 0)
+            float cost = EffectiveStaminaCost;
+            if (m_Propulsion != null && cost > 0)
             {
-                if (m_Propulsion.JetpackFuel < staminaCost) return;
-                m_Propulsion.UseFuel(staminaCost);
+                if (m_Propulsion.JetpackFuel < cost) return;
+                m_Propulsion.UseFuel(cost);
             }
 
             NotifyDashClientRpc(worldDirection);
