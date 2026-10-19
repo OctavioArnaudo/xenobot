@@ -478,7 +478,15 @@ namespace Combating.Scripts
 
         private void Update()
         {
-            if (!CanExecuteLocalLogic) return;
+            if (!CanExecuteLocalLogic)
+            {
+                if (_renderTransform != null)
+                {
+                    _renderTransform.localPosition = new Vector3(0, -0.05f, 0);
+                    _renderTransform.localRotation = Quaternion.identity;
+                }
+                return;
+            }
 
             if (_health != null && _health.CurrentHP <= 0)
             {
@@ -588,6 +596,8 @@ namespace Combating.Scripts
             if (_renderTransform != null)
             {
                 _animator = _renderTransform.GetComponentInChildren<Animator>(true);
+                _renderTransform.localPosition = new Vector3(0, -0.05f, 0);
+                _renderTransform.localRotation = Quaternion.identity;
             }
 
             if (_animator == null) _animator = GetComponentInChildren<Animator>(true);
@@ -742,7 +752,10 @@ namespace Combating.Scripts
             {
                 if (_shooter.HoldToFire ? fireHeld : fire)
                 {
-                    _shooter.TryFire();
+                    if (!_shooter.TryFire() && _melee != null && fire)
+                    {
+                        _melee.PerformMeleeAction();
+                    }
                 }
             }
             else if (_melee != null && fire)

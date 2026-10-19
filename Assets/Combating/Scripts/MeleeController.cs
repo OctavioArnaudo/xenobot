@@ -328,6 +328,8 @@ namespace Combating.Scripts
 
         public void PerformMeleeAction(Vector3? targetPosition = null)
         {
+            if (Time.time < m_NextAttackTime) return;
+
             if (targetPosition.HasValue)
             {
                 RotateVisualsTowards(targetPosition.Value);
@@ -360,10 +362,31 @@ namespace Combating.Scripts
         [ServerRpc]
         private void RequestSlamServerRpc(Vector3 impactPosition)
         {
-            ExecuteGroundSlam(impactPosition);
+            ExecuteGroundSlamDamageServer(impactPosition);
+            NotifySlamClientRpc(impactPosition);
         }
 
-        private void ExecuteGroundSlam(Vector3 impactPosition)
+        [ClientRpc]
+        private void NotifySlamClientRpc(Vector3 impactPosition)
+        {
+            Animator anim = GetComponentInChildren<Animator>();
+            if (anim != null && HasParameter(anim, "groundSlamImpact"))
+            {
+                anim.SetTrigger("groundSlamImpact");
+            }
+
+            if (slamVfxPrefab != null)
+            {
+                Instantiate(slamVfxPrefab, impactPosition, Quaternion.identity);
+            }
+
+            if (slamSound != null)
+            {
+                AudioSource.PlayClipAtPoint(slamSound, impactPosition);
+            }
+        }
+
+        private void ExecuteGroundSlamDamageServer(Vector3 impactPosition)
         {
             float finalDamage = EffectiveSlamDamage;
             int mask = (targetLayers.value != 0) ? targetLayers.value : ~0;
@@ -387,22 +410,12 @@ namespace Combating.Scripts
                     rb.AddExplosionForce(EffectiveSlamKnockbackForce, impactPosition, EffectiveSlamRadius, 0.5f, ForceMode.Impulse);
                 }
             }
+        }
 
-            Animator anim = GetComponentInChildren<Animator>();
-            if (anim != null && HasParameter(anim, "groundSlamImpact"))
-            {
-                anim.SetTrigger("groundSlamImpact");
-            }
-
-            if (slamVfxPrefab != null)
-            {
-                Instantiate(slamVfxPrefab, impactPosition, Quaternion.identity);
-            }
-
-            if (slamSound != null)
-            {
-                AudioSource.PlayClipAtPoint(slamSound, impactPosition);
-            }
+        private void ExecuteGroundSlam(Vector3 impactPosition)
+        {
+            ExecuteGroundSlamDamageServer(impactPosition);
+            NotifySlamClientRpc(impactPosition);
         }
 
         private void RotateVisualsTowards(Vector3 targetPosition)
@@ -423,10 +436,24 @@ namespace Combating.Scripts
         [ServerRpc]
         private void RequestMeleeServerRpc()
         {
-            ExecuteMelee();
+            ExecuteMeleeDamageServer();
+            Vector3 attackCenter = transform.position + transform.forward * (EffectiveAttackRange * 0.5f);
+            NotifyMeleeClientRpc(attackCenter, transform.forward);
         }
 
-        private void ExecuteMelee()
+        [ClientRpc]
+        private void NotifyMeleeClientRpc(Vector3 attackCenter, Vector3 forwardDir)
+        {
+            TriggerMeleeVisualEffect(attackCenter, forwardDir);
+
+            Animator anim = GetComponentInChildren<Animator>();
+            if (anim != null && HasParameter(anim, "meleeAttack"))
+            {
+                anim.SetTrigger("meleeAttack");
+            }
+        }
+
+        private void ExecuteMeleeDamageServer()
         {
             float finalDamage = EffectiveAttackDamage;
             int mask = (targetLayers.value != 0) ? targetLayers.value : ~0;
@@ -435,7 +462,6 @@ namespace Combating.Scripts
             Collider[] hits = Physics.OverlapSphere(attackCenter, EffectiveAttackRange, mask, QueryTriggerInteraction.Collide);
 
             Team myTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") ? Team.Player : Team.Enemy);
-            bool hasHitAny = false;
 
             foreach (Collider hit in hits)
             {
@@ -445,18 +471,15 @@ namespace Combating.Scripts
                 if (targetHealth != null && targetHealth.EffectiveTeam != myTeam && targetHealth.CurrentHP > 0)
                 {
                     targetHealth.TakeDamage((int)finalDamage);
-                    hasHitAny = true;
-
-                    Vector3 impactPos = hit.ClosestPoint(attackCenter);
-                    Vector3 hitDir = (hit.transform.position - transform.position).normalized;
-                    TriggerMeleeVisualEffect(impactPos, hitDir);
                 }
             }
+        }
 
-            if (!hasHitAny)
-            {
-                TriggerMeleeVisualEffect(attackCenter, transform.forward);
-            }
+        private void ExecuteMelee()
+        {
+            ExecuteMeleeDamageServer();
+            Vector3 attackCenter = transform.position + transform.forward * (EffectiveAttackRange * 0.5f);
+            TriggerMeleeVisualEffect(attackCenter, transform.forward);
 
             Animator anim = GetComponentInChildren<Animator>();
             if (anim != null && HasParameter(anim, "meleeAttack"))
