@@ -2,9 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-#endif
 using NGO.Networking;
 using Levels.Data;
 
@@ -45,11 +43,7 @@ namespace Menus.Scripts
 
         private void Update()
         {
-            bool escapePressed = false;
-#if ENABLE_INPUT_SYSTEM
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) escapePressed = true;
-#endif
-            if (!escapePressed && Input.GetKeyDown(KeyCode.Escape)) escapePressed = true;
+            bool escapePressed = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
 
             if (escapePressed)
             {
