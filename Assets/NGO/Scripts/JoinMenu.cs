@@ -101,7 +101,7 @@ namespace NGO.Networking
             _canvasRoot.AddComponent<GraphicRaycaster>();
 
             // Dark Background
-            GameObject bg = new GameObject("Background");
+            GameObject bg = new GameObject("Background", typeof(RectTransform));
             bg.transform.SetParent(_canvasRoot.transform, false);
             var bgImg = bg.AddComponent<Image>();
             bgImg.color = new Color(0.01f, 0.02f, 0.05f, 0.90f);
@@ -110,7 +110,7 @@ namespace NGO.Networking
             bgRt.anchorMax = Vector2.one;
 
             // Main Panel
-            GameObject panel = new GameObject("Panel");
+            GameObject panel = new GameObject("Panel", typeof(RectTransform));
             panel.transform.SetParent(_canvasRoot.transform, false);
             var pImg = panel.AddComponent<Image>();
             pImg.color = panelColor;
@@ -121,7 +121,7 @@ namespace NGO.Networking
             outline.effectDistance = new Vector2(3, 3);
 
             // Title
-            GameObject title = new GameObject("Title");
+            GameObject title = new GameObject("Title", typeof(RectTransform));
             title.transform.SetParent(panel.transform, false);
             var tTxt = title.AddComponent<TextMeshProUGUI>();
             tTxt.text = "JOIN PROTOCOL";
@@ -134,7 +134,7 @@ namespace NGO.Networking
             tRt.sizeDelta = new Vector2(750, 80);
 
             // Subtitle
-            GameObject sub = new GameObject("Subtitle");
+            GameObject sub = new GameObject("Subtitle", typeof(RectTransform));
             sub.transform.SetParent(panel.transform, false);
             var sTxt = sub.AddComponent<TextMeshProUGUI>();
             sTxt.text = "// CONNECT TO RELAY OR DIRECT IP";
@@ -159,14 +159,14 @@ namespace NGO.Networking
 
         private TMP_InputField CreateLabeledInput(string name, Transform parent, string labelText, string defaultValue, Vector2 pos)
         {
-            GameObject container = new GameObject(name);
+            GameObject container = new GameObject(name, typeof(RectTransform));
             container.transform.SetParent(parent, false);
             var cRt = container.GetComponent<RectTransform>();
             cRt.anchoredPosition = pos;
             cRt.sizeDelta = new Vector2(650, 50);
 
             // Label
-            GameObject lblGo = new GameObject("Label");
+            GameObject lblGo = new GameObject("Label", typeof(RectTransform));
             lblGo.transform.SetParent(container.transform, false);
             var lbl = lblGo.AddComponent<TextMeshProUGUI>();
             lbl.text = labelText;
@@ -178,7 +178,7 @@ namespace NGO.Networking
             lRt.sizeDelta = new Vector2(250, 40);
 
             // Input Field Box
-            GameObject inputGo = new GameObject("InputField");
+            GameObject inputGo = new GameObject("InputField", typeof(RectTransform));
             inputGo.transform.SetParent(container.transform, false);
             var img = inputGo.AddComponent<Image>();
             img.color = new Color(0.08f, 0.12f, 0.18f, 0.95f);
@@ -188,7 +188,7 @@ namespace NGO.Networking
             var outline = inputGo.AddComponent<Outline>();
             outline.effectColor = neonCyan;
 
-            GameObject textGo = new GameObject("Text");
+            GameObject textGo = new GameObject("Text", typeof(RectTransform));
             textGo.transform.SetParent(inputGo.transform, false);
             var txt = textGo.AddComponent<TextMeshProUGUI>();
             txt.fontSize = 22;
@@ -206,7 +206,7 @@ namespace NGO.Networking
 
         private void CreateCyberButton(string name, Transform parent, string label, Vector2 pos, Color accent, UnityEngine.Events.UnityAction onClick)
         {
-            GameObject btn = new GameObject(name);
+            GameObject btn = new GameObject(name, typeof(RectTransform));
             btn.transform.SetParent(parent, false);
             var img = btn.AddComponent<Image>();
             img.color = new Color(0.08f, 0.12f, 0.18f, 0.95f);
@@ -219,7 +219,7 @@ namespace NGO.Networking
             outline.effectColor = accent;
             outline.effectDistance = new Vector2(2, 2);
 
-            GameObject txtGo = new GameObject("Text");
+            GameObject txtGo = new GameObject("Text", typeof(RectTransform));
             txtGo.transform.SetParent(btn.transform, false);
             var txt = txtGo.AddComponent<TextMeshProUGUI>();
             txt.text = label;
