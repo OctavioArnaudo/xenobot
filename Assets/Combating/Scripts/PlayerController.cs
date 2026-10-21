@@ -68,6 +68,10 @@ namespace Combating.Scripts
         public Vector3 aimShoulderOffset = new Vector3(0.55f, 0.05f, 0.8f);
         public Vector3 defaultShoulderOffset = new Vector3(0.35f, 0.0f, 0.0f);
         public bool toggleAim = false;
+
+        [Header("Hook Settings")]
+        public GameObject hookProjectilePrefab;
+        public Transform hookMuzzle;
         #endregion
 
         #region Variables: Ground Check
@@ -118,6 +122,7 @@ namespace Combating.Scripts
         public bool fireHeld;
         public bool fireReleased;
         public bool aim;
+        public bool hook;
         public bool crouch;
         public bool reload;
         public int switchWeapon;
@@ -260,6 +265,7 @@ namespace Combating.Scripts
         private InputAction _fireAction;
         private InputAction _sprintAction;
         private InputAction _aimAction;
+        private InputAction _hookAction;
         private InputAction _crouchAction;
         private InputAction _reloadAction;
         private InputAction _nextWeaponAction;
@@ -631,6 +637,7 @@ namespace Combating.Scripts
             _fireAction = _playerInput.actions.FindAction("Fire") ?? _playerInput.actions.FindAction("Player/Fire");
             _sprintAction = _playerInput.actions.FindAction("Sprint") ?? _playerInput.actions.FindAction("Player/Sprint");
             _aimAction = _playerInput.actions.FindAction("Aim") ?? _playerInput.actions.FindAction("Player/Aim");
+            _hookAction = _playerInput.actions.FindAction("Hook") ?? _playerInput.actions.FindAction("Player/Hook");
             _crouchAction = _playerInput.actions.FindAction("Crouch") ?? _playerInput.actions.FindAction("Player/Crouch");
             _reloadAction = _playerInput.actions.FindAction("Reload") ?? _playerInput.actions.FindAction("Player/Reload");
             _nextWeaponAction = _playerInput.actions.FindAction("NextWeapon") ?? _playerInput.actions.FindAction("Player/NextWeapon");
@@ -674,7 +681,7 @@ namespace Combating.Scripts
 
             // Click Derecho -> Apuntar (Soporta Mantener o Alternar / Toggle)
             bool aimPressedThisFrame = (_aimAction != null && _aimAction.WasPressedThisFrame()) ||
-                                      (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame);
+                                       (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame);
             bool aimIsHeld = (_aimAction != null && _aimAction.IsPressed()) ||
                              (Mouse.current != null && Mouse.current.rightButton.isPressed);
 
@@ -689,6 +696,11 @@ namespace Combating.Scripts
             {
                 aim = aimIsHeld;
             }
+
+            // Tecla G -> Disparar Gancho
+            bool hookActionPressed = _hookAction != null && _hookAction.WasPressedThisFrame();
+            bool keyGPressed = Keyboard.current != null && Keyboard.current.gKey.wasPressedThisFrame;
+            hook = hookActionPressed || keyGPressed;
 
             if (_crouchAction != null && _crouchAction.WasPressedThisFrame()) crouch = true;
             if (_reloadAction != null && _reloadAction.WasPressedThisFrame()) reload = true;
@@ -748,6 +760,13 @@ namespace Combating.Scripts
                 camComp.fieldOfView = Mathf.Lerp(camComp.fieldOfView, targetFOV, Time.deltaTime * 10f);
             }
 
+            // --- LÓGICA DE GANCHO (MANTENER APUNTADO + PULSAR G) ---
+            if (aim && hook)
+            {
+                TryFireHook();
+                hook = false;
+            }
+
             if (_shooter != null && (_shooter.isUnlocked || _shooter.Projectile != null))
             {
                 if (_shooter.HoldToFire ? fireHeld : fire)
@@ -761,6 +780,27 @@ namespace Combating.Scripts
             else if (_melee != null && fire)
             {
                 _melee.PerformMeleeAction();
+            }
+        }
+
+        private void TryFireHook()
+        {
+            if (hookProjectilePrefab == null)
+            {
+                Debug.LogWarning("[PlayerController] Falta asignar 'hookProjectilePrefab' en el Inspector.");
+                return;
+            }
+
+            Transform spawnTransform = hookMuzzle != null ? hookMuzzle : (_shooter != null && _shooter.Muzzle != null ? _shooter.Muzzle.transform : transform);
+            Vector3 spawnPos = spawnTransform.position;
+            Vector3 aimDirection = _mainCamera != null ? _mainCamera.transform.forward : transform.forward;
+
+            GameObject hookGO = Instantiate(hookProjectilePrefab, spawnPos, Quaternion.LookRotation(aimDirection));
+            HookProjectileController hookComp = hookGO.GetComponent<HookProjectileController>();
+
+            if (hookComp != null)
+            {
+                hookComp.Launch(gameObject, aimDirection, spawnTransform);
             }
         }
 
@@ -816,6 +856,7 @@ namespace Combating.Scripts
                 aim = value.isPressed;
             }
         }
+        public void InputHook(InputValue value) => hook = value.isPressed;
         public void InputCrouch(InputValue value) => crouch = value.isPressed;
         public void InputReload(InputValue value) => reload = value.isPressed;
         public void InputNextWeapon(InputValue value) => switchWeapon = (int)value.Get<float>();
