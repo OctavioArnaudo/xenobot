@@ -61,10 +61,7 @@ namespace Combating.Scripts
         /// </summary>
         public void TriggerDeath()
         {
-            // Solo el servidor o modo offline procesan la muerte real y el loot
             if (IsNetworkActive && !IsServer) return;
-
-            Debug.Log($"[SpawnController] {gameObject.name} death triggered.");
 
             // 1. Efectos Visuales
             CreateDeathVisuals();
