@@ -197,7 +197,7 @@ namespace Combating.Scripts
             {
                 Instance = this;
                 playerName.Value = LocalUserConfig.UserName;
-                playerColor.Value = LocalUserConfig.UserColor;
+                playerColor.Value = Color.white;
             }
             playerName.OnValueChanged += (oldVal, newVal) => UpdateVisuals();
             playerColor.OnValueChanged += (oldVal, newVal) => UpdateVisuals();
