@@ -119,61 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &219046993
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 219046995}
-  - component: {fileID: 219046994}
-  m_Layer: 0
-  m_Name: HostMenu
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &219046994
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 219046993}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 797fb6dc502573f4ab7866ac09a7a403, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NGO.Networking.HostMenu
-  targetScene: LobbyScene
-  nameInputField: {fileID: 0}
-  customIdInputField: {fileID: 0}
-  maxPlayersInput: {fileID: 0}
-  roomCodeDisplay: {fileID: 0}
-  ipDisplay: {fileID: 0}
-  sceneLoader: {fileID: 0}
-  panelColor: {r: 0.04, g: 0.08, b: 0.12, a: 0.92}
-  neonCyan: {r: 0, g: 1, b: 0.95, a: 1}
-  neonMagenta: {r: 1, g: 0, b: 0.45, a: 1}
-  neonYellow: {r: 1, g: 0.85, b: 0, a: 1}
---- !u!4 &219046995
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 219046993}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1427.0415, y: 339.10748, z: 39.68348}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &572976230
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -242,7 +187,7 @@ GameObject:
   - component: {fileID: 754118728}
   - component: {fileID: 754118727}
   m_Layer: 0
-  m_Name: NetworkMenu
+  m_Name: NetworkMenuPrefab
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -261,8 +206,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NGO.Networking.NetworkMenu
   mainMenuScene: MainMenuScene
-  hostMenuScript: {fileID: 219046994}
-  joinMenuScript: {fileID: 1523951865}
+  lobbySceneName: LobbyScene
   panelColor: {r: 0.04, g: 0.08, b: 0.12, a: 0.92}
   neonCyan: {r: 0, g: 1, b: 0.95, a: 1}
   neonMagenta: {r: 1, g: 0, b: 0.45, a: 1}
@@ -486,60 +430,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 06d8cbbc1c6505d43b957c55395f9b52, type: 3}
---- !u!1 &1523951864
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1523951866}
-  - component: {fileID: 1523951865}
-  m_Layer: 0
-  m_Name: JoinMenu
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1523951865
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1523951864}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1da395073d0f59647af54660605f2011, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NGO.Networking.JoinMenu
-  nameInputField: {fileID: 0}
-  customIdInputField: {fileID: 0}
-  roomCodeInputField: {fileID: 0}
-  ipInputField: {fileID: 0}
-  portInputField: {fileID: 0}
-  addressConfigurator: {fileID: 0}
-  panelColor: {r: 0.04, g: 0.08, b: 0.12, a: 0.92}
-  neonCyan: {r: 0, g: 1, b: 0.95, a: 1}
-  neonMagenta: {r: 1, g: 0, b: 0.45, a: 1}
-  neonYellow: {r: 1, g: 0.85, b: 0, a: 1}
---- !u!4 &1523951866
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1523951864}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1427.0415, y: 339.10748, z: 39.68348}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1814002763 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7327670617153413285, guid: bd51bc1e79b562b41982150de8eb83c5, type: 3}
@@ -1036,5 +926,3 @@ SceneRoots:
   - {fileID: 2095076987}
   - {fileID: 5213342315364925540}
   - {fileID: 754118728}
-  - {fileID: 219046995}
-  - {fileID: 1523951866}
