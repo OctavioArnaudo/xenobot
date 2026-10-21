@@ -60,7 +60,7 @@ namespace Combating.Scripts
             get
             {
                 try { return stunDuration.GetValue(DEFAULT_STUN_DURATION); }
-                catch (System.Exception ex) { }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] StunDuration: {ex.Message}"); }
                 return DEFAULT_STUN_DURATION;
             }
         }
