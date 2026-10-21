@@ -82,9 +82,31 @@ namespace Combating.Scripts
     /// Supports 3 Enemy Categories (Melee, Ranged, Hybrid), customizable Phases with flexible Triggers,
     /// and 9 Category-Agnostic AI Behavior Archetypes with internal hardcoded defaults and manual inspector overrides.
     /// </summary>
-    public class EnemyController : NetworkBehaviour
+    public class EnemyController : NetworkBehaviour, IStunnable, IHookable
     {
         public enum AIState { Patrulla, Alerta, Persecucion, Ataque, Huida, Guardia, Sigilo }
+
+        private float m_StunEndTime;
+        private bool m_IsGrabbedByHook;
+
+        public bool IsStunned => Time.time < m_StunEndTime;
+
+        public void ApplyStun(float duration)
+        {
+            m_StunEndTime = Time.time + duration;
+            StopMoving();
+        }
+
+        public void OnHookGrabbed()
+        {
+            m_IsGrabbedByHook = true;
+            StopMoving();
+        }
+
+        public void OnHookReleased()
+        {
+            m_IsGrabbedByHook = false;
+        }
 
         private const float DEFAULT_HOVER_HEIGHT = 3.5f;
         private const float DEFAULT_WANDER_SPEED = 3.5f;
@@ -562,6 +584,13 @@ namespace Combating.Scripts
             if (m_Health != null && m_Health.CurrentHP <= 0)
             {
                 OnEnemyDeath();
+                return;
+            }
+
+            if (IsStunned || m_IsGrabbedByHook)
+            {
+                StopMoving();
+                UpdateAnimator(0f, false);
                 return;
             }
 

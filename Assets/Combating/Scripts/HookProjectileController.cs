@@ -3,14 +3,32 @@ using Unity.Netcode;
 
 namespace Combating.Scripts
 {
+    public interface IStunnable
+    {
+        void ApplyStun(float duration);
+        bool IsStunned { get; }
+    }
+
+    public interface IHookable
+    {
+        void OnHookGrabbed();
+        void OnHookReleased();
+    }
+
     [RequireComponent(typeof(Collider))]
     public class HookProjectileController : NetworkBehaviour
     {
+        private const float DEFAULT_STUN_DURATION = 2.5f;
+
         [Header("Hook Settings")]
         public float flySpeed = 35f;
         public float maxDistance = 30f;
         public float pullSpeed = 22f;
         public float stopDistance = 1.8f;
+
+        [Header("Stun Settings")]
+        public float StunDuration;
+        public Optional<float> stunDuration;
 
         [Header("Line Visuals")]
         public LineRenderer lineRenderer;
@@ -18,6 +36,7 @@ namespace Combating.Scripts
         [Header("Audio & VFX")]
         public AudioClip hookHitSound;
         public ParticleSystem hitVfxPrefab;
+        public ParticleSystem stunVfxPrefab;
 
         private GameObject m_OwnerPlayer;
         private Transform m_MuzzleTransform;
@@ -31,7 +50,30 @@ namespace Combating.Scripts
         private CharacterController m_TargetCC;
         private UnityEngine.AI.NavMeshAgent m_TargetAgent;
         private Rigidbody m_TargetRB;
-        private MonoBehaviour m_TargetEnemyScript;
+        private IHookable m_HookableTarget;
+        private IStunnable m_StunnableTarget;
+
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+
+        public float EffectiveStunDuration
+        {
+            get
+            {
+                try { return stunDuration.GetValue(DEFAULT_STUN_DURATION); }
+                catch (System.Exception ex) { }
+                return DEFAULT_STUN_DURATION;
+            }
+        }
+
+        private void UpdateInspectorValues()
+        {
+            StunDuration = EffectiveStunDuration;
+        }
+
+        private void OnValidate()
+        {
+            UpdateInspectorValues();
+        }
 
         public void Launch(GameObject owner, Vector3 direction, Transform muzzleTransform)
         {
@@ -52,11 +94,11 @@ namespace Combating.Scripts
 
         private void Update()
         {
+            UpdateInspectorValues();
             UpdateLineVisuals();
 
             if (!m_HasHit)
             {
-                // VUELO
                 transform.position += m_Direction * (flySpeed * Time.deltaTime);
 
                 if (Vector3.Distance(m_StartPos, transform.position) >= maxDistance)
@@ -66,7 +108,6 @@ namespace Combating.Scripts
             }
             else if (m_IsPulling && m_CaughtTarget != null && m_OwnerPlayer != null)
             {
-                // ARRASTRE
                 Vector3 playerPos = m_OwnerPlayer.transform.position + Vector3.up * 0.9f;
                 Vector3 currentTargetPos = m_CaughtTarget.position;
                 Vector3 pullDirection = (playerPos - currentTargetPos);
@@ -84,7 +125,7 @@ namespace Combating.Scripts
                 {
                     m_TargetCC.Move(moveStep);
                 }
-                else if (m_TargetAgent != null)
+                else if (m_TargetAgent != null && m_TargetAgent.isOnNavMesh)
                 {
                     m_TargetAgent.Warp(currentTargetPos + moveStep);
                 }
@@ -143,24 +184,37 @@ namespace Combating.Scripts
             m_TargetAgent = target.GetComponent<UnityEngine.AI.NavMeshAgent>();
             m_TargetRB = target.GetComponent<Rigidbody>();
 
-            // Búsqueda genérica compatible usando System.Type
-            System.Type enemyType = System.Type.GetType("EnemyController") ?? System.Type.GetType("Combating.Scripts.EnemyController");
-            if (enemyType != null)
+            m_HookableTarget = target.GetComponentInParent<IHookable>() ?? target.GetComponent<IHookable>();
+            m_StunnableTarget = target.GetComponentInParent<IStunnable>() ?? target.GetComponent<IStunnable>();
+
+            if (m_HookableTarget != null)
             {
-                m_TargetEnemyScript = target.GetComponent(enemyType) as MonoBehaviour ??
-                                      target.GetComponentInParent(enemyType) as MonoBehaviour;
+                m_HookableTarget.OnHookGrabbed();
             }
 
-            if (m_TargetAgent != null && m_TargetAgent.enabled) m_TargetAgent.isStopped = true;
+            if (m_TargetAgent != null && m_TargetAgent.enabled && m_TargetAgent.isOnNavMesh) m_TargetAgent.isStopped = true;
             if (m_TargetRB != null) m_TargetRB.isKinematic = true;
-            if (m_TargetEnemyScript != null) m_TargetEnemyScript.enabled = false;
         }
 
         private void ReleaseTargetAndDestroy()
         {
-            if (m_TargetAgent != null && m_TargetAgent.enabled) m_TargetAgent.isStopped = false;
+            if (m_HookableTarget != null)
+            {
+                m_HookableTarget.OnHookReleased();
+            }
+
+            if (m_StunnableTarget != null)
+            {
+                m_StunnableTarget.ApplyStun(EffectiveStunDuration);
+            }
+
+            if (m_TargetAgent != null && m_TargetAgent.enabled && m_TargetAgent.isOnNavMesh) m_TargetAgent.isStopped = false;
             if (m_TargetRB != null) m_TargetRB.isKinematic = false;
-            if (m_TargetEnemyScript != null) m_TargetEnemyScript.enabled = true;
+
+            if (stunVfxPrefab != null && m_CaughtTarget != null)
+            {
+                Instantiate(stunVfxPrefab, m_CaughtTarget.position + Vector3.up * 1f, Quaternion.identity, m_CaughtTarget);
+            }
 
             DestroyHook();
         }
@@ -168,7 +222,18 @@ namespace Combating.Scripts
         private void DestroyHook()
         {
             if (lineRenderer != null) lineRenderer.enabled = false;
-            Destroy(gameObject);
+
+            if (IsNetworkActive && IsServer)
+            {
+                if (TryGetComponent<NetworkObject>(out var netObj) && netObj.IsSpawned)
+                    netObj.Despawn(true);
+                else
+                    Destroy(gameObject);
+            }
+            else
+            {
+                Destroy(gameObject);
+            }
         }
     }
 }
