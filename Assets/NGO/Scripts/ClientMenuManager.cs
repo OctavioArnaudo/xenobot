@@ -59,7 +59,6 @@ namespace NGO.Networking
             if (nameInputField != null) LocalUserConfig.UserName = nameInputField.text;
             if (customIdInputField != null && int.TryParse(customIdInputField.text, out int id))
                 LocalUserConfig.UserCustomID = id;
-            if (colorDisplay != null) LocalUserConfig.UserColor = colorDisplay.color;
         }
 
         /// <summary>
