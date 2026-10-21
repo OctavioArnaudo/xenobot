@@ -449,6 +449,7 @@ namespace Crafting.Scripts
         private void Update()
         {
             UpdateInspectorValues();
+            if (m_Owner == null && !m_IsAttached) return;
             if (m_IsAttached)
             {
                 if (m_AttachedTarget != null)
