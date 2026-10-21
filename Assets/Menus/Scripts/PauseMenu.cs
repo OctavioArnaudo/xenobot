@@ -10,9 +10,9 @@ using Levels.Data;
 
 namespace Menus.Scripts
 {
-    public class EscapeMenu : MonoBehaviour
+    public class PauseMenu : MonoBehaviour
     {
-        public static EscapeMenu Instance { get; private set; }
+        public static PauseMenu Instance { get; private set; }
 
         [Header("Settings & Navigation")]
         public string settingsSceneName = "SettingsMenuScene";
