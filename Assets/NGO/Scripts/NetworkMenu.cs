@@ -259,20 +259,14 @@ namespace NGO.Networking
                 }
             }
 
-            string code = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "");
-            if (string.IsNullOrEmpty(code))
-            {
-                code = "XENO" + Random.Range(10, 99);
-                PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), code);
-                PlayerPrefs.Save();
-            }
+            // Prioritize user's manual code if provided in _hostCodeInput
+            string manualCode = _hostCodeInput != null ? _hostCodeInput.text.Trim().ToUpper() : "";
+            string code = manualCode;
 
-            AddActiveCode(code);
-
-            var transport = NetworkManager.Singleton != null ? (NetworkManager.Singleton.GetComponent<UnityTransport>() ?? NetworkManager.Singleton.NetworkConfig.NetworkTransport as UnityTransport) : null;
             bool relaySuccess = false;
+            var transport = NetworkManager.Singleton != null ? (NetworkManager.Singleton.GetComponent<UnityTransport>() ?? NetworkManager.Singleton.NetworkConfig.NetworkTransport as UnityTransport) : null;
 
-            if (transport != null)
+            if (string.IsNullOrEmpty(manualCode) && transport != null)
             {
                 try
                 {
@@ -292,10 +286,6 @@ namespace NGO.Networking
                     if (!string.IsNullOrEmpty(joinCode))
                     {
                         code = joinCode.ToUpper();
-                        PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), code);
-                        PlayerPrefs.Save();
-                        AddActiveCode(code);
-
                         transport.SetRelayServerData(
                             allocation.RelayServer.IpV4,
                             (ushort)allocation.RelayServer.Port,
@@ -308,9 +298,18 @@ namespace NGO.Networking
                 }
                 catch (System.Exception ex)
                 {
-                    Debug.LogWarning($"[NetworkMenu] Relay Create failed: {ex.Message}. Falling back to Direct IP Host.");
+                    Debug.LogWarning($"[NetworkMenu] Relay Create failed: {ex.Message}. Using manual/default code.");
                 }
             }
+
+            if (string.IsNullOrEmpty(code))
+            {
+                code = "XENO42";
+            }
+
+            PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), code);
+            PlayerPrefs.Save();
+            AddActiveCode(code);
 
             if (!relaySuccess && transport != null)
             {
