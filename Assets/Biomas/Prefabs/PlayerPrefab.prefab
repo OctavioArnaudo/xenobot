@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2082353490
+  GlobalObjectIdHash: 900052251
   InScenePlacedSourceGlobalObjectIdHash: 2082353490
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -399,6 +399,8 @@ MonoBehaviour:
   aimShoulderOffset: {x: 0.55, y: 0.05, z: 0.8}
   defaultShoulderOffset: {x: 0.35, y: 0, z: 0}
   toggleAim: 0
+  hookProjectilePrefab: {fileID: 987970283401832635, guid: 4acfa825610b469479174c24059b6bdd, type: 3}
+  hookMuzzle: {fileID: 2129362248708108617}
   Grounded: 1
   GroundedOffset: -0.14
   groundedOffset:
@@ -434,6 +436,7 @@ MonoBehaviour:
   fireHeld: 0
   fireReleased: 0
   aim: 0
+  hook: 0
   crouch: 0
   reload: 0
   switchWeapon: 0
@@ -749,7 +752,10 @@ MonoBehaviour:
   dashDuration: 0.2
   dashCooldown: 1
   tapThreshold: 0.2
-  staminaCost: 20
+  StaminaCost: 8
+  staminaCost:
+    use: 0
+    value: 0
   dashTriggerName: dash
 --- !u!114 &6353754398152676254
 MonoBehaviour:
@@ -842,6 +848,17 @@ MonoBehaviour:
   infiniteShield:
     use: 0
     value: 0
+  shieldBashDamage: 15
+  customBashDamage:
+    use: 0
+    value: 0
+  shieldBashKnockbackForce: 500
+  bashRadius: 2.5
+  bashTargetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  bashSound: {fileID: 0}
+  bashVfxPrefab: {fileID: 0}
   healAmountOnBlock: 5
   inputMode: 0
   autoUnlockOnStart: 0
@@ -5759,17 +5776,29 @@ PrefabInstance:
       propertyPath: m_Name
       value: CameraPrefab
       objectReference: {fileID: 0}
+    - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -3.83
+      value: -0.049987793
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 3.77
+      value: -2
       objectReference: {fileID: 0}
     - target: {fileID: 1937826373450112504, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalRotation.w
@@ -5803,6 +5832,18 @@ PrefabInstance:
       propertyPath: Target.TrackingTarget
       value: 
       objectReference: {fileID: 2241270816149792883}
+    - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.19995117
+      objectReference: {fileID: 0}
+    - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7644128114918405436, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -8
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

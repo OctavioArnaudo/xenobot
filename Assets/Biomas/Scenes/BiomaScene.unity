@@ -723,11 +723,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d64653c97368b024d82dbfe65239147b, type: 3}
---- !u!4 &374305490 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 2129362248708108617, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-  m_PrefabInstance: {fileID: 960056627}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &409906669 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7720139891737533823, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
@@ -1898,49 +1893,9 @@ PrefabInstance:
       value: 900052251
       objectReference: {fileID: 0}
     - target: {fileID: 3301199262045786351, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: hookMuzzle
-      value: 
-      objectReference: {fileID: 374305490}
-    - target: {fileID: 3301199262045786351, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: crosshairUI
       value: 
       objectReference: {fileID: 461756448}
-    - target: {fileID: 3301199262045786351, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: hookProjectilePrefab
-      value: 
-      objectReference: {fileID: 987970283401832635, guid: 4acfa825610b469479174c24059b6bdd, type: 3}
-    - target: {fileID: 3687091146075803290, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: -0.049987793
-      objectReference: {fileID: 0}
-    - target: {fileID: 3687091146075803290, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -2
-      objectReference: {fileID: 0}
-    - target: {fileID: 4211845453476388235, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4211845453476388235, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4211845453476388235, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889432586557793886, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0.19995117
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889432586557793886, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889432586557793886, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -8
-      objectReference: {fileID: 0}
     - target: {fileID: 6229371320334411257, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: Projectile
       value: 
@@ -1984,10 +1939,6 @@ PrefabInstance:
     - target: {fileID: 7736108665850884707, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 9193409881328918840, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: MaxShieldHealth
-      value: 150
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
