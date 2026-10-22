@@ -277,8 +277,10 @@ namespace Combating.Scripts
         #endregion
 
         #region Lifecycle
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
+
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
                 var nObj = GetComponent<NetworkObject>();
