@@ -229,13 +229,13 @@ namespace NGO.Networking
             CreateDecoration("[ONLINE_SERVICE]", _mainPanelGo.transform, new Vector2(260, 240), 20, neonMagenta);
             CreateHeader("MULTIPLAYER", "NETCODE PROTOCOL TERMINAL", _mainPanelGo.transform, new Vector2(0, 180));
 
-            CreateCyberButton("HostMatchButton", _mainPanelGo.transform, "host", new Vector2(0, 30), neonCyan, ShowHostSubpanel);
-            CreateCyberButton("JoinMatchButton", _mainPanelGo.transform, "join", new Vector2(0, -50), neonYellow, ShowJoinSubpanel);
-            CreateCyberButton("BackButton", _mainPanelGo.transform, "back", new Vector2(0, -130), neonMagenta, GoBackToMainMenuScene);
+            CreateCyberButton("HostMatchButton", _mainPanelGo.transform, "HOST", new Vector2(0, 30), neonCyan, ShowHostSubpanel);
+            CreateCyberButton("JoinMatchButton", _mainPanelGo.transform, "JOIN", new Vector2(0, -50), neonYellow, ShowJoinSubpanel);
+            CreateCyberButton("BackButton", _mainPanelGo.transform, "BACK", new Vector2(0, -130), neonMagenta, GoBackToMainMenuScene);
 
             // 2. HOST SUBPANEL
             _hostPanelGo = CreatePanel("HostPanel", _canvasRoot.transform, new Vector2(850, 620));
-            CreateHeader("HOST PROTOCOL", "// create match", _hostPanelGo.transform, new Vector2(0, 210));
+            CreateHeader("HOST PROTOCOL", "// CREATE MATCH", _hostPanelGo.transform, new Vector2(0, 210));
 
             _hostNameInput = CreateLabeledInput("HostNameInput", _hostPanelGo.transform, "PLAYER NAME:", LocalUserConfig.UserName, new Vector2(0, 100));
             _hostMaxPlayersInput = CreateLabeledInput("HostMaxPlayersInput", _hostPanelGo.transform, "MAX PLAYERS:", LocalUserConfig.MaxPlayers.ToString(), new Vector2(0, 25));
@@ -252,7 +252,7 @@ namespace NGO.Networking
             GameObject cbTxtGo = new GameObject("CodeText", typeof(RectTransform));
             cbTxtGo.transform.SetParent(codeBox.transform, false);
             _hostCodeDisplay = cbTxtGo.AddComponent<TextMeshProUGUI>();
-            _hostCodeDisplay.text = $"ip:port {GetLocalIPAddress()}:7777";
+            _hostCodeDisplay.text = $"IP:PORT {GetLocalIPAddress()}:7777";
             _hostCodeDisplay.fontSize = 20;
             _hostCodeDisplay.alignment = TextAlignmentOptions.Center;
             _hostCodeDisplay.color = neonYellow;
@@ -260,12 +260,12 @@ namespace NGO.Networking
             cbTxtRt.anchorMin = Vector2.zero;
             cbTxtRt.anchorMax = Vector2.one;
 
-            CreateCyberButton("StartHostMatchBtn", _hostPanelGo.transform, "match", new Vector2(0, -125), neonCyan, OnClickStartHostMatch);
-            CreateCyberButton("HostBackBtn", _hostPanelGo.transform, "back", new Vector2(0, -195), neonMagenta, ShowMainSubpanel);
+            CreateCyberButton("StartHostMatchBtn", _hostPanelGo.transform, "MATCH", new Vector2(0, -125), neonCyan, OnClickStartHostMatch);
+            CreateCyberButton("HostBackBtn", _hostPanelGo.transform, "BACK", new Vector2(0, -195), neonMagenta, ShowMainSubpanel);
 
             // 3. JOIN SUBPANEL
             _joinPanelGo = CreatePanel("JoinPanel", _canvasRoot.transform, new Vector2(850, 620));
-            CreateHeader("JOIN PROTOCOL", "// connect match", _joinPanelGo.transform, new Vector2(0, 210));
+            CreateHeader("JOIN PROTOCOL", "// CONNECT MATCH", _joinPanelGo.transform, new Vector2(0, 210));
 
             _joinNameInput = CreateLabeledInput("JoinNameInput", _joinPanelGo.transform, "PLAYER NAME:", LocalUserConfig.UserName, new Vector2(0, 100));
             _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "CODE:", "", new Vector2(0, 25));
@@ -277,10 +277,10 @@ namespace NGO.Networking
                         _joinCodeInput.text = val.ToUpper();
                 });
             }
-            _joinIpInput = CreateLabeledInput("JoinIPInput", _joinPanelGo.transform, "IP:", "127.0.0.1:7777", new Vector2(0, -50));
+            _joinIpInput = CreateLabeledInput("JoinIPInput", _joinPanelGo.transform, "IP:PORT:", "127.0.0.1:7777", new Vector2(0, -50));
 
-            CreateCyberButton("ConnectClientBtn", _joinPanelGo.transform, "match", new Vector2(0, -125), neonCyan, OnClickSmartConnectClient);
-            CreateCyberButton("JoinBackBtn", _joinPanelGo.transform, "back", new Vector2(0, -195), neonMagenta, ShowMainSubpanel);
+            CreateCyberButton("ConnectClientBtn", _joinPanelGo.transform, "MATCH", new Vector2(0, -125), neonCyan, OnClickSmartConnectClient);
+            CreateCyberButton("JoinBackBtn", _joinPanelGo.transform, "BACK", new Vector2(0, -195), neonMagenta, ShowMainSubpanel);
         }
 
         private GameObject CreatePanel(string name, Transform parent, Vector2 size)
