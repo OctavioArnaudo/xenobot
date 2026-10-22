@@ -55,6 +55,26 @@ namespace NGO.Networking
             ShowMainSubpanel();
         }
 
+        private void Update()
+        {
+            if (_joinCodeDisplay != null && _activeCodes != null && _activeCodes.Length > 0)
+            {
+                _carouselTimer += Time.unscaledDeltaTime;
+                if (_carouselTimer >= 2.0f)
+                {
+                    _carouselTimer = 0f;
+                    _carouselIndex = (_carouselIndex + 1) % _activeCodes.Length;
+                }
+                string displayStr = "";
+                for (int i = 0; i < _activeCodes.Length; i++)
+                {
+                    int idx = (_carouselIndex + i) % _activeCodes.Length;
+                    displayStr += _activeCodes[idx] + " ";
+                }
+                _joinCodeDisplay.text = displayStr.Trim();
+            }
+        }
+
         public void ShowMainSubpanel()
         {
             if (_mainPanelGo != null) _mainPanelGo.SetActive(true);
@@ -293,10 +313,10 @@ namespace NGO.Networking
             CreateCyberButton("HostBackBtn", _hostPanelGo.transform, "BACK", new Vector2(0, -260), neonMagenta, ShowMainSubpanel);
 
             // 3. JOIN SUBPANEL
-            _joinPanelGo = CreatePanel("JoinPanel", _canvasRoot.transform, new Vector2(850, 620));
-            CreateHeader("JOIN PROTOCOL", "// CONNECT MATCH", _joinPanelGo.transform, new Vector2(0, 210));
+            _joinPanelGo = CreatePanel("JoinPanel", _canvasRoot.transform, new Vector2(850, 780));
+            CreateHeader("JOIN PROTOCOL", "// CONNECT MATCH", _joinPanelGo.transform, new Vector2(0, 280));
 
-            _joinNameInput = CreateLabeledInput("JoinNameInput", _joinPanelGo.transform, "PLAYER NAME:", PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player"), new Vector2(0, 100));
+            _joinNameInput = CreateLabeledInput("JoinNameInput", _joinPanelGo.transform, "PLAYER NAME:", PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player"), new Vector2(0, 160));
             if (_joinNameInput != null)
             {
                 _joinNameInput.onValueChanged.AddListener((val) =>
@@ -305,19 +325,40 @@ namespace NGO.Networking
                     PlayerPrefs.Save();
                 });
             }
-            _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "CODE:", "", new Vector2(0, 25));
-            if (_joinCodeInput != null)
+
+            _joinMaxPlayersInput = CreateLabeledInput("JoinMaxPlayersInput", _joinPanelGo.transform, "MAX PLAYERS:", "1", new Vector2(0, 90));
+            if (_joinMaxPlayersInput != null)
             {
-                _joinCodeInput.onValueChanged.AddListener((val) =>
-                {
-                    if (_joinCodeInput.text != val.ToUpper())
-                        _joinCodeInput.text = val.ToUpper();
-                });
+                _joinMaxPlayersInput.interactable = false;
             }
+
+            string defaultJoinCode = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "");
+            _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "CODE:", defaultJoinCode, new Vector2(0, 20));
+            ConfigureCodeInput(_joinCodeInput);
+
             _joinIpInput = CreateLabeledInput("JoinIPInput", _joinPanelGo.transform, "IP:PORT", "127.0.0.1:7777", new Vector2(0, -50));
 
-            CreateCyberButton("ConnectClientBtn", _joinPanelGo.transform, "MATCH", new Vector2(0, -125), neonCyan, OnClickSmartConnectClient);
-            CreateCyberButton("JoinBackBtn", _joinPanelGo.transform, "BACK", new Vector2(0, -195), neonMagenta, ShowMainSubpanel);
+            GameObject joinCodeBox = new GameObject("CodeBox", typeof(RectTransform));
+            joinCodeBox.transform.SetParent(_joinPanelGo.transform, false);
+            var jCbImg = joinCodeBox.AddComponent<Image>();
+            jCbImg.color = new Color(0.08f, 0.12f, 0.18f, 0.95f);
+            var jCbRt = joinCodeBox.GetComponent<RectTransform>();
+            jCbRt.anchoredPosition = new Vector2(0, -120);
+            jCbRt.sizeDelta = new Vector2(550, 45);
+            joinCodeBox.AddComponent<Outline>().effectColor = neonYellow;
+
+            GameObject jCbTxtGo = new GameObject("CodeText", typeof(RectTransform));
+            jCbTxtGo.transform.SetParent(joinCodeBox.transform, false);
+            _joinCodeDisplay = jCbTxtGo.AddComponent<TextMeshProUGUI>();
+            _joinCodeDisplay.fontSize = 20;
+            _joinCodeDisplay.alignment = TextAlignmentOptions.Center;
+            _joinCodeDisplay.color = neonYellow;
+            var jCbTxtRt = jCbTxtGo.GetComponent<RectTransform>();
+            jCbTxtRt.anchorMin = Vector2.zero;
+            jCbTxtRt.anchorMax = Vector2.one;
+
+            CreateCyberButton("ConnectClientBtn", _joinPanelGo.transform, "MATCH", new Vector2(0, -190), neonCyan, OnClickSmartConnectClient);
+            CreateCyberButton("JoinBackBtn", _joinPanelGo.transform, "BACK", new Vector2(0, -260), neonMagenta, ShowMainSubpanel);
         }
 
         private GameObject CreatePanel(string name, Transform parent, Vector2 size)
