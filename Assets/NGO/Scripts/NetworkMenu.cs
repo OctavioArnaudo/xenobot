@@ -90,6 +90,18 @@ namespace NGO.Networking
             Instance = this;
         }
 
+        private void OnApplicationQuit()
+        {
+            if (NetworkManager.Singleton != null && (NetworkManager.Singleton.IsServer || NetworkManager.Singleton.IsHost))
+            {
+                string code = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "");
+                if (!string.IsNullOrEmpty(code))
+                {
+                    RemoveActiveCode(code);
+                }
+            }
+        }
+
         private void OnEnable()
         {
             if (NetworkManager.Singleton != null)
@@ -576,8 +588,7 @@ namespace NGO.Networking
                 _joinMaxPlayersInput.interactable = false;
             }
 
-            string defaultJoinCode = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "");
-            _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "CODE:", defaultJoinCode, new Vector2(0, 20));
+            _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "CODE:", "", new Vector2(0, 20));
             ConfigureCodeInput(_joinCodeInput);
 
             _joinIpInput = CreateLabeledInput("JoinIPInput", _joinPanelGo.transform, "IP:PORT", "127.0.0.1:7777", new Vector2(0, -50));
