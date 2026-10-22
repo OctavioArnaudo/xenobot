@@ -592,7 +592,13 @@ namespace NGO.Networking
                 _joinMaxPlayersInput.interactable = false;
             }
 
-            _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "CODE:", "", new Vector2(0, 20));
+            string defaultJoinCode = "";
+            var activeCodes = GetActiveCodes();
+            if (activeCodes != null && activeCodes.Count > 0)
+            {
+                defaultJoinCode = activeCodes[activeCodes.Count - 1];
+            }
+            _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "CODE:", defaultJoinCode, new Vector2(0, 20));
             ConfigureCodeInput(_joinCodeInput);
 
             _joinIpInput = CreateLabeledInput("JoinIPInput", _joinPanelGo.transform, "IP:PORT", "127.0.0.1:7777", new Vector2(0, -50));
