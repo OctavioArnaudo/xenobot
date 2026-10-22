@@ -6,6 +6,8 @@ using System.Collections.Generic;
 
 public class SettingsMenu : MonoBehaviour
 {
+    public static string PreviousScene { get; set; } = "";
+
     [Header("Configuración de Escenas")]
     public string escenaMenuPrincipal = "MainMenuScene";
 
@@ -326,5 +328,10 @@ public class SettingsMenu : MonoBehaviour
         r.anchoredPosition3D = Vector3.zero; r.localScale = Vector3.one;
     }
 
-    public void VolverAlMenu() => SceneManager.LoadScene(escenaMenuPrincipal);
+    public void VolverAlMenu()
+    {
+        string targetScene = !string.IsNullOrEmpty(PreviousScene) ? PreviousScene : escenaMenuPrincipal;
+        PreviousScene = "";
+        SceneManager.LoadScene(targetScene);
+    }
 }

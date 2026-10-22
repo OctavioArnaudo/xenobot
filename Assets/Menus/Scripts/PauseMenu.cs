@@ -104,6 +104,7 @@ namespace Menus.Scripts
         {
             Time.timeScale = 1f;
             _isPaused = false;
+            SettingsMenu.PreviousScene = SceneManager.GetActiveScene().name;
             SceneManager.LoadScene(settingsSceneName);
         }
 
