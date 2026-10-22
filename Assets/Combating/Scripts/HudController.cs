@@ -196,7 +196,11 @@ namespace Combating.Scripts
             if (IsOwner)
             {
                 Instance = this;
-                playerName.Value = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player");
+                string baseName = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player");
+                if (string.IsNullOrEmpty(baseName)) baseName = "Player";
+
+                string finalName = IsNetworkActive ? $"Player_{OwnerClientId}" : baseName;
+                playerName.Value = finalName;
                 playerColor.Value = Color.white;
             }
             playerName.OnValueChanged += (oldVal, newVal) => UpdateVisuals();

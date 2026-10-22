@@ -50,7 +50,7 @@ namespace NGO.Networking
             if (IsServer)
             {
                 m_TimeRemaining.Value = 300f;
-                m_MaxPlayers.Value = PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 4);
+                m_MaxPlayers.Value = PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 1);
                 m_JoinCode.Value = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "").ToUpper();
             }
 
