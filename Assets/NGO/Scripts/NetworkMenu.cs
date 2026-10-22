@@ -82,14 +82,16 @@ namespace NGO.Networking
 
         private void SaveHostSettings()
         {
-            if (_hostNameInput != null) LocalUserConfig.UserName = _hostNameInput.text;
+            if (_hostNameInput != null) PlayerPrefs.SetString("Xenobot_UserName", _hostNameInput.text);
             if (_hostMaxPlayersInput != null && int.TryParse(_hostMaxPlayersInput.text, out int max))
-                LocalUserConfig.MaxPlayers = max;
+                PlayerPrefs.SetInt("Xenobot_MaxPlayers", max);
+            PlayerPrefs.Save();
         }
 
         private void SaveJoinSettings()
         {
-            if (_joinNameInput != null) LocalUserConfig.UserName = _joinNameInput.text;
+            if (_joinNameInput != null) PlayerPrefs.SetString("Xenobot_UserName", _joinNameInput.text);
+            PlayerPrefs.Save();
         }
 
         public async void OnClickStartHostMatch()
@@ -97,7 +99,7 @@ namespace NGO.Networking
             SaveHostSettings();
             NetworkingService.Shutdown();
 
-            int maxPlayers = LocalUserConfig.MaxPlayers;
+            int maxPlayers = PlayerPrefs.GetInt("Xenobot_MaxPlayers", 4);
             ushort port = 7777;
 
             if (_hostCodeDisplay != null) _hostCodeDisplay.text = "RELAY: STARTING...";
@@ -106,7 +108,8 @@ namespace NGO.Networking
 
             if (!string.IsNullOrEmpty(joinCode))
             {
-                LocalUserConfig.LastJoinCode = joinCode;
+                PlayerPrefs.SetString("Xenobot_LastJoinCode", joinCode);
+                PlayerPrefs.Save();
                 if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"CODE: {joinCode}";
 
                 if (NetworkingService.StartHost(isRelay: true))
@@ -238,8 +241,8 @@ namespace NGO.Networking
             _hostPanelGo = CreatePanel("HostPanel", _canvasRoot.transform, new Vector2(850, 620));
             CreateHeader("HOST PROTOCOL", "// CREATE MATCH", _hostPanelGo.transform, new Vector2(0, 210));
 
-            _hostNameInput = CreateLabeledInput("HostNameInput", _hostPanelGo.transform, "PLAYER NAME:", LocalUserConfig.UserName, new Vector2(0, 100));
-            _hostMaxPlayersInput = CreateLabeledInput("HostMaxPlayersInput", _hostPanelGo.transform, "MAX PLAYERS:", LocalUserConfig.MaxPlayers.ToString(), new Vector2(0, 25));
+            _hostNameInput = CreateLabeledInput("HostNameInput", _hostPanelGo.transform, "PLAYER NAME:", PlayerPrefs.GetString("Xenobot_UserName", "Operator"), new Vector2(0, 100));
+            _hostMaxPlayersInput = CreateLabeledInput("HostMaxPlayersInput", _hostPanelGo.transform, "MAX PLAYERS:", PlayerPrefs.GetInt("Xenobot_MaxPlayers", 4).ToString(), new Vector2(0, 25));
 
             GameObject codeBox = new GameObject("CodeBox", typeof(RectTransform));
             codeBox.transform.SetParent(_hostPanelGo.transform, false);
@@ -268,7 +271,7 @@ namespace NGO.Networking
             _joinPanelGo = CreatePanel("JoinPanel", _canvasRoot.transform, new Vector2(850, 620));
             CreateHeader("JOIN PROTOCOL", "// CONNECT MATCH", _joinPanelGo.transform, new Vector2(0, 210));
 
-            _joinNameInput = CreateLabeledInput("JoinNameInput", _joinPanelGo.transform, "PLAYER NAME:", LocalUserConfig.UserName, new Vector2(0, 100));
+            _joinNameInput = CreateLabeledInput("JoinNameInput", _joinPanelGo.transform, "PLAYER NAME:", PlayerPrefs.GetString("Xenobot_UserName", "Operator"), new Vector2(0, 100));
             _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "CODE:", "", new Vector2(0, 25));
             if (_joinCodeInput != null)
             {

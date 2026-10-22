@@ -196,7 +196,7 @@ namespace Combating.Scripts
             if (IsOwner)
             {
                 Instance = this;
-                playerName.Value = LocalUserConfig.UserName;
+                playerName.Value = PlayerPrefs.GetString("Xenobot_UserName", "Operator");
                 playerColor.Value = Color.white;
             }
             playerName.OnValueChanged += (oldVal, newVal) => UpdateVisuals();
