@@ -193,7 +193,7 @@ namespace NGO.Networking
             GameObject title = new GameObject("Title", typeof(RectTransform));
             title.transform.SetParent(_centerPanel.transform, false);
             var tTxt = title.AddComponent<TextMeshProUGUI>();
-            tTxt.text = "LOBBY WAITROOM";
+            tTxt.text = "LOBBY";
             tTxt.fontSize = 54;
             tTxt.alignment = TextAlignmentOptions.Center;
             tTxt.fontStyle = FontStyles.Bold;
@@ -206,7 +206,7 @@ namespace NGO.Networking
             GameObject sub = new GameObject("Subtitle", typeof(RectTransform));
             sub.transform.SetParent(_centerPanel.transform, false);
             var sTxt = sub.AddComponent<TextMeshProUGUI>();
-            sTxt.text = "// PREPARATION";
+            sTxt.text = "// WAITROOM PREPARATION";
             sTxt.fontSize = 20;
             sTxt.alignment = TextAlignmentOptions.Center;
             sTxt.color = neonCyan;

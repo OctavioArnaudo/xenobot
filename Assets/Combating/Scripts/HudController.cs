@@ -199,8 +199,7 @@ namespace Combating.Scripts
                 string baseName = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player");
                 if (string.IsNullOrEmpty(baseName)) baseName = "Player";
 
-                string finalName = IsNetworkActive ? $"Player_{OwnerClientId}" : baseName;
-                playerName.Value = finalName;
+                playerName.Value = baseName;
                 playerColor.Value = Color.white;
             }
             playerName.OnValueChanged += (oldVal, newVal) => UpdateVisuals();
