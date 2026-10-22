@@ -528,9 +528,12 @@ namespace NGO.Networking
             }
 
             string defaultCode = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "");
-            if (string.IsNullOrEmpty(defaultCode)) defaultCode = "XENO42";
+            if (string.IsNullOrEmpty(defaultCode)) defaultCode = "GENERATING...";
             _hostCodeInput = CreateLabeledInput("HostCodeInput", _hostPanelGo.transform, "CODE:", defaultCode, new Vector2(0, 20));
-            ConfigureCodeInput(_hostCodeInput);
+            if (_hostCodeInput != null)
+            {
+                _hostCodeInput.interactable = false;
+            }
 
             _hostIpInput = CreateLabeledInput("HostIpInput", _hostPanelGo.transform, "IP:PORT", $"{GetLocalIPAddress()}:7777", new Vector2(0, -50));
 
