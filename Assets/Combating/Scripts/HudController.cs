@@ -14,9 +14,8 @@ namespace Combating.Scripts
     /// Unified controller for character progression, HUD and Identity.
     /// Optimized to reduce CPU overhead and audio starvation.
     /// </summary>
-    public class HudController : NetworkBehaviour
+    public class HudController : CSingletonNB<HudController>
     {
-        public static HudController Instance { get; private set; }
 
         [Header("Identity & Visuals")]
         public NetworkVariable<FixedString32Bytes> playerName = new NetworkVariable<FixedString32Bytes>(new FixedString32Bytes(""), NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
@@ -172,12 +171,11 @@ namespace Combating.Scripts
             }
         }
 
-        void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
             {
-                if (Instance != null && Instance != this) { Destroy(this); return; }
-                Instance = this;
                 InitializeStats();
 
                 // Inicialización offline para HUD y Visuales
@@ -188,6 +186,7 @@ namespace Combating.Scripts
 
         public override void OnNetworkSpawn()
         {
+            base.OnNetworkSpawn();
             m_PlayerHealth = GetComponent<HealthController>();
 
             // SERVER: Initialize stats for EVERY player spawned
@@ -195,7 +194,6 @@ namespace Combating.Scripts
 
             if (IsOwner)
             {
-                Instance = this;
                 string baseName = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player");
                 if (string.IsNullOrEmpty(baseName)) baseName = "Player";
 

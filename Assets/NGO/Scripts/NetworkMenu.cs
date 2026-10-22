@@ -9,9 +9,8 @@ using Unity.Netcode.Transports.UTP;
 
 namespace NGO.Networking
 {
-    public class NetworkMenu : MonoBehaviour
+    public class NetworkMenu : CSingletonMB<NetworkMenu>
     {
-        public static NetworkMenu Instance { get; private set; }
 
         [Header("Scene Navigation")]
         [SerializeField] private string mainMenuScene = "MainMenuScene";
@@ -84,10 +83,9 @@ namespace NGO.Networking
         private int _carouselIndex = 0;
         private float _carouselTimer = 0f;
 
-        private void Awake()
+        protected override void Awake()
         {
-            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-            Instance = this;
+            base.Awake();
         }
 
         private void OnApplicationQuit()

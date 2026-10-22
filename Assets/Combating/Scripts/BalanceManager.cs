@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using Unity.Netcode;
 using Crafting.Scripts;
+using NGO.Networking;
 
 namespace Combating.Scripts
 {
@@ -184,9 +185,8 @@ namespace Combating.Scripts
 
     #endregion
 
-    public class BalanceManager : MonoBehaviour, IBalanceProvider
+    public class BalanceManager : CSingletonMB<BalanceManager>, IBalanceProvider
     {
-        public static BalanceManager Instance { get; private set; }
 
         public event Action<GameObject, StatSpawnPointData> OnEntityCalibrated;
         public event Action<GameObject, ItemType, int> OnLootDropped;
@@ -254,14 +254,9 @@ namespace Combating.Scripts
         private readonly Dictionary<GameObject, StatSpawnPointData> _activeStatsRegistry = new Dictionary<GameObject, StatSpawnPointData>();
         private readonly HashSet<GameObject> _assignedSceneObjects = new HashSet<GameObject>();
 
-        private void Awake()
+        protected override void Awake()
         {
-            if (Instance != null && Instance != this)
-            {
-                Destroy(gameObject);
-                return;
-            }
-            Instance = this;
+            base.Awake();
 
             _poolParentTransform = new GameObject("[ObjectPool]").transform;
             _poolParentTransform.SetParent(transform);

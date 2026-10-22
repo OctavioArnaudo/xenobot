@@ -13,6 +13,7 @@ using Crafting.Scripts;
 using Dialogs.Scripts;
 using Missions.Scripts;
 using Trades.Data;
+using NGO.Networking;
 #if UNITY_EDITOR
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -26,10 +27,8 @@ namespace Narrative.Scripts
     /// Funciona articulado con MissionController de forma completamente segura.
     /// </summary>
     [AddComponentMenu("Narrative/Narrative Manager")]
-    public class NarrativeManager : MonoBehaviour
+    public class NarrativeManager : CSingletonMB<NarrativeManager>
     {
-        public static NarrativeManager Instance { get; private set; }
-
         [Serializable]
         public class Site
         {
@@ -142,14 +141,14 @@ namespace Narrative.Scripts
 
         private readonly HashSet<string> _localNarrativeCompleted = new HashSet<string>();
 
-        private void Awake()
+        protected override void Awake()
         {
-            if (Instance == null) Instance = this;
+            base.Awake();
         }
 
-        private void OnDestroy()
+        protected override void OnDestroy()
         {
-            if (Instance == this) Instance = null;
+            base.OnDestroy();
         }
 
         static void Show(string[] lines)

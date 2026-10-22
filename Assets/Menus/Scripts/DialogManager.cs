@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.InputSystem;
 using System.Collections.Generic;
+using NGO.Networking;
 
 namespace Dialogs.Scripts
 {
@@ -14,11 +15,10 @@ namespace Dialogs.Scripts
         [TextArea(2, 5)] public string[] lines;
     }
 
-    public class DialogManager : MonoBehaviour
+    public class DialogManager : CSingletonMB<DialogManager>
     {
-        public static DialogManager Instance { get; private set; }
 
-        [Header("Diálogos (editar acá)")]
+        [Header("Diï¿½logos (editar acï¿½)")]
         [SerializeField] private List<DialogEntry> dialogs = new List<DialogEntry>();
 
         private GameObject _panel;
@@ -31,10 +31,9 @@ namespace Dialogs.Scripts
 
         public bool IsOpen => _panel != null && _panel.activeSelf;
 
-        private void Awake()
+        protected override void Awake()
         {
-            if (Instance == null) Instance = this;
-            else { Destroy(gameObject); return; }
+            base.Awake();
 
             BuildUI();
         }
@@ -56,7 +55,7 @@ namespace Dialogs.Scripts
             DialogEntry entry = dialogs.Find(d => d.id == id);
             if (entry == null || entry.lines == null || entry.lines.Length == 0)
             {
-                Debug.LogWarning($"[DialogManager] Diálogo '{id}' no encontrado o vacío.");
+                Debug.LogWarning($"[DialogManager] Diï¿½logo '{id}' no encontrado o vacï¿½o.");
                 return;
             }
 

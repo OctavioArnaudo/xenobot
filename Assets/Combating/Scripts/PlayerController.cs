@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Unity.Cinemachine;
 using Crafting.Scripts;
+using NGO.Networking;
 
 namespace Combating.Scripts
 {
@@ -13,7 +14,7 @@ namespace Combating.Scripts
 #if ENABLE_INPUT_SYSTEM
     [RequireComponent(typeof(PlayerInput))]
 #endif
-    public class PlayerController : NetworkBehaviour
+    public class PlayerController : CSingletonNB<PlayerController>
     {
         private const float DEFAULT_MOVE_SPEED = 2.0f;
         private const float DEFAULT_SPRINT_SPEED = 5.335f;

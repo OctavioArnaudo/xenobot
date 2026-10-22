@@ -8,9 +8,8 @@ using Levels.Data;
 
 namespace Menus.Scripts
 {
-    public class VictoryMenu : MonoBehaviour
+    public class VictoryMenu : CSingletonMB<VictoryMenu>
     {
-        public static VictoryMenu Instance { get; private set; }
 
         [Header("Settings")]
         public string levelsMenuScene = "LevelsMenuScene";
@@ -20,10 +19,9 @@ namespace Menus.Scripts
         private GameObject _canvasRoot;
         private bool _isDisplayed = false;
 
-        private void Awake()
+        protected override void Awake()
         {
-            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-            Instance = this;
+            base.Awake();
         }
 
         private void Start()

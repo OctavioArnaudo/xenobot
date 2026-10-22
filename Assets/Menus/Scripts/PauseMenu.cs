@@ -8,9 +8,8 @@ using Levels.Data;
 
 namespace Menus.Scripts
 {
-    public class PauseMenu : MonoBehaviour
+    public class PauseMenu : CSingletonMB<PauseMenu>
     {
-        public static PauseMenu Instance { get; private set; }
 
         [Header("Settings & Navigation")]
         public string settingsSceneName = "SettingsMenuScene";
@@ -29,10 +28,9 @@ namespace Menus.Scripts
         private GameObject _canvasRoot;
         private bool _isPaused = false;
 
-        private void Awake()
+        protected override void Awake()
         {
-            if (Instance != null && Instance != this) { Destroy(gameObject); return; }
-            Instance = this;
+            base.Awake();
         }
 
         private void Start()
