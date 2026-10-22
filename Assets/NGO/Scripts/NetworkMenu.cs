@@ -269,9 +269,56 @@ namespace NGO.Networking
 
             AddActiveCode(code);
 
+            var transport = NetworkManager.Singleton != null ? (NetworkManager.Singleton.GetComponent<UnityTransport>() ?? NetworkManager.Singleton.NetworkConfig.NetworkTransport as UnityTransport) : null;
+            bool relaySuccess = false;
+
+            if (transport != null)
+            {
+                try
+                {
+                    if (Unity.Services.Core.UnityServices.State != Unity.Services.Core.ServicesInitializationState.Initialized)
+                    {
+                        await Unity.Services.Core.UnityServices.InitializeAsync();
+                    }
+                    if (!Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn)
+                    {
+                        await Unity.Services.Authentication.AuthenticationService.Instance.SignInAnonymouslyAsync();
+                    }
+
+                    int maxPlayers = PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 4);
+                    var allocation = await Unity.Services.Relay.RelayService.Instance.CreateAllocationAsync(maxPlayers - 1);
+                    string joinCode = await Unity.Services.Relay.RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
+
+                    if (!string.IsNullOrEmpty(joinCode))
+                    {
+                        code = joinCode.ToUpper();
+                        PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), code);
+                        PlayerPrefs.Save();
+                        AddActiveCode(code);
+
+                        transport.SetRelayServerData(
+                            allocation.RelayServer.IpV4,
+                            (ushort)allocation.RelayServer.Port,
+                            allocation.AllocationIdBytes,
+                            allocation.Key,
+                            allocation.ConnectionData
+                        );
+                        relaySuccess = true;
+                    }
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"[NetworkMenu] Relay Create failed: {ex.Message}. Falling back to Direct IP Host.");
+                }
+            }
+
+            if (!relaySuccess && transport != null)
+            {
+                SetUnityTransportAddress(ip, port);
+            }
+
             if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"PLAYERS: 1 SERVER: {GetUgsStatus()}";
 
-            SetUnityTransportAddress(ip, port);
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.StartHost())
             {
                 LoadLobbyScene();
@@ -293,31 +340,66 @@ namespace NGO.Networking
             }
 
             string roomCode = _joinCodeInput != null ? _joinCodeInput.text.Trim().ToUpper() : "";
-            if (!string.IsNullOrEmpty(roomCode))
-            {
-                PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), roomCode);
-                PlayerPrefs.Save();
-            }
-
             string ipPortRaw = _joinIpInput != null ? _joinIpInput.text.Trim() : "";
-            string ip = "127.0.0.1";
-            ushort port = 7777;
 
-            if (!string.IsNullOrEmpty(ipPortRaw))
+            var transport = NetworkManager.Singleton != null ? (NetworkManager.Singleton.GetComponent<UnityTransport>() ?? NetworkManager.Singleton.NetworkConfig.NetworkTransport as UnityTransport) : null;
+            bool connectedViaRelay = false;
+
+            if (!string.IsNullOrEmpty(roomCode) && transport != null)
             {
-                if (ipPortRaw.Contains(":"))
+                try
                 {
-                    string[] parts = ipPortRaw.Split(':');
-                    if (parts.Length > 0 && !string.IsNullOrEmpty(parts[0])) ip = parts[0].Trim();
-                    if (parts.Length > 1 && ushort.TryParse(parts[1].Trim(), out ushort parsedPort)) port = parsedPort;
+                    if (Unity.Services.Core.UnityServices.State != Unity.Services.Core.ServicesInitializationState.Initialized)
+                    {
+                        await Unity.Services.Core.UnityServices.InitializeAsync();
+                    }
+                    if (!Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn)
+                    {
+                        await Unity.Services.Authentication.AuthenticationService.Instance.SignInAnonymouslyAsync();
+                    }
+
+                    var allocation = await Unity.Services.Relay.RelayService.Instance.JoinAllocationAsync(roomCode);
+                    transport.SetRelayServerData(
+                        allocation.RelayServer.IpV4,
+                        (ushort)allocation.RelayServer.Port,
+                        allocation.AllocationIdBytes,
+                        allocation.Key,
+                        allocation.ConnectionData,
+                        allocation.HostConnectionData
+                    );
+
+                    PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), roomCode);
+                    PlayerPrefs.Save();
+                    connectedViaRelay = true;
                 }
-                else
+                catch (System.Exception ex)
                 {
-                    ip = ipPortRaw;
+                    Debug.LogWarning($"[NetworkMenu] Relay Join failed for code {roomCode}: {ex.Message}. Falling back to Direct IP.");
                 }
             }
 
-            SetUnityTransportAddress(ip, port);
+            if (!connectedViaRelay)
+            {
+                string ip = "127.0.0.1";
+                ushort port = 7777;
+
+                if (!string.IsNullOrEmpty(ipPortRaw))
+                {
+                    if (ipPortRaw.Contains(":"))
+                    {
+                        string[] parts = ipPortRaw.Split(':');
+                        if (parts.Length > 0 && !string.IsNullOrEmpty(parts[0])) ip = parts[0].Trim();
+                        if (parts.Length > 1 && ushort.TryParse(parts[1].Trim(), out ushort parsedPort)) port = parsedPort;
+                    }
+                    else
+                    {
+                        ip = ipPortRaw;
+                    }
+                }
+
+                SetUnityTransportAddress(ip, port);
+            }
+
             if (NetworkManager.Singleton != null)
             {
                 NetworkManager.Singleton.StartClient();
