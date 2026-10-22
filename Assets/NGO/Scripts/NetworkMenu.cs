@@ -88,10 +88,6 @@ namespace NGO.Networking
                     _joinCodeDisplay.text = displayStr.Trim();
                 }
             }
-        }
-
-        private void Update()
-        {
             if (_joinCodeDisplay != null && _activeCodes != null && _activeCodes.Length > 0)
             {
                 _carouselTimer += Time.unscaledDeltaTime;
