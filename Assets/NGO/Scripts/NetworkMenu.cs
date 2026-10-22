@@ -88,22 +88,6 @@ namespace NGO.Networking
                     _joinCodeDisplay.text = displayStr.Trim();
                 }
             }
-            if (_joinCodeDisplay != null && _activeCodes != null && _activeCodes.Length > 0)
-            {
-                _carouselTimer += Time.unscaledDeltaTime;
-                if (_carouselTimer >= 2.0f)
-                {
-                    _carouselTimer = 0f;
-                    _carouselIndex = (_carouselIndex + 1) % _activeCodes.Length;
-                }
-                string displayStr = "";
-                for (int i = 0; i < _activeCodes.Length; i++)
-                {
-                    int idx = (_carouselIndex + i) % _activeCodes.Length;
-                    displayStr += _activeCodes[idx] + " ";
-                }
-                _joinCodeDisplay.text = displayStr.Trim();
-            }
         }
 
         public void ShowMainSubpanel()
