@@ -95,6 +95,7 @@ namespace NGO.Networking
             if (NetworkManager.Singleton != null)
             {
                 NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnected;
+                NetworkManager.Singleton.OnClientDisconnectCallback += HandleClientDisconnected;
             }
         }
 
@@ -103,18 +104,23 @@ namespace NGO.Networking
             if (NetworkManager.Singleton != null)
             {
                 NetworkManager.Singleton.OnClientConnectedCallback -= HandleClientConnected;
+                NetworkManager.Singleton.OnClientDisconnectCallback -= HandleClientDisconnected;
             }
         }
 
         private void HandleClientConnected(ulong clientId)
         {
+            Debug.Log($"[NetworkMenu] Client connected successfully! ClientId: {clientId}");
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
             {
                 if (NetworkManager.Singleton.LocalClientId == clientId)
-                {
                     LoadLobbyScene();
-                }
             }
+        }
+
+        private void HandleClientDisconnected(ulong clientId)
+        {
+            Debug.LogWarning($"[NetworkMenu] Client disconnected! ClientId: {clientId}");
         }
 
         private void Start()
