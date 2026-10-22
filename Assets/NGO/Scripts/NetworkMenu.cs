@@ -126,6 +126,26 @@ namespace NGO.Networking
                     _joinCodeDisplay.text = displayStr.Trim();
                 }
             }
+
+            if (_hostCodeDisplay != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                int playersCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
+                string ugsStatus = GetUgsStatus();
+                _hostCodeDisplay.text = $"PLAYERS: {playersCount} SERVER: {ugsStatus}";
+            }
+        }
+
+        private string GetUgsStatus()
+        {
+            try
+            {
+                if (Unity.Services.Core.UnityServices.State == Unity.Services.Core.ServicesInitializationState.Initialized)
+                {
+                    return "1";
+                }
+            }
+            catch { }
+            return "0";
         }
 
         public void ShowMainSubpanel()
@@ -170,12 +190,18 @@ namespace NGO.Networking
             PlayerPrefs.Save();
         }
 
-        public void OnClickStartHostMatch()
+        public async void OnClickStartHostMatch()
         {
             SaveHostSettings();
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
                 NetworkManager.Singleton.Shutdown();
+                float timeout = 2f;
+                while (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && timeout > 0f)
+                {
+                    timeout -= Time.unscaledDeltaTime;
+                    await System.Threading.Tasks.Task.Yield();
+                }
             }
 
             ushort port = 7777;
@@ -206,7 +232,7 @@ namespace NGO.Networking
 
             AddActiveCode(code);
 
-            if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"IP:PORT {ip}:{port}   |   CODE: {code}";
+            if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"PLAYERS: 1 SERVER: 0";
 
             SetUnityTransportAddress(ip, port);
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.StartHost())
@@ -215,12 +241,18 @@ namespace NGO.Networking
             }
         }
 
-        public void OnClickSmartConnectClient()
+        public async void OnClickSmartConnectClient()
         {
             SaveJoinSettings();
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
                 NetworkManager.Singleton.Shutdown();
+                float timeout = 2f;
+                while (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && timeout > 0f)
+                {
+                    timeout -= Time.unscaledDeltaTime;
+                    await System.Threading.Tasks.Task.Yield();
+                }
             }
 
             string roomCode = _joinCodeInput != null ? _joinCodeInput.text.Trim().ToUpper() : "";
