@@ -167,13 +167,13 @@ namespace NGO.Networking
 
             // 1. CORNER HUD ELEMENTS (ALWAYS VISIBLE - OUTSIDE LABEL + INSIDE VALUE BOX)
             // Top-Left: Timer
-            _timerText = CreateCornerHudBox("TimerHud", _canvasRoot.transform, "TIME:", "05:00", new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(30, -30), neonCyan);
+            _timerText = CreateCornerHudBox("TimerHud", _canvasRoot.transform, "TIMER:", "05:00", new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(30, -30), neonCyan);
 
             // Top-Right: Players
             _playersText = CreateCornerHudBox("PlayersHud", _canvasRoot.transform, "PLAYERS:", "01/04", new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -30), neonYellow);
 
             // Bottom-Left: IP:Port
-            _ipPortText = CreateCornerHudBox("IpPortHud", _canvasRoot.transform, "IP:PORT:", "127.0.0.1:7777", new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 0), new Vector2(30, 30), neonCyan);
+            _ipPortText = CreateCornerHudBox("IpPortHud", _canvasRoot.transform, "IP:PORT", "127.0.0.1:7777", new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 0), new Vector2(30, 30), neonCyan);
 
             // Bottom-Right: Code
             _codeText = CreateCornerHudBox("CodeHud", _canvasRoot.transform, "CODE:", "READY", new Vector2(1, 0), new Vector2(1, 0), new Vector2(1, 0), new Vector2(-30, 30), neonMagenta);

@@ -278,7 +278,7 @@ namespace NGO.Networking
                         _joinCodeInput.text = val.ToUpper();
                 });
             }
-            _joinIpInput = CreateLabeledInput("JoinIPInput", _joinPanelGo.transform, "IP:PORT:", "127.0.0.1:7777", new Vector2(0, -50));
+            _joinIpInput = CreateLabeledInput("JoinIPInput", _joinPanelGo.transform, "IP:PORT", "127.0.0.1:7777", new Vector2(0, -50));
 
             CreateCyberButton("ConnectClientBtn", _joinPanelGo.transform, "MATCH", new Vector2(0, -125), neonCyan, OnClickSmartConnectClient);
             CreateCyberButton("JoinBackBtn", _joinPanelGo.transform, "BACK", new Vector2(0, -195), neonMagenta, ShowMainSubpanel);
