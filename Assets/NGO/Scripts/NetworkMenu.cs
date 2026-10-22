@@ -31,6 +31,7 @@ namespace NGO.Networking
         // Host Inputs & Displays
         private TMP_InputField _hostNameInput;
         private TMP_InputField _hostMaxPlayersInput;
+        private TMP_InputField _hostCodeInput;
         private TMP_Text _hostCodeDisplay;
 
         // Join Inputs
@@ -85,6 +86,8 @@ namespace NGO.Networking
             if (_hostNameInput != null) PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), _hostNameInput.text);
             if (_hostMaxPlayersInput != null && int.TryParse(_hostMaxPlayersInput.text, out int max))
                 PlayerPrefs.SetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), max);
+            if (_hostCodeInput != null && !string.IsNullOrEmpty(_hostCodeInput.text))
+                PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), _hostCodeInput.text.Trim().ToUpper());
             PlayerPrefs.Save();
         }
 
@@ -226,10 +229,10 @@ namespace NGO.Networking
             CreateCyberButton("BackButton", _mainPanelGo.transform, "BACK", new Vector2(0, -130), neonMagenta, GoBackToMainMenuScene);
 
             // 2. HOST SUBPANEL
-            _hostPanelGo = CreatePanel("HostPanel", _canvasRoot.transform, new Vector2(850, 620));
-            CreateHeader("HOST PROTOCOL", "// CREATE MATCH", _hostPanelGo.transform, new Vector2(0, 210));
+            _hostPanelGo = CreatePanel("HostPanel", _canvasRoot.transform, new Vector2(850, 680));
+            CreateHeader("HOST PROTOCOL", "// CREATE MATCH", _hostPanelGo.transform, new Vector2(0, 240));
 
-            _hostNameInput = CreateLabeledInput("HostNameInput", _hostPanelGo.transform, "PLAYER NAME:", PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player"), new Vector2(0, 100));
+            _hostNameInput = CreateLabeledInput("HostNameInput", _hostPanelGo.transform, "PLAYER NAME:", PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player"), new Vector2(0, 120));
             if (_hostNameInput != null)
             {
                 _hostNameInput.onValueChanged.AddListener((val) =>
@@ -239,7 +242,7 @@ namespace NGO.Networking
                 });
             }
 
-            _hostMaxPlayersInput = CreateLabeledInput("HostMaxPlayersInput", _hostPanelGo.transform, "MAX PLAYERS:", PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 1).ToString(), new Vector2(0, 25));
+            _hostMaxPlayersInput = CreateLabeledInput("HostMaxPlayersInput", _hostPanelGo.transform, "MAX PLAYERS:", PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 1).ToString(), new Vector2(0, 45));
             if (_hostMaxPlayersInput != null)
             {
                 _hostMaxPlayersInput.onValueChanged.AddListener((val) =>
@@ -252,12 +255,26 @@ namespace NGO.Networking
                 });
             }
 
+            string defaultCode = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "");
+            if (string.IsNullOrEmpty(defaultCode)) defaultCode = "XENO42";
+            _hostCodeInput = CreateLabeledInput("HostCodeInput", _hostPanelGo.transform, "CODE:", defaultCode, new Vector2(0, -30));
+            if (_hostCodeInput != null)
+            {
+                _hostCodeInput.onValueChanged.AddListener((val) =>
+                {
+                    if (_hostCodeInput.text != val.ToUpper())
+                        _hostCodeInput.text = val.ToUpper();
+                    PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), val.Trim().ToUpper());
+                    PlayerPrefs.Save();
+                });
+            }
+
             GameObject codeBox = new GameObject("CodeBox", typeof(RectTransform));
             codeBox.transform.SetParent(_hostPanelGo.transform, false);
             var cbImg = codeBox.AddComponent<Image>();
             cbImg.color = new Color(0.08f, 0.12f, 0.18f, 0.95f);
             var cbRt = codeBox.GetComponent<RectTransform>();
-            cbRt.anchoredPosition = new Vector2(0, -50);
+            cbRt.anchoredPosition = new Vector2(0, -105);
             cbRt.sizeDelta = new Vector2(550, 45);
             codeBox.AddComponent<Outline>().effectColor = neonYellow;
 
@@ -272,8 +289,8 @@ namespace NGO.Networking
             cbTxtRt.anchorMin = Vector2.zero;
             cbTxtRt.anchorMax = Vector2.one;
 
-            CreateCyberButton("StartHostMatchBtn", _hostPanelGo.transform, "MATCH", new Vector2(0, -125), neonCyan, OnClickStartHostMatch);
-            CreateCyberButton("HostBackBtn", _hostPanelGo.transform, "BACK", new Vector2(0, -195), neonMagenta, ShowMainSubpanel);
+            CreateCyberButton("StartHostMatchBtn", _hostPanelGo.transform, "MATCH", new Vector2(0, -185), neonCyan, OnClickStartHostMatch);
+            CreateCyberButton("HostBackBtn", _hostPanelGo.transform, "BACK", new Vector2(0, -260), neonMagenta, ShowMainSubpanel);
 
             // 3. JOIN SUBPANEL
             _joinPanelGo = CreatePanel("JoinPanel", _canvasRoot.transform, new Vector2(850, 620));
