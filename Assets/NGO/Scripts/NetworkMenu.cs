@@ -525,9 +525,7 @@ namespace NGO.Networking
                 });
             }
 
-            string defaultCode = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "");
-            if (string.IsNullOrEmpty(defaultCode)) defaultCode = "GENERATING...";
-            _hostCodeInput = CreateLabeledInput("HostCodeInput", _hostPanelGo.transform, "CODE:", defaultCode, new Vector2(0, 20));
+            _hostCodeInput = CreateLabeledInput("HostCodeInput", _hostPanelGo.transform, "CODE:", "", new Vector2(0, 20));
             if (_hostCodeInput != null)
             {
                 _hostCodeInput.interactable = false;
