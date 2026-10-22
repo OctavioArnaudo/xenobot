@@ -4263,6 +4263,85 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 717342471}
   m_Mesh: {fileID: 1881125385508326797, guid: 1710fbf00619c474b92da634e36cd0bb, type: 3}
+--- !u!1 &723766662
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 723766665}
+  - component: {fileID: 723766663}
+  - component: {fileID: 723766664}
+  m_Layer: 0
+  m_Name: LobbyMenuPrefab
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &723766663
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 723766662}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 3831596508
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &723766664
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 723766662}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59fae81b5b28be44ea6f4f8a58ccf5fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NGO.Networking.LobbyMenu
+  ShowTopMostFoldoutHeaderGroup: 1
+  biomaSceneName: BiomaScene
+  networkSceneName: NetworkScene
+  panelColor: {r: 0.04, g: 0.08, b: 0.12, a: 0.92}
+  neonCyan: {r: 0, g: 1, b: 0.95, a: 1}
+  neonMagenta: {r: 1, g: 0, b: 0.45, a: 1}
+  neonYellow: {r: 1, g: 0.85, b: 0, a: 1}
+--- !u!4 &723766665
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 723766662}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -1427.0415, y: 339.10748, z: 39.68348}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &736283652
 GameObject:
   m_ObjectHideFlags: 0
@@ -8152,6 +8231,10 @@ PrefabInstance:
     - target: {fileID: 3617847514901879970, guid: 1e18bbfda70d87b4d94865f1957673d1, type: 3}
       propertyPath: m_Name
       value: LobbyMenuPrefab
+      objectReference: {fileID: 0}
+    - target: {fileID: 3617847514901879970, guid: 1e18bbfda70d87b4d94865f1957673d1, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8847897153985489692, guid: 1e18bbfda70d87b4d94865f1957673d1, type: 3}
       propertyPath: codeButton
@@ -12736,6 +12819,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: LobbyCanvasPrefab
       objectReference: {fileID: 0}
+    - target: {fileID: 3474579178023634546, guid: 457a9793ba88f624ca9688bfb6f91aa6, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5413712256481016220, guid: 457a9793ba88f624ca9688bfb6f91aa6, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
@@ -12814,3 +12901,4 @@ SceneRoots:
   - {fileID: 870709959}
   - {fileID: 1297716427}
   - {fileID: 8334083203596417044}
+  - {fileID: 723766665}
