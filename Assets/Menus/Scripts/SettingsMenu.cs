@@ -103,9 +103,9 @@ public class SettingsMenu : MonoBehaviour
     private GameObject SetupSonidoPanel()
     {
         GameObject panel = CreateBasePanel("Panel_Sonido", "SISTEMA DE AUDIO");
-        CreateSettingSlider(panel.transform, "VOLUMEN MAESTRO", 0.75f, 0.8f);
+        CreateSettingSlider(panel.transform, "VOLUMEN", 0.75f, 0.8f);
         CreateSettingSlider(panel.transform, "MÚSICA", 0.60f, 0.5f);
-        CreateSettingSlider(panel.transform, "EFECTOS (SFX)", 0.45f, 0.9f);
+        CreateSettingSlider(panel.transform, "EFECTOS", 0.45f, 0.9f);
         return panel;
     }
 
