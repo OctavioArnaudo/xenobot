@@ -9,6 +9,31 @@ public class SettingsMenu : MonoBehaviour
     public static string PreviousScene { get; set; } = "";
     public bool IsOverlayMode { get; set; } = false;
 
+    public static class PrefKeys
+    {
+        public enum Key
+        {
+            UserName,
+            MaxPlayers,
+            LastJoinCode
+        }
+
+        public const string UserNameKey = "Xenobot_UserName";
+        public const string MaxPlayersKey = "Xenobot_MaxPlayers";
+        public const string LastJoinCodeKey = "Xenobot_LastJoinCode";
+
+        public static string GetKey(Key key)
+        {
+            switch (key)
+            {
+                case Key.UserName: return UserNameKey;
+                case Key.MaxPlayers: return MaxPlayersKey;
+                case Key.LastJoinCode: return LastJoinCodeKey;
+                default: return key.ToString();
+            }
+        }
+    }
+
     [Header("Configuración de Escenas")]
     public string escenaMenuPrincipal = "MainMenuScene";
 

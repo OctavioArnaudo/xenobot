@@ -50,8 +50,8 @@ namespace NGO.Networking
             if (IsServer)
             {
                 m_TimeRemaining.Value = 300f;
-                m_MaxPlayers.Value = PlayerPrefs.GetInt("Xenobot_MaxPlayers", 4);
-                m_JoinCode.Value = PlayerPrefs.GetString("Xenobot_LastJoinCode", "").ToUpper();
+                m_MaxPlayers.Value = PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 4);
+                m_JoinCode.Value = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "").ToUpper();
             }
 
             BuildCyberpunkUI();

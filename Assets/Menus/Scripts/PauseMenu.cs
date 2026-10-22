@@ -93,13 +93,6 @@ namespace Menus.Scripts
             Cursor.lockState = CursorLockMode.Locked;
         }
 
-        public void RestartLevel()
-        {
-            Time.timeScale = 1f;
-            _isPaused = false;
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
-        }
-
         public void OpenSettings()
         {
             // En lugar de cargar escena, activamos el modo superposición (Overlay)
@@ -190,7 +183,7 @@ namespace Menus.Scripts
             sRt.sizeDelta = new Vector2(750, 40);
 
             // Session Stats Info
-            string playerName = PlayerPrefs.GetString("Xenobot_UserName", "Player");
+            string playerName = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player");
             string currentScene = SceneManager.GetActiveScene().name;
             float timeTaken = LevelsMenu.ultimoTiempoSession;
             string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
@@ -207,10 +200,9 @@ namespace Menus.Scripts
             stRt.sizeDelta = new Vector2(750, 40);
 
             // Cyber Buttons
-            CreateCyberButton("ResumeButton", panel.transform, "RESUME", new Vector2(0, 60), neonCyan, ResumeGame);
-            CreateCyberButton("RestartButton", panel.transform, "RESTART", new Vector2(0, -30), neonYellow, RestartLevel);
-            CreateCyberButton("SettingsButton", panel.transform, "SETTINGS", new Vector2(0, -120), neonCyan, OpenSettings);
-            CreateCyberButton("QuitButton", panel.transform, "ABORT", new Vector2(0, -210), neonMagenta, QuitSessionOrMatch);
+            CreateCyberButton("ResumeButton", panel.transform, "RESUME", new Vector2(0, 40), neonCyan, ResumeGame);
+            CreateCyberButton("SettingsButton", panel.transform, "SETTINGS", new Vector2(0, -40), neonCyan, OpenSettings);
+            CreateCyberButton("QuitButton", panel.transform, "ABORT", new Vector2(0, -120), neonMagenta, QuitSessionOrMatch);
         }
 
         private void CreateCyberButton(string name, Transform parent, string label, Vector2 pos, Color accent, UnityEngine.Events.UnityAction onClick)

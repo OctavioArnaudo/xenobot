@@ -196,7 +196,7 @@ namespace Combating.Scripts
             if (IsOwner)
             {
                 Instance = this;
-                playerName.Value = PlayerPrefs.GetString("Xenobot_UserName", "Operator");
+                playerName.Value = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player");
                 playerColor.Value = Color.white;
             }
             playerName.OnValueChanged += (oldVal, newVal) => UpdateVisuals();
@@ -245,7 +245,7 @@ namespace Combating.Scripts
             else
             {
                 // Offline/Local mode: Try config first, then default
-                dName = PlayerPrefs.GetString("Xenobot_UserName", "Player");
+                dName = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player");
             }
 
             if (string.IsNullOrEmpty(dName)) dName = "PLAYER";

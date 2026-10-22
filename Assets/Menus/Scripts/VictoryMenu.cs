@@ -129,7 +129,7 @@ namespace Menus.Scripts
             CreateDecoration("!", panel.transform, new Vector2(0, 260), 70);
 
             // Stats
-            string playerName = PlayerPrefs.GetString("Xenobot_UserName", "Operator");
+            string playerName = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player");
             float timeTaken = LevelsMenu.ultimoTiempoSession;
             string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
 
@@ -195,7 +195,7 @@ namespace Menus.Scripts
         {
             string currentScene = LevelsMenu.ultimoNivelSession;
             float timeTaken = LevelsMenu.ultimoTiempoSession;
-            string playerName = PlayerPrefs.GetString("Xenobot_UserName", "Operator");
+            string playerName = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player");
 
             if (string.IsNullOrEmpty(currentScene)) currentScene = SceneManager.GetActiveScene().name;
 
