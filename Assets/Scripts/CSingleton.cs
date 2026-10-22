@@ -23,7 +23,6 @@ namespace NGO.Networking
                 {
                     if (s_IsDestroyed)
                     {
-                        Debug.LogWarning($"[CSingleton] La instancia de {typeof(T).Name} ya ha sido destruida. Retornando null.");
                         return null;
                     }
                     return s_Instance;
