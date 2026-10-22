@@ -7,6 +7,7 @@ using System.Collections.Generic;
 public class SettingsMenu : MonoBehaviour
 {
     public static string PreviousScene { get; set; } = "";
+    public bool IsOverlayMode { get; set; } = false;
 
     [Header("Configuración de Escenas")]
     public string escenaMenuPrincipal = "MainMenuScene";
@@ -20,6 +21,7 @@ public class SettingsMenu : MonoBehaviour
     public Color colorTexto = Color.white;
     public Color colorBorde = new Color(0f, 1f, 1f, 0.4f);
 
+    private GameObject _rootCanvasObj;
     private GameObject mainPanelContainer;
     private List<GameObject> paneles = new List<GameObject>();
     private List<Image> imagenesBotonesSidebar = new List<Image>();
@@ -32,22 +34,22 @@ public class SettingsMenu : MonoBehaviour
     private void SetupUI()
     {
         // 1. Canvas Raíz con máxima prioridad
-        GameObject canvasObj = new GameObject("SettingsCanvas");
-        Canvas canvas = canvasObj.AddComponent<Canvas>();
+        _rootCanvasObj = new GameObject("SettingsCanvas");
+        Canvas canvas = _rootCanvasObj.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 999;
+        canvas.sortingOrder = 3000; // Por encima del PauseMenu (2000)
 
-        CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
+        CanvasScaler scaler = _rootCanvasObj.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
         scaler.matchWidthOrHeight = 0.5f;
 
-        canvasObj.AddComponent<GraphicRaycaster>();
+        _rootCanvasObj.AddComponent<GraphicRaycaster>();
 
         int uiLayer = LayerMask.NameToLayer("UI");
         if (uiLayer == -1) uiLayer = 5;
-        canvasObj.layer = uiLayer;
+        _rootCanvasObj.layer = uiLayer;
 
         // 2. EventSystem
         if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
@@ -58,11 +60,12 @@ public class SettingsMenu : MonoBehaviour
         }
 
         // 3. Fondo
-        CreateAdaptiveImage(canvasObj.transform, "Background", new Vector2(0.5f, 0.5f), new Vector2(1.5f, 1.5f), colorFondo);
+        Color finalBg = IsOverlayMode ? new Color(0, 0, 0, 0.9f) : colorFondo;
+        CreateAdaptiveImage(_rootCanvasObj.transform, "Background", new Vector2(0.5f, 0.5f), new Vector2(1.5f, 1.5f), finalBg);
 
         // 4. Barra Lateral (Sidebar)
         GameObject sidebar = new GameObject("Sidebar");
-        sidebar.transform.SetParent(canvasObj.transform);
+        sidebar.transform.SetParent(_rootCanvasObj.transform);
         sidebar.layer = uiLayer;
         RectTransform sideRT = sidebar.AddComponent<RectTransform>();
         sideRT.anchorMin = new Vector2(0, 0);
@@ -75,7 +78,7 @@ public class SettingsMenu : MonoBehaviour
 
         // 5. Contenedor de Paneles
         mainPanelContainer = new GameObject("ContentContainer");
-        mainPanelContainer.transform.SetParent(canvasObj.transform);
+        mainPanelContainer.transform.SetParent(_rootCanvasObj.transform);
         mainPanelContainer.layer = uiLayer;
         RectTransform contRT = mainPanelContainer.AddComponent<RectTransform>();
         contRT.anchorMin = new Vector2(0.28f, 0.05f);
@@ -330,6 +333,13 @@ public class SettingsMenu : MonoBehaviour
 
     public void VolverAlMenu()
     {
+        if (IsOverlayMode)
+        {
+            if (_rootCanvasObj != null) Destroy(_rootCanvasObj);
+            Destroy(this);
+            return;
+        }
+
         string targetScene = !string.IsNullOrEmpty(PreviousScene) ? PreviousScene : escenaMenuPrincipal;
         PreviousScene = "";
         SceneManager.LoadScene(targetScene);

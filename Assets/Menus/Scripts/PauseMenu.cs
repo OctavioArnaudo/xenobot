@@ -102,10 +102,14 @@ namespace Menus.Scripts
 
         public void OpenSettings()
         {
-            Time.timeScale = 1f;
-            _isPaused = false;
-            SettingsMenu.PreviousScene = SceneManager.GetActiveScene().name;
-            SceneManager.LoadScene(settingsSceneName);
+            // En lugar de cargar escena, activamos el modo superposición (Overlay)
+            // para no destruir el estado de red ni los prefabs del jugador.
+            var settings = gameObject.AddComponent<SettingsMenu>();
+            settings.IsOverlayMode = true;
+
+            // Ocultamos el menú de pausa actual para que no estorbe
+            if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);
+            if (_canvasRoot != null) _canvasRoot.SetActive(false);
         }
 
         public void QuitSessionOrMatch()
