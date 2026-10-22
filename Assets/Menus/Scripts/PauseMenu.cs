@@ -131,7 +131,7 @@ namespace Menus.Scripts
             _canvasRoot.AddComponent<GraphicRaycaster>();
 
             // Dark Translucent Background
-            GameObject bg = new GameObject("Background");
+            GameObject bg = new GameObject("Background", typeof(RectTransform));
             bg.transform.SetParent(_canvasRoot.transform, false);
             var bgImg = bg.AddComponent<Image>();
             bgImg.color = new Color(0.01f, 0.02f, 0.05f, 0.88f);
@@ -140,7 +140,7 @@ namespace Menus.Scripts
             bgRt.anchorMax = Vector2.one;
 
             // Main Cyberpunk Panel
-            GameObject panel = new GameObject("Panel");
+            GameObject panel = new GameObject("Panel", typeof(RectTransform));
             panel.transform.SetParent(_canvasRoot.transform, false);
             var pImg = panel.AddComponent<Image>();
             pImg.color = panelColor;
@@ -151,16 +151,16 @@ namespace Menus.Scripts
             outline.effectDistance = new Vector2(3, 3);
 
             // Cyberpunk Corner Brackets / Symbols
-            CreateDecoration("[// SYS_PAUSED]", panel.transform, new Vector2(-280, 320), 22, neonCyan);
+            CreateDecoration("[// SYS_TACTICAL]", panel.transform, new Vector2(-280, 320), 22, neonCyan);
             CreateDecoration("[OVERRIDE_ACTIVE]", panel.transform, new Vector2(280, 320), 22, neonMagenta);
             CreateDecoration("///", panel.transform, new Vector2(-360, 260), 30, neonYellow);
             CreateDecoration("///", panel.transform, new Vector2(360, 260), 30, neonYellow);
 
             // Title
-            GameObject title = new GameObject("Title");
+            GameObject title = new GameObject("Title", typeof(RectTransform));
             title.transform.SetParent(panel.transform, false);
             var tTxt = title.AddComponent<TextMeshProUGUI>();
-            tTxt.text = "SYSTEM PAUSED";
+            tTxt.text = "PAUSED";
             tTxt.fontSize = 72;
             tTxt.alignment = TextAlignmentOptions.Center;
             tTxt.fontStyle = FontStyles.Bold;
@@ -170,10 +170,10 @@ namespace Menus.Scripts
             tRt.sizeDelta = new Vector2(750, 90);
 
             // Subtitle
-            GameObject sub = new GameObject("Subtitle");
+            GameObject sub = new GameObject("Subtitle", typeof(RectTransform));
             sub.transform.SetParent(panel.transform, false);
             var sTxt = sub.AddComponent<TextMeshProUGUI>();
-            sTxt.text = "XENOBOT :: TACTICAL OVERRIDE MENU";
+            sTxt.text = "TACTICAL OVERRIDE";
             sTxt.fontSize = 24;
             sTxt.alignment = TextAlignmentOptions.Center;
             sTxt.color = neonCyan;
@@ -187,10 +187,10 @@ namespace Menus.Scripts
             float timeTaken = LevelsMenu.ultimoTiempoSession;
             string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
 
-            GameObject stats = new GameObject("Stats");
+            GameObject stats = new GameObject("Stats", typeof(RectTransform));
             stats.transform.SetParent(panel.transform, false);
             var stTxt = stats.AddComponent<TextMeshProUGUI>();
-            stTxt.text = $"OPERATOR: <color=#00FFFF>{playerName}</color>   |   SECTOR: <color=#FFE600>{currentScene}</color>   |   TIME: <color=#FF007F>{timeStr}</color>";
+            stTxt.text = $"PLAYER: <color=#00FFFF>{playerName}</color>   |   SCENE: <color=#FFE600>{currentScene}</color>   |   TIMER: <color=#FF007F>{timeStr}</color>";
             stTxt.fontSize = 22;
             stTxt.alignment = TextAlignmentOptions.Center;
             stTxt.color = Color.white;
@@ -199,15 +199,15 @@ namespace Menus.Scripts
             stRt.sizeDelta = new Vector2(750, 40);
 
             // Cyber Buttons
-            CreateCyberButton("ResumeButton", panel.transform, "RESUME GAME", new Vector2(0, 60), neonCyan, ResumeGame);
-            CreateCyberButton("RestartButton", panel.transform, "RESTART LEVEL", new Vector2(0, -30), neonYellow, RestartLevel);
+            CreateCyberButton("ResumeButton", panel.transform, "RESUME", new Vector2(0, 60), neonCyan, ResumeGame);
+            CreateCyberButton("RestartButton", panel.transform, "RESTART", new Vector2(0, -30), neonYellow, RestartLevel);
             CreateCyberButton("SettingsButton", panel.transform, "SETTINGS", new Vector2(0, -120), neonCyan, OpenSettings);
-            CreateCyberButton("QuitButton", panel.transform, "ABORT MATCH", new Vector2(0, -210), neonMagenta, QuitSessionOrMatch);
+            CreateCyberButton("QuitButton", panel.transform, "ABORT", new Vector2(0, -210), neonMagenta, QuitSessionOrMatch);
         }
 
         private void CreateCyberButton(string name, Transform parent, string label, Vector2 pos, Color accent, UnityEngine.Events.UnityAction onClick)
         {
-            GameObject btn = new GameObject(name);
+            GameObject btn = new GameObject(name, typeof(RectTransform));
             btn.transform.SetParent(parent, false);
             var img = btn.AddComponent<Image>();
             img.color = new Color(0.08f, 0.12f, 0.18f, 0.95f);
@@ -220,7 +220,7 @@ namespace Menus.Scripts
             outline.effectColor = accent;
             outline.effectDistance = new Vector2(2, 2);
 
-            GameObject txtGo = new GameObject("Text");
+            GameObject txtGo = new GameObject("Text", typeof(RectTransform));
             txtGo.transform.SetParent(btn.transform, false);
             var txt = txtGo.AddComponent<TextMeshProUGUI>();
             txt.text = label;
@@ -236,7 +236,7 @@ namespace Menus.Scripts
 
         private void CreateDecoration(string sym, Transform parent, Vector2 pos, float size, Color color)
         {
-            GameObject dec = new GameObject("Deco");
+            GameObject dec = new GameObject("Deco", typeof(RectTransform));
             dec.transform.SetParent(parent, false);
             var txt = dec.AddComponent<TextMeshProUGUI>();
             txt.text = sym;
