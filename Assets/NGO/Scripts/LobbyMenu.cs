@@ -59,11 +59,10 @@ namespace NGO.Networking
 
         private void Update()
         {
-            bool escapePressed = false;
-#if ENABLE_INPUT_SYSTEM
-            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) escapePressed = true;
+            bool escapePressed = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+#if ENABLE_LEGACY_INPUT_MANAGER
+            if (!escapePressed) escapePressed = Input.GetKeyDown(KeyCode.Escape);
 #endif
-            if (!escapePressed && Input.GetKeyDown(KeyCode.Escape)) escapePressed = true;
 
             if (escapePressed && _centerPanel != null)
             {
