@@ -3,27 +3,44 @@ using UnityEngine;
 namespace NGO.Networking
 {
     /// <summary>
-    /// Asegura que el objeto sea una instancia única y persista entre escenas.
-    /// Útil para el NetworkManager y managers de lógica global.
+    /// Base para Singletons genéricos basados en MonoBehaviour (Managers de escena, sistemas, UI).
+    /// Utiliza CSingleton como fuente de verdad central.
     /// </summary>
-    public class Singleton : MonoBehaviour
+    public abstract class CSingletonMB<T> : MonoBehaviour where T : CSingletonMB<T>
     {
-        private static Singleton s_Instance;
+        public static T Instance => CSingleton<T>.Instance;
+        public static bool HasInstance => CSingleton<T>.HasInstance;
 
-        private void Awake()
+        [Header("Singleton MB Settings")]
+        [SerializeField] protected bool persistAcrossScenes = true;
+        [SerializeField] protected bool destroyDuplicates = true;
+
+        protected virtual void Awake()
         {
-            // Evitar duplicados si volvemos a la escena inicial
-            if (s_Instance != null && s_Instance != this)
+            T current = CSingleton<T>.Instance;
+
+            if (current != null && current != this)
             {
-                Destroy(gameObject);
-                return;
+                if (destroyDuplicates)
+                {
+                    Debug.LogWarning($"[CSingletonMB] Instancia duplicada de {typeof(T).Name} encontrada en {gameObject.name}. Destruyendo.");
+                    Destroy(gameObject);
+                    return;
+                }
             }
 
-            s_Instance = this;
+            CSingleton<T>.Instance = this as T;
 
-            // Asegurar que sea raíz y persista
-            transform.SetParent(null);
-            DontDestroyOnLoad(gameObject);
+            if (persistAcrossScenes)
+            {
+                transform.SetParent(null);
+                DontDestroyOnLoad(gameObject);
+            }
+        }
+
+        protected virtual void OnDestroy()
+        {
+            CSingleton<T>.UnregisterInstance(this as T);
         }
     }
 }
