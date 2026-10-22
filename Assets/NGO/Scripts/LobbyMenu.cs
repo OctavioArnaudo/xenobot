@@ -216,8 +216,8 @@ namespace NGO.Networking
             sRt.sizeDelta = new Vector2(650, 35);
 
             // Action Buttons
-            _startButton = CreateCyberButton("StartMatchButton", _centerPanel.transform, "START MATCH NOW", new Vector2(0, 10), neonCyan, OnClickStartMatch);
-            CreateCyberButton("LeaveButton", _centerPanel.transform, "LEAVE LOBBY", new Vector2(0, -75), neonMagenta, OnClickLeaveLobby);
+            _startButton = CreateCyberButton("StartMatchButton", _centerPanel.transform, "START", new Vector2(0, 10), neonCyan, OnClickStartMatch);
+            CreateCyberButton("LeaveButton", _centerPanel.transform, "LEAVE", new Vector2(0, -75), neonMagenta, OnClickLeaveLobby);
 
             // Initially show center panel
             _centerPanel.SetActive(true);

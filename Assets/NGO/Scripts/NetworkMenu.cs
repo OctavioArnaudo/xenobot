@@ -31,14 +31,12 @@ namespace NGO.Networking
         // Host Inputs & Displays
         private TMP_InputField _hostNameInput;
         private TMP_InputField _hostMaxPlayersInput;
-        private TMP_InputField _hostPortInput;
         private TMP_Text _hostCodeDisplay;
 
         // Join Inputs
         private TMP_InputField _joinNameInput;
         private TMP_InputField _joinCodeInput;
         private TMP_InputField _joinIpInput;
-        private TMP_InputField _joinPortInput;
 
         private void Awake()
         {
@@ -100,17 +98,15 @@ namespace NGO.Networking
 
             int maxPlayers = LocalUserConfig.MaxPlayers;
             ushort port = 7777;
-            if (_hostPortInput != null && ushort.TryParse(_hostPortInput.text, out ushort parsedPort)) port = parsedPort;
 
             if (_hostCodeDisplay != null) _hostCodeDisplay.text = "RELAY: STARTING...";
 
-            // Intentar iniciar vía Relay de Unity Services
             string joinCode = await RelayManager.CreateRelay(maxPlayers);
 
             if (!string.IsNullOrEmpty(joinCode))
             {
                 LocalUserConfig.LastJoinCode = joinCode;
-                if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"RELAY CODE: {joinCode}";
+                if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"CODE: {joinCode}";
 
                 if (NetworkingService.StartHost(isRelay: true))
                 {
@@ -119,8 +115,7 @@ namespace NGO.Networking
                 }
             }
 
-            // Fallback automático a Host por IP Directa si Relay falla o no hay internet
-            if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"DIRECT HOST (PORT {port})";
+            if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"ip:port {GetLocalIPAddress()}:{port}";
             if (NetworkingService.StartHost(port, isRelay: false))
             {
                 LoadLobbyScene();
@@ -133,11 +128,8 @@ namespace NGO.Networking
             NetworkingService.Shutdown();
 
             string roomCode = _joinCodeInput != null ? _joinCodeInput.text.Trim().ToUpper() : "";
-            string ip = _joinIpInput != null ? _joinIpInput.text.Trim() : "";
-            ushort port = 7777;
-            if (_joinPortInput != null && ushort.TryParse(_joinPortInput.text, out ushort parsedPort)) port = parsedPort;
+            string ipPortRaw = _joinIpInput != null ? _joinIpInput.text.Trim() : "";
 
-            // 1. Priorizar Código de Sala Relay si fue proporcionado
             if (!string.IsNullOrEmpty(roomCode))
             {
                 bool success = await RelayManager.JoinRelay(roomCode);
@@ -148,8 +140,23 @@ namespace NGO.Networking
                 }
             }
 
-            // 2. Conectar por IP Directa / Puerto
-            if (string.IsNullOrEmpty(ip)) ip = "127.0.0.1";
+            string ip = "127.0.0.1";
+            ushort port = 7777;
+
+            if (!string.IsNullOrEmpty(ipPortRaw))
+            {
+                if (ipPortRaw.Contains(":"))
+                {
+                    string[] parts = ipPortRaw.Split(':');
+                    if (parts.Length > 0 && !string.IsNullOrEmpty(parts[0])) ip = parts[0].Trim();
+                    if (parts.Length > 1 && ushort.TryParse(parts[1].Trim(), out ushort parsedPort)) port = parsedPort;
+                }
+                else
+                {
+                    ip = ipPortRaw;
+                }
+            }
+
             SetUnityTransportAddress(ip, port);
             NetworkingService.StartClient(ip, port, isRelay: false);
         }
@@ -222,13 +229,13 @@ namespace NGO.Networking
             CreateDecoration("[ONLINE_SERVICE]", _mainPanelGo.transform, new Vector2(260, 240), 20, neonMagenta);
             CreateHeader("MULTIPLAYER", "NETCODE PROTOCOL TERMINAL", _mainPanelGo.transform, new Vector2(0, 180));
 
-            CreateCyberButton("HostMatchButton", _mainPanelGo.transform, "CREATE HOST MATCH", new Vector2(0, 30), neonCyan, ShowHostSubpanel);
-            CreateCyberButton("JoinMatchButton", _mainPanelGo.transform, "JOIN ROOM MATCH", new Vector2(0, -50), neonYellow, ShowJoinSubpanel);
-            CreateCyberButton("BackButton", _mainPanelGo.transform, "BACK TO MAIN MENU", new Vector2(0, -130), neonMagenta, GoBackToMainMenuScene);
+            CreateCyberButton("HostMatchButton", _mainPanelGo.transform, "host", new Vector2(0, 30), neonCyan, ShowHostSubpanel);
+            CreateCyberButton("JoinMatchButton", _mainPanelGo.transform, "join", new Vector2(0, -50), neonYellow, ShowJoinSubpanel);
+            CreateCyberButton("BackButton", _mainPanelGo.transform, "back", new Vector2(0, -130), neonMagenta, GoBackToMainMenuScene);
 
             // 2. HOST SUBPANEL
             _hostPanelGo = CreatePanel("HostPanel", _canvasRoot.transform, new Vector2(850, 620));
-            CreateHeader("HOST PROTOCOL", "// CREATE RELAY OR DIRECT IP MATCH", _hostPanelGo.transform, new Vector2(0, 210));
+            CreateHeader("HOST PROTOCOL", "// create match", _hostPanelGo.transform, new Vector2(0, 210));
 
             _hostNameInput = CreateLabeledInput("HostNameInput", _hostPanelGo.transform, "PLAYER NAME:", LocalUserConfig.UserName, new Vector2(0, 100));
             _hostMaxPlayersInput = CreateLabeledInput("HostMaxPlayersInput", _hostPanelGo.transform, "MAX PLAYERS:", LocalUserConfig.MaxPlayers.ToString(), new Vector2(0, 25));
@@ -245,7 +252,7 @@ namespace NGO.Networking
             GameObject cbTxtGo = new GameObject("CodeText", typeof(RectTransform));
             cbTxtGo.transform.SetParent(codeBox.transform, false);
             _hostCodeDisplay = cbTxtGo.AddComponent<TextMeshProUGUI>();
-            _hostCodeDisplay.text = $"LOCAL IP: {GetLocalIPAddress()}   |   CODE: READY";
+            _hostCodeDisplay.text = $"ip:port {GetLocalIPAddress()}:7777";
             _hostCodeDisplay.fontSize = 20;
             _hostCodeDisplay.alignment = TextAlignmentOptions.Center;
             _hostCodeDisplay.color = neonYellow;
@@ -253,20 +260,27 @@ namespace NGO.Networking
             cbTxtRt.anchorMin = Vector2.zero;
             cbTxtRt.anchorMax = Vector2.one;
 
-            CreateCyberButton("StartHostMatchBtn", _hostPanelGo.transform, "START MATCH", new Vector2(0, -125), neonCyan, OnClickStartHostMatch);
-            CreateCyberButton("HostBackBtn", _hostPanelGo.transform, "BACK", new Vector2(0, -195), neonMagenta, ShowMainSubpanel);
+            CreateCyberButton("StartHostMatchBtn", _hostPanelGo.transform, "match", new Vector2(0, -125), neonCyan, OnClickStartHostMatch);
+            CreateCyberButton("HostBackBtn", _hostPanelGo.transform, "back", new Vector2(0, -195), neonMagenta, ShowMainSubpanel);
 
             // 3. JOIN SUBPANEL
-            _joinPanelGo = CreatePanel("JoinPanel", _canvasRoot.transform, new Vector2(850, 680));
-            CreateHeader("JOIN PROTOCOL", "// CONNECT TO RELAY CODE OR DIRECT IP", _joinPanelGo.transform, new Vector2(0, 240));
+            _joinPanelGo = CreatePanel("JoinPanel", _canvasRoot.transform, new Vector2(850, 620));
+            CreateHeader("JOIN PROTOCOL", "// connect match", _joinPanelGo.transform, new Vector2(0, 210));
 
-            _joinNameInput = CreateLabeledInput("JoinNameInput", _joinPanelGo.transform, "PLAYER NAME:", LocalUserConfig.UserName, new Vector2(0, 120));
-            _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "CODE:", "", new Vector2(0, 45));
-            _joinIpInput = CreateLabeledInput("JoinIPInput", _joinPanelGo.transform, "IP:", "127.0.0.1", new Vector2(0, -30));
-            _joinPortInput = CreateLabeledInput("JoinPortInput", _joinPanelGo.transform, "PORT:", "7777", new Vector2(0, -105));
+            _joinNameInput = CreateLabeledInput("JoinNameInput", _joinPanelGo.transform, "PLAYER NAME:", LocalUserConfig.UserName, new Vector2(0, 100));
+            _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "CODE:", "", new Vector2(0, 25));
+            if (_joinCodeInput != null)
+            {
+                _joinCodeInput.onValueChanged.AddListener((val) =>
+                {
+                    if (_joinCodeInput.text != val.ToUpper())
+                        _joinCodeInput.text = val.ToUpper();
+                });
+            }
+            _joinIpInput = CreateLabeledInput("JoinIPInput", _joinPanelGo.transform, "IP:", "127.0.0.1:7777", new Vector2(0, -50));
 
-            CreateCyberButton("ConnectClientBtn", _joinPanelGo.transform, "CONNECT MATCH", new Vector2(0, -185), neonCyan, OnClickSmartConnectClient);
-            CreateCyberButton("JoinBackBtn", _joinPanelGo.transform, "BACK", new Vector2(0, -260), neonMagenta, ShowMainSubpanel);
+            CreateCyberButton("ConnectClientBtn", _joinPanelGo.transform, "match", new Vector2(0, -125), neonCyan, OnClickSmartConnectClient);
+            CreateCyberButton("JoinBackBtn", _joinPanelGo.transform, "back", new Vector2(0, -195), neonMagenta, ShowMainSubpanel);
         }
 
         private GameObject CreatePanel(string name, Transform parent, Vector2 size)
