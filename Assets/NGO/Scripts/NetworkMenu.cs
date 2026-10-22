@@ -103,7 +103,15 @@ namespace NGO.Networking
             }
 
             ushort port = 7777;
-            if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"IP:PORT {GetLocalIPAddress()}:{port}";
+            string code = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "");
+            if (string.IsNullOrEmpty(code))
+            {
+                code = "XENO" + Random.Range(10, 99);
+                PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), code);
+                PlayerPrefs.Save();
+            }
+
+            if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"IP:PORT {GetLocalIPAddress()}:{port}   |   CODE: {code}";
 
             SetUnityTransportAddress("127.0.0.1", port);
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.StartHost())

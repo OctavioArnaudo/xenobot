@@ -51,7 +51,15 @@ namespace NGO.Networking
             {
                 m_TimeRemaining.Value = 300f;
                 m_MaxPlayers.Value = PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 1);
-                m_JoinCode.Value = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "").ToUpper();
+
+                string code = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "");
+                if (string.IsNullOrEmpty(code))
+                {
+                    code = "XENO" + Random.Range(10, 99);
+                    PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), code);
+                    PlayerPrefs.Save();
+                }
+                m_JoinCode.Value = code.ToUpper();
             }
 
             BuildCyberpunkUI();
