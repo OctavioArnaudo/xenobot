@@ -95,6 +95,7 @@ namespace NGO.Networking
         public async void OnClickStartHostMatch()
         {
             SaveHostSettings();
+            NetworkingService.Shutdown();
 
             int maxPlayers = LocalUserConfig.MaxPlayers;
             ushort port = 7777;
@@ -115,7 +116,7 @@ namespace NGO.Networking
                 }
             }
 
-            if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"ip:port {GetLocalIPAddress()}:{port}";
+            if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"IP:PORT {GetLocalIPAddress()}:{port}";
             if (NetworkingService.StartHost(port, isRelay: false))
             {
                 LoadLobbyScene();
@@ -175,13 +176,13 @@ namespace NGO.Networking
 
         private void LoadLobbyScene()
         {
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.SceneManager != null)
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer && NetworkManager.Singleton.SceneManager != null)
             {
                 NetworkManager.Singleton.SceneManager.LoadScene(lobbySceneName, LoadSceneMode.Single);
             }
             else
             {
-                SceneManager.LoadScene(lobbySceneName);
+                UnityEngine.SceneManagement.SceneManager.LoadScene(lobbySceneName);
             }
         }
 
