@@ -90,6 +90,33 @@ namespace NGO.Networking
             Instance = this;
         }
 
+        private void OnEnable()
+        {
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnClientConnectedCallback += HandleClientConnected;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.OnClientConnectedCallback -= HandleClientConnected;
+            }
+        }
+
+        private void HandleClientConnected(ulong clientId)
+        {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsClient && !NetworkManager.Singleton.IsServer)
+            {
+                if (NetworkManager.Singleton.LocalClientId == clientId)
+                {
+                    LoadLobbyScene();
+                }
+            }
+        }
+
         private void Start()
         {
             Cursor.visible = true;
@@ -291,7 +318,8 @@ namespace NGO.Networking
         {
             if (NetworkManager.Singleton != null)
             {
-                var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                var transport = NetworkManager.Singleton.GetComponent<UnityTransport>()
+                             ?? NetworkManager.Singleton.NetworkConfig.NetworkTransport as UnityTransport;
                 if (transport != null)
                 {
                     transport.SetConnectionData(ip, port);
