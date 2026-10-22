@@ -265,7 +265,7 @@ namespace NGO.Networking
 
             AddActiveCode(code);
 
-            if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"PLAYERS: 1 SERVER: 0";
+            if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"PLAYERS: 1 SERVER: {GetUgsStatus()}";
 
             SetUnityTransportAddress(ip, port);
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.StartHost())
@@ -461,7 +461,7 @@ namespace NGO.Networking
             GameObject cbTxtGo = new GameObject("CodeText", typeof(RectTransform));
             cbTxtGo.transform.SetParent(codeBox.transform, false);
             _hostCodeDisplay = cbTxtGo.AddComponent<TextMeshProUGUI>();
-            _hostCodeDisplay.text = $"IP:PORT {GetLocalIPAddress()}:7777   |   CODE: {defaultCode}";
+            _hostCodeDisplay.text = $"PLAYERS: 1 SERVER: {GetUgsStatus()}";
             _hostCodeDisplay.fontSize = 20;
             _hostCodeDisplay.alignment = TextAlignmentOptions.Center;
             _hostCodeDisplay.color = neonYellow;
