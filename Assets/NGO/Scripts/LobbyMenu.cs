@@ -87,25 +87,25 @@ namespace NGO.Networking
             if (_timerText != null)
             {
                 float t = Mathf.Max(0, m_TimeRemaining.Value);
-                _timerText.text = string.Format("TIME: {0:00}:{1:00}", Mathf.FloorToInt(t / 60), Mathf.FloorToInt(t % 60));
+                _timerText.text = string.Format("TIME:\n{0:00}:{1:00}", Mathf.FloorToInt(t / 60), Mathf.FloorToInt(t % 60));
             }
 
             if (_playersText != null)
             {
-                _playersText.text = string.Format("PLAYERS: {0:00}/{1:00}", NetworkManager.Singleton.ConnectedClientsIds.Count, m_MaxPlayers.Value);
+                _playersText.text = string.Format("PLAYERS:\n{0:00}/{1:00}", NetworkManager.Singleton.ConnectedClientsIds.Count, m_MaxPlayers.Value);
             }
 
             if (_codeText != null)
             {
                 string code = m_JoinCode.Value.ToString();
-                _codeText.text = string.IsNullOrEmpty(code) ? "CODE: DIRECT IP" : $"CODE: {code}";
+                _codeText.text = string.IsNullOrEmpty(code) ? "CODE:\nDIRECT IP" : $"CODE:\n{code}";
             }
 
             if (_ipPortText != null)
             {
                 var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
                 ushort port = transport != null ? transport.ConnectionData.Port : (ushort)7777;
-                _ipPortText.text = $"IP: {GetLocalIPAddress()}:{port}";
+                _ipPortText.text = $"IP:PORT:\n{GetLocalIPAddress()}:{port}";
             }
 
             if (_startButton != null)
@@ -165,18 +165,18 @@ namespace NGO.Networking
 
             _canvasRoot.AddComponent<GraphicRaycaster>();
 
-            // 1. CORNER HUD ELEMENTS (ALWAYS VISIBLE)
+            // 1. CORNER HUD ELEMENTS (ALWAYS VISIBLE - 2 LINES)
             // Top-Left: Timer
-            _timerText = CreateCornerHudBox("TimerHud", _canvasRoot.transform, "TIME: 05:00", new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(30, -30), neonCyan);
+            _timerText = CreateCornerHudBox("TimerHud", _canvasRoot.transform, "TIME:\n05:00", new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(30, -30), neonCyan);
 
             // Top-Right: Players
-            _playersText = CreateCornerHudBox("PlayersHud", _canvasRoot.transform, "PLAYERS: 01/04", new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -30), neonYellow);
+            _playersText = CreateCornerHudBox("PlayersHud", _canvasRoot.transform, "PLAYERS:\n01/04", new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -30), neonYellow);
 
             // Bottom-Left: IP:Port
-            _ipPortText = CreateCornerHudBox("IpPortHud", _canvasRoot.transform, "IP: 127.0.0.1:7777", new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 0), new Vector2(30, 30), neonCyan);
+            _ipPortText = CreateCornerHudBox("IpPortHud", _canvasRoot.transform, "IP:PORT:\n127.0.0.1:7777", new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 0), new Vector2(30, 30), neonCyan);
 
             // Bottom-Right: Code
-            _codeText = CreateCornerHudBox("CodeHud", _canvasRoot.transform, "CODE: READY", new Vector2(1, 0), new Vector2(1, 0), new Vector2(1, 0), new Vector2(-30, 30), neonMagenta);
+            _codeText = CreateCornerHudBox("CodeHud", _canvasRoot.transform, "CODE:\nREADY", new Vector2(1, 0), new Vector2(1, 0), new Vector2(1, 0), new Vector2(-30, 30), neonMagenta);
 
             // 2. CENTER PANEL (TOGGLED VIA ESC KEY)
             _centerPanel = new GameObject("CenterPanel", typeof(RectTransform));
@@ -206,8 +206,8 @@ namespace NGO.Networking
             GameObject sub = new GameObject("Subtitle", typeof(RectTransform));
             sub.transform.SetParent(_centerPanel.transform, false);
             var sTxt = sub.AddComponent<TextMeshProUGUI>();
-            sTxt.text = "// MATCH PREPARATION MENU [ESC TO TOGGLE]";
-            sTxt.fontSize = 18;
+            sTxt.text = "// PREPARATION";
+            sTxt.fontSize = 20;
             sTxt.alignment = TextAlignmentOptions.Center;
             sTxt.color = neonCyan;
             var sRt = sub.GetComponent<RectTransform>();
@@ -235,7 +235,7 @@ namespace NGO.Networking
             bRt.anchorMax = anchorMax;
             bRt.pivot = pivot;
             bRt.anchoredPosition = pos;
-            bRt.sizeDelta = new Vector2(320, 50);
+            bRt.sizeDelta = new Vector2(280, 65);
             var outline = box.AddComponent<Outline>();
             outline.effectColor = accent;
 
@@ -243,7 +243,7 @@ namespace NGO.Networking
             txtGo.transform.SetParent(box.transform, false);
             var txt = txtGo.AddComponent<TextMeshProUGUI>();
             txt.text = defaultText;
-            txt.fontSize = 20;
+            txt.fontSize = 18;
             txt.alignment = TextAlignmentOptions.Center;
             txt.fontStyle = FontStyles.Bold;
             txt.color = Color.white;
