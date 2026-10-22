@@ -222,7 +222,27 @@ namespace NGO.Networking
             CreateHeader("HOST PROTOCOL", "// CREATE MATCH", _hostPanelGo.transform, new Vector2(0, 210));
 
             _hostNameInput = CreateLabeledInput("HostNameInput", _hostPanelGo.transform, "PLAYER NAME:", PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player"), new Vector2(0, 100));
+            if (_hostNameInput != null)
+            {
+                _hostNameInput.onValueChanged.AddListener((val) =>
+                {
+                    PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), val);
+                    PlayerPrefs.Save();
+                });
+            }
+
             _hostMaxPlayersInput = CreateLabeledInput("HostMaxPlayersInput", _hostPanelGo.transform, "MAX PLAYERS:", PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 1).ToString(), new Vector2(0, 25));
+            if (_hostMaxPlayersInput != null)
+            {
+                _hostMaxPlayersInput.onValueChanged.AddListener((val) =>
+                {
+                    if (int.TryParse(val, out int max))
+                    {
+                        PlayerPrefs.SetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), max);
+                        PlayerPrefs.Save();
+                    }
+                });
+            }
 
             GameObject codeBox = new GameObject("CodeBox", typeof(RectTransform));
             codeBox.transform.SetParent(_hostPanelGo.transform, false);
@@ -252,6 +272,14 @@ namespace NGO.Networking
             CreateHeader("JOIN PROTOCOL", "// CONNECT MATCH", _joinPanelGo.transform, new Vector2(0, 210));
 
             _joinNameInput = CreateLabeledInput("JoinNameInput", _joinPanelGo.transform, "PLAYER NAME:", PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player"), new Vector2(0, 100));
+            if (_joinNameInput != null)
+            {
+                _joinNameInput.onValueChanged.AddListener((val) =>
+                {
+                    PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), val);
+                    PlayerPrefs.Save();
+                });
+            }
             _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "CODE:", "", new Vector2(0, 25));
             if (_joinCodeInput != null)
             {
