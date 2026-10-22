@@ -245,7 +245,7 @@ namespace Combating.Scripts
             else
             {
                 // Offline/Local mode: Try config first, then default
-                dName = LocalUserConfig.UserName;
+                dName = PlayerPrefs.GetString("Xenobot_UserName", "Player");
             }
 
             if (string.IsNullOrEmpty(dName)) dName = "PLAYER";

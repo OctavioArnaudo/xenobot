@@ -116,7 +116,10 @@ namespace Menus.Scripts
         {
             Time.timeScale = 1f;
             _isPaused = false;
-            NetworkingService.Shutdown();
+            if (Unity.Netcode.NetworkManager.Singleton != null && Unity.Netcode.NetworkManager.Singleton.IsListening)
+            {
+                Unity.Netcode.NetworkManager.Singleton.Shutdown();
+            }
             SceneManager.LoadScene(!string.IsNullOrEmpty(levelsMenuScene) ? levelsMenuScene : mainMenuSceneName);
         }
 

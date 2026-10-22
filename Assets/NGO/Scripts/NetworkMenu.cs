@@ -94,56 +94,33 @@ namespace NGO.Networking
             PlayerPrefs.Save();
         }
 
-        public async void OnClickStartHostMatch()
+        public void OnClickStartHostMatch()
         {
             SaveHostSettings();
-            NetworkingService.Shutdown();
-
-            int maxPlayers = PlayerPrefs.GetInt("Xenobot_MaxPlayers", 4);
-            ushort port = 7777;
-
-            if (_hostCodeDisplay != null) _hostCodeDisplay.text = "RELAY: STARTING...";
-
-            string joinCode = await RelayManager.CreateRelay(maxPlayers);
-
-            if (!string.IsNullOrEmpty(joinCode))
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
-                PlayerPrefs.SetString("Xenobot_LastJoinCode", joinCode);
-                PlayerPrefs.Save();
-                if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"CODE: {joinCode}";
-
-                if (NetworkingService.StartHost(isRelay: true))
-                {
-                    LoadLobbyScene();
-                    return;
-                }
+                NetworkManager.Singleton.Shutdown();
             }
 
+            ushort port = 7777;
             if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"IP:PORT {GetLocalIPAddress()}:{port}";
-            if (NetworkingService.StartHost(port, isRelay: false))
+
+            SetUnityTransportAddress("127.0.0.1", port);
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.StartHost())
             {
                 LoadLobbyScene();
             }
         }
 
-        public async void OnClickSmartConnectClient()
+        public void OnClickSmartConnectClient()
         {
             SaveJoinSettings();
-            NetworkingService.Shutdown();
-
-            string roomCode = _joinCodeInput != null ? _joinCodeInput.text.Trim().ToUpper() : "";
-            string ipPortRaw = _joinIpInput != null ? _joinIpInput.text.Trim() : "";
-
-            if (!string.IsNullOrEmpty(roomCode))
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
-                bool success = await RelayManager.JoinRelay(roomCode);
-                if (success)
-                {
-                    NetworkingService.StartClient(isRelay: true);
-                    return;
-                }
+                NetworkManager.Singleton.Shutdown();
             }
 
+            string ipPortRaw = _joinIpInput != null ? _joinIpInput.text.Trim() : "";
             string ip = "127.0.0.1";
             ushort port = 7777;
 
@@ -162,7 +139,10 @@ namespace NGO.Networking
             }
 
             SetUnityTransportAddress(ip, port);
-            NetworkingService.StartClient(ip, port, isRelay: false);
+            if (NetworkManager.Singleton != null)
+            {
+                NetworkManager.Singleton.StartClient();
+            }
         }
 
         private void SetUnityTransportAddress(string ip, ushort port)
