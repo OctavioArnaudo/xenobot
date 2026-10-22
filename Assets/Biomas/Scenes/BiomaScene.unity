@@ -590,6 +590,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a2745b9620eca9f4d8fe721d37791c52, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DayNightCycle
+  persistAcrossScenes: 1
+  destroyDuplicates: 1
   dayDurationSeconds: 20
   startHour: 8
   maxSunIntensity: 1.2
