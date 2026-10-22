@@ -203,7 +203,7 @@ namespace NGO.Networking
             outline.effectColor = accent;
             outline.effectDistance = new Vector2(2, 2);
 
-            GameObject txtGo = new GameObject("Text");
+            GameObject txtGo = new GameObject("Text", typeof(RectTransform));
             txtGo.transform.SetParent(btn.transform, false);
             var txt = txtGo.AddComponent<TextMeshProUGUI>();
             txt.text = label;
