@@ -190,7 +190,7 @@ namespace Menus.Scripts
             sRt.sizeDelta = new Vector2(750, 40);
 
             // Session Stats Info
-            string playerName = LocalUserConfig.UserName;
+            string playerName = PlayerPrefs.GetString("Xenobot_UserName", "Player");
             string currentScene = SceneManager.GetActiveScene().name;
             float timeTaken = LevelsMenu.ultimoTiempoSession;
             string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
