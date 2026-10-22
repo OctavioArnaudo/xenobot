@@ -160,9 +160,13 @@ namespace NGO.Networking
                 }
             }
 
-            if (_hostCodeDisplay != null && NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            if (_hostCodeDisplay != null)
             {
-                int playersCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
+                int playersCount = 1;
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+                {
+                    playersCount = Mathf.Max(1, NetworkManager.Singleton.ConnectedClientsIds.Count);
+                }
                 string ugsStatus = GetUgsStatus();
                 _hostCodeDisplay.text = $"PLAYERS: {playersCount} SERVER: {ugsStatus}";
             }
