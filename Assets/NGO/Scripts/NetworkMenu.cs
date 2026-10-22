@@ -181,7 +181,7 @@ namespace NGO.Networking
                 int playersCount = 1;
                 if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
                 {
-                    playersCount = Mathf.Max(1, NetworkManager.Singleton.ConnectedClientsIds.Count);
+                    playersCount = Mathf.Max(1, NetworkManager.Singleton.ConnectedClients.Count);
                 }
                 string ugsStatus = GetUgsStatus();
                 _hostCodeDisplay.text = $"PLAYERS: {playersCount} SERVER: {ugsStatus}";
