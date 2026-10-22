@@ -107,7 +107,7 @@ namespace NGO.Networking
                 var codes = GetActiveCodes();
                 if (codes == null || codes.Count == 0)
                 {
-                    _joinCodeDisplay.text = "NO ACTIVE CODES";
+                    _joinCodeDisplay.text = "NO ACTIVE ROOMS";
                 }
                 else
                 {
@@ -249,9 +249,9 @@ namespace NGO.Networking
             }
 
             SetUnityTransportAddress(ip, port);
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.StartClient())
+            if (NetworkManager.Singleton != null)
             {
-                LoadLobbyScene();
+                NetworkManager.Singleton.StartClient();
             }
         }
 
