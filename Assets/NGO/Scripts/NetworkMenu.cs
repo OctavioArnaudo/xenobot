@@ -227,26 +227,25 @@ namespace NGO.Networking
             CreateCyberButton("BackButton", _mainPanelGo.transform, "BACK TO MAIN MENU", new Vector2(0, -130), neonMagenta, GoBackToMainMenuScene);
 
             // 2. HOST SUBPANEL
-            _hostPanelGo = CreatePanel("HostPanel", _canvasRoot.transform, new Vector2(850, 680));
-            CreateHeader("HOST PROTOCOL", "// CREATE RELAY OR DIRECT IP MATCH", _hostPanelGo.transform, new Vector2(0, 240));
+            _hostPanelGo = CreatePanel("HostPanel", _canvasRoot.transform, new Vector2(850, 620));
+            CreateHeader("HOST PROTOCOL", "// CREATE RELAY OR DIRECT IP MATCH", _hostPanelGo.transform, new Vector2(0, 210));
 
-            _hostNameInput = CreateLabeledInput("HostNameInput", _hostPanelGo.transform, "PLAYER NAME:", LocalUserConfig.UserName, new Vector2(0, 120));
-            _hostMaxPlayersInput = CreateLabeledInput("HostMaxPlayersInput", _hostPanelGo.transform, "MAX PLAYERS:", LocalUserConfig.MaxPlayers.ToString(), new Vector2(0, 45));
-            _hostPortInput = CreateLabeledInput("HostPortInput", _hostPanelGo.transform, "PORT:", "7777", new Vector2(0, -30));
+            _hostNameInput = CreateLabeledInput("HostNameInput", _hostPanelGo.transform, "PLAYER NAME:", LocalUserConfig.UserName, new Vector2(0, 100));
+            _hostMaxPlayersInput = CreateLabeledInput("HostMaxPlayersInput", _hostPanelGo.transform, "MAX PLAYERS:", LocalUserConfig.MaxPlayers.ToString(), new Vector2(0, 25));
 
             GameObject codeBox = new GameObject("CodeBox", typeof(RectTransform));
             codeBox.transform.SetParent(_hostPanelGo.transform, false);
             var cbImg = codeBox.AddComponent<Image>();
             cbImg.color = new Color(0.08f, 0.12f, 0.18f, 0.95f);
             var cbRt = codeBox.GetComponent<RectTransform>();
-            cbRt.anchoredPosition = new Vector2(0, -105);
+            cbRt.anchoredPosition = new Vector2(0, -50);
             cbRt.sizeDelta = new Vector2(550, 45);
             codeBox.AddComponent<Outline>().effectColor = neonYellow;
 
             GameObject cbTxtGo = new GameObject("CodeText", typeof(RectTransform));
             cbTxtGo.transform.SetParent(codeBox.transform, false);
             _hostCodeDisplay = cbTxtGo.AddComponent<TextMeshProUGUI>();
-            _hostCodeDisplay.text = $"LOCAL IP: {GetLocalIPAddress()}   |   RELAY: READY";
+            _hostCodeDisplay.text = $"LOCAL IP: {GetLocalIPAddress()}   |   CODE: READY";
             _hostCodeDisplay.fontSize = 20;
             _hostCodeDisplay.alignment = TextAlignmentOptions.Center;
             _hostCodeDisplay.color = neonYellow;
@@ -254,16 +253,16 @@ namespace NGO.Networking
             cbTxtRt.anchorMin = Vector2.zero;
             cbTxtRt.anchorMax = Vector2.one;
 
-            CreateCyberButton("StartHostMatchBtn", _hostPanelGo.transform, "START MATCH", new Vector2(0, -185), neonCyan, OnClickStartHostMatch);
-            CreateCyberButton("HostBackBtn", _hostPanelGo.transform, "BACK", new Vector2(0, -260), neonMagenta, ShowMainSubpanel);
+            CreateCyberButton("StartHostMatchBtn", _hostPanelGo.transform, "START MATCH", new Vector2(0, -125), neonCyan, OnClickStartHostMatch);
+            CreateCyberButton("HostBackBtn", _hostPanelGo.transform, "BACK", new Vector2(0, -195), neonMagenta, ShowMainSubpanel);
 
             // 3. JOIN SUBPANEL
             _joinPanelGo = CreatePanel("JoinPanel", _canvasRoot.transform, new Vector2(850, 680));
             CreateHeader("JOIN PROTOCOL", "// CONNECT TO RELAY CODE OR DIRECT IP", _joinPanelGo.transform, new Vector2(0, 240));
 
             _joinNameInput = CreateLabeledInput("JoinNameInput", _joinPanelGo.transform, "PLAYER NAME:", LocalUserConfig.UserName, new Vector2(0, 120));
-            _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "RELAY CODE:", "", new Vector2(0, 45));
-            _joinIpInput = CreateLabeledInput("JoinIPInput", _joinPanelGo.transform, "DIRECT IP:", "127.0.0.1", new Vector2(0, -30));
+            _joinCodeInput = CreateLabeledInput("JoinCodeInput", _joinPanelGo.transform, "CODE:", "", new Vector2(0, 45));
+            _joinIpInput = CreateLabeledInput("JoinIPInput", _joinPanelGo.transform, "IP:", "127.0.0.1", new Vector2(0, -30));
             _joinPortInput = CreateLabeledInput("JoinPortInput", _joinPanelGo.transform, "PORT:", "7777", new Vector2(0, -105));
 
             CreateCyberButton("ConnectClientBtn", _joinPanelGo.transform, "CONNECT MATCH", new Vector2(0, -185), neonCyan, OnClickSmartConnectClient);

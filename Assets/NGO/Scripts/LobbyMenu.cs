@@ -5,6 +5,11 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using Unity.Collections;
 using Unity.Netcode.Transports.UTP;
+using System.Net;
+using System.Net.Sockets;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 namespace NGO.Networking
 {
@@ -27,8 +32,10 @@ namespace NGO.Networking
         private NetworkVariable<FixedString32Bytes> m_JoinCode = new NetworkVariable<FixedString32Bytes>("", NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         private GameObject _canvasRoot;
+        private GameObject _centerPanel;
         private TMP_Text _timerText;
         private TMP_Text _playersText;
+        private TMP_Text _ipPortText;
         private TMP_Text _codeText;
         private Button _startButton;
 
@@ -52,6 +59,20 @@ namespace NGO.Networking
 
         private void Update()
         {
+            bool escapePressed = false;
+#if ENABLE_INPUT_SYSTEM
+            if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) escapePressed = true;
+#endif
+            if (!escapePressed && Input.GetKeyDown(KeyCode.Escape)) escapePressed = true;
+
+            if (escapePressed && _centerPanel != null)
+            {
+                bool show = !_centerPanel.activeSelf;
+                _centerPanel.SetActive(show);
+                Cursor.visible = show;
+                Cursor.lockState = show ? CursorLockMode.None : CursorLockMode.Locked;
+            }
+
             if (!IsSpawned || NetworkManager.Singleton == null) return;
 
             if (IsServer && m_TimeRemaining.Value > 0)
@@ -67,7 +88,7 @@ namespace NGO.Networking
             if (_timerText != null)
             {
                 float t = Mathf.Max(0, m_TimeRemaining.Value);
-                _timerText.text = string.Format("TIMER: {0:00}:{1:00}", Mathf.FloorToInt(t / 60), Mathf.FloorToInt(t % 60));
+                _timerText.text = string.Format("TIME: {0:00}:{1:00}", Mathf.FloorToInt(t / 60), Mathf.FloorToInt(t % 60));
             }
 
             if (_playersText != null)
@@ -78,7 +99,14 @@ namespace NGO.Networking
             if (_codeText != null)
             {
                 string code = m_JoinCode.Value.ToString();
-                _codeText.text = string.IsNullOrEmpty(code) ? "RELAY: DIRECT IP" : $"RELAY CODE: {code}";
+                _codeText.text = string.IsNullOrEmpty(code) ? "CODE: DIRECT IP" : $"CODE: {code}";
+            }
+
+            if (_ipPortText != null)
+            {
+                var transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+                ushort port = transport != null ? transport.ConnectionData.Port : (ushort)7777;
+                _ipPortText.text = $"IP: {GetLocalIPAddress()}:{port}";
             }
 
             if (_startButton != null)
@@ -109,6 +137,20 @@ namespace NGO.Networking
             SceneManager.LoadScene(!string.IsNullOrEmpty(networkSceneName) ? networkSceneName : "NetworkScene");
         }
 
+        private string GetLocalIPAddress()
+        {
+            try
+            {
+                var host = Dns.GetHostEntry(Dns.GetHostName());
+                foreach (var ip in host.AddressList)
+                {
+                    if (ip.AddressFamily == AddressFamily.InterNetwork) return ip.ToString();
+                }
+            }
+            catch { }
+            return "127.0.0.1";
+        }
+
         private void BuildCyberpunkUI()
         {
             if (_canvasRoot != null) Destroy(_canvasRoot);
@@ -124,52 +166,77 @@ namespace NGO.Networking
 
             _canvasRoot.AddComponent<GraphicRaycaster>();
 
-            // Dark Panel
-            GameObject panel = new GameObject("Panel", typeof(RectTransform));
-            panel.transform.SetParent(_canvasRoot.transform, false);
-            var pImg = panel.AddComponent<Image>();
+            // 1. CORNER HUD ELEMENTS (ALWAYS VISIBLE)
+            // Top-Left: Timer
+            _timerText = CreateCornerHudBox("TimerHud", _canvasRoot.transform, "TIME: 05:00", new Vector2(0, 1), new Vector2(0, 1), new Vector2(0, 1), new Vector2(30, -30), neonCyan);
+
+            // Top-Right: Players
+            _playersText = CreateCornerHudBox("PlayersHud", _canvasRoot.transform, "PLAYERS: 01/04", new Vector2(1, 1), new Vector2(1, 1), new Vector2(1, 1), new Vector2(-30, -30), neonYellow);
+
+            // Bottom-Left: IP:Port
+            _ipPortText = CreateCornerHudBox("IpPortHud", _canvasRoot.transform, "IP: 127.0.0.1:7777", new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 0), new Vector2(30, 30), neonCyan);
+
+            // Bottom-Right: Code
+            _codeText = CreateCornerHudBox("CodeHud", _canvasRoot.transform, "CODE: READY", new Vector2(1, 0), new Vector2(1, 0), new Vector2(1, 0), new Vector2(-30, 30), neonMagenta);
+
+            // 2. CENTER PANEL (TOGGLED VIA ESC KEY)
+            _centerPanel = new GameObject("CenterPanel", typeof(RectTransform));
+            _centerPanel.transform.SetParent(_canvasRoot.transform, false);
+            var pImg = _centerPanel.AddComponent<Image>();
             pImg.color = panelColor;
-            var pRt = panel.GetComponent<RectTransform>();
-            pRt.sizeDelta = new Vector2(800, 600);
-            var outline = panel.AddComponent<Outline>();
+            var pRt = _centerPanel.GetComponent<RectTransform>();
+            pRt.sizeDelta = new Vector2(750, 520);
+            var outline = _centerPanel.AddComponent<Outline>();
             outline.effectColor = neonCyan;
             outline.effectDistance = new Vector2(3, 3);
 
             // Title
             GameObject title = new GameObject("Title", typeof(RectTransform));
-            title.transform.SetParent(panel.transform, false);
+            title.transform.SetParent(_centerPanel.transform, false);
             var tTxt = title.AddComponent<TextMeshProUGUI>();
             tTxt.text = "LOBBY WAITROOM";
-            tTxt.fontSize = 60;
+            tTxt.fontSize = 54;
             tTxt.alignment = TextAlignmentOptions.Center;
             tTxt.fontStyle = FontStyles.Bold;
             tTxt.color = Color.white;
             var tRt = title.GetComponent<RectTransform>();
-            tRt.anchoredPosition = new Vector2(0, 210);
-            tRt.sizeDelta = new Vector2(700, 80);
+            tRt.anchoredPosition = new Vector2(0, 170);
+            tRt.sizeDelta = new Vector2(650, 70);
 
-            // Info Displays
-            _timerText = CreateDisplayBox("TimerBox", panel.transform, "TIMER: 05:00", new Vector2(0, 120), neonCyan);
-            _playersText = CreateDisplayBox("PlayersBox", panel.transform, "PLAYERS: 01/04", new Vector2(0, 40), neonYellow);
-            _codeText = CreateDisplayBox("CodeBox", panel.transform, "RELAY CODE: READY", new Vector2(0, -40), neonMagenta);
+            // Subtitle
+            GameObject sub = new GameObject("Subtitle", typeof(RectTransform));
+            sub.transform.SetParent(_centerPanel.transform, false);
+            var sTxt = sub.AddComponent<TextMeshProUGUI>();
+            sTxt.text = "// MATCH PREPARATION MENU [ESC TO TOGGLE]";
+            sTxt.fontSize = 18;
+            sTxt.alignment = TextAlignmentOptions.Center;
+            sTxt.color = neonCyan;
+            var sRt = sub.GetComponent<RectTransform>();
+            sRt.anchoredPosition = new Vector2(0, 115);
+            sRt.sizeDelta = new Vector2(650, 35);
 
             // Action Buttons
-            _startButton = CreateCyberButton("StartMatchButton", panel.transform, "START MATCH NOW", new Vector2(0, -130), neonCyan, OnClickStartMatch);
-            CreateCyberButton("LeaveButton", panel.transform, "LEAVE LOBBY", new Vector2(0, -210), neonMagenta, OnClickLeaveLobby);
+            _startButton = CreateCyberButton("StartMatchButton", _centerPanel.transform, "START MATCH NOW", new Vector2(0, 10), neonCyan, OnClickStartMatch);
+            CreateCyberButton("LeaveButton", _centerPanel.transform, "LEAVE LOBBY", new Vector2(0, -75), neonMagenta, OnClickLeaveLobby);
 
+            // Initially show center panel
+            _centerPanel.SetActive(true);
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
         }
 
-        private TMP_Text CreateDisplayBox(string name, Transform parent, string defaultText, Vector2 pos, Color accent)
+        private TMP_Text CreateCornerHudBox(string name, Transform parent, string defaultText, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Color accent)
         {
             GameObject box = new GameObject(name, typeof(RectTransform));
             box.transform.SetParent(parent, false);
             var img = box.AddComponent<Image>();
-            img.color = new Color(0.08f, 0.12f, 0.18f, 0.95f);
+            img.color = new Color(0.04f, 0.08f, 0.12f, 0.90f);
             var bRt = box.GetComponent<RectTransform>();
+            bRt.anchorMin = anchorMin;
+            bRt.anchorMax = anchorMax;
+            bRt.pivot = pivot;
             bRt.anchoredPosition = pos;
-            bRt.sizeDelta = new Vector2(550, 55);
+            bRt.sizeDelta = new Vector2(320, 50);
             var outline = box.AddComponent<Outline>();
             outline.effectColor = accent;
 
@@ -177,7 +244,7 @@ namespace NGO.Networking
             txtGo.transform.SetParent(box.transform, false);
             var txt = txtGo.AddComponent<TextMeshProUGUI>();
             txt.text = defaultText;
-            txt.fontSize = 24;
+            txt.fontSize = 20;
             txt.alignment = TextAlignmentOptions.Center;
             txt.fontStyle = FontStyles.Bold;
             txt.color = Color.white;
@@ -198,7 +265,7 @@ namespace NGO.Networking
             bBtn.onClick.AddListener(onClick);
             var bRt = btn.GetComponent<RectTransform>();
             bRt.anchoredPosition = pos;
-            bRt.sizeDelta = new Vector2(450, 60);
+            bRt.sizeDelta = new Vector2(400, 55);
             var outline = btn.AddComponent<Outline>();
             outline.effectColor = accent;
             outline.effectDistance = new Vector2(2, 2);
@@ -207,7 +274,7 @@ namespace NGO.Networking
             txtGo.transform.SetParent(btn.transform, false);
             var txt = txtGo.AddComponent<TextMeshProUGUI>();
             txt.text = label;
-            txt.fontSize = 24;
+            txt.fontSize = 22;
             txt.alignment = TextAlignmentOptions.Center;
             txt.fontStyle = FontStyles.Bold;
             txt.color = Color.white;
