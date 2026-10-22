@@ -216,8 +216,6 @@ namespace NGO.Networking
             if (_hostNameInput != null) PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), _hostNameInput.text);
             if (_hostMaxPlayersInput != null && int.TryParse(_hostMaxPlayersInput.text, out int max))
                 PlayerPrefs.SetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), max);
-            if (_hostCodeInput != null && !string.IsNullOrEmpty(_hostCodeInput.text))
-                PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), _hostCodeInput.text.Trim().ToUpper());
             PlayerPrefs.Save();
         }
 
