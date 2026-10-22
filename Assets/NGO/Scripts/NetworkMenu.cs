@@ -42,8 +42,45 @@ namespace NGO.Networking
         private TMP_InputField _joinIpInput;
         private TMP_Text _joinCodeDisplay;
 
-        // Active Codes Carousel for Join Status Bar (starts empty with 0 strings)
-        public static System.Collections.Generic.List<string> ActiveRoomCodes = new System.Collections.Generic.List<string>();
+        // Active Codes Carousel for Join Status Bar (PlayerPrefs-backed for cross-instance persistence)
+        public static System.Collections.Generic.List<string> GetActiveCodes()
+        {
+            string raw = PlayerPrefs.GetString("Xenobot_ActiveCodes", "");
+            var list = new System.Collections.Generic.List<string>();
+            if (!string.IsNullOrEmpty(raw))
+            {
+                foreach (string c in raw.Split(','))
+                {
+                    if (!string.IsNullOrEmpty(c)) list.Add(c.Trim());
+                }
+            }
+            return list;
+        }
+
+        public static void AddActiveCode(string code)
+        {
+            if (string.IsNullOrEmpty(code)) return;
+            var list = GetActiveCodes();
+            if (!list.Contains(code))
+            {
+                list.Add(code);
+                PlayerPrefs.SetString("Xenobot_ActiveCodes", string.Join(",", list));
+                PlayerPrefs.Save();
+            }
+        }
+
+        public static void RemoveActiveCode(string code)
+        {
+            if (string.IsNullOrEmpty(code)) return;
+            var list = GetActiveCodes();
+            if (list.Contains(code))
+            {
+                list.Remove(code);
+                PlayerPrefs.SetString("Xenobot_ActiveCodes", string.Join(",", list));
+                PlayerPrefs.Save();
+            }
+        }
+
         private int _carouselIndex = 0;
         private float _carouselTimer = 0f;
 
@@ -67,7 +104,8 @@ namespace NGO.Networking
         {
             if (_joinCodeDisplay != null)
             {
-                if (ActiveRoomCodes == null || ActiveRoomCodes.Count == 0)
+                var codes = GetActiveCodes();
+                if (codes == null || codes.Count == 0)
                 {
                     _joinCodeDisplay.text = "NO ACTIVE CODES";
                 }
@@ -77,13 +115,13 @@ namespace NGO.Networking
                     if (_carouselTimer >= 2.0f)
                     {
                         _carouselTimer = 0f;
-                        _carouselIndex = (_carouselIndex + 1) % ActiveRoomCodes.Count;
+                        _carouselIndex = (_carouselIndex + 1) % codes.Count;
                     }
                     string displayStr = "";
-                    for (int i = 0; i < ActiveRoomCodes.Count; i++)
+                    for (int i = 0; i < codes.Count; i++)
                     {
-                        int idx = (_carouselIndex + i) % ActiveRoomCodes.Count;
-                        displayStr += ActiveRoomCodes[idx] + " ";
+                        int idx = (_carouselIndex + i) % codes.Count;
+                        displayStr += codes[idx] + " ";
                     }
                     _joinCodeDisplay.text = displayStr.Trim();
                 }
@@ -166,10 +204,7 @@ namespace NGO.Networking
                 PlayerPrefs.Save();
             }
 
-            if (!ActiveRoomCodes.Contains(code))
-            {
-                ActiveRoomCodes.Add(code);
-            }
+            AddActiveCode(code);
 
             if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"IP:PORT {ip}:{port}   |   CODE: {code}";
 
@@ -186,6 +221,13 @@ namespace NGO.Networking
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
                 NetworkManager.Singleton.Shutdown();
+            }
+
+            string roomCode = _joinCodeInput != null ? _joinCodeInput.text.Trim().ToUpper() : "";
+            if (!string.IsNullOrEmpty(roomCode))
+            {
+                PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), roomCode);
+                PlayerPrefs.Save();
             }
 
             string ipPortRaw = _joinIpInput != null ? _joinIpInput.text.Trim() : "";
@@ -207,9 +249,9 @@ namespace NGO.Networking
             }
 
             SetUnityTransportAddress(ip, port);
-            if (NetworkManager.Singleton != null)
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.StartClient())
             {
-                NetworkManager.Singleton.StartClient();
+                LoadLobbyScene();
             }
         }
 

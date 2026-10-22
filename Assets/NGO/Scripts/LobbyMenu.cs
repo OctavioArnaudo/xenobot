@@ -60,6 +60,7 @@ namespace NGO.Networking
                     PlayerPrefs.Save();
                 }
                 m_JoinCode.Value = code.ToUpper();
+                NetworkMenu.AddActiveCode(code.ToUpper());
             }
 
             BuildCyberpunkUI();
@@ -131,6 +132,12 @@ namespace NGO.Networking
 
         public void OnClickLeaveLobby()
         {
+            string currentCode = m_JoinCode.Value.ToString();
+            if (!string.IsNullOrEmpty(currentCode))
+            {
+                NetworkMenu.RemoveActiveCode(currentCode);
+            }
+
             var allNMs = Object.FindObjectsByType<NetworkManager>(FindObjectsSortMode.None);
             foreach (var nm in allNMs)
             {
