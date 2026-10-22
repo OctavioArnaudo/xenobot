@@ -201,7 +201,7 @@ namespace Menus.Scripts
 
             // Cyber Buttons
             CreateCyberButton("ResumeButton", panel.transform, "RESUME", new Vector2(0, 40), neonCyan, ResumeGame);
-            CreateCyberButton("SettingsButton", panel.transform, "SETTINGS", new Vector2(0, -40), neonCyan, OpenSettings);
+            CreateCyberButton("SettingsButton", panel.transform, "SETTINGS", new Vector2(0, -40), neonYellow, OpenSettings);
             CreateCyberButton("QuitButton", panel.transform, "ABORT", new Vector2(0, -120), neonMagenta, QuitSessionOrMatch);
         }
 
