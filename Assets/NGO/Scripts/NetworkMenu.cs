@@ -141,6 +141,10 @@ namespace NGO.Networking
             Cursor.lockState = CursorLockMode.None;
             Application.runInBackground = true;
 
+            // Clear any stale active room codes from previous cache runs on startup
+            PlayerPrefs.SetString("Xenobot_ActiveCodes", "");
+            PlayerPrefs.Save();
+
             BuildCyberpunkUI();
             ShowMainSubpanel();
         }
