@@ -38,6 +38,12 @@ namespace NGO.Networking
         private TMP_InputField _joinNameInput;
         private TMP_InputField _joinCodeInput;
         private TMP_InputField _joinIpInput;
+        private TMP_Text _joinCodeDisplay;
+
+        // Active Codes Carousel for Join Status Bar
+        private string[] _activeCodes = new string[] { "XENO42", "ALPHA9", "OMEGA7", "CYBER1" };
+        private int _carouselIndex = 0;
+        private float _carouselTimer = 0f;
 
         private void Awake()
         {
@@ -212,6 +218,28 @@ namespace NGO.Networking
             }
             catch { }
             return "127.0.0.1";
+        }
+
+        private void ConfigureCodeInput(TMP_InputField inputField)
+        {
+            if (inputField == null) return;
+            inputField.characterLimit = 6;
+            inputField.onValueChanged.AddListener((val) =>
+            {
+                string filtered = "";
+                foreach (char c in val)
+                {
+                    if (char.IsLetterOrDigit(c))
+                    {
+                        filtered += char.ToUpper(c);
+                        if (filtered.Length >= 6) break;
+                    }
+                }
+                if (inputField.text != filtered)
+                {
+                    inputField.text = filtered;
+                }
+            });
         }
 
         private void BuildCyberpunkUI()
