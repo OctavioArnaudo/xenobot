@@ -36,6 +36,7 @@ namespace NGO.Networking
 
         // Join Inputs
         private TMP_InputField _joinNameInput;
+        private TMP_InputField _joinMaxPlayersInput;
         private TMP_InputField _joinCodeInput;
         private TMP_InputField _joinIpInput;
         private TMP_Text _joinCodeDisplay;
