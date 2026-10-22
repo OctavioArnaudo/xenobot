@@ -32,6 +32,7 @@ namespace NGO.Networking
         private TMP_InputField _hostNameInput;
         private TMP_InputField _hostMaxPlayersInput;
         private TMP_InputField _hostCodeInput;
+        private TMP_InputField _hostIpInput;
         private TMP_Text _hostCodeDisplay;
 
         // Join Inputs
@@ -41,8 +42,8 @@ namespace NGO.Networking
         private TMP_InputField _joinIpInput;
         private TMP_Text _joinCodeDisplay;
 
-        // Active Codes Carousel for Join Status Bar
-        private string[] _activeCodes = new string[] { "XENO42", "ALPHA9", "OMEGA7", "CYBER1" };
+        // Active Codes Carousel for Join Status Bar (starts empty with 0 strings)
+        public static System.Collections.Generic.List<string> ActiveRoomCodes = new System.Collections.Generic.List<string>();
         private int _carouselIndex = 0;
         private float _carouselTimer = 0f;
 
@@ -60,6 +61,33 @@ namespace NGO.Networking
 
             BuildCyberpunkUI();
             ShowMainSubpanel();
+        }
+
+        private void Update()
+        {
+            if (_joinCodeDisplay != null)
+            {
+                if (ActiveRoomCodes == null || ActiveRoomCodes.Count == 0)
+                {
+                    _joinCodeDisplay.text = "NO ACTIVE CODES";
+                }
+                else
+                {
+                    _carouselTimer += Time.unscaledDeltaTime;
+                    if (_carouselTimer >= 2.0f)
+                    {
+                        _carouselTimer = 0f;
+                        _carouselIndex = (_carouselIndex + 1) % ActiveRoomCodes.Count;
+                    }
+                    string displayStr = "";
+                    for (int i = 0; i < ActiveRoomCodes.Count; i++)
+                    {
+                        int idx = (_carouselIndex + i) % ActiveRoomCodes.Count;
+                        displayStr += ActiveRoomCodes[idx] + " ";
+                    }
+                    _joinCodeDisplay.text = displayStr.Trim();
+                }
+            }
         }
 
         private void Update()
@@ -133,6 +161,23 @@ namespace NGO.Networking
             }
 
             ushort port = 7777;
+            string ipInput = _hostIpInput != null ? _hostIpInput.text.Trim() : "127.0.0.1:7777";
+            string ip = "127.0.0.1";
+
+            if (!string.IsNullOrEmpty(ipInput))
+            {
+                if (ipInput.Contains(":"))
+                {
+                    string[] parts = ipInput.Split(':');
+                    if (parts.Length > 0 && !string.IsNullOrEmpty(parts[0])) ip = parts[0].Trim();
+                    if (parts.Length > 1 && ushort.TryParse(parts[1].Trim(), out ushort parsedPort)) port = parsedPort;
+                }
+                else
+                {
+                    ip = ipInput;
+                }
+            }
+
             string code = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "");
             if (string.IsNullOrEmpty(code))
             {
@@ -141,9 +186,14 @@ namespace NGO.Networking
                 PlayerPrefs.Save();
             }
 
-            if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"IP:PORT {GetLocalIPAddress()}:{port}   |   CODE: {code}";
+            if (!ActiveRoomCodes.Contains(code))
+            {
+                ActiveRoomCodes.Add(code);
+            }
 
-            SetUnityTransportAddress("127.0.0.1", port);
+            if (_hostCodeDisplay != null) _hostCodeDisplay.text = $"IP:PORT {ip}:{port}   |   CODE: {code}";
+
+            SetUnityTransportAddress(ip, port);
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.StartHost())
             {
                 LoadLobbyScene();
@@ -278,10 +328,10 @@ namespace NGO.Networking
             CreateCyberButton("BackButton", _mainPanelGo.transform, "BACK", new Vector2(0, -130), neonMagenta, GoBackToMainMenuScene);
 
             // 2. HOST SUBPANEL
-            _hostPanelGo = CreatePanel("HostPanel", _canvasRoot.transform, new Vector2(850, 680));
-            CreateHeader("HOST PROTOCOL", "// CREATE MATCH", _hostPanelGo.transform, new Vector2(0, 240));
+            _hostPanelGo = CreatePanel("HostPanel", _canvasRoot.transform, new Vector2(850, 780));
+            CreateHeader("HOST PROTOCOL", "// CREATE MATCH", _hostPanelGo.transform, new Vector2(0, 280));
 
-            _hostNameInput = CreateLabeledInput("HostNameInput", _hostPanelGo.transform, "PLAYER NAME:", PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player"), new Vector2(0, 120));
+            _hostNameInput = CreateLabeledInput("HostNameInput", _hostPanelGo.transform, "PLAYER NAME:", PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player"), new Vector2(0, 160));
             if (_hostNameInput != null)
             {
                 _hostNameInput.onValueChanged.AddListener((val) =>
@@ -291,7 +341,7 @@ namespace NGO.Networking
                 });
             }
 
-            _hostMaxPlayersInput = CreateLabeledInput("HostMaxPlayersInput", _hostPanelGo.transform, "MAX PLAYERS:", PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 1).ToString(), new Vector2(0, 45));
+            _hostMaxPlayersInput = CreateLabeledInput("HostMaxPlayersInput", _hostPanelGo.transform, "MAX PLAYERS:", PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 1).ToString(), new Vector2(0, 90));
             if (_hostMaxPlayersInput != null)
             {
                 _hostMaxPlayersInput.onValueChanged.AddListener((val) =>
@@ -306,31 +356,24 @@ namespace NGO.Networking
 
             string defaultCode = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "");
             if (string.IsNullOrEmpty(defaultCode)) defaultCode = "XENO42";
-            _hostCodeInput = CreateLabeledInput("HostCodeInput", _hostPanelGo.transform, "CODE:", defaultCode, new Vector2(0, -30));
-            if (_hostCodeInput != null)
-            {
-                _hostCodeInput.onValueChanged.AddListener((val) =>
-                {
-                    if (_hostCodeInput.text != val.ToUpper())
-                        _hostCodeInput.text = val.ToUpper();
-                    PlayerPrefs.SetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), val.Trim().ToUpper());
-                    PlayerPrefs.Save();
-                });
-            }
+            _hostCodeInput = CreateLabeledInput("HostCodeInput", _hostPanelGo.transform, "CODE:", defaultCode, new Vector2(0, 20));
+            ConfigureCodeInput(_hostCodeInput);
+
+            _hostIpInput = CreateLabeledInput("HostIpInput", _hostPanelGo.transform, "IP:PORT", $"{GetLocalIPAddress()}:7777", new Vector2(0, -50));
 
             GameObject codeBox = new GameObject("CodeBox", typeof(RectTransform));
             codeBox.transform.SetParent(_hostPanelGo.transform, false);
             var cbImg = codeBox.AddComponent<Image>();
             cbImg.color = new Color(0.08f, 0.12f, 0.18f, 0.95f);
             var cbRt = codeBox.GetComponent<RectTransform>();
-            cbRt.anchoredPosition = new Vector2(0, -105);
+            cbRt.anchoredPosition = new Vector2(0, -120);
             cbRt.sizeDelta = new Vector2(550, 45);
             codeBox.AddComponent<Outline>().effectColor = neonYellow;
 
             GameObject cbTxtGo = new GameObject("CodeText", typeof(RectTransform));
             cbTxtGo.transform.SetParent(codeBox.transform, false);
             _hostCodeDisplay = cbTxtGo.AddComponent<TextMeshProUGUI>();
-            _hostCodeDisplay.text = $"IP:PORT {GetLocalIPAddress()}:7777";
+            _hostCodeDisplay.text = $"IP:PORT {GetLocalIPAddress()}:7777   |   CODE: {defaultCode}";
             _hostCodeDisplay.fontSize = 20;
             _hostCodeDisplay.alignment = TextAlignmentOptions.Center;
             _hostCodeDisplay.color = neonYellow;
@@ -338,7 +381,7 @@ namespace NGO.Networking
             cbTxtRt.anchorMin = Vector2.zero;
             cbTxtRt.anchorMax = Vector2.one;
 
-            CreateCyberButton("StartHostMatchBtn", _hostPanelGo.transform, "MATCH", new Vector2(0, -185), neonCyan, OnClickStartHostMatch);
+            CreateCyberButton("StartHostMatchBtn", _hostPanelGo.transform, "MATCH", new Vector2(0, -190), neonCyan, OnClickStartHostMatch);
             CreateCyberButton("HostBackBtn", _hostPanelGo.transform, "BACK", new Vector2(0, -260), neonMagenta, ShowMainSubpanel);
 
             // 3. JOIN SUBPANEL
