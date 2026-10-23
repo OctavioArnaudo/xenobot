@@ -186,7 +186,7 @@ namespace Runtime.Scripts.Pause
             // Session Stats Info
             string playerName = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player");
             string currentScene = SceneManager.GetActiveScene().name;
-            float timeTaken = LevelsMenu.ultimoTiempoSession;
+            float timeTaken = LevelsMenu.lastSessionTime;
             string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
 
             GameObject stats = new GameObject("Stats", typeof(RectTransform));

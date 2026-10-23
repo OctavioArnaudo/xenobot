@@ -441,8 +441,8 @@ namespace Runtime.Scripts.Hud
                 if (_inBioma)
                 {
                     float t = Time.timeSinceLevelLoad;
-                    LevelsMenu.ultimoTiempoSession = t;
-                    LevelsMenu.ultimoNivelSession = SceneManager.GetActiveScene().name;
+                    LevelsMenu.lastSessionTime = t;
+                    LevelsMenu.lastSessionLevel = SceneManager.GetActiveScene().name;
                     _cachedTimeStr = LevelsMenu.FormatTime(t);
                 }
             }
