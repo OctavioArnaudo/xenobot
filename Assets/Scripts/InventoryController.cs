@@ -1,0 +1,577 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using Unity.Netcode;
+using Runtime.Scripts.Item;
+using Runtime.Scripts.Spawn;
+using Runtime.Scripts.Health;
+using Runtime.Scripts.Player;
+using Runtime.Scripts.Modular;
+using Runtime.Scripts.Costume;
+using Runtime.Scripts.Jetpack;
+using Runtime.Scripts.Weapon;
+using Runtime.Scripts.Mask;
+using Runtime.Scripts.Pickup;
+using Runtime.Scripts.Crafting;
+
+
+namespace Runtime.Scripts.Inventory
+{
+    public struct NetworkInventorySlot : INetworkSerializable, IEquatable<NetworkInventorySlot>
+    {
+        public int itemHash;
+        public int quantity;
+
+        public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+        {
+            serializer.SerializeValue(ref itemHash);
+            serializer.SerializeValue(ref quantity);
+        }
+
+        public bool Equals(NetworkInventorySlot other) => itemHash == other.itemHash && quantity == other.quantity;
+        public override bool Equals(object obj) => obj is NetworkInventorySlot other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(itemHash, quantity);
+    }
+
+    [RequireComponent(typeof(SpawnController))]
+    public class InventoryController : NetworkBehaviour
+    {
+        public static InventoryController LocalInstance { get; private set; }
+
+        [Header("Network Data")]
+        public NetworkList<NetworkInventorySlot> NetworkBag;
+
+        public NetworkVariable<int> EquippedWeaponHash = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
+        private List<NetworkInventorySlot> _offlineBag = new List<NetworkInventorySlot>();
+        private Dictionary<string, (ItemData def, int qty)> _localBag = new();
+        private List<string> _localKeys = new();
+        private Dictionary<int, GameObject> _equippedInstances = new();
+
+        [Header("Panel Settings")]
+        public int panelWidth = 700;
+        public int panelHeight = 550;
+        public int columns = 6;
+        public int cellSize = 90;
+        public int padding = 20;
+        public int titleH = 65;
+        public int qtyFontSize = 14;
+        public int cornerRadius = 15;
+        public Color panelColor = new Color(0.05f, 0.05f, 0.05f, 0.95f);
+        public Color accentColor = new Color(1f, 0.85f, 0f, 1f);
+
+        [Header("Database & Settings")]
+        public List<ItemData> itemDatabase;
+        public float dropDistance = 3.5f;
+
+        private static int s_CollectiblesRemaining = 0;
+        private static bool s_CountDirty = true;
+        private float _countUpdateTimer = 0f;
+
+        private bool _open;
+        private ItemData _draggedItem;
+
+        private Texture2D _texNormal, _texSelected, _texPanel, _texBtn;
+        private GUIStyle _titleSty, _qtySty, _emptySty, _btnSty;
+        private bool _stylesReady;
+
+        PlayerInput _playerInput;
+        SpawnController _spawnController;
+        HealthController _health;
+
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+        private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
+
+        private void Awake()
+        {
+            NetworkBag = new NetworkList<NetworkInventorySlot>();
+            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
+            {
+                LocalInstance = this;
+                InitializeComponents();
+            }
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            InitializeComponents();
+            if (IsOwner) LocalInstance = this;
+            NetworkBag.OnListChanged += (changeEvent) => RefreshLocalCache();
+            RefreshLocalCache();
+        }
+
+        private void InitializeComponents()
+        {
+            _playerInput = GetComponent<PlayerInput>();
+            _spawnController = GetComponent<SpawnController>();
+            _health = GetComponent<HealthController>();
+        }
+
+        private void RefreshLocalCache()
+        {
+            _localBag.Clear();
+            _localKeys.Clear();
+
+            if (IsNetworkActive)
+            {
+                foreach (var slot in NetworkBag) ProcessSlot(slot);
+            }
+            else
+            {
+                foreach (var slot in _offlineBag) ProcessSlot(slot);
+            }
+        }
+
+        private void ProcessSlot(NetworkInventorySlot slot)
+        {
+            ItemData data = GetItemDataByHash(slot.itemHash);
+            if (data != null)
+            {
+                string key = data.itemName.ToLowerInvariant();
+                _localBag[key] = (data, slot.quantity);
+                if (!_localKeys.Contains(key)) _localKeys.Add(key);
+            }
+        }
+
+        public ItemData GetItemDataByHash(int hash)
+        {
+            EnsureDatabase();
+            var found = itemDatabase.FirstOrDefault(x => x.GetHashCode() == hash);
+            if (found == null)
+            {
+                var allItems = Resources.LoadAll<ItemData>("");
+                found = allItems.FirstOrDefault(x => x.GetHashCode() == hash);
+                if (found != null && !itemDatabase.Contains(found)) itemDatabase.Add(found);
+            }
+            return found;
+        }
+
+        public ItemData GetItemDataByCode(string code)
+        {
+            EnsureDatabase();
+            string c = code.ToLowerInvariant();
+            return itemDatabase.FirstOrDefault(x => x.itemName.ToLowerInvariant() == c);
+        }
+
+        private void EnsureDatabase()
+        {
+            if (itemDatabase == null || itemDatabase.Count == 0)
+                itemDatabase = Resources.LoadAll<ItemData>("").ToList();
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void AddItemServerRpc(int hash, int qty) => InternalAddItem(hash, qty);
+
+        public void InternalAddItem(int hash, int qty)
+        {
+            if (IsNetworkActive)
+            {
+                for (int i = 0; i < NetworkBag.Count; i++)
+                {
+                    if (NetworkBag[i].itemHash == hash)
+                    {
+                        var slot = NetworkBag[i];
+                        slot.quantity += qty;
+                        NetworkBag[i] = slot;
+                        return;
+                    }
+                }
+                NetworkBag.Add(new NetworkInventorySlot { itemHash = hash, quantity = qty });
+            }
+            else
+            {
+                for (int i = 0; i < _offlineBag.Count; i++)
+                {
+                    if (_offlineBag[i].itemHash == hash)
+                    {
+                        var slot = _offlineBag[i];
+                        slot.quantity += qty;
+                        _offlineBag[i] = slot;
+                        RefreshLocalCache();
+                        return;
+                    }
+                }
+                _offlineBag.Add(new NetworkInventorySlot { itemHash = hash, quantity = qty });
+                RefreshLocalCache();
+            }
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void RemoveItemServerRpc(int hash, int qty) => InternalRemoveItem(hash, qty);
+
+        private void InternalRemoveItem(int hash, int qty)
+        {
+            if (IsNetworkActive)
+            {
+                for (int i = 0; i < NetworkBag.Count; i++)
+                {
+                    if (NetworkBag[i].itemHash == hash)
+                    {
+                        var slot = NetworkBag[i];
+                        slot.quantity -= qty;
+                        if (slot.quantity <= 0) NetworkBag.RemoveAt(i);
+                        else NetworkBag[i] = slot;
+                        return;
+                    }
+                }
+            }
+            else
+            {
+                for (int i = 0; i < _offlineBag.Count; i++)
+                {
+                    if (_offlineBag[i].itemHash == hash)
+                    {
+                        var slot = _offlineBag[i];
+                        slot.quantity -= qty;
+                        if (slot.quantity <= 0) _offlineBag.RemoveAt(i);
+                        else _offlineBag[i] = slot;
+                        RefreshLocalCache();
+                        return;
+                    }
+                }
+            }
+        }
+
+        public static void Add(ItemData def)
+        {
+            if (LocalInstance == null) return;
+            int hash = def.GetHashCode();
+            if (LocalInstance.IsNetworkActive) LocalInstance.AddItemServerRpc(hash, 1);
+            else LocalInstance.InternalAddItem(hash, 1);
+        }
+
+        public static void RemoveItem(string key)
+        {
+            var data = LocalInstance?.GetItemDataByCode(key);
+            if (data != null)
+            {
+                int hash = data.GetHashCode();
+                if (LocalInstance.IsNetworkActive) LocalInstance.RemoveItemServerRpc(hash, 1);
+                else LocalInstance.InternalRemoveItem(hash, 1);
+            }
+        }
+
+        private void Update()
+        {
+            if (!CanExecuteLocalLogic) return;
+            if (Keyboard.current != null && (Keyboard.current.iKey.wasPressedThisFrame || Keyboard.current.tabKey.wasPressedThisFrame))
+                SetOpen(!_open);
+
+            if (s_CountDirty || Time.time > _countUpdateTimer)
+            {
+                s_CollectiblesRemaining = PickupController.ActiveCount;
+                _countUpdateTimer = Time.time + 1.0f;
+                s_CountDirty = false;
+            }
+        }
+
+        private void SetOpen(bool open)
+        {
+            _open = open;
+            // Keep PlayerInput enabled to maintain mouse focus,
+            // Combat scripts now block themselves via Cursor.visible check
+            Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = open;
+        }
+
+        private void OnGUI()
+        {
+            if (!CanExecuteLocalLogic || !_open) return;
+            if (CraftingController.Instance != null && CraftingController.Instance.IsUIOpen) return;
+
+            EnsureStyles();
+            Rect panelRect = new Rect((Screen.width - panelWidth) / 2f, (Screen.height - panelHeight) / 2f, panelWidth, panelHeight);
+            DrawInventoryUI(panelRect, "MI INVENTARIO");
+
+            if (_draggedItem != null)
+            {
+                Vector2 mousePos = Event.current.mousePosition;
+                Rect dragRect = new Rect(mousePos.x - cellSize / 2, mousePos.y - cellSize / 2, cellSize, cellSize);
+                if (_draggedItem.itemSprite != null) GUI.DrawTexture(dragRect, _draggedItem.itemSprite.texture);
+                if (Event.current.type == EventType.MouseUp)
+                {
+                    if (!panelRect.Contains(mousePos)) DropItem(_draggedItem);
+                    _draggedItem = null;
+                }
+            }
+        }
+
+        public void DrawInventoryUI(Rect panel, string title)
+        {
+            EnsureStyles();
+            GUI.DrawTexture(panel, _texPanel);
+            GUI.Label(new Rect(panel.x, panel.y + 10, panel.width, titleH), title, _titleSty);
+            if (GUI.Button(new Rect(panel.xMax - 50, panel.y + 15, 35, 35), "X", _btnSty)) SetOpen(false);
+
+            // Cálculo dinámico de columnas para que quepan en el ancho del panel recibido
+            int effectiveColumns = Mathf.Max(1, (int)((panel.width - (padding * 2)) / (cellSize + 10)));
+
+            int i = 0;
+            foreach (var key in _localKeys.ToArray())
+            {
+                if (!_localBag.TryGetValue(key, out var slot)) continue;
+                Rect cell = new Rect(panel.x + padding + (i % effectiveColumns) * (cellSize + 10),
+                                     panel.y + titleH + (i / effectiveColumns) * (cellSize + 40), cellSize, cellSize);
+
+                bool isOver = cell.Contains(Event.current.mousePosition);
+                GUI.DrawTexture(cell, isOver ? _texSelected : _texNormal);
+                if (slot.def.itemSprite != null) GUI.DrawTexture(new Rect(cell.x + 10, cell.y + 10, cell.width - 20, cell.height - 20), slot.def.itemSprite.texture);
+                GUI.Label(cell, "x" + slot.qty, _qtySty);
+
+                Rect btnArea = new Rect(cell.x, cell.yMax + 2, cell.width, 35);
+                int hash = slot.def.GetHashCode();
+                bool isEquipped = _equippedInstances.ContainsKey(hash);
+                string actionText = isEquipped ? "QUIT" : "USE";
+
+                // Botón dinámico USE/QUIT y DROP según las 4 acciones de ItemData
+                bool canShowUse = isEquipped ? slot.def.isQuitable : (slot.def.isUsable);
+
+                if (canShowUse)
+                {
+                    if (GUI.Button(new Rect(btnArea.x, btnArea.y, btnArea.width * 0.5f, 30), actionText, _btnSty)) UseItem(slot.def);
+                }
+
+                if (slot.def.isDropable)
+                {
+                    float dropBtnWidth = canShowUse ? btnArea.width * 0.5f : btnArea.width;
+                    float dropBtnX = canShowUse ? btnArea.x + btnArea.width * 0.5f : btnArea.x;
+
+                    if (GUI.Button(new Rect(dropBtnX, btnArea.y, dropBtnWidth, 30), "DROP", _btnSty)) DropItem(slot.def);
+                }
+
+                if (isOver && Event.current.type == EventType.MouseDown && Event.current.button == 0) { _draggedItem = slot.def; Event.current.Use(); }
+                i++;
+            }
+            if (_localKeys.Count == 0) GUI.Label(new Rect(panel.x, panel.y + titleH, panel.width, panel.height - titleH), "Inventario Vacío", _emptySty);
+        }
+
+        private void EnsureStyles()
+        {
+            if (_stylesReady) return;
+            _texNormal = MakeRoundedTex(64, 8, new Color(1f, 1f, 1f, 0.08f), Color.clear, 0);
+            _texSelected = MakeRoundedTex(64, 8, new Color(1f, 1f, 1f, 0.15f), accentColor, 2);
+            _texPanel = MakeRoundedTex(64, cornerRadius, panelColor, Color.clear, 0);
+            _titleSty = Sty(32, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
+            _qtySty = Sty(qtyFontSize, FontStyle.Bold, TextAnchor.LowerRight, accentColor);
+            _emptySty = Sty(18, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0.5f));
+            _btnSty = new GUIStyle(GUI.skin.button) { fontSize = 10, fontStyle = FontStyle.Bold };
+            _btnSty.normal.textColor = Color.white;
+            _stylesReady = true;
+        }
+
+        private Texture2D MakeRoundedTex(int s, int r, Color fill, Color border, int bw)
+        {
+            var tex = new Texture2D(s, s, TextureFormat.RGBA32, false);
+            Color[] px = new Color[s * s];
+            for (int y = 0; y < s; y++)
+            {
+                for (int x = 0; x < s; x++)
+                {
+                    float cx = Mathf.Clamp(x, r, s - 1 - r), cy = Mathf.Clamp(y, r, s - 1 - r);
+                    float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                    if (d > r + 0.5f) px[y * s + x] = Color.clear;
+                    else if (bw > 0 && d > r - bw) px[y * s + x] = border;
+                    else px[y * s + x] = fill;
+                }
+            }
+            tex.SetPixels(px); tex.Apply(); return tex;
+        }
+
+        private static GUIStyle Sty(int sz, FontStyle fs, TextAnchor a, Color c)
+        {
+            var s = new GUIStyle(GUI.skin.label) { fontSize = sz, fontStyle = fs, alignment = a };
+            s.normal.textColor = c; return s;
+        }
+
+        public void UseItem(ItemData item)
+        {
+            if (item == null) return;
+            int hash = item.GetHashCode();
+            if (IsNetworkActive) UseItemServerRpc(hash);
+            else InternalUseItem(hash);
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void UseItemServerRpc(int hash)
+        {
+            InternalUseItem(hash);
+        }
+
+        private void InternalUseItem(int hash)
+        {
+            ItemData item = GetItemDataByHash(hash);
+            if (item == null) return;
+
+            bool isEquipped = _equippedInstances.ContainsKey(hash);
+            bool isEquipment = isEquipped || (item.itemPrefab != null && (
+                item.itemPrefab.GetComponentInChildren<CostumeController>(true) != null ||
+                item.itemPrefab.GetComponentInChildren<MaskController>(true) != null ||
+                item.itemPrefab.GetComponentInChildren<WeaponController>(true) != null ||
+                item.itemPrefab.GetComponentInChildren<JetpackController>(true) != null
+            ));
+
+            if (isEquipment)
+            {
+                ToggleEquipment(item);
+            }
+            else if (item.isUsable)
+            {
+                ApplyConsumableEffect(item);
+                InternalRemoveItem(hash, 1);
+            }
+        }
+
+        private void ToggleEquipment(ItemData item)
+        {
+            int hash = item.GetHashCode();
+            bool isCostume = item.itemPrefab != null && item.itemPrefab.GetComponentInChildren<CostumeController>() != null;
+            bool isMask = item.itemPrefab != null && item.itemPrefab.GetComponentInChildren<MaskController>() != null;
+
+            if (_equippedInstances.TryGetValue(hash, out GameObject existing))
+            {
+                // DESEQUIPAR (QUIT): Ejecutar interfaz dedicada IItemQuitAction
+                var quitActions = existing.GetComponentsInChildren<IItemQuitAction>(true);
+                foreach (var act in quitActions)
+                {
+                    act.OnQuitItem(gameObject);
+                }
+
+                Destroy(existing);
+                _equippedInstances.Remove(hash);
+            }
+            else
+            {
+                // EQUIPAR NUEVO:
+                if (item.itemPrefab != null)
+                {
+                    // Si es un Costume, desequipamos cualquier otro costume activo para evitar solapamientos
+                    if (isCostume)
+                    {
+                        var activeCostumes = _equippedInstances.Where(x => x.Value != null && x.Value.GetComponentInChildren<CostumeController>() != null).ToList();
+                        foreach (var active in activeCostumes)
+                        {
+                            var activeQuitActions = active.Value.GetComponentsInChildren<IItemQuitAction>(true);
+                            foreach (var act in activeQuitActions) act.OnQuitItem(gameObject);
+
+                            Destroy(active.Value);
+                            _equippedInstances.Remove(active.Key);
+                        }
+                    }
+
+                    // Si es una Máscara/Visor, desequipamos cualquier otra máscara activa
+                    if (isMask)
+                    {
+                        var activeMasks = _equippedInstances.Where(x => x.Value != null && x.Value.GetComponentInChildren<MaskController>() != null).ToList();
+                        foreach (var active in activeMasks)
+                        {
+                            var activeQuitActions = active.Value.GetComponentsInChildren<IItemQuitAction>(true);
+                            foreach (var act in activeQuitActions) act.OnQuitItem(gameObject);
+
+                            Destroy(active.Value);
+                            _equippedInstances.Remove(active.Key);
+                        }
+                    }
+
+                    GameObject instance = Instantiate(item.itemPrefab, transform);
+                    _equippedInstances[hash] = instance;
+
+                    // Regla visual: Solo ocultamos si es un objeto de pura lógica (sin Costume, Mask ni Weapon Controller)
+                    bool hasVisualModule = instance.GetComponentInChildren<CostumeController>() != null ||
+                                         instance.GetComponentInChildren<MaskController>() != null ||
+                                         instance.GetComponentInChildren<WeaponController>() != null;
+
+                    if (!hasVisualModule)
+                    {
+                        // Si no tiene controladores visuales, asumimos que es un booster invisible
+                        foreach (var r in instance.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+                    }
+
+                    // Quitar componentes de mundo inmediatos antes de reemparentar
+                    if (instance.TryGetComponent<PickupController>(out var p)) DestroyImmediate(p);
+                    if (instance.TryGetComponent<Rigidbody>(out var rb)) DestroyImmediate(rb);
+
+                    var netObjs = instance.GetComponentsInChildren<NetworkObject>(true);
+                    foreach (var no in netObjs) DestroyImmediate(no);
+
+                    // Desactivar colisionadores para evitar que el player salga volando
+                    foreach (var c in instance.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+
+                    // Aplicar acciones dedicadas IItemUseAction o fallback a IItemFunctional
+                    var useActions = instance.GetComponentsInChildren<IItemUseAction>(true);
+                    if (useActions.Length > 0)
+                    {
+                        foreach (var act in useActions) act.OnUseItem(gameObject);
+                    }
+                    else
+                    {
+                    }
+                }
+            }
+
+            // Refrescar referencias del robot (muzzle, cámara, etc)
+            GetComponent<PlayerController>()?.RefreshFunctionalComponents();
+            GetComponent<ModularController>()?.RefreshBodyReferences();
+        }
+
+        private void ApplyConsumableEffect(ItemData item)
+        {
+            if (item.itemPrefab != null)
+            {
+                var useActions = item.itemPrefab.GetComponentsInChildren<IItemUseAction>(true);
+                if (useActions.Length > 0)
+                {
+                    foreach (var act in useActions) act.OnUseItem(gameObject);
+                    return;
+                }
+
+                Debug.LogWarning($"[Inventory] El ítem {item.itemName} no tiene componentes de efecto válidos.");
+            }
+        }
+
+        public void DropItem(ItemData item)
+        {
+            if (item == null) return;
+            int hash = item.GetHashCode();
+
+            if (_equippedInstances.TryGetValue(hash, out GameObject equippedObj))
+            {
+                // Ejecutar acciones DROP dedicadas si las tiene antes de desequipar
+                var dropActions = equippedObj.GetComponentsInChildren<IItemDropAction>(true);
+                foreach (var act in dropActions)
+                {
+                    act.OnDropItem(gameObject);
+                }
+
+                ToggleEquipment(item);
+            }
+
+            // Usar dropDistance para el desplazamiento lateral y asegurar altura
+            Vector3 dropPos = transform.position + transform.right * dropDistance + transform.up * 1.8f;
+
+            if (IsNetworkActive) DropItemServerRpc(hash, dropPos);
+            else
+            {
+                InternalRemoveItem(hash, 1);
+                if (_spawnController != null) _spawnController.SpawnDroppedItem(item.itemPrefab, dropPos, item.itemName, item);
+            }
+        }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        public void DropItemServerRpc(int hash, Vector3 position)
+        {
+            ItemData data = GetItemDataByHash(hash);
+            if (data != null)
+            {
+                InternalRemoveItem(hash, 1);
+                if (_spawnController != null) _spawnController.SpawnDroppedItem(data.itemPrefab, position, data.itemName, data);
+            }
+        }
+
+        public static Dictionary<string, (ItemData def, int qty)> GetBag() => LocalInstance?._localBag ?? new();
+        public Dictionary<string, (ItemData def, int qty)> GetMyBag() => _localBag;
+        public static void MarkCountDirty() => s_CountDirty = true;
+        public static ItemData GetItemDataByCodeStatic(string code) => LocalInstance?.GetItemDataByCode(code);
+    }
+}

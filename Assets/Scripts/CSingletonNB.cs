@@ -1,7 +1,7 @@
 using Unity.Netcode;
 using UnityEngine;
 
-namespace NGO.Networking
+namespace Runtime.Scripts.Singleton
 {
     /// <summary>
     /// Base para Singletons de red (NetworkBehaviour) optimizada para Player Prefabs en NetworkManager.

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace NGO.Networking
+namespace Runtime.Scripts.Singleton
 {
     /// <summary>
     /// CSingleton.cs - Fuente de verdad central para la lógica base del Singleton.

@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace NGO.Networking
+namespace Runtime.Scripts.Singleton
 {
     /// <summary>
     /// Base para Singletons genéricos basados en MonoBehaviour (Managers de escena, sistemas, UI).

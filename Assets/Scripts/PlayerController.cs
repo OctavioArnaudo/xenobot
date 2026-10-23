@@ -1,0 +1,1168 @@
+using UnityEngine;
+using System.Collections.Generic;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
+using Unity.Netcode;
+using Unity.Cinemachine;
+using Runtime.Scripts.Optional;
+using Runtime.Scripts.Health;
+using Runtime.Scripts.Shoot;
+using Runtime.Scripts.Inventory;
+using Runtime.Scripts.Propulsion;
+using Runtime.Scripts.Melee;
+using Runtime.Scripts.Singleton;
+using Runtime.Scripts.Projectile;
+using Runtime.Scripts.Balance;
+using Runtime.Scripts.Hook;
+using Runtime.Scripts.Defeat;
+using Runtime.Scripts.Keys;
+
+namespace Runtime.Scripts.Player
+{
+    [RequireComponent(typeof(CharacterController))]
+#if ENABLE_INPUT_SYSTEM
+    [RequireComponent(typeof(PlayerInput))]
+#endif
+    public class PlayerController : CSingletonNB<PlayerController>
+    {
+        private const float DEFAULT_MOVE_SPEED = 2.0f;
+        private const float DEFAULT_SPRINT_SPEED = 5.335f;
+        private const float DEFAULT_SPRINT_HOLD_THRESHOLD = 0.25f;
+        private const float DEFAULT_ROTATION_SMOOTH_TIME = 0.12f;
+        private const float DEFAULT_SPEED_CHANGE_RATE = 10.0f;
+        private const float DEFAULT_JUMP_HEIGHT = 1.2f;
+        private const float DEFAULT_DOUBLE_JUMP_HEIGHT = 1.2f;
+        private const int DEFAULT_MAX_JUMPS = 2;
+        private const float DEFAULT_GRAVITY = -15.0f;
+        private const float DEFAULT_GROUNDED_RADIUS = 0.15f;
+        private const float DEFAULT_GROUNDED_OFFSET = -0.14f;
+
+        #region Variables: Movement Settings
+        [Header("Movement")]
+        public float MoveSpeed;
+        public Optional<float> moveSpeed;
+        public float SprintSpeed;
+        public Optional<float> sprintSpeed;
+        public float SprintHoldThreshold;
+        public Optional<float> sprintHoldThreshold;
+        [Range(0.0f, 0.3f)] public float RotationSmoothTime;
+        public Optional<float> rotationSmoothTime;
+        public float SpeedChangeRate;
+        public Optional<float> speedChangeRate;
+        public AudioClip LandingAudioClip;
+        public AudioClip[] FootstepAudioClips;
+        [Range(0, 1)] public float FootstepAudioVolume = 0.5f;
+
+        [Header("Jump Physics & Overrides")]
+        public float JumpHeight;
+        public Optional<float> jumpHeight;
+        public bool EnableDoubleJump = true;
+        public float DoubleJumpHeight;
+        public Optional<float> doubleJumpHeight;
+        public int MaxJumps;
+        public Optional<int> maxJumps;
+
+        public float Gravity;
+        public Optional<float> gravity;
+        public float JumpTimeout = 0.50f;
+        public float FallTimeout = 0.15f;
+        #endregion
+
+        #region Variables: Aiming & Combat UI
+        [Header("Aiming & Combat Mode")]
+        public GameObject crosshairUI;
+        public float aimFOV = 40f;
+        public float normalFOV = 60f;
+        public float aimCameraDistance = 0.0f;
+        public float defaultCameraDistance = 5.2f;
+        public Vector3 aimShoulderOffset = new Vector3(0.55f, 0.05f, 0.8f);
+        public Vector3 defaultShoulderOffset = new Vector3(0.35f, 0.0f, 0.0f);
+        public bool toggleAim = false;
+
+        [Header("Hook Settings")]
+        public GameObject hookProjectilePrefab;
+        public Transform hookMuzzle;
+        #endregion
+
+        #region Variables: Ground Check
+        [Header("Ground Check")]
+        public bool Grounded = true;
+        public float GroundedOffset;
+        public Optional<float> groundedOffset;
+        public float GroundedRadius;
+        public Optional<float> groundedRadius;
+        public LayerMask GroundLayers;
+        #endregion
+
+        #region Variables: Camera & Look
+        [Header("Cinemachine")]
+        public GameObject CinemachineCameraTarget;
+        public string PlayerVCamTag = "PlayerVCam";
+        public float TopClamp = 70.0f;
+        public float BottomClamp = -30.0f;
+        public float CameraAngleOverride = 0.0f;
+        public bool LockCameraPosition = false;
+        public Vector2 LookSensitivity = new Vector2(7.5f, 5.0f);
+        #endregion
+
+        #region Variables: Respawn
+        [System.Serializable]
+        public struct SceneSpawnConfig
+        {
+            public string SceneName;
+            public string SpawnPointTag;
+        }
+
+        [Header("Respawn & Spawning")]
+        public List<SceneSpawnConfig> SceneSpawns = new List<SceneSpawnConfig>();
+        public float yThreshold = -5f;
+        public AudioClip respawnSound;
+        private Vector3 _startingPosition;
+        private Quaternion _startingRotation;
+        #endregion
+
+        #region Variables: Input Data
+        [Header("Input Data")]
+        public Vector2 move;
+        public Vector2 look;
+        public bool jump;
+        public bool jumpHeld;
+        public bool sprint;
+        public bool fire;
+        public bool fireHeld;
+        public bool fireReleased;
+        public bool aim;
+        public bool hook;
+        public bool crouch;
+        public bool reload;
+        public int switchWeapon;
+        public int selectWeapon;
+        public bool analogMovement;
+        public bool cursorLocked = true;
+        public bool cursorInputForLook = true;
+        #endregion
+
+        #region Effective Statistics Resolvers
+        public float EffectiveMoveSpeed
+        {
+            get
+            {
+                try
+                {
+                    if (moveSpeed.use) return moveSpeed.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.moveSpeed > 0) return stats.moveSpeed;
+                    }
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] moveSpeed: {ex.Message}"); }
+                return DEFAULT_MOVE_SPEED;
+            }
+        }
+
+        public float EffectiveSprintSpeed
+        {
+            get
+            {
+                try
+                {
+                    if (sprintSpeed.use) return sprintSpeed.value;
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] sprintSpeed: {ex.Message}"); }
+                return DEFAULT_SPRINT_SPEED;
+            }
+        }
+
+        public float EffectiveSprintHoldThreshold => sprintHoldThreshold.GetValue(DEFAULT_SPRINT_HOLD_THRESHOLD);
+        public float EffectiveRotationSmoothTime => rotationSmoothTime.GetValue(DEFAULT_ROTATION_SMOOTH_TIME);
+        public float EffectiveSpeedChangeRate => speedChangeRate.GetValue(DEFAULT_SPEED_CHANGE_RATE);
+
+        public float EffectiveJumpHeight
+        {
+            get
+            {
+                try
+                {
+                    if (jumpHeight.use) return jumpHeight.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.jumpHeight > 0) return stats.jumpHeight;
+                    }
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] jumpHeight: {ex.Message}"); }
+                return DEFAULT_JUMP_HEIGHT;
+            }
+        }
+
+        public float EffectiveDoubleJumpHeight => doubleJumpHeight.GetValue(DEFAULT_DOUBLE_JUMP_HEIGHT);
+
+        public int EffectiveMaxJumps
+        {
+            get
+            {
+                try
+                {
+                    if (maxJumps.use) return maxJumps.value;
+                    if (BalanceManager.Instance != null)
+                    {
+                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                        if (stats.maxJumps > 0) return stats.maxJumps;
+                    }
+                }
+                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] maxJumps: {ex.Message}"); }
+                return DEFAULT_MAX_JUMPS;
+            }
+        }
+
+        public float EffectiveGravity => gravity.GetValue(DEFAULT_GRAVITY);
+        public float EffectiveGroundedRadius => groundedRadius.GetValue(DEFAULT_GROUNDED_RADIUS);
+        public float EffectiveGroundedOffset => groundedOffset.GetValue(DEFAULT_GROUNDED_OFFSET);
+        #endregion
+
+        #region Internal State
+        private float _cinemachineTargetYaw;
+        private float _cinemachineTargetPitch;
+        private Vector3 _cameraStartingPosition;
+        private Quaternion _cameraStartingRotation;
+        public bool IsRespawning { get; set; } = false;
+
+        private float _speed;
+        private float _animationBlend;
+        private float _targetRotation = 0.0f;
+        private float _rotationVelocity;
+        private float _verticalVelocity;
+        private float _terminalVelocity = 53.0f;
+
+        private float _jumpTimeoutDelta;
+        private float _fallTimeoutDelta;
+        private int _jumpsRemaining;
+
+        private float _shiftHoldTimer;
+
+        private static readonly int _animIDSpeed = Animator.StringToHash("Speed");
+        private static readonly int _animIDIsGrounded = Animator.StringToHash("isGrounded");
+        private static readonly int _animIDJump = Animator.StringToHash("Jump");
+
+        private bool _hasAnimIDSpeed;
+        private bool _hasAnimIDIsGrounded;
+        private bool _hasAnimIDJump;
+
+#if ENABLE_INPUT_SYSTEM
+        private PlayerInput _playerInput;
+#endif
+        private Animator _animator;
+        private Transform _renderTransform;
+        private CharacterController _controller;
+        private GameObject _mainCamera;
+        private Unity.Cinemachine.CinemachineCamera _vcamCache;
+        private Unity.Cinemachine.CinemachineThirdPersonFollow _vcam3rdPerson;
+
+        private HealthController _health;
+        private PropulsionController _jetpack;
+        private InventoryController _inventory;
+        private ShootController _shooter;
+        private MeleeController _melee;
+
+        private bool _isJumpHeld;
+        private const float _threshold = 0.01f;
+        private bool _hasAnimator;
+
+        private InputAction _moveAction;
+        private InputAction _lookAction;
+        private InputAction _jumpAction;
+        private InputAction _fireAction;
+        private InputAction _sprintAction;
+        private InputAction _aimAction;
+        private InputAction _hookAction;
+        private InputAction _crouchAction;
+        private InputAction _reloadAction;
+        private InputAction _nextWeaponAction;
+
+        private bool IsCurrentDeviceMouse => _playerInput != null && _playerInput.currentControlScheme == "KeyboardMouse";
+        private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
+        private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
+        #endregion
+
+        #region Lifecycle
+        protected override void Awake()
+        {
+            base.Awake();
+
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            {
+                var nObj = GetComponent<NetworkObject>();
+                if (nObj == null || nObj.InScenePlaced == true)
+                {
+                    gameObject.SetActive(false);
+                    Destroy(gameObject);
+                    return;
+                }
+            }
+
+            _controller = GetComponent<CharacterController>();
+            _health = GetComponent<HealthController>();
+            if (_health != null)
+            {
+                _health.OnDeath.AddListener(OnPlayerDeath);
+            }
+            _inventory = GetComponent<InventoryController>();
+
+            EnableDoubleJump = true;
+            if (JumpHeight < 1f) JumpHeight = 1.2f;
+            if (DoubleJumpHeight < 1f) DoubleJumpHeight = 1.2f;
+
+            RefreshFunctionalComponents();
+
+#if ENABLE_INPUT_SYSTEM
+            _playerInput = GetComponent<PlayerInput>();
+            RefreshInputActions();
+#endif
+
+            if (_mainCamera == null)
+                _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+
+            if (CanExecuteLocalLogic)
+            {
+                if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "BiomaScene")
+                    SetCursorState(cursorLocked);
+                else
+                    SetCursorState(false);
+            }
+        }
+
+        private void Start()
+        {
+            _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
+            _animator = GetComponentInChildren<Animator>();
+            _hasAnimator = _animator != null;
+
+            AssignAnimationIDs();
+
+            _cameraStartingPosition = CinemachineCameraTarget.transform.position;
+            _cameraStartingRotation = CinemachineCameraTarget.transform.rotation;
+            _startingPosition = transform.position;
+            _startingRotation = transform.rotation;
+            _jumpTimeoutDelta = JumpTimeout;
+            _fallTimeoutDelta = FallTimeout;
+
+            if (!IsNetworkActive)
+            {
+                SetupPlayerLocal();
+                TeleportToSceneSpawn(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+            }
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            if (BalanceManager.Instance != null)
+            {
+                BalanceManager.Instance.RegisterNetworkPlayer(gameObject);
+            }
+
+            if (IsOwner)
+            {
+                GameObject[] playersInScene = GameObject.FindGameObjectsWithTag("Player");
+                foreach (var p in playersInScene)
+                {
+                    if (p == gameObject) continue;
+
+                    NetworkObject nObj = p.GetComponent<NetworkObject>();
+
+                    if (nObj == null || nObj.InScenePlaced == true)
+                    {
+                        foreach (var cam in p.GetComponentsInChildren<Camera>()) cam.enabled = false;
+                        var vcam = p.GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
+                        if (vcam != null) vcam.enabled = false;
+
+                        Destroy(p);
+                    }
+                }
+
+                NetworkObject myNetObj = GetComponentInParent<NetworkObject>() ?? GetComponent<NetworkObject>();
+                if (myNetObj != null) myNetObj.transform.SetParent(null);
+
+                SetupPlayerLocal();
+                TeleportToSceneSpawn(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+
+                var listener = GetComponentInChildren<AudioListener>();
+                if (listener != null) listener.enabled = true;
+
+                var renderers = GetComponentsInChildren<Renderer>(true);
+                foreach (var r in renderers) r.enabled = true;
+
+                UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+            }
+            else
+            {
+                DisableLocalComponents();
+                if (_controller != null) _controller.enabled = false;
+                var vcam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
+                if (vcam != null) vcam.enabled = false;
+                var listener = GetComponentInChildren<AudioListener>();
+                if (listener != null) listener.enabled = false;
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (IsOwner)
+                UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (IsOwner || !IsNetworkActive)
+            {
+                SetupCamera();
+                TeleportToSceneSpawn(scene.name);
+#if ENABLE_INPUT_SYSTEM
+                if (_playerInput != null) _playerInput.ActivateInput();
+#endif
+            }
+        }
+
+        private void TeleportToSceneSpawn(string sceneName)
+        {
+            var config = SceneSpawns.Find(s => s.SceneName == sceneName);
+            if (string.IsNullOrEmpty(config.SpawnPointTag)) return;
+
+            GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag(config.SpawnPointTag);
+            if (spawnPoints.Length > 0)
+            {
+                int index = (int)(OwnerClientId % (ulong)spawnPoints.Length);
+                Transform targetSpawn = spawnPoints[index].transform;
+                if (_controller != null) _controller.enabled = false;
+                transform.position = targetSpawn.position;
+                transform.rotation = targetSpawn.rotation;
+                _startingPosition = transform.position;
+                _startingRotation = transform.rotation;
+                if (_controller != null) _controller.enabled = true;
+            }
+        }
+
+        public override void OnDestroy()
+        {
+            if (_health != null)
+            {
+                _health.OnDeath.RemoveListener(OnPlayerDeath);
+            }
+            base.OnDestroy();
+        }
+
+        private bool _isDead = false;
+
+        private void OnPlayerDeath()
+        {
+            if (_isDead) return;
+            _isDead = true;
+
+            SpawnDeathVisuals();
+
+            var defeatMenu = FindFirstObjectByType<DefeatMenu>();
+            if (defeatMenu != null)
+            {
+                defeatMenu.TriggerDefeat();
+            }
+
+            if (IsNetworkActive && IsServer)
+            {
+                if (TryGetComponent<NetworkObject>(out var netObj) && netObj.IsSpawned)
+                    netObj.Despawn(true);
+                else
+                    Destroy(gameObject);
+            }
+            else if (!IsNetworkActive)
+            {
+                Destroy(gameObject);
+            }
+        }
+
+        private void SpawnDeathVisuals()
+        {
+            GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            sphere.transform.position = transform.position + Vector3.up * 1.0f;
+            sphere.transform.localScale = Vector3.one * 1.2f;
+            if (sphere.TryGetComponent<Collider>(out var c)) Destroy(c);
+
+            var mr = sphere.GetComponent<MeshRenderer>();
+            var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+            var mat = new Material(shader);
+            mat.color = Color.red;
+            mr.material = mat;
+            Destroy(sphere, 0.25f);
+        }
+
+        private void Update()
+        {
+            if (!CanExecuteLocalLogic)
+            {
+                if (_renderTransform != null)
+                {
+                    _renderTransform.localPosition = new Vector3(0, -0.05f, 0);
+                    _renderTransform.localRotation = Quaternion.identity;
+                }
+                return;
+            }
+
+            if (_health != null && _health.CurrentHP <= 0)
+            {
+                OnPlayerDeath();
+                return;
+            }
+
+#if ENABLE_INPUT_SYSTEM
+            if (_fireAction == null) RefreshInputActions();
+            UpdateInputState();
+#endif
+
+            HandleAimingAndCombat();
+            GroundedCheck();
+            HandleRespawn();
+            JumpAndGravity();
+            Move();
+            UpdateAnimatorParameters();
+        }
+
+        private void LateUpdate()
+        {
+            if (!CanExecuteLocalLogic) return;
+            UpdateCameraTargetPosition();
+            CameraRotation();
+        }
+
+        private void UpdateCameraTargetPosition()
+        {
+            if (CinemachineCameraTarget == null) return;
+
+            Animator anim = GetComponentInChildren<Animator>();
+            if (anim != null)
+            {
+                Transform bone = anim.GetBoneTransform(HumanBodyBones.UpperChest) ??
+                                 anim.GetBoneTransform(HumanBodyBones.Chest) ??
+                                 anim.GetBoneTransform(HumanBodyBones.Neck) ??
+                                 anim.GetBoneTransform(HumanBodyBones.Head) ??
+                                 anim.transform.Find("spine") ??
+                                 anim.transform.Find("Chest") ??
+                                 anim.transform.Find("head");
+
+                if (bone != null)
+                {
+                    CinemachineCameraTarget.transform.position = bone.position + Vector3.up * 0.1f;
+                }
+            }
+        }
+        #endregion
+
+        #region Setup & Configuration
+        private void SetupPlayerLocal()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (_playerInput != null)
+            {
+                _playerInput.enabled = true;
+                _playerInput.ActivateInput();
+            }
+#endif
+            SetupCamera();
+            SetCursorState(cursorLocked);
+        }
+
+        private void DisableLocalComponents()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (_playerInput != null)
+            {
+                _playerInput.DeactivateInput();
+                _playerInput.enabled = false;
+            }
+#endif
+        }
+
+        private void SetupCamera()
+        {
+            _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+            GameObject root = transform.root.gameObject;
+
+            _vcamCache = root.GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>(true);
+            if (_vcamCache == null) _vcamCache = FindFirstObjectByType<Unity.Cinemachine.CinemachineCamera>();
+
+            if (_vcamCache != null)
+            {
+                _vcam3rdPerson = _vcamCache.GetComponent<Unity.Cinemachine.CinemachineThirdPersonFollow>();
+
+                if (CinemachineCameraTarget != null)
+                {
+                    _vcamCache.Follow = CinemachineCameraTarget.transform;
+                    _vcamCache.LookAt = CinemachineCameraTarget.transform;
+                    _vcamCache.enabled = CanExecuteLocalLogic;
+                    _vcamCache.Priority = CanExecuteLocalLogic ? 100 : 0;
+                }
+            }
+        }
+
+        public void RefreshFunctionalComponents()
+        {
+            _jetpack = GetComponentInChildren<PropulsionController>();
+            _shooter = GetComponentInChildren<ShootController>();
+            _melee = GetComponentInChildren<MeleeController>();
+
+            _animator = null;
+            _renderTransform = transform.Find("PlayerRender") ?? transform.Find("Render") ?? transform.Find("EnemyRender");
+
+            if (_renderTransform != null)
+            {
+                _animator = _renderTransform.GetComponentInChildren<Animator>(true);
+                _renderTransform.localPosition = new Vector3(0, -0.05f, 0);
+                _renderTransform.localRotation = Quaternion.identity;
+            }
+
+            if (_animator == null) _animator = GetComponentInChildren<Animator>(true);
+            if (_animator == null) _animator = GetComponentInParent<Animator>();
+            if (_animator == null) _animator = GetComponent<Animator>();
+
+            _hasAnimator = _animator != null;
+            if (_hasAnimator)
+            {
+                _animator.enabled = true;
+                _animator.applyRootMotion = false;
+                AssignAnimationIDs();
+            }
+            SetupCamera();
+        }
+
+        public void RefreshBodyReferences()
+        {
+            RefreshFunctionalComponents();
+        }
+        #endregion
+
+        #region Input & Aiming Combat Logic
+        private void RefreshInputActions()
+        {
+            if (_playerInput == null || _playerInput.actions == null) return;
+
+            _moveAction = _playerInput.actions.FindAction("Move") ?? _playerInput.actions.FindAction("Player/Move");
+            _lookAction = _playerInput.actions.FindAction("Look") ?? _playerInput.actions.FindAction("Player/Look");
+            _jumpAction = _playerInput.actions.FindAction("Jump") ?? _playerInput.actions.FindAction("Player/Jump");
+            _fireAction = _playerInput.actions.FindAction("Fire") ?? _playerInput.actions.FindAction("Player/Fire");
+            _sprintAction = _playerInput.actions.FindAction("Sprint") ?? _playerInput.actions.FindAction("Player/Sprint");
+            _aimAction = _playerInput.actions.FindAction("Aim") ?? _playerInput.actions.FindAction("Player/Aim");
+            _hookAction = _playerInput.actions.FindAction("Hook") ?? _playerInput.actions.FindAction("Player/Hook");
+            _crouchAction = _playerInput.actions.FindAction("Crouch") ?? _playerInput.actions.FindAction("Player/Crouch");
+            _reloadAction = _playerInput.actions.FindAction("Reload") ?? _playerInput.actions.FindAction("Player/Reload");
+            _nextWeaponAction = _playerInput.actions.FindAction("NextWeapon") ?? _playerInput.actions.FindAction("Player/NextWeapon");
+        }
+
+        private void UpdateInputState()
+        {
+            if (_moveAction != null) move = _moveAction.ReadValue<Vector2>();
+            if (_lookAction != null) look = _lookAction.ReadValue<Vector2>();
+
+            if (_jumpAction != null)
+            {
+                if (_jumpAction.WasPressedThisFrame()) jump = true;
+                jumpHeld = _jumpAction.IsPressed();
+                _isJumpHeld = jumpHeld;
+            }
+
+            if (_sprintAction != null && _sprintAction.IsPressed())
+            {
+                _shiftHoldTimer += Time.deltaTime;
+                sprint = _shiftHoldTimer >= SprintHoldThreshold;
+            }
+            else
+            {
+                _shiftHoldTimer = 0f;
+                sprint = false;
+            }
+
+            // Click Izquierdo -> fuego / ataque melee
+            bool actionFire = _fireAction != null && _fireAction.WasPressedThisFrame();
+            bool mouseFire = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
+            fire = actionFire || mouseFire;
+
+            bool actionFireHeld = _fireAction != null && _fireAction.IsPressed();
+            bool mouseFireHeld = Mouse.current != null && Mouse.current.leftButton.isPressed;
+            fireHeld = actionFireHeld || mouseFireHeld;
+
+            bool actionFireReleased = _fireAction != null && _fireAction.WasReleasedThisFrame();
+            bool mouseFireReleased = Mouse.current != null && Mouse.current.leftButton.wasReleasedThisFrame;
+            fireReleased = actionFireReleased || mouseFireReleased;
+
+            // Click Derecho -> Apuntar (Soporta Mantener o Alternar / Toggle)
+            bool aimPressedThisFrame = (_aimAction != null && _aimAction.WasPressedThisFrame()) ||
+                                       (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame);
+            bool aimIsHeld = (_aimAction != null && _aimAction.IsPressed()) ||
+                             (Mouse.current != null && Mouse.current.rightButton.isPressed);
+
+            if (toggleAim)
+            {
+                if (aimPressedThisFrame)
+                {
+                    aim = !aim;
+                }
+            }
+            else
+            {
+                aim = aimIsHeld;
+            }
+
+            // Tecla G -> Disparar Gancho
+            bool hookActionPressed = _hookAction != null && _hookAction.WasPressedThisFrame();
+            bool keyGPressed = Keyboard.current != null && Keyboard.current.gKey.wasPressedThisFrame;
+            hook = hookActionPressed || keyGPressed;
+
+            if (_crouchAction != null && _crouchAction.WasPressedThisFrame()) crouch = true;
+            if (_reloadAction != null && _reloadAction.WasPressedThisFrame()) reload = true;
+
+            if (_nextWeaponAction != null)
+            {
+                float val = _nextWeaponAction.ReadValue<float>();
+                switchWeapon = val > 0 ? 1 : (val < 0 ? -1 : 0);
+            }
+
+            selectWeapon = 0;
+            if (Keyboard.current != null)
+            {
+                for (int i = 1; i <= 9; i++)
+                {
+                    if (Keyboard.current[Key.Digit1 + (i - 1)].wasPressedThisFrame)
+                    {
+                        selectWeapon = i;
+                        break;
+                    }
+                }
+            }
+        }
+
+        private void HandleAimingAndCombat()
+        {
+            if (crosshairUI != null)
+            {
+                crosshairUI.SetActive(aim);
+            }
+
+            if (_vcamCache == null) SetupCamera();
+
+            float targetFOV = aim ? aimFOV : normalFOV;
+
+            if (_vcamCache != null)
+            {
+                _vcamCache.Lens.FieldOfView = Mathf.Lerp(_vcamCache.Lens.FieldOfView, targetFOV, Time.deltaTime * 10f);
+
+                if (_vcam3rdPerson == null)
+                {
+                    _vcam3rdPerson = _vcamCache.GetComponent<Unity.Cinemachine.CinemachineThirdPersonFollow>();
+                }
+
+                if (_vcam3rdPerson != null)
+                {
+                    float targetDistance = aim ? aimCameraDistance : defaultCameraDistance;
+                    Vector3 targetShoulderOffset = aim ? aimShoulderOffset : defaultShoulderOffset;
+
+                    _vcam3rdPerson.CameraDistance = Mathf.Lerp(_vcam3rdPerson.CameraDistance, targetDistance, Time.deltaTime * 10f);
+                    _vcam3rdPerson.ShoulderOffset = Vector3.Lerp(_vcam3rdPerson.ShoulderOffset, targetShoulderOffset, Time.deltaTime * 10f);
+                }
+            }
+
+            if (_mainCamera != null && _mainCamera.TryGetComponent<Camera>(out var camComp))
+            {
+                camComp.fieldOfView = Mathf.Lerp(camComp.fieldOfView, targetFOV, Time.deltaTime * 10f);
+            }
+
+            // --- LÓGICA DE GANCHO (MANTENER APUNTADO + PULSAR G) ---
+            if (aim && hook)
+            {
+                TryFireHook();
+                hook = false;
+            }
+
+            if (_shooter != null && (_shooter.isUnlocked || _shooter.Projectile != null))
+            {
+                if (_shooter.HoldToFire ? fireHeld : fire)
+                {
+                    if (!_shooter.TryFire() && _melee != null && fire)
+                    {
+                        _melee.PerformMeleeAction();
+                    }
+                }
+            }
+            else if (_melee != null && fire)
+            {
+                _melee.PerformMeleeAction();
+            }
+        }
+
+        private void TryFireHook()
+        {
+            if (hookProjectilePrefab == null)
+            {
+                Debug.LogWarning("[PlayerController] Falta asignar 'hookProjectilePrefab' en el Inspector.");
+                return;
+            }
+
+            Transform spawnTransform = hookMuzzle != null ? hookMuzzle : (_shooter != null && _shooter.Muzzle != null ? _shooter.Muzzle.transform : transform);
+            Vector3 spawnPos = spawnTransform.position;
+            Vector3 aimDirection = _mainCamera != null ? _mainCamera.transform.forward : transform.forward;
+
+            GameObject hookGO = Instantiate(hookProjectilePrefab, spawnPos, Quaternion.LookRotation(aimDirection));
+            HookProjectileController hookComp = hookGO.GetComponent<HookProjectileController>();
+
+            if (hookComp != null)
+            {
+                hookComp.Launch(gameObject, aimDirection, spawnTransform);
+            }
+        }
+
+#if ENABLE_INPUT_SYSTEM
+        public void OnJump(InputValue value)
+        {
+            _isJumpHeld = value.isPressed;
+            if (CanExecuteLocalLogic && value.isPressed) jump = true;
+        }
+
+        public void OnLook(InputValue value)
+        {
+            if (cursorInputForLook && CanExecuteLocalLogic)
+            {
+                LookInput(value.Get<Vector2>());
+            }
+        }
+
+        public void OnSprint(InputValue value)
+        {
+            if (CanExecuteLocalLogic) SprintInput(value.isPressed);
+        }
+#endif
+
+        public void MoveInput(Vector2 newMoveDirection) => move = newMoveDirection;
+        public void LookInput(Vector2 newLookDirection) => look = newLookDirection;
+        public void JumpInput(bool newJumpState) { if (newJumpState) jump = true; }
+        public void SprintInput(bool newSprintState) => sprint = newSprintState;
+
+        public void InputMove(InputValue value) => MoveInput(value.Get<Vector2>());
+        public void InputLook(InputValue value) => LookInput(value.Get<Vector2>());
+        public void InputJump(InputValue value)
+        {
+            if (value.isPressed) jump = true;
+            jumpHeld = value.isPressed;
+        }
+        public void InputSprint(InputValue value) => SprintInput(value.isPressed);
+        public void InputFire(InputValue value)
+        {
+            bool isPressed = value.isPressed;
+            if (isPressed) fire = true;
+            fireHeld = isPressed;
+            fireReleased = !isPressed;
+        }
+        public void InputAim(InputValue value)
+        {
+            if (toggleAim)
+            {
+                if (value.isPressed) aim = !aim;
+            }
+            else
+            {
+                aim = value.isPressed;
+            }
+        }
+        public void InputHook(InputValue value) => hook = value.isPressed;
+        public void InputCrouch(InputValue value) => crouch = value.isPressed;
+        public void InputReload(InputValue value) => reload = value.isPressed;
+        public void InputNextWeapon(InputValue value) => switchWeapon = (int)value.Get<float>();
+        public void InputSelectWeapon(InputValue value) => selectWeapon = (int)value.Get<float>();
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (CanExecuteLocalLogic) SetCursorState(cursorLocked);
+        }
+
+        private void SetCursorState(bool newState)
+        {
+            Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
+            Cursor.visible = !newState;
+        }
+        #endregion
+
+        #region Network Shooting Bridge
+        public void RequestFire(GameObject prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team)
+        {
+            if (IsNetworkActive)
+            {
+                FireServerRpc(direction, spawnPos, damage, team);
+            }
+            else
+            {
+                GameObject projObj = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
+                ProjectileController projectile = projObj.GetComponent<ProjectileController>();
+                if (projectile != null)
+                {
+                    projectile.Launch(gameObject, direction, damage, team);
+                }
+            }
+        }
+
+        [ServerRpc]
+        private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team)
+        {
+            GameObject projectilePrefab = null;
+
+            var shooter = GetComponentInChildren<ShootController>();
+            if (shooter != null)
+            {
+                projectilePrefab = shooter.Projectile;
+            }
+
+            if (projectilePrefab != null)
+            {
+                GameObject projObj = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
+                ProjectileController projectile = projObj.GetComponent<ProjectileController>();
+                if (projectile != null)
+                {
+                    projectile.Launch(gameObject, direction, damage, team);
+                }
+
+                if (projObj.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
+            }
+            else
+            {
+                Debug.LogWarning("[PlayerController] El servidor no encontró un ShootController con proyectil asignado.");
+            }
+        }
+        #endregion
+
+        #region Movement Logic
+        private void GroundedCheck()
+        {
+            if (_verticalVelocity > 0.1f) { Grounded = false; return; }
+
+            Vector3 spherePos = transform.position + Vector3.up * GroundedRadius;
+
+            LayerMask mask = GroundLayers;
+            if (mask == 0) mask = ~((1 << 3) | (1 << 2));
+
+            Grounded = Physics.CheckSphere(spherePos, GroundedRadius * 1.1f, mask, QueryTriggerInteraction.Ignore)
+                       || (_controller != null && _controller.isGrounded);
+        }
+
+        private void CameraRotation()
+        {
+            if (IsRespawning)
+            {
+                _cinemachineTargetYaw = 0f;
+                _cinemachineTargetPitch = 0f;
+                CinemachineCameraTarget.transform.position = _cameraStartingPosition;
+                CinemachineCameraTarget.transform.rotation = _cameraStartingRotation;
+                IsRespawning = false;
+                return;
+            }
+
+            if (look.sqrMagnitude >= _threshold && !LockCameraPosition)
+            {
+                float deltaTimeMultiplier = (IsCurrentDeviceMouse) ? 0.5f : Time.deltaTime;
+
+                _cinemachineTargetYaw += look.x * deltaTimeMultiplier * LookSensitivity.x * 2f;
+                _cinemachineTargetPitch += look.y * deltaTimeMultiplier * LookSensitivity.y * 2f;
+            }
+
+            _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
+            _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
+
+            if (CinemachineCameraTarget != null)
+            {
+                CinemachineCameraTarget.transform.rotation = Quaternion.Euler(
+                    _cinemachineTargetPitch + CameraAngleOverride,
+                    _cinemachineTargetYaw,
+                    0.0f);
+            }
+        }
+
+        private void Move()
+        {
+            float targetSpeed = sprint ? SprintSpeed : MoveSpeed;
+            if (move == Vector2.zero) targetSpeed = 0.0f;
+
+            _speed = Mathf.Lerp(_speed, targetSpeed, Time.deltaTime * SpeedChangeRate);
+            _animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, Time.deltaTime * SpeedChangeRate);
+
+            if (move != Vector2.zero)
+            {
+                if (_mainCamera == null) _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+                float camYaw = (_mainCamera != null) ? _mainCamera.transform.eulerAngles.y : 0f;
+
+                _targetRotation = Mathf.Atan2(move.x, move.y) * Mathf.Rad2Deg + camYaw;
+
+                float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
+                transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
+            }
+
+            Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
+            _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+        }
+
+        private void JumpAndGravity()
+        {
+            if (_jetpack != null && _jetpack.ProcessFlight(_isJumpHeld, Grounded, ref _verticalVelocity))
+            {
+                jump = false;
+                return;
+            }
+
+            if (Grounded)
+            {
+                _fallTimeoutDelta = FallTimeout;
+
+                if (_verticalVelocity < 0.0f)
+                {
+                    _verticalVelocity = -8f;
+                    _jumpsRemaining = EnableDoubleJump ? 2 : 1;
+                }
+
+                if (jump && _jumpsRemaining > 0)
+                {
+                    _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
+                    _jumpsRemaining--;
+                    if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
+                    jump = false;
+                }
+            }
+            else
+            {
+                if (jump && EnableDoubleJump && _jumpsRemaining > 0)
+                {
+                    _verticalVelocity = Mathf.Sqrt(DoubleJumpHeight * -2f * Gravity);
+                    _jumpsRemaining--;
+                    if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
+                    jump = false;
+                }
+            }
+
+            if (_verticalVelocity > -_terminalVelocity)
+                _verticalVelocity += Gravity * Time.deltaTime;
+
+            jump = false;
+        }
+        #endregion
+
+        #region Respawn Logic
+        private void HandleRespawn()
+        {
+            if (transform.position.y < yThreshold) Respawn();
+        }
+
+        public void Respawn()
+        {
+            if (_controller != null) _controller.enabled = false;
+            transform.position = _startingPosition;
+            transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+            if (_controller != null)
+            {
+                _controller.enabled = true;
+                _verticalVelocity = 0f;
+            }
+            ResetCameraRotation(90f);
+            if (respawnSound != null) AudioSource.PlayClipAtPoint(respawnSound, transform.position);
+        }
+
+        public void ResetCameraRotation(float targetYaw)
+        {
+            _cinemachineTargetYaw = targetYaw;
+            _cinemachineTargetPitch = 0f;
+            if (CinemachineCameraTarget != null)
+                CinemachineCameraTarget.transform.rotation = Quaternion.Euler(_cinemachineTargetPitch, _cinemachineTargetYaw, 0f);
+        }
+        #endregion
+
+        #region Animation Helpers
+        private void AssignAnimationIDs()
+        {
+            if (_hasAnimator)
+            {
+                _hasAnimIDSpeed = HasParameter(_animator, _animIDSpeed);
+                _hasAnimIDIsGrounded = HasParameter(_animator, _animIDIsGrounded);
+                _hasAnimIDJump = HasParameter(_animator, _animIDJump);
+            }
+        }
+
+        private void UpdateAnimatorParameters()
+        {
+            if (!_hasAnimator || _animator == null || !_animator.gameObject.activeInHierarchy)
+            {
+                RefreshFunctionalComponents();
+                if (!_hasAnimator) return;
+            }
+
+            if (!_animator.enabled) _animator.enabled = true;
+            _animator.applyRootMotion = false;
+
+            if (_renderTransform != null)
+            {
+                _renderTransform.localPosition = new Vector3(0, -0.05f, 0);
+                _renderTransform.localRotation = Quaternion.identity;
+            }
+
+            float speedFactor = 0f;
+            if (_animationBlend > 0.01f)
+            {
+                if (sprint)
+                {
+                    speedFactor = Mathf.Lerp(0.5f, 1.0f, (_animationBlend - MoveSpeed) / Mathf.Max(0.1f, SprintSpeed - MoveSpeed));
+                }
+                else
+                {
+                    speedFactor = Mathf.Lerp(0.1f, 0.5f, _animationBlend / MoveSpeed);
+                }
+            }
+
+            if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, speedFactor);
+            if (_hasAnimIDIsGrounded) _animator.SetBool(_animIDIsGrounded, Grounded);
+        }
+
+        private bool HasParameter(Animator animator, int paramHash)
+        {
+            foreach (AnimatorControllerParameter param in animator.parameters)
+                if (param.nameHash == paramHash) return true;
+            return false;
+        }
+        #endregion
+
+        #region Audio Helpers
+        private void OnFootstep(AnimationEvent animationEvent)
+        {
+            if (animationEvent.animatorClipInfo.weight > 0.5f && FootstepAudioClips.Length > 0)
+            {
+                var index = Random.Range(0, FootstepAudioClips.Length);
+                AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(_controller.center), FootstepAudioVolume);
+            }
+        }
+
+        private void OnLand(AnimationEvent animationEvent)
+        {
+            if (animationEvent.animatorClipInfo.weight > 0.5f && LandingAudioClip != null)
+                AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
+        }
+        #endregion
+
+        #region Math Helpers
+        private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
+        {
+            if (lfAngle < -360f) lfAngle += 360f;
+            if (lfAngle > 360f) lfAngle -= 360f;
+            return Mathf.Clamp(lfAngle, lfMin, lfMax);
+        }
+        #endregion
+
+        #region Debug
+        private void OnDrawGizmosSelected()
+        {
+            Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
+            Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
+            Gizmos.color = Grounded ? transparentGreen : transparentRed;
+            Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
+        }
+        #endregion
+    }
+}
