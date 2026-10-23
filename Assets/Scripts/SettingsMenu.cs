@@ -6,7 +6,6 @@ using System.Collections.Generic;
 
 namespace Runtime.Scripts.Settings
 {
-
     public class SettingsMenu : MonoBehaviour
     {
         public static string PreviousScene { get; set; } = "";
@@ -37,22 +36,22 @@ namespace Runtime.Scripts.Settings
             }
         }
 
-        [Header("Configuración de Escenas")]
-        public string escenaMenuPrincipal = "MainMenuScene";
+        [Header("Scene Configuration")]
+        public string mainMenuScene = "MainMenuScene";
 
-        [Header("Estilo Visual Xenobot")]
-        public Color colorFondo = new Color(0.01f, 0.02f, 0.05f, 1f);
-        public Color colorSidebar = new Color(0.05f, 0.1f, 0.2f, 0.95f);
-        public Color colorPanel = new Color(0.1f, 0.2f, 0.3f, 0.7f);
-        public Color colorBotonActivo = new Color(0f, 0.8f, 1f, 0.6f);
-        public Color colorAccent = new Color(0f, 1f, 1f, 1f);
-        public Color colorTexto = Color.white;
-        public Color colorBorde = new Color(0f, 1f, 1f, 0.4f);
+        [Header("Xenobot Visual Style")]
+        public Color backgroundColor = new Color(0.01f, 0.02f, 0.05f, 1f);
+        public Color sidebarColor = new Color(0.05f, 0.1f, 0.2f, 0.95f);
+        public Color panelColor = new Color(0.1f, 0.2f, 0.3f, 0.7f);
+        public Color activeButtonColor = new Color(0f, 0.8f, 1f, 0.6f);
+        public Color accentColor = new Color(0f, 1f, 1f, 1f);
+        public Color textColor = Color.white;
+        public Color borderColor = new Color(0f, 1f, 1f, 0.4f);
 
         private GameObject _rootCanvasObj;
-        private GameObject mainPanelContainer;
-        private List<GameObject> paneles = new List<GameObject>();
-        private List<Image> imagenesBotonesSidebar = new List<Image>();
+        private GameObject _mainPanelContainer;
+        private List<GameObject> _panels = new List<GameObject>();
+        private List<Image> _sidebarButtonImages = new List<Image>();
 
         private void Start()
         {
@@ -61,11 +60,10 @@ namespace Runtime.Scripts.Settings
 
         private void SetupUI()
         {
-            // 1. Canvas Raíz con máxima prioridad
             _rootCanvasObj = new GameObject("SettingsCanvas");
             Canvas canvas = _rootCanvasObj.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 3000; // Por encima del PauseMenu (2000)
+            canvas.sortingOrder = 3000;
 
             CanvasScaler scaler = _rootCanvasObj.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -79,7 +77,6 @@ namespace Runtime.Scripts.Settings
             if (uiLayer == -1) uiLayer = 5;
             _rootCanvasObj.layer = uiLayer;
 
-            // 2. EventSystem
             if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
                 GameObject esObj = new GameObject("EventSystem");
@@ -87,11 +84,9 @@ namespace Runtime.Scripts.Settings
                 esObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
             }
 
-            // 3. Fondo
-            Color finalBg = IsOverlayMode ? new Color(0, 0, 0, 0.9f) : colorFondo;
+            Color finalBg = IsOverlayMode ? new Color(0, 0, 0, 0.9f) : backgroundColor;
             CreateAdaptiveImage(_rootCanvasObj.transform, "Background", new Vector2(0.5f, 0.5f), new Vector2(1.5f, 1.5f), finalBg);
 
-            // 4. Barra Lateral (Sidebar)
             GameObject sidebar = new GameObject("Sidebar");
             sidebar.transform.SetParent(_rootCanvasObj.transform);
             sidebar.layer = uiLayer;
@@ -101,87 +96,83 @@ namespace Runtime.Scripts.Settings
             sideRT.offsetMin = sideRT.offsetMax = Vector2.zero;
             sideRT.anchoredPosition3D = Vector3.zero;
             sideRT.localScale = Vector3.one;
-            sidebar.AddComponent<Image>().color = colorSidebar;
-            CreateOutline(sidebar.transform, colorBorde);
+            sidebar.AddComponent<Image>().color = sidebarColor;
+            CreateOutline(sidebar.transform, borderColor);
 
-            // 5. Contenedor de Paneles
-            mainPanelContainer = new GameObject("ContentContainer");
-            mainPanelContainer.transform.SetParent(_rootCanvasObj.transform);
-            mainPanelContainer.layer = uiLayer;
-            RectTransform contRT = mainPanelContainer.AddComponent<RectTransform>();
+            _mainPanelContainer = new GameObject("ContentContainer");
+            _mainPanelContainer.transform.SetParent(_rootCanvasObj.transform);
+            _mainPanelContainer.layer = uiLayer;
+            RectTransform contRT = _mainPanelContainer.AddComponent<RectTransform>();
             contRT.anchorMin = new Vector2(0.28f, 0.05f);
             contRT.anchorMax = new Vector2(0.95f, 0.95f);
             contRT.offsetMin = contRT.offsetMax = Vector2.zero;
             contRT.anchoredPosition3D = Vector3.zero;
             contRT.localScale = Vector3.one;
-            mainPanelContainer.AddComponent<Image>().color = colorPanel;
-            CreateOutline(mainPanelContainer.transform, colorBorde);
+            _mainPanelContainer.AddComponent<Image>().color = panelColor;
+            CreateOutline(_mainPanelContainer.transform, borderColor);
 
-            // 6. Crear Contenido
-            paneles.Add(SetupSonidoPanel());
-            paneles.Add(SetupControlesPanel());
-            paneles.Add(SetupGraficosPanel());
+            _panels.Add(SetupAudioPanel());
+            _panels.Add(SetupControlsPanel());
+            _panels.Add(SetupGraphicsPanel());
 
-            // 7. Navegación
             CreateSidebarButton(sidebar.transform, "AUDIO", 0, () => ShowPanel(0));
-            CreateSidebarButton(sidebar.transform, "CONTROLES", 1, () => ShowPanel(1));
-            CreateSidebarButton(sidebar.transform, "GRÁFICOS", 2, () => ShowPanel(2));
-            CreateSidebarButton(sidebar.transform, "VOLVER", 7, VolverAlMenu, new Color(0.8f, 0.2f, 0.2f, 0.8f));
+            CreateSidebarButton(sidebar.transform, "CONTROLS", 1, () => ShowPanel(1));
+            CreateSidebarButton(sidebar.transform, "GRAPHICS", 2, () => ShowPanel(2));
+            CreateSidebarButton(sidebar.transform, "BACK", 7, ReturnToMenu, new Color(0.8f, 0.2f, 0.2f, 0.8f));
 
             ShowPanel(0);
         }
 
-        private GameObject SetupSonidoPanel()
+        private GameObject SetupAudioPanel()
         {
-            GameObject panel = CreateBasePanel("Panel_Sonido", "SISTEMA DE AUDIO");
-            CreateSettingSlider(panel.transform, "VOLUMEN", 0.75f, 0.8f);
-            CreateSettingSlider(panel.transform, "MÚSICA", 0.60f, 0.5f);
-            CreateSettingSlider(panel.transform, "EFECTOS", 0.45f, 0.9f);
+            GameObject panel = CreateBasePanel("Panel_Audio", "AUDIO SYSTEM");
+            CreateSettingSlider(panel.transform, "VOLUME", 0.75f, 0.8f);
+            CreateSettingSlider(panel.transform, "MUSIC", 0.60f, 0.5f);
+            CreateSettingSlider(panel.transform, "EFFECTS", 0.45f, 0.9f);
             return panel;
         }
 
-        private GameObject SetupControlesPanel()
+        private GameObject SetupControlsPanel()
         {
-            GameObject panel = CreateBasePanel("Panel_Controles", "MAPEO DE TECLAS");
+            GameObject panel = CreateBasePanel("Panel_Controls", "KEY BINDINGS");
 
-            // Columna de Controles compacta (Lista oficial para el usuario)
-            CreateControlLabel(panel.transform, "MOVIMIENTO", "W A S D", 0.80f);
-            CreateControlLabel(panel.transform, "SALTAR", "ESPACIO", 0.75f);
-            CreateControlLabel(panel.transform, "ESPRINTAR", "MAYÚS IZQ", 0.70f);
-            CreateControlLabel(panel.transform, "JETPACK (VUELO)", "B", 0.65f);
-            CreateControlLabel(panel.transform, "DASH (IMPULSO)", "WASD (x2)", 0.60f);
-            CreateControlLabel(panel.transform, "AGACHARSE", "C", 0.55f);
-            CreateControlLabel(panel.transform, "RECARGAR", "R", 0.50f);
-            CreateControlLabel(panel.transform, "DISPARAR", "CLIC IZQ", 0.45f);
-            CreateControlLabel(panel.transform, "APUNTAR", "CLIC DER", 0.40f);
-            CreateControlLabel(panel.transform, "CAMBIO RÁPIDO", "1 - 9", 0.35f);
-            CreateControlLabel(panel.transform, "INVENTARIO", "TAB / I", 0.30f);
-            CreateControlLabel(panel.transform, "MISIONES (HUD)", "M", 0.25f);
-            CreateControlLabel(panel.transform, "MENÚ / PAUSA", "ESC", 0.20f);
+            CreateControlLabel(panel.transform, "MOVEMENT", "W A S D", 0.80f);
+            CreateControlLabel(panel.transform, "JUMP", "SPACE", 0.75f);
+            CreateControlLabel(panel.transform, "SPRINT", "LEFT SHIFT", 0.70f);
+            CreateControlLabel(panel.transform, "JETPACK (FLY)", "B", 0.65f);
+            CreateControlLabel(panel.transform, "DASH", "WASD (x2)", 0.60f);
+            CreateControlLabel(panel.transform, "CROUCH", "C", 0.55f);
+            CreateControlLabel(panel.transform, "RELOAD", "R", 0.50f);
+            CreateControlLabel(panel.transform, "SHOOT", "LEFT CLICK", 0.45f);
+            CreateControlLabel(panel.transform, "AIM", "RIGHT CLICK", 0.40f);
+            CreateControlLabel(panel.transform, "QUICK SWITCH", "1 - 9", 0.35f);
+            CreateControlLabel(panel.transform, "INVENTORY", "TAB / I", 0.30f);
+            CreateControlLabel(panel.transform, "MISSIONS (HUD)", "M", 0.25f);
+            CreateControlLabel(panel.transform, "MENU / PAUSE", "ESC", 0.20f);
 
             return panel;
         }
 
-        private GameObject SetupGraficosPanel()
+        private GameObject SetupGraphicsPanel()
         {
-            GameObject panel = CreateBasePanel("Panel_Graficos", "VISUALES");
-            CreateSettingToggle(panel.transform, "PANTALLA COMPLETA", true, 0.75f);
+            GameObject panel = CreateBasePanel("Panel_Graphics", "VISUALS");
+            CreateSettingToggle(panel.transform, "FULLSCREEN", true, 0.75f);
             CreateSettingToggle(panel.transform, "V-SYNC", false, 0.65f);
-            CreateSettingToggle(panel.transform, "SOMBRAS HQ", true, 0.55f);
+            CreateSettingToggle(panel.transform, "HQ SHADOWS", true, 0.55f);
             return panel;
         }
 
         private GameObject CreateBasePanel(string name, string title)
         {
             GameObject panel = new GameObject(name);
-            panel.transform.SetParent(mainPanelContainer.transform);
+            panel.transform.SetParent(_mainPanelContainer.transform);
             panel.layer = LayerMask.NameToLayer("UI");
             RectTransform rt = panel.AddComponent<RectTransform>();
             rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
             rt.offsetMin = rt.offsetMax = Vector2.zero;
             rt.anchoredPosition3D = Vector3.zero; rt.localScale = Vector3.one;
 
-            CreateSubText(panel.transform, title, new Vector2(0.05f, 0.85f), new Vector2(0.95f, 0.98f), TextAlignmentOptions.Left, colorAccent, 50);
+            CreateSubText(panel.transform, title, new Vector2(0.05f, 0.85f), new Vector2(0.95f, 0.98f), TextAlignmentOptions.Left, accentColor, 50);
             return panel;
         }
 
@@ -196,7 +187,7 @@ namespace Runtime.Scripts.Settings
             rt.offsetMin = rt.offsetMax = Vector2.zero;
             rt.anchoredPosition3D = Vector3.zero; rt.localScale = Vector3.one;
 
-            CreateSubText(container.transform, labelText, new Vector2(0, 0), new Vector2(0.4f, 1), TextAlignmentOptions.Left, colorTexto, 32);
+            CreateSubText(container.transform, labelText, new Vector2(0, 0), new Vector2(0.4f, 1), TextAlignmentOptions.Left, textColor, 32);
 
             GameObject slideObj = new GameObject("Slider");
             slideObj.transform.SetParent(container.transform);
@@ -209,7 +200,7 @@ namespace Runtime.Scripts.Settings
             GameObject bg = new GameObject("Background");
             bg.transform.SetParent(slideObj.transform);
             bg.AddComponent<Image>().color = Color.black;
-            CreateOutline(bg.transform, colorBorde);
+            CreateOutline(bg.transform, borderColor);
             RectTransform bgRT = bg.GetComponent<RectTransform>();
             bgRT.anchorMin = Vector2.zero; bgRT.anchorMax = Vector2.one;
             bgRT.offsetMin = bgRT.offsetMax = Vector2.zero;
@@ -224,7 +215,7 @@ namespace Runtime.Scripts.Settings
 
             GameObject fill = new GameObject("Fill");
             fill.transform.SetParent(fillArea.transform);
-            fill.AddComponent<Image>().color = colorAccent;
+            fill.AddComponent<Image>().color = accentColor;
             slider.fillRect = fill.GetComponent<RectTransform>();
             slider.fillRect.offsetMin = slider.fillRect.offsetMax = Vector2.zero;
             slider.fillRect.anchoredPosition3D = Vector3.zero; slider.fillRect.localScale = Vector3.one;
@@ -238,13 +229,13 @@ namespace Runtime.Scripts.Settings
             container.transform.SetParent(parent);
             container.layer = LayerMask.NameToLayer("UI");
             RectTransform rt = container.AddComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0.05f, yAnchor - 0.02f); // Altura reducida para que quepan todas
+            rt.anchorMin = new Vector2(0.05f, yAnchor - 0.02f);
             rt.anchorMax = new Vector2(0.95f, yAnchor + 0.02f);
             rt.offsetMin = rt.offsetMax = Vector2.zero;
             rt.anchoredPosition3D = Vector3.zero; rt.localScale = Vector3.one;
 
-            CreateSubText(container.transform, action, new Vector2(0, 0), new Vector2(0.5f, 1), TextAlignmentOptions.Left, colorTexto, 28);
-            CreateSubText(container.transform, key, new Vector2(0.55f, 0), new Vector2(1f, 1), TextAlignmentOptions.Right, colorAccent, 28);
+            CreateSubText(container.transform, action, new Vector2(0, 0), new Vector2(0.5f, 1), TextAlignmentOptions.Left, textColor, 28);
+            CreateSubText(container.transform, key, new Vector2(0.55f, 0), new Vector2(1f, 1), TextAlignmentOptions.Right, accentColor, 28);
         }
 
         private void CreateSettingToggle(Transform parent, string labelText, bool initialState, float yAnchor)
@@ -258,12 +249,12 @@ namespace Runtime.Scripts.Settings
             rt.offsetMin = rt.offsetMax = Vector2.zero;
             rt.anchoredPosition3D = Vector3.zero; rt.localScale = Vector3.one;
 
-            CreateSubText(container.transform, labelText, new Vector2(0, 0), new Vector2(0.7f, 1), TextAlignmentOptions.Left, colorTexto, 30);
+            CreateSubText(container.transform, labelText, new Vector2(0, 0), new Vector2(0.7f, 1), TextAlignmentOptions.Left, textColor, 30);
 
             GameObject box = new GameObject("ToggleBox");
             box.transform.SetParent(container.transform);
             box.AddComponent<Image>().color = new Color(0, 0, 0, 0.5f);
-            CreateOutline(box.transform, colorBorde);
+            CreateOutline(box.transform, borderColor);
             RectTransform boxRT = box.GetComponent<RectTransform>();
             boxRT.anchorMin = new Vector2(0.85f, 0.1f); boxRT.anchorMax = new Vector2(0.95f, 0.9f);
             boxRT.offsetMin = boxRT.offsetMax = Vector2.zero;
@@ -271,7 +262,7 @@ namespace Runtime.Scripts.Settings
 
             GameObject check = new GameObject("Checkmark");
             check.transform.SetParent(box.transform);
-            check.AddComponent<Image>().color = colorAccent;
+            check.AddComponent<Image>().color = accentColor;
             RectTransform checkRT = check.GetComponent<RectTransform>();
             checkRT.anchorMin = new Vector2(0.2f, 0.2f); checkRT.anchorMax = new Vector2(0.8f, 0.8f);
             checkRT.offsetMin = checkRT.offsetMax = Vector2.zero;
@@ -303,12 +294,11 @@ namespace Runtime.Scripts.Settings
             tmp.alignment = al;
             tmp.fontSize = size;
 
-            // --- CONFIGURACIÓN DE VISIBILIDAD CRÍTICA ---
             tmp.enableAutoSizing = true;
             tmp.fontSizeMin = 12;
             tmp.fontSizeMax = size * 1.5f;
-            tmp.textWrappingMode = TextWrappingModes.NoWrap; // MUY IMPORTANTE: Evita que el texto desaparezca al intentar envolver
-            tmp.overflowMode = TextOverflowModes.Overflow; // Asegura que se vea aunque el rect sea pequeño
+            tmp.textWrappingMode = TextWrappingModes.NoWrap;
+            tmp.overflowMode = TextOverflowModes.Overflow;
             tmp.raycastTarget = false;
         }
 
@@ -319,24 +309,24 @@ namespace Runtime.Scripts.Settings
             b.layer = LayerMask.NameToLayer("UI");
             Image i = b.AddComponent<Image>();
             i.color = bg ?? new Color(0, 0, 0, 0);
-            if (bg == null) imagenesBotonesSidebar.Add(i);
+            if (bg == null) _sidebarButtonImages.Add(i);
             b.AddComponent<Button>().onClick.AddListener(act);
             RectTransform r = b.GetComponent<RectTransform>();
             float y = 0.88f - (pos * 0.12f);
             r.anchorMin = new Vector2(0.05f, y - 0.05f); r.anchorMax = new Vector2(0.95f, y + 0.05f);
             r.offsetMin = r.offsetMax = Vector2.zero;
             r.anchoredPosition3D = Vector3.zero; r.localScale = Vector3.one;
-            CreateSubText(b.transform, label, Vector2.zero, Vector2.one, TextAlignmentOptions.Center, colorTexto, 35);
-            if (bg == null) CreateOutline(b.transform, colorBorde);
+            CreateSubText(b.transform, label, Vector2.zero, Vector2.one, TextAlignmentOptions.Center, textColor, 35);
+            if (bg == null) CreateOutline(b.transform, borderColor);
         }
 
         public void ShowPanel(int idx)
         {
-            for (int i = 0; i < paneles.Count; i++)
+            for (int i = 0; i < _panels.Count; i++)
             {
-                paneles[i].SetActive(i == idx);
-                if (i < imagenesBotonesSidebar.Count)
-                    imagenesBotonesSidebar[i].color = (i == idx) ? colorBotonActivo : new Color(0, 0, 0, 0);
+                _panels[i].SetActive(i == idx);
+                if (i < _sidebarButtonImages.Count)
+                    _sidebarButtonImages[i].color = (i == idx) ? activeButtonColor : new Color(0, 0, 0, 0);
             }
         }
 
@@ -361,7 +351,7 @@ namespace Runtime.Scripts.Settings
             r.anchoredPosition3D = Vector3.zero; r.localScale = Vector3.one;
         }
 
-        public void VolverAlMenu()
+        public void ReturnToMenu()
         {
             if (IsOverlayMode)
             {
@@ -370,7 +360,7 @@ namespace Runtime.Scripts.Settings
                 return;
             }
 
-            string targetScene = !string.IsNullOrEmpty(PreviousScene) ? PreviousScene : escenaMenuPrincipal;
+            string targetScene = !string.IsNullOrEmpty(PreviousScene) ? PreviousScene : mainMenuScene;
             PreviousScene = "";
             SceneManager.LoadScene(targetScene);
         }
