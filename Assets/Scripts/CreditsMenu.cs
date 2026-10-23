@@ -10,7 +10,7 @@ namespace Runtime.Scripts.Credits
         [Header("Scene Configuration")]
         public string mainScene = "MainScene";
 
-        [Header("Credits Data (Hardcoded Defaults)")]
+        [Header("Credits Data")]
         public string titleText = "CREDITS";
         [TextArea(4, 10)]
         public string developersList = "DEVELOPERS\n\nJoaquin Luna\nJeronimo Cortez Cabral\nJuan Pablo Garay\nOctavio Arnaudo";
@@ -20,7 +20,6 @@ namespace Runtime.Scripts.Credits
         public Color titleColor = Color.cyan;
         public Color namesColor = Color.white;
         public Color backButtonColor = new Color(0.15f, 0.15f, 0.15f, 0.9f);
-        public Color quitButtonColor = new Color(0.7f, 0.1f, 0.1f, 0.9f);
         public Color buttonTextColor = Color.white;
 
         private void Start()
@@ -28,14 +27,11 @@ namespace Runtime.Scripts.Credits
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
 
-            // Load credits sprite automatically if not assigned
             if (creditsSprite == null)
             {
                 creditsSprite = Resources.Load<Sprite>("Menus/Sprites/credits_menu");
                 if (creditsSprite == null)
-                {
                     creditsSprite = Resources.Load<Sprite>("credits_menu");
-                }
             }
 
             SetupUI();
@@ -43,7 +39,6 @@ namespace Runtime.Scripts.Credits
 
         private void SetupUI()
         {
-            // Canvas setup
             GameObject canvasObj = new GameObject("CreditsCanvas");
             Canvas canvas = canvasObj.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -56,7 +51,6 @@ namespace Runtime.Scripts.Credits
 
             canvasObj.AddComponent<GraphicRaycaster>();
 
-            // Event System setup if missing
             if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
                 GameObject esObj = new GameObject("EventSystem");
@@ -64,27 +58,18 @@ namespace Runtime.Scripts.Credits
                 esObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
             }
 
-            // Dark background overlay
             CreateAdaptiveImage(canvasObj.transform, "DarkOverlay", new Vector2(0.5f, 0.5f), new Vector2(1.2f, 1.2f), new Color(0f, 0f, 0f, 0.75f), null);
 
-            // Credits image display (if sprite is loaded)
             if (creditsSprite != null)
-            {
                 CreateAdaptiveImage(canvasObj.transform, "CreditsImage", new Vector2(0.28f, 0.5f), new Vector2(0.35f, 0.55f), Color.white, creditsSprite);
-            }
 
-            // Title Text
-            CreateAdaptiveText(canvasObj.transform, titleText, new Vector2(creditsSprite != null ? 0.65f : 0.5f, 0.85f), 0.12f, titleColor, true);
+            Vector2 contentPos = creditsSprite != null ? new Vector2(0.65f, 0.5f) : new Vector2(0.5f, 0.5f);
+            Vector2 titlePos = creditsSprite != null ? new Vector2(0.65f, 0.85f) : new Vector2(0.5f, 0.85f);
+            Vector2 buttonPos = creditsSprite != null ? new Vector2(0.65f, 0.15f) : new Vector2(0.5f, 0.15f);
 
-            // Developer Names Text
-            CreateAdaptiveText(canvasObj.transform, developersList, new Vector2(creditsSprite != null ? 0.65f : 0.5f, 0.5f), 0.45f, namesColor, false);
-
-            // Buttons
-            Vector2 backBtnPos = creditsSprite != null ? new Vector2(0.55f, 0.15f) : new Vector2(0.4f, 0.15f);
-            Vector2 quitBtnPos = creditsSprite != null ? new Vector2(0.75f, 0.15f) : new Vector2(0.6f, 0.15f);
-
-            CreateAdaptiveButton(canvasObj.transform, "BACK", backBtnPos, ReturnToMenu, backButtonColor);
-            CreateAdaptiveButton(canvasObj.transform, "QUIT", quitBtnPos, QuitGame, quitButtonColor);
+            CreateAdaptiveText(canvasObj.transform, titleText, titlePos, 0.12f, titleColor, true);
+            CreateAdaptiveText(canvasObj.transform, developersList, contentPos, 0.45f, namesColor, false);
+            CreateAdaptiveButton(canvasObj.transform, "BACK", buttonPos, ReturnToMenu, backButtonColor);
         }
 
         private void CreateAdaptiveText(Transform parent, string content, Vector2 anchorPos, float heightRatio, Color color, bool isUpper)
@@ -175,13 +160,6 @@ namespace Runtime.Scripts.Credits
         {
             if (!string.IsNullOrEmpty(mainScene))
                 SceneManager.LoadScene(mainScene);
-            else
-                Debug.LogWarning("Escena de menú no configurada.");
-        }
-
-        public void QuitGame()
-        {
-            Application.Quit();
         }
     }
 }
