@@ -7,7 +7,7 @@ using System.Linq;
 using Runtime.Scripts.Trades;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Missions;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 
 namespace Runtime.Scripts.Crafting
 {
@@ -23,7 +23,7 @@ namespace Runtime.Scripts.Crafting
         public bool IsUIOpen => _open;
 
         [Header("System Settings")]
-        public List<TradeData> availableTrades;
+        public List<TradesData> availableTrades;
         public bool requireProximity = true;
 
         [Header("UI Aesthetics")]
@@ -126,7 +126,7 @@ namespace Runtime.Scripts.Crafting
             }
         }
 
-        public static string GetTradeIdentifier(TradeData trade)
+        public static string GetTradeIdentifier(TradesData trade)
         {
             if (trade == null) return "";
             if (!string.IsNullOrEmpty(trade.name)) return trade.name;
@@ -135,7 +135,7 @@ namespace Runtime.Scripts.Crafting
             return trade.ToString();
         }
 
-        public bool IsTradeCompleted(TradeData trade)
+        public bool IsTradeCompleted(TradesData trade)
         {
             if (trade == null) return false;
             return IsTradeCompleted(GetTradeIdentifier(trade));
@@ -153,7 +153,7 @@ namespace Runtime.Scripts.Crafting
             return false;
         }
 
-        public static bool IsTradeCompletedAnywhere(TradeData trade)
+        public static bool IsTradeCompletedAnywhere(TradesData trade)
         {
             if (trade == null) return false;
             if (LocalInstance != null && LocalInstance.IsTradeCompleted(trade)) return true;
@@ -167,7 +167,7 @@ namespace Runtime.Scripts.Crafting
             return false;
         }
 
-        public void RecordCompletedTrade(TradeData trade)
+        public void RecordCompletedTrade(TradesData trade)
         {
             if (trade == null) return;
             string id = GetTradeIdentifier(trade);
@@ -367,7 +367,7 @@ namespace Runtime.Scripts.Crafting
             Rect listRect = new Rect(rect.x + paddingInner, rect.y + titleH + 10, rect.width * 0.45f, rect.height - titleH - 30);
             Rect detailRect = new Rect(rect.x + rect.width * 0.5f, rect.y + titleH + 10, rect.width * 0.45f, rect.height - titleH - 30);
 
-            if (availableTrades == null) availableTrades = new List<TradeData>();
+            if (availableTrades == null) availableTrades = new List<TradesData>();
 
             GUI.BeginGroup(listRect);
             _scrollPos = GUI.BeginScrollView(new Rect(0, 0, listRect.width, listRect.height), _scrollPos, new Rect(0, 0, listRect.width - 20, availableTrades.Count * 55));
@@ -378,7 +378,7 @@ namespace Runtime.Scripts.Crafting
                 bool isSelected = (_selectedRecipeIndex == i);
                 GUI.DrawTexture(r, isSelected ? _texSelected : _texSlot);
 
-                ItemData displayItem = availableTrades[i].OutputItem ?? availableTrades[i].InputItem;
+                ItemsData displayItem = availableTrades[i].OutputItem ?? availableTrades[i].InputItem;
                 if (displayItem != null)
                 {
                     if (displayItem.itemSprite != null)
@@ -401,7 +401,7 @@ namespace Runtime.Scripts.Crafting
 
             if (_selectedRecipeIndex >= 0 && _selectedRecipeIndex < availableTrades.Count && availableTrades[_selectedRecipeIndex] != null)
             {
-                TradeData recipe = availableTrades[_selectedRecipeIndex];
+                TradesData recipe = availableTrades[_selectedRecipeIndex];
                 GUI.BeginGroup(detailRect);
                 float y = 0;
                 GUI.Label(new Rect(0, y, detailRect.width, 22), "REQUIERE:", _infoSty); y += 25;
@@ -451,7 +451,7 @@ namespace Runtime.Scripts.Crafting
         {
             if (index < 0 || index >= availableTrades.Count) return;
 
-            TradeData recipe = availableTrades[index];
+            TradesData recipe = availableTrades[index];
             ulong myId = (NetworkManager.Singleton != null) ? NetworkManager.Singleton.LocalClientId : 0;
 
             if (CanCraft(recipe))
@@ -471,7 +471,7 @@ namespace Runtime.Scripts.Crafting
             }
         }
 
-        private bool CanCraft(TradeData recipe)
+        private bool CanCraft(TradesData recipe)
         {
             if (recipe == null) return false;
             var bag = InventoryController.GetBag();
@@ -499,7 +499,7 @@ namespace Runtime.Scripts.Crafting
         public void ExecuteTradeLocal(int recipeId, ulong clientId, ulong targetId)
         {
             if (recipeId < 0 || recipeId >= availableTrades.Count) return;
-            TradeData recipe = availableTrades[recipeId];
+            TradesData recipe = availableTrades[recipeId];
             if (recipe == null) return;
 
             var allInvs = Object.FindObjectsByType<InventoryController>(FindObjectsSortMode.None);

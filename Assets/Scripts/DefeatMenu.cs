@@ -4,7 +4,6 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 using Runtime.Scripts.Levels;
-using Runtime.Scripts.Level;
 
 namespace Runtime.Scripts.Defeat
 {
@@ -227,7 +226,7 @@ namespace Runtime.Scripts.Defeat
             else
             {
                 // Si el nivel no existe (ej: empezamos desde esta escena), lo creamos
-                LevelData newLevel = ScriptableObject.CreateInstance<LevelData>();
+                LevelsData newLevel = ScriptableObject.CreateInstance<LevelsData>();
                 newLevel.nombreNivel = currentScene;
                 newLevel.escenaNombre = currentScene;
                 newLevel.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), timeTaken, false);

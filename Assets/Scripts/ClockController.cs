@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
+using Runtime.Scripts.Cycle;
 
-namespace Runtime.Scripts.Cycle
+namespace Runtime.Scripts.Clock
 {
     public class ClockController : MonoBehaviour
     {

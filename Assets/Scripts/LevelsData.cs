@@ -1,10 +1,10 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-namespace Runtime.Scripts.Level
+namespace Runtime.Scripts.Levels
 {
     [CreateAssetMenu(fileName = "Level_", menuName = "Levels/Level Data")]
-    public class LevelData : ScriptableObject
+    public class LevelsData : ScriptableObject
     {
         [Header("Configuración del Nivel")]
         public string nombreNivel;

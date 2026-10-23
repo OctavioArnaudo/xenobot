@@ -1,15 +1,15 @@
 ﻿using UnityEngine;
 using UnityEngine.Serialization;
 
-namespace Runtime.Scripts.Item
+namespace Runtime.Scripts.Items
 {
     [System.Serializable]
     public struct ItemRequirement
     {
-        public ItemData item;
+        public ItemsData item;
         public int amount;
 
-        public ItemRequirement(ItemData item, int amount = 1)
+        public ItemRequirement(ItemsData item, int amount = 1)
         {
             this.item = item;
             this.amount = amount <= 0 ? 1 : amount;
@@ -19,7 +19,7 @@ namespace Runtime.Scripts.Item
     [System.Serializable]
     public class ItemAmount
     {
-        public ItemData item;
+        public ItemsData item;
 
         [Header("Cantidad")]
         public int amount = 1;
@@ -35,7 +35,7 @@ namespace Runtime.Scripts.Item
 
         public ItemAmount() { }
 
-        public ItemAmount(ItemData item, int amount = 1)
+        public ItemAmount(ItemsData item, int amount = 1)
         {
             this.item = item;
             this.amount = amount;
@@ -105,7 +105,7 @@ namespace Runtime.Scripts.Item
     }
 
     [CreateAssetMenu(menuName = "Items/Item Data", fileName = "Item_")]
-    public class ItemData : ScriptableObject
+    public class ItemsData : ScriptableObject
     {
         [Header("Identificación")]
         public string itemName;

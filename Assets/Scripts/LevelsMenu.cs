@@ -4,7 +4,6 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using Unity.Netcode;
-using Runtime.Scripts.Level;
 
 
 namespace Runtime.Scripts.Levels
@@ -16,8 +15,8 @@ namespace Runtime.Scripts.Levels
         public string escenaMenuPrincipal = "MainMenuScene";
 
         [Header("Datos de Niveles")]
-        public static List<LevelData> listaNiveles = new List<LevelData>();
-        public List<LevelData> nivelesConfig = new List<LevelData>();
+        public static List<LevelsData> listaNiveles = new List<LevelsData>();
+        public List<LevelsData> nivelesConfig = new List<LevelsData>();
         public List<Sprite> fallbackIcons = new List<Sprite>();
 
         public static float ultimoTiempoSession = 0f;
@@ -119,7 +118,7 @@ namespace Runtime.Scripts.Levels
             if (listaNiveles.Count == 0)
             {
                 // Fallback si no hay niveles configurados
-                LevelData dummy = ScriptableObject.CreateInstance<LevelData>();
+                LevelsData dummy = ScriptableObject.CreateInstance<LevelsData>();
                 dummy.nombreNivel = "NIVEL ALPHA";
                 dummy.mejorTiempo = "00:00";
                 dummy.jugadoresCompletados = new List<string> { "NADIE" };
@@ -145,7 +144,7 @@ namespace Runtime.Scripts.Levels
             }
         }
 
-        private void CreateLevelCard(Transform parent, LevelData data, int index)
+        private void CreateLevelCard(Transform parent, LevelsData data, int index)
         {
             GameObject card = new GameObject("Card_" + data.nombreNivel);
             card.transform.SetParent(parent);

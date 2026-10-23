@@ -13,18 +13,8 @@ using Runtime.Scripts.Singleton;
 using Runtime.Scripts.Missions;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Dialog;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 using Runtime.Scripts.Crafting;
-
-
-
-
-
-
-
-
-
-
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -201,7 +191,7 @@ namespace Runtime.Scripts.Narrative
 
             var bag = playerInv != null ? playerInv.GetMyBag() : InventoryController.GetBag();
 
-            // 2. Requisitos de recolección en inventario (ItemData)
+            // 2. Requisitos de recolección en inventario (ItemsData)
             if (mData.inventoryRequirements != null && mData.inventoryRequirements.Count > 0)
             {
                 foreach (var req in mData.inventoryRequirements)
@@ -216,7 +206,7 @@ namespace Runtime.Scripts.Narrative
                 }
             }
 
-            // 3. Requisitos de crafteo/receta (TradeData)
+            // 3. Requisitos de crafteo/receta (TradesData)
             if (mData.craftingRequirements != null && mData.craftingRequirements.Count > 0)
             {
                 foreach (var trade in mData.craftingRequirements)
@@ -639,10 +629,10 @@ namespace Runtime.Scripts.Narrative
             Dir("Assets/Resources/Narrative/Items");
             Dir("Assets/Missions/Data");
 
-            var items = new ItemData[Items.Length];
+            var items = new ItemsData[Items.Length];
             for (int i = 0; i < Items.Length; i++)
             {
-                var it = Asset<ItemData>("Assets/Resources/Narrative/Items/Item_" + Items[i].Replace(" ", "") + ".asset");
+                var it = Asset<ItemsData>("Assets/Resources/Narrative/Items/Item_" + Items[i].Replace(" ", "") + ".asset");
                 it.itemName = Items[i];
                 it.isPickable = true;
                 it.isDropable = false;

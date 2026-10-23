@@ -1,6 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 using Runtime.Scripts.Trades;
 
 
@@ -21,7 +21,7 @@ namespace Runtime.Scripts.Missions
         public List<ItemRequirement> inventoryRequirements;
 
         [Header("Objetivos de Crafteo (Acción de Receta)")]
-        public List<TradeData> craftingRequirements;
+        public List<TradesData> craftingRequirements;
 
         [Header("Configuración Visual")]
         public GameObject missionPrefab;

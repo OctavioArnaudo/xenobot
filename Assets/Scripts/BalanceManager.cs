@@ -700,26 +700,26 @@ namespace Runtime.Scripts.Balance
             int totalItems = itemSpawnPoints.Count;
             for (int i = 0; i < totalItems; i++)
             {
-                ItemSpawnPointData itemData = itemSpawnPoints[i];
-                if (itemData.pointTransform != null)
+                ItemSpawnPointData ItemsData = itemSpawnPoints[i];
+                if (ItemsData.pointTransform != null)
                 {
-                    GameObject prefabToUse = itemData.customPrefab != null ? itemData.customPrefab : GetPrefabForItemType(itemData.categoryToSpawn);
-                    GameObject existingItem = TryFindExistingSceneEntity(itemData.pointTransform, null, typeof(ILootableEntity), _assignedSceneObjects);
+                    GameObject prefabToUse = ItemsData.customPrefab != null ? ItemsData.customPrefab : GetPrefabForItemType(ItemsData.categoryToSpawn);
+                    GameObject existingItem = TryFindExistingSceneEntity(ItemsData.pointTransform, null, typeof(ILootableEntity), _assignedSceneObjects);
                     GameObject itemObj = existingItem;
 
                     if (itemObj == null && prefabToUse != null)
                     {
-                        itemObj = SpawnFromPool(prefabToUse, itemData.pointTransform.position, itemData.pointTransform.rotation);
+                        itemObj = SpawnFromPool(prefabToUse, ItemsData.pointTransform.position, ItemsData.pointTransform.rotation);
                     }
 
                     if (itemObj != null)
                     {
                         if (existingItem != null)
                         {
-                            itemObj.transform.SetPositionAndRotation(CalibrateSpawnPosition(itemData.pointTransform.position, itemObj), itemData.pointTransform.rotation);
+                            itemObj.transform.SetPositionAndRotation(CalibrateSpawnPosition(ItemsData.pointTransform.position, itemObj), ItemsData.pointTransform.rotation);
                         }
                         itemObj.transform.localScale = Vector3.one * DEFAULT_ITEM_SCALE;
-                        StatSpawnPointData itemStats = CalculateItemStats(itemData.categoryToSpawn);
+                        StatSpawnPointData itemStats = CalculateItemStats(ItemsData.categoryToSpawn);
                         RegisterStatSpawnPointData(itemObj, itemStats);
                     }
                 }

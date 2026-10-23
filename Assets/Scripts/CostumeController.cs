@@ -1,7 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 using Runtime.Scripts.Pickup;
 using Runtime.Scripts.Mask;
 

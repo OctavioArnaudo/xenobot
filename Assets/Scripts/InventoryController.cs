@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 using Runtime.Scripts.Spawn;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Player;
@@ -15,7 +15,6 @@ using Runtime.Scripts.Weapon;
 using Runtime.Scripts.Mask;
 using Runtime.Scripts.Pickup;
 using Runtime.Scripts.Crafting;
-
 
 namespace Runtime.Scripts.Inventory
 {
@@ -46,7 +45,7 @@ namespace Runtime.Scripts.Inventory
         public NetworkVariable<int> EquippedWeaponHash = new NetworkVariable<int>(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         private List<NetworkInventorySlot> _offlineBag = new List<NetworkInventorySlot>();
-        private Dictionary<string, (ItemData def, int qty)> _localBag = new();
+        private Dictionary<string, (ItemsData def, int qty)> _localBag = new();
         private List<string> _localKeys = new();
         private Dictionary<int, GameObject> _equippedInstances = new();
 
@@ -63,7 +62,7 @@ namespace Runtime.Scripts.Inventory
         public Color accentColor = new Color(1f, 0.85f, 0f, 1f);
 
         [Header("Database & Settings")]
-        public List<ItemData> itemDatabase;
+        public List<ItemsData> itemsDatabase;
         public float dropDistance = 3.5f;
 
         private static int s_CollectiblesRemaining = 0;
@@ -71,7 +70,7 @@ namespace Runtime.Scripts.Inventory
         private float _countUpdateTimer = 0f;
 
         private bool _open;
-        private ItemData _draggedItem;
+        private ItemsData _draggedItem;
 
         private Texture2D _texNormal, _texSelected, _texPanel, _texBtn;
         private GUIStyle _titleSty, _qtySty, _emptySty, _btnSty;
@@ -126,7 +125,7 @@ namespace Runtime.Scripts.Inventory
 
         private void ProcessSlot(NetworkInventorySlot slot)
         {
-            ItemData data = GetItemDataByHash(slot.itemHash);
+            ItemsData data = GetItemsDataByHash(slot.itemHash);
             if (data != null)
             {
                 string key = data.itemName.ToLowerInvariant();
@@ -135,30 +134,30 @@ namespace Runtime.Scripts.Inventory
             }
         }
 
-        public ItemData GetItemDataByHash(int hash)
+        public ItemsData GetItemsDataByHash(int hash)
         {
             EnsureDatabase();
-            var found = itemDatabase.FirstOrDefault(x => x.GetHashCode() == hash);
+            var found = itemsDatabase.FirstOrDefault(x => x.GetHashCode() == hash);
             if (found == null)
             {
-                var allItems = Resources.LoadAll<ItemData>("");
+                var allItems = Resources.LoadAll<ItemsData>("");
                 found = allItems.FirstOrDefault(x => x.GetHashCode() == hash);
-                if (found != null && !itemDatabase.Contains(found)) itemDatabase.Add(found);
+                if (found != null && !itemsDatabase.Contains(found)) itemsDatabase.Add(found);
             }
             return found;
         }
 
-        public ItemData GetItemDataByCode(string code)
+        public ItemsData GetItemsDataByCode(string code)
         {
             EnsureDatabase();
             string c = code.ToLowerInvariant();
-            return itemDatabase.FirstOrDefault(x => x.itemName.ToLowerInvariant() == c);
+            return itemsDatabase.FirstOrDefault(x => x.itemName.ToLowerInvariant() == c);
         }
 
         private void EnsureDatabase()
         {
-            if (itemDatabase == null || itemDatabase.Count == 0)
-                itemDatabase = Resources.LoadAll<ItemData>("").ToList();
+            if (itemsDatabase == null || itemsDatabase.Count == 0)
+                itemsDatabase = Resources.LoadAll<ItemsData>("").ToList();
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -234,7 +233,7 @@ namespace Runtime.Scripts.Inventory
             }
         }
 
-        public static void Add(ItemData def)
+        public static void Add(ItemsData def)
         {
             if (LocalInstance == null) return;
             int hash = def.GetHashCode();
@@ -244,7 +243,7 @@ namespace Runtime.Scripts.Inventory
 
         public static void RemoveItem(string key)
         {
-            var data = LocalInstance?.GetItemDataByCode(key);
+            var data = LocalInstance?.GetItemsDataByCode(key);
             if (data != null)
             {
                 int hash = data.GetHashCode();
@@ -325,7 +324,7 @@ namespace Runtime.Scripts.Inventory
                 bool isEquipped = _equippedInstances.ContainsKey(hash);
                 string actionText = isEquipped ? "QUIT" : "USE";
 
-                // Botón dinámico USE/QUIT y DROP según las 4 acciones de ItemData
+                // Botón dinámico USE/QUIT y DROP según las 4 acciones de ItemsData
                 bool canShowUse = isEquipped ? slot.def.isQuitable : (slot.def.isUsable);
 
                 if (canShowUse)
@@ -385,7 +384,7 @@ namespace Runtime.Scripts.Inventory
             s.normal.textColor = c; return s;
         }
 
-        public void UseItem(ItemData item)
+        public void UseItem(ItemsData item)
         {
             if (item == null) return;
             int hash = item.GetHashCode();
@@ -401,7 +400,7 @@ namespace Runtime.Scripts.Inventory
 
         private void InternalUseItem(int hash)
         {
-            ItemData item = GetItemDataByHash(hash);
+            ItemsData item = GetItemsDataByHash(hash);
             if (item == null) return;
 
             bool isEquipped = _equippedInstances.ContainsKey(hash);
@@ -423,7 +422,7 @@ namespace Runtime.Scripts.Inventory
             }
         }
 
-        private void ToggleEquipment(ItemData item)
+        private void ToggleEquipment(ItemsData item)
         {
             int hash = item.GetHashCode();
             bool isCostume = item.itemPrefab != null && item.itemPrefab.GetComponentInChildren<CostumeController>() != null;
@@ -515,7 +514,7 @@ namespace Runtime.Scripts.Inventory
             GetComponent<ModularController>()?.RefreshBodyReferences();
         }
 
-        private void ApplyConsumableEffect(ItemData item)
+        private void ApplyConsumableEffect(ItemsData item)
         {
             if (item.itemPrefab != null)
             {
@@ -530,7 +529,7 @@ namespace Runtime.Scripts.Inventory
             }
         }
 
-        public void DropItem(ItemData item)
+        public void DropItem(ItemsData item)
         {
             if (item == null) return;
             int hash = item.GetHashCode();
@@ -561,7 +560,7 @@ namespace Runtime.Scripts.Inventory
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         public void DropItemServerRpc(int hash, Vector3 position)
         {
-            ItemData data = GetItemDataByHash(hash);
+            ItemsData data = GetItemsDataByHash(hash);
             if (data != null)
             {
                 InternalRemoveItem(hash, 1);
@@ -569,9 +568,9 @@ namespace Runtime.Scripts.Inventory
             }
         }
 
-        public static Dictionary<string, (ItemData def, int qty)> GetBag() => LocalInstance?._localBag ?? new();
-        public Dictionary<string, (ItemData def, int qty)> GetMyBag() => _localBag;
+        public static Dictionary<string, (ItemsData def, int qty)> GetBag() => LocalInstance?._localBag ?? new();
+        public Dictionary<string, (ItemsData def, int qty)> GetMyBag() => _localBag;
         public static void MarkCountDirty() => s_CountDirty = true;
-        public static ItemData GetItemDataByCodeStatic(string code) => LocalInstance?.GetItemDataByCode(code);
+        public static ItemsData GetItemsDataByCodeStatic(string code) => LocalInstance?.GetItemsDataByCode(code);
     }
 }

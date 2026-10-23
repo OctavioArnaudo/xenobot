@@ -10,7 +10,7 @@ using Runtime.Scripts.Ammo;
 using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Hud;
 using Runtime.Scripts.Inventory;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 
 
 namespace Runtime.Scripts.Shoot
@@ -170,7 +170,7 @@ namespace Runtime.Scripts.Shoot
             var bag = inv.GetMyBag();
             foreach (var kvp in bag)
             {
-                ItemData itemDef = kvp.Value.def;
+                ItemsData itemDef = kvp.Value.def;
                 if (itemDef != null && itemDef.itemPrefab != null)
                 {
                     AmmoController ammoComp = itemDef.itemPrefab.GetComponentInChildren<AmmoController>();
@@ -191,7 +191,7 @@ namespace Runtime.Scripts.Shoot
             var bag = inv.GetMyBag();
             foreach (var kvp in bag)
             {
-                ItemData itemDef = kvp.Value.def;
+                ItemsData itemDef = kvp.Value.def;
                 if (itemDef != null && itemDef.itemPrefab != null)
                 {
                     AmmoController ammoComp = itemDef.itemPrefab.GetComponentInChildren<AmmoController>();

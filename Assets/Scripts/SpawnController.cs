@@ -2,7 +2,7 @@ using UnityEngine;
 using Unity.Netcode;
 using TMPro;
 using System.Collections.Generic;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 using Runtime.Scripts.Optional;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Pickup;
@@ -27,7 +27,7 @@ namespace Runtime.Scripts.Spawn
         private const float DEFAULT_SPREAD_RADIUS = 2.5f;
 
         [Header("Spawn Settings")]
-        public List<ItemData> lootTable = new List<ItemData>();
+        public List<ItemsData> lootTable = new List<ItemsData>();
         public List<SpawnableItem> itemsToSpawn = new List<SpawnableItem>();
         public float ExplosionForce;
         public Optional<float> explosionForce;
@@ -118,7 +118,7 @@ namespace Runtime.Scripts.Spawn
             }
         }
 
-        public void SpawnDroppedItem(GameObject prefab, Vector3 origin, string message = "", ItemData data = null)
+        public void SpawnDroppedItem(GameObject prefab, Vector3 origin, string message = "", ItemsData data = null)
         {
             if (prefab == null) return;
 
@@ -130,7 +130,7 @@ namespace Runtime.Scripts.Spawn
             SpawnSingleItem(prefab, spawnPos, message, impulse, data);
         }
 
-        public void SpawnSingleItem(GameObject prefab, Vector3 position, string message = "", Vector3? impulse = null, ItemData data = null)
+        public void SpawnSingleItem(GameObject prefab, Vector3 position, string message = "", Vector3? impulse = null, ItemsData data = null)
         {
             if (prefab == null) return;
 
@@ -201,7 +201,7 @@ namespace Runtime.Scripts.Spawn
 
         private void SpawnItems()
         {
-            // 1. Spawn items from the lootTable (ItemData)
+            // 1. Spawn items from the lootTable (ItemsData)
             foreach (var item in lootTable)
             {
                 if (item != null)

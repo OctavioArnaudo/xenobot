@@ -1,6 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 using Runtime.Scripts.Modular;
 using Runtime.Scripts.Pickup;
 
@@ -38,7 +38,7 @@ namespace Runtime.Scripts.Keys
             {
 #if UNITY_EDITOR
                 string path = "Assets/Crafting/Data/Item_Key.asset";
-                pickup.item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>(path);
+                pickup.item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemsData>(path);
 #endif
             }
         }

@@ -1,5 +1,5 @@
 using Runtime.Scripts.Hud;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 using UnityEngine;
 
 namespace Runtime.Scripts.Experience

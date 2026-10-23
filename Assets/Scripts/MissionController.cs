@@ -5,7 +5,7 @@ using Unity.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine.UI;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Narrative;
 using Runtime.Scripts.Crafting;
@@ -368,7 +368,7 @@ namespace Runtime.Scripts.Missions
             return true;
         }
 
-        public static int GetItemQuantityInBag(Dictionary<string, (ItemData def, int qty)> bag, ItemData reqItem)
+        public static int GetItemQuantityInBag(Dictionary<string, (ItemsData def, int qty)> bag, ItemsData reqItem)
         {
             if (bag == null || reqItem == null) return 0;
 

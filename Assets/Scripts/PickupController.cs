@@ -3,7 +3,7 @@ using Unity.Netcode;
 
 using TMPro;
 using Runtime.Scripts.Balance;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Spawn;
 
@@ -19,7 +19,7 @@ namespace Runtime.Scripts.Pickup
         public event System.Action OnEntityRecycled;
 
         [Header("Data Configuration")]
-        public ItemData item;
+        public ItemsData item;
 
         public static int ActiveCount { get; private set; }
 
@@ -229,7 +229,7 @@ namespace Runtime.Scripts.Pickup
 
             if (isPlayer)
             {
-                ResolveItemDataIfNeeded();
+                ResolveItemsDataIfNeeded();
 
                 _taken = true;
                 if (IsNetworkActive) ProcessPickupAuthoritative(inv, root.gameObject);
@@ -237,7 +237,7 @@ namespace Runtime.Scripts.Pickup
             }
         }
 
-        private void ResolveItemDataIfNeeded()
+        private void ResolveItemsDataIfNeeded()
         {
             if (item != null) return;
 
@@ -251,7 +251,7 @@ namespace Runtime.Scripts.Pickup
 
             foreach (var path in possiblePaths)
             {
-                item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>(path);
+                item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemsData>(path);
                 if (item != null) break;
             }
 #endif
@@ -293,7 +293,7 @@ namespace Runtime.Scripts.Pickup
                 if (this == null) return;
             }
 
-            ResolveItemDataIfNeeded();
+            ResolveItemsDataIfNeeded();
 
             // Ejecutar acciones de pickup o efectos funcionales directamente del objeto
             var pickupActions = GetComponentsInChildren<IItemPickupAction>(true);

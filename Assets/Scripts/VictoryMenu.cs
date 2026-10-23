@@ -2,13 +2,10 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
-
 using UnityEngine.InputSystem;
 using Runtime.Scripts.Singleton;
 using Runtime.Scripts.Levels;
-using Runtime.Scripts.Level;
 using Runtime.Scripts.Settings;
-
 
 namespace Runtime.Scripts.Victory
 {
@@ -215,7 +212,7 @@ namespace Runtime.Scripts.Victory
             else
             {
                 // Crear nivel dinámicamente si no existe
-                LevelData newLevel = ScriptableObject.CreateInstance<LevelData>();
+                LevelsData newLevel = ScriptableObject.CreateInstance<LevelsData>();
                 newLevel.nombreNivel = currentScene;
                 newLevel.escenaNombre = currentScene;
                 newLevel.ActualizarRecord(LevelsMenu.FormatTime(timeTaken), timeTaken, true, playerName);

@@ -1,7 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using Runtime.Scripts.Pickup;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 
 namespace Runtime.Scripts.Iron
 {
@@ -32,7 +32,7 @@ namespace Runtime.Scripts.Iron
             {
 #if UNITY_EDITOR
                 string path = "Assets/Crafting/Data/Item_Iron.asset";
-                pickup.item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemData>(path);
+                pickup.item = UnityEditor.AssetDatabase.LoadAssetAtPath<ItemsData>(path);
 #endif
             }
         }

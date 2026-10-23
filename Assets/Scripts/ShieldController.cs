@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Runtime.Scripts.Optional;
 using Runtime.Scripts.Health;
-using Runtime.Scripts.Item;
+using Runtime.Scripts.Items;
 using Runtime.Scripts.Hud;
 using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Balance;
