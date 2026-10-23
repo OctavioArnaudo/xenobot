@@ -152,9 +152,11 @@ MonoBehaviour:
   levelsScene: LevelsScene
   creditsScene: CreditsScene
   settingsScene: SettingsScene
-  coverImageObject: {fileID: 0}
+  coverSprite: {fileID: -771729971, guid: a8fe1031f591e3342ba02e09b48d10ba, type: 3}
   titleColor: {r: 0, g: 1, b: 1, a: 1}
   buttonsColor: {r: 0.15, g: 0.15, b: 0.15, a: 0.9}
+  playButtonColor: {r: 0.1, g: 0.7, b: 0.1, a: 0.9}
+  quitButtonColor: {r: 0.7, g: 0.1, b: 0.1, a: 0.9}
   buttonTextColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!4 &968819337
 Transform:
