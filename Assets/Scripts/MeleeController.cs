@@ -10,7 +10,6 @@ using Runtime.Scripts.Balance;
 using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Hud;
 
-
 namespace Runtime.Scripts.Melee
 {
     /// <summary>
@@ -72,6 +71,8 @@ namespace Runtime.Scripts.Melee
         private bool m_IsHoldingClick = false;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+
+        public bool IsSlamming => m_IsSlamming;
 
         // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
 
@@ -136,10 +137,10 @@ namespace Runtime.Scripts.Melee
         {
             get
             {
-                try { return slamDamage.GetValue(1f); }
+                try { return slamDamage.GetValue(2f); }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] slamDamage: {ex.Message}"); }
 
-                return 1f;
+                return 2f;
             }
         }
 
@@ -159,7 +160,7 @@ namespace Runtime.Scripts.Melee
             }
         }
 
-        public float EffectiveSlamHoldDuration => slamHoldDuration.GetValue(0.25f);
+        public float EffectiveSlamHoldDuration => slamHoldDuration.GetValue(0.15f);
         public float EffectiveSlamSpeed => slamSpeed.GetValue(35f);
         public float EffectiveSlamKnockbackForce => slamKnockbackForce.GetValue(600f);
         public float EffectiveRotationSpeed => rotationSpeedOverride.GetValue(DEFAULT_ROTATION_SPEED);
@@ -234,17 +235,21 @@ namespace Runtime.Scripts.Melee
                 return;
             }
 
+            // Inicio de la pulsación
             if (Mouse.current.leftButton.wasPressedThisFrame)
             {
                 m_IsHoldingClick = true;
                 m_HoldTimer = 0f;
             }
 
+            // Mantenimiento sostenido del click
             if (Mouse.current.leftButton.isPressed && m_IsHoldingClick)
             {
                 m_HoldTimer += Time.deltaTime;
-                bool isAirborne = m_CharacterController != null && !m_CharacterController.isGrounded;
 
+                bool isAirborne = (m_Player != null) ? !m_Player.Grounded : (m_CharacterController != null && !m_CharacterController.isGrounded);
+
+                // SE EJECUTA AUTOMÁTICAMENTE AL ALCANZAR LOS 0.15s EN EL AIRE (SIN ESPERAR A SOLTAR EL CLICK)
                 if (isAirborne && m_HoldTimer >= EffectiveSlamHoldDuration && Time.time >= m_NextAttackTime)
                 {
                     m_IsHoldingClick = false;
@@ -252,12 +257,15 @@ namespace Runtime.Scripts.Melee
                 }
             }
 
+            // Al soltar el click
             if (Mouse.current.leftButton.wasReleasedThisFrame)
             {
                 if (m_IsHoldingClick)
                 {
                     m_IsHoldingClick = false;
-                    if (Time.time >= m_NextAttackTime)
+
+                    // Solo realiza el ataque melé estándar si no se activó el Slam
+                    if (!m_IsSlamming && Time.time >= m_NextAttackTime)
                     {
                         PerformMeleeAction();
                     }
@@ -321,7 +329,9 @@ namespace Runtime.Scripts.Melee
             {
                 m_CharacterController.Move(Vector3.down * (EffectiveSlamSpeed * Time.deltaTime));
 
-                if (m_CharacterController.isGrounded)
+                bool isGrounded = m_CharacterController.isGrounded || (m_Player != null && m_Player.Grounded);
+
+                if (isGrounded)
                 {
                     m_IsSlamming = false;
                     TriggerSlamImpact();
@@ -335,7 +345,7 @@ namespace Runtime.Scripts.Melee
 
         public void PerformMeleeAction(Vector3? targetPosition = null)
         {
-            if (Time.time < m_NextAttackTime) return;
+            if (Time.time < m_NextAttackTime || m_IsSlamming) return;
 
             if (targetPosition.HasValue)
             {
@@ -479,6 +489,19 @@ namespace Runtime.Scripts.Melee
                 {
                     targetHealth.TakeDamage((int)finalDamage);
                 }
+            }
+        }
+
+        private void ExecuteExecuteMelee()
+        {
+            ExecuteMeleeDamageServer();
+            Vector3 attackCenter = transform.position + transform.forward * (EffectiveAttackRange * 0.5f);
+            TriggerMeleeVisualEffect(attackCenter, transform.forward);
+
+            Animator anim = GetComponentInChildren<Animator>();
+            if (anim != null && HasParameter(anim, "meleeAttack"))
+            {
+                anim.SetTrigger("meleeAttack");
             }
         }
 
