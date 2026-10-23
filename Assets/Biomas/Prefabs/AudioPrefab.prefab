@@ -80,17 +80,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5a98bd3164c5bd47a00ad6b3b321381, type: 3}
   m_Name: 
   m_EditorClassIdentifier: '::'
-  esControladorPrincipal: 1
-  esTrigger: 0
-  referenciaEvento:
+  isMainController: 1
+  isTrigger: 0
+  eventReference:
     Guid:
       Data1: -1668576281
       Data2: 1116585039
       Data3: -1811222100
       Data4: 347304069
     Path: event:/RemezVertical
-  nombreParametroAlerta: Alerta
-  nivelAlerta: 50
+  alertParameterName: Alerta
+  alertLevel: 50
 --- !u!1 &1203799622778597520
 GameObject:
   m_ObjectHideFlags: 0
@@ -191,17 +191,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5a98bd3164c5bd47a00ad6b3b321381, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FmodController
-  esControladorPrincipal: 0
-  esTrigger: 1
-  referenciaEvento:
+  isMainController: 1
+  isTrigger: 0
+  eventReference:
     Guid:
       Data1: -1668576281
       Data2: 1116585039
       Data3: -1811222100
       Data4: 347304069
     Path: event:/RemezVertical
-  nombreParametroAlerta: Alerta
-  nivelAlerta: 50
+  alertParameterName: Alerta
+  alertLevel: 50
 --- !u!1 &3036369055623520117
 GameObject:
   m_ObjectHideFlags: 0
@@ -443,14 +443,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5a98bd3164c5bd47a00ad6b3b321381, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FmodController
-  esControladorPrincipal: 0
-  esTrigger: 1
-  referenciaEvento:
+  isMainController: 1
+  isTrigger: 0
+  eventReference:
     Guid:
       Data1: -1668576281
       Data2: 1116585039
       Data3: -1811222100
       Data4: 347304069
     Path: event:/RemezVertical
-  nombreParametroAlerta: Alerta
-  nivelAlerta: 80
+  alertParameterName: Alerta
+  alertLevel: 50
