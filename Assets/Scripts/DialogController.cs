@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 namespace Runtime.Scripts.Dialog
 {
-    [AddComponentMenu("Dialogs/Dialog Trigger")]
+    [AddComponentMenu("Dialogs/Dialog Controller")]
     public class DialogTrigger : MonoBehaviour
     {
         public enum ActivationMode { OnEnter, OnInputInsideTrigger }

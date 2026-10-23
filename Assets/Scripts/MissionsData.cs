@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using Runtime.Scripts.Items;
 using Runtime.Scripts.Trades;
 
-
-
 namespace Runtime.Scripts.Missions
 {
     [CreateAssetMenu(fileName = "Mission_", menuName = "Missions/Mission Data")]
