@@ -2,13 +2,7 @@
 
 namespace Runtime.Scripts.Cycle
 {
-
-    /// <summary>
-    /// Draws a minimal clock panel in the top-right corner.
-    /// Same visual language as Inventory (dark panel, white text).
-    /// Requires DayNightCycle in the scene.
-    /// </summary>
-    public class DayNightHUD : MonoBehaviour
+    public class ClockController : MonoBehaviour
     {
         [Header("Panel")]
         public int panelWidth = 140;
@@ -25,7 +19,6 @@ namespace Runtime.Scripts.Cycle
         {
             if (_ready) return;
 
-            // Rounded dark panel — same technique as Inventory
             int s = 64;
             _bg = new Texture2D(s, s, TextureFormat.RGBA32, false);
             _bg.filterMode = FilterMode.Bilinear;
@@ -58,10 +51,10 @@ namespace Runtime.Scripts.Cycle
 
         void OnGUI()
         {
-            if (DayNightCycle.Instance == null) return;
+            if (CycleController.Instance == null) return;
             EnsureAssets();
 
-            float hour = DayNightCycle.Instance.CurrentHour;
+            float hour = CycleController.Instance.CurrentHour;
             int h = (int)hour % 24;
             int m = (int)((hour - (int)hour) * 60f);
             bool isDay = h >= 6 && h < 20;

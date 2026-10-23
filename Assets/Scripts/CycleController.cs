@@ -3,12 +3,7 @@ using UnityEngine;
 
 namespace Runtime.Scripts.Cycle
 {
-
-    /// <summary>
-    /// Attach to your Directional Light (the sun).
-    /// Rotates it to simulate day/night and exposes current game time.
-    /// </summary>
-    public class DayNightCycle : CSingletonMB<DayNightCycle>
+    public class CycleController : CSingletonMB<CycleController>
     {
         [Header("Time")]
         [Tooltip("Duration of a full day in real seconds")]
@@ -22,7 +17,7 @@ namespace Runtime.Scripts.Cycle
         [Tooltip("Max intensity at noon")]
         public float maxSunIntensity = 1.2f;
 
-        [Tooltip("Disable if another script (SepaAmbiente) already controls ambient light")]
+        [Tooltip("Disable if another script (LightingController) already controls ambient light")]
         public bool controlAmbientLight = false;
 
         [Tooltip("Ambient light at noon - only used if controlAmbientLight is true")]
@@ -31,10 +26,8 @@ namespace Runtime.Scripts.Cycle
         [Tooltip("Ambient light at midnight - only used if controlAmbientLight is true")]
         public Color nightAmbient = new Color(0.05f, 0.05f, 0.15f);
 
-        // 0-1, where 0 = midnight, 0.5 = noon
         public float TimeOfDay { get; private set; }
 
-        // Current hour as float (0-24)
         public float CurrentHour => TimeOfDay * 24f;
 
         Light _sun;
