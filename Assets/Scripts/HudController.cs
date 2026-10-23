@@ -123,10 +123,10 @@ namespace Runtime.Scripts.Hud
             bool isFlying = prop != null && prop.IsFlying;
             bool hasJet = prop != null && prop.MaxJetpack > 0;
 
-            if (!isMoving) keys.Add("WASD: Caminar");
-            if (isMoving && !isSprinting) keys.Add("Shift: Correr");
-            if (isGrounded) keys.Add("Space x2: Salto Dbl");
-            if (hasJet && !isFlying) keys.Add("Space+B: Volar");
+            if (!isMoving) keys.Add("WASD: Walk");
+            if (isMoving && !isSprinting) keys.Add("Shift: Sprint");
+            if (isGrounded) keys.Add("Space: Jump");
+            if (hasJet && !isFlying) keys.Add("Space/B: Fly");
 
             return keys;
         }
@@ -143,9 +143,9 @@ namespace Runtime.Scripts.Hud
             bool isReloading = shooter != null && shooter.isReloading;
             bool needsAmmo = shooter != null && shooter.currentAmmo < shooter.EffectiveMaxAmmo;
 
-            if (!isFiring) keys.Add("LMB: Atacar");
-            if (shield != null && !isShieldActive) keys.Add("RMB: Escudo");
-            if (shooter != null && !isReloading && needsAmmo) keys.Add("R: Recargar");
+            if (!isFiring) keys.Add("LMB: Shoot");
+            if (shield != null && !isShieldActive) keys.Add("MMB: Shield");
+            if (shooter != null && !isReloading && needsAmmo) keys.Add("R: Reload");
 
             return keys;
         }
@@ -529,8 +529,8 @@ namespace Runtime.Scripts.Hud
 
             if (shooter != null)
                 Bar(2, "AMMO", shooter.currentAmmo, shooter.EffectiveMaxAmmo,
-                    shooter.isReloading ? "RECARGANDO" : $"{shooter.currentAmmo}/{shooter.EffectiveMaxAmmo}");
-            else Bar(2, "AMMO", 0f, 1f, "SIN ARMA");
+                    shooter.isReloading ? "RELOADING" : $"{shooter.currentAmmo}/{shooter.EffectiveMaxAmmo}");
+            else Bar(2, "AMMO", 0f, 1f, "NO WEAPON");
 
             if (shield != null)
             {
@@ -540,12 +540,12 @@ namespace Runtime.Scripts.Hud
                 if (shield.InCooldown)
                 {
                     val = shield.CooldownProgress * max;
-                    str = $"RECARGA {shield.CooldownRemaining:F1}s";
+                    str = $"COOLDOWN {shield.CooldownRemaining:F1}s";
                 }
                 else if (!shield.isUnlocked)
                 {
                     val = 0f;
-                    str = "BLOQUEADO";
+                    str = "LOCKED";
                 }
                 Bar(3, "SHIELD", val, max, str);
             }

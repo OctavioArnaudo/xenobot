@@ -136,19 +136,22 @@ namespace Runtime.Scripts.Settings
         {
             GameObject panel = CreateBasePanel("Panel_Controls", "KEY BINDINGS");
 
-            CreateControlLabel(panel.transform, "MOVEMENT", "W A S D", 0.80f);
-            CreateControlLabel(panel.transform, "JUMP", "SPACE", 0.75f);
-            CreateControlLabel(panel.transform, "SPRINT", "LEFT SHIFT", 0.70f);
-            CreateControlLabel(panel.transform, "JETPACK (FLY)", "B", 0.65f);
-            CreateControlLabel(panel.transform, "DASH", "WASD (x2)", 0.60f);
-            CreateControlLabel(panel.transform, "CROUCH", "C", 0.55f);
-            CreateControlLabel(panel.transform, "RELOAD", "R", 0.50f);
-            CreateControlLabel(panel.transform, "SHOOT", "LEFT CLICK", 0.45f);
-            CreateControlLabel(panel.transform, "AIM", "RIGHT CLICK", 0.40f);
-            CreateControlLabel(panel.transform, "QUICK SWITCH", "1 - 9", 0.35f);
-            CreateControlLabel(panel.transform, "INVENTORY", "TAB / I", 0.30f);
-            CreateControlLabel(panel.transform, "MISSIONS (HUD)", "M", 0.25f);
-            CreateControlLabel(panel.transform, "MENU / PAUSE", "ESC", 0.20f);
+            CreateControlLabel(panel.transform, "MOVEMENT", "W A S D", 0.82f);
+            CreateControlLabel(panel.transform, "JUMP", "SPACE", 0.77f);
+            CreateControlLabel(panel.transform, "SPRINT", "LEFT SHIFT", 0.72f);
+            CreateControlLabel(panel.transform, "JETPACK (FLY)", "SPACE / B", 0.67f);
+            CreateControlLabel(panel.transform, "DASH", "SHIFT TAP + WASD", 0.62f);
+            CreateControlLabel(panel.transform, "HOOK / GRAPPLE", "G", 0.57f);
+            CreateControlLabel(panel.transform, "CROUCH", "C", 0.52f);
+            CreateControlLabel(panel.transform, "RELOAD", "R", 0.47f);
+            CreateControlLabel(panel.transform, "SHOOT", "LEFT CLICK", 0.42f);
+            CreateControlLabel(panel.transform, "AIM", "RIGHT CLICK", 0.37f);
+            CreateControlLabel(panel.transform, "SHIELD", "MIDDLE CLICK", 0.32f);
+            CreateControlLabel(panel.transform, "INTERACT", "E", 0.27f);
+            CreateControlLabel(panel.transform, "QUICK SWITCH", "1 - 9", 0.22f);
+            CreateControlLabel(panel.transform, "INVENTORY / CRAFT", "TAB / I / T", 0.17f);
+            CreateControlLabel(panel.transform, "MISSIONS / STATS", "J / K", 0.12f);
+            CreateControlLabel(panel.transform, "MENU / PAUSE", "ESC", 0.07f);
 
             return panel;
         }
