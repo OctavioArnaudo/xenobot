@@ -5,16 +5,15 @@ using UnityEngine.SceneManagement;
 
 namespace Runtime.Scripts.Credits
 {
-
     public class CreditsMenu : MonoBehaviour
     {
-        [Header("Configuración de Escenas")]
-        public string escenaMenuPrincipal = "MainMenuScene";
+        [Header("Scene Configuration")]
+        public string mainMenuScene = "MainMenuScene";
 
-        [Header("Estilo Visual")]
-        public Color colorTitulo = Color.cyan;
-        public Color colorNombres = Color.white;
-        public Color colorBotonVolver = new Color(0.15f, 0.15f, 0.15f, 0.9f);
+        [Header("Visual Style")]
+        public Color titleColor = Color.cyan;
+        public Color namesColor = Color.white;
+        public Color backButtonColor = new Color(0.15f, 0.15f, 0.15f, 0.9f);
 
         private void Start()
         {
@@ -23,7 +22,6 @@ namespace Runtime.Scripts.Credits
 
         private void SetupUI()
         {
-            // 1. Crear Canvas adaptable
             GameObject canvasObj = new GameObject("CreditsCanvas");
             Canvas canvas = canvasObj.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -32,7 +30,6 @@ namespace Runtime.Scripts.Credits
             canvasObj.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
             canvasObj.AddComponent<GraphicRaycaster>();
 
-            // 2. EventSystem
             if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
                 GameObject esObj = new GameObject("EventSystem");
@@ -40,18 +37,14 @@ namespace Runtime.Scripts.Credits
                 esObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
             }
 
-            // 3. Fondo oscuro
             CreateAdaptiveImage(canvasObj.transform, "DarkOverlay", new Vector2(0.5f, 0.5f), new Vector2(1.2f, 1.2f), new Color(0, 0, 0, 0.7f));
 
-            // 4. Título: CREDITOS
-            CreateAdaptiveText(canvasObj.transform, "CREDITOS", new Vector2(0.5f, 0.85f), 0.15f, colorTitulo, true);
+            CreateAdaptiveText(canvasObj.transform, "CREDITS", new Vector2(0.5f, 0.85f), 0.15f, titleColor, true);
 
-            // 5. Lista de Desarrolladores
-            string listaDesarrolladores = "Joaquin Luna\nJeronimo Cortez Cabral\nJuan Pablo Garay\nOctavio Arnaudo";
-            CreateAdaptiveText(canvasObj.transform, listaDesarrolladores, new Vector2(0.5f, 0.5f), 0.4f, colorNombres, false);
+            string developersList = "Joaquin Luna\nJeronimo Cortez Cabral\nJuan Pablo Garay\nOctavio Arnaudo";
+            CreateAdaptiveText(canvasObj.transform, developersList, new Vector2(0.5f, 0.5f), 0.4f, namesColor, false);
 
-            // 6. Botón VOLVER
-            CreateAdaptiveButton(canvasObj.transform, "VOLVER", new Vector2(0.5f, 0.15f), VolverAlMenu, colorBotonVolver);
+            CreateAdaptiveButton(canvasObj.transform, "BACK", new Vector2(0.5f, 0.15f), ReturnToMenu, backButtonColor);
         }
 
         private void CreateAdaptiveText(Transform parent, string content, Vector2 anchorPos, float heightRatio, Color color, bool isUpper)
@@ -128,10 +121,10 @@ namespace Runtime.Scripts.Credits
             txtRect.localScale = Vector3.one;
         }
 
-        public void VolverAlMenu()
+        public void ReturnToMenu()
         {
-            if (!string.IsNullOrEmpty(escenaMenuPrincipal))
-                SceneManager.LoadScene(escenaMenuPrincipal);
+            if (!string.IsNullOrEmpty(mainMenuScene))
+                SceneManager.LoadScene(mainMenuScene);
             else
                 Debug.LogWarning("Escena de menú no configurada.");
         }
