@@ -5,50 +5,46 @@ using UnityEngine.SceneManagement;
 using System.Collections.Generic;
 using Unity.Netcode;
 
-
 namespace Runtime.Scripts.Levels
 {
-
     public class LevelsMenu : MonoBehaviour
     {
-        [Header("Configuración de Escenas")]
-        public string escenaMenuPrincipal = "MainMenuScene";
+        [Header("Scene Configuration")]
+        public string mainMenuScene = "MainMenuScene";
 
-        [Header("Datos de Niveles")]
-        public static List<LevelsData> listaNiveles = new List<LevelsData>();
-        public List<LevelsData> nivelesConfig = new List<LevelsData>();
+        [Header("Level Data")]
+        public static List<LevelsData> levelsList = new List<LevelsData>();
+        public List<LevelsData> levelsConfig = new List<LevelsData>();
         public List<Sprite> fallbackIcons = new List<Sprite>();
 
-        public static float ultimoTiempoSession = 0f;
-        public static string ultimoNivelSession = "";
+        public static float lastSessionTime = 0f;
+        public static string lastSessionLevel = "";
 
         public static string FormatTime(float t) => string.Format("{0:00}:{1:00}", Mathf.FloorToInt(t / 60), Mathf.FloorToInt(t % 60));
 
-        [Header("Estilo Visual Xenobot")]
-        public Color colorFondo = new Color(0.01f, 0.02f, 0.05f, 1f);
-        public Color colorCard = new Color(0.05f, 0.1f, 0.2f, 0.8f);
-        public Color colorAccent = new Color(0f, 1f, 1f, 1f);
-        public Color colorTexto = Color.white;
-        public Color colorBorde = new Color(0f, 1f, 1f, 0.3f);
+        [Header("Xenobot Visual Style")]
+        public Color backgroundColor = new Color(0.01f, 0.02f, 0.05f, 1f);
+        public Color cardColor = new Color(0.05f, 0.1f, 0.2f, 0.8f);
+        public Color accentColor = new Color(0f, 1f, 1f, 1f);
+        public Color textColor = Color.white;
+        public Color borderColor = new Color(0f, 1f, 1f, 0.3f);
 
-        private RectTransform contentTransform;
+        private RectTransform _contentTransform;
 
         private void Start()
         {
-            // Forzar visibilidad del mouse
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
 
-            if (listaNiveles.Count == 0 && nivelesConfig.Count > 0)
+            if (levelsList.Count == 0 && levelsConfig.Count > 0)
             {
-                listaNiveles.AddRange(nivelesConfig);
+                levelsList.AddRange(levelsConfig);
             }
             SetupUI();
         }
 
         private void SetupUI()
         {
-            // 1. Canvas Adaptativo
             GameObject canvasObj = new GameObject("LevelsCanvas");
             canvasObj.transform.SetParent(this.transform);
             Canvas canvas = canvasObj.AddComponent<Canvas>();
@@ -66,13 +62,10 @@ namespace Runtime.Scripts.Levels
             if (uiLayer == -1) uiLayer = 5;
             canvasObj.layer = uiLayer;
 
-            // 2. Fondo
-            CreateAdaptiveImage(canvasObj.transform, "Background", new Vector2(0.5f, 0.5f), new Vector2(1.1f, 1.1f), colorFondo);
+            CreateAdaptiveImage(canvasObj.transform, "Background", new Vector2(0.5f, 0.5f), new Vector2(1.1f, 1.1f), backgroundColor);
 
-            // 3. Título de Escena
-            CreateSubText(canvasObj.transform, "SELECCIÓN DE NIVELES", new Vector2(0.1f, 0.88f), new Vector2(0.9f, 0.98f), TextAlignmentOptions.Center, colorAccent, 65);
+            CreateSubText(canvasObj.transform, "LEVEL SELECT", new Vector2(0.1f, 0.88f), new Vector2(0.9f, 0.98f), TextAlignmentOptions.Center, accentColor, 65);
 
-            // 4. Sistema de Scroll Horizontal (Carrusel)
             GameObject scrollObj = new GameObject("LevelScrollView");
             scrollObj.transform.SetParent(canvasObj.transform);
             scrollObj.layer = uiLayer;
@@ -88,20 +81,17 @@ namespace Runtime.Scripts.Levels
             scrollRect.inertia = true;
             scrollRect.scrollSensitivity = 25;
 
-            // Máscara para que solo se vea dentro del área central
             scrollObj.AddComponent<RectMask2D>();
 
-            // Contenedor de las tarjetas (Content)
             GameObject contentObj = new GameObject("Content");
             contentObj.transform.SetParent(scrollObj.transform);
             contentObj.layer = uiLayer;
-            contentTransform = contentObj.AddComponent<RectTransform>();
-            contentTransform.anchorMin = new Vector2(0, 0);
-            contentTransform.anchorMax = new Vector2(0, 1);
-            contentTransform.pivot = new Vector2(0, 0.5f);
-            contentTransform.offsetMin = contentTransform.offsetMax = Vector2.zero;
+            _contentTransform = contentObj.AddComponent<RectTransform>();
+            _contentTransform.anchorMin = new Vector2(0, 0);
+            _contentTransform.anchorMax = new Vector2(0, 1);
+            _contentTransform.pivot = new Vector2(0, 0.5f);
+            _contentTransform.offsetMin = _contentTransform.offsetMax = Vector2.zero;
 
-            // Layout Horizontal
             HorizontalLayoutGroup layout = contentObj.AddComponent<HorizontalLayoutGroup>();
             layout.spacing = 60;
             layout.padding = new RectOffset(60, 60, 40, 40);
@@ -112,30 +102,26 @@ namespace Runtime.Scripts.Levels
             ContentSizeFitter fitter = contentObj.AddComponent<ContentSizeFitter>();
             fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            scrollRect.content = contentTransform;
+            scrollRect.content = _contentTransform;
 
-            // 5. Generar Tarjetas de Nivel dinámicamente
-            if (listaNiveles.Count == 0)
+            if (levelsList.Count == 0)
             {
-                // Fallback si no hay niveles configurados
                 LevelsData dummy = ScriptableObject.CreateInstance<LevelsData>();
-                dummy.nombreNivel = "NIVEL ALPHA";
-                dummy.mejorTiempo = "00:00";
-                dummy.jugadoresCompletados = new List<string> { "NADIE" };
+                dummy.levelName = "LEVEL ALPHA";
+                dummy.bestTime = "00:00";
+                dummy.completedPlayers = new List<string> { "NONE" };
                 CreateLevelCard(contentObj.transform, dummy, 0);
             }
             else
             {
-                for (int i = 0; i < listaNiveles.Count; i++)
+                for (int i = 0; i < levelsList.Count; i++)
                 {
-                    CreateLevelCard(contentObj.transform, listaNiveles[i], i);
+                    CreateLevelCard(contentObj.transform, levelsList[i], i);
                 }
             }
 
-            // 6. Botón Volver
-            CreateAdaptiveButton(canvasObj.transform, "VOLVER AL MENÚ", new Vector2(0.5f, 0.1f), VolverAlMenu, new Color(0.8f, 0.2f, 0.2f, 0.7f));
+            CreateAdaptiveButton(canvasObj.transform, "MAIN MENU", new Vector2(0.5f, 0.1f), ReturnToMenu, new Color(0.8f, 0.2f, 0.2f, 0.7f));
 
-            // EventSystem
             if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
                 GameObject esObj = new GameObject("EventSystem");
@@ -146,14 +132,14 @@ namespace Runtime.Scripts.Levels
 
         private void CreateLevelCard(Transform parent, LevelsData data, int index)
         {
-            GameObject card = new GameObject("Card_" + data.nombreNivel);
+            GameObject card = new GameObject("Card_" + data.levelName);
             card.transform.SetParent(parent);
             card.layer = LayerMask.NameToLayer("UI");
             RectTransform rt = card.AddComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(480, 0); // Ancho fijo de la tarjeta
+            rt.sizeDelta = new Vector2(480, 0);
 
-            card.AddComponent<Image>().color = colorCard;
-            CreateOutline(card.transform, colorBorde);
+            card.AddComponent<Image>().color = cardColor;
+            CreateOutline(card.transform, borderColor);
 
             VerticalLayoutGroup vLayout = card.AddComponent<VerticalLayoutGroup>();
             vLayout.padding = new RectOffset(25, 25, 25, 25);
@@ -161,12 +147,11 @@ namespace Runtime.Scripts.Levels
             vLayout.childAlignment = TextAnchor.UpperCenter;
             vLayout.childForceExpandHeight = false;
 
-            // 1. Miniatura (Fallback if no sprite)
             GameObject imgObj = new GameObject("Thumbnail");
             imgObj.transform.SetParent(card.transform);
             Image img = imgObj.AddComponent<Image>();
 
-            Sprite iconToShow = data.miniatura;
+            Sprite iconToShow = data.thumbnail;
             if (iconToShow == null && fallbackIcons.Count > 0)
             {
                 iconToShow = fallbackIcons[index % fallbackIcons.Count];
@@ -179,17 +164,15 @@ namespace Runtime.Scripts.Levels
             LayoutElement le = imgObj.AddComponent<LayoutElement>();
             le.preferredHeight = 280;
             le.flexibleHeight = 0;
-            CreateOutline(imgObj.transform, colorBorde);
+            CreateOutline(imgObj.transform, borderColor);
 
-            // 2. Nombre del Nivel
-            CreateSubText(card.transform, data.nombreNivel.ToUpper(), Vector2.zero, Vector2.zero, TextAlignmentOptions.Center, colorAccent, 38);
+            CreateSubText(card.transform, data.levelName.ToUpper(), Vector2.zero, Vector2.zero, TextAlignmentOptions.Center, accentColor, 38);
 
-            // 3. Estadísticas
-            string stats = $"<color=#00FFFF>SPEEDRUN:</color> {data.mejorTiempo}\n\n";
+            string stats = $"<color=#00FFFF>SPEEDRUN:</color> {data.bestTime}\n\n";
             stats += "<color=#00FFFF>TOP PLAYERS:</color>\n";
-            if (data.jugadoresCompletados != null)
+            if (data.completedPlayers != null)
             {
-                foreach (var player in data.jugadoresCompletados)
+                foreach (var player in data.completedPlayers)
                 {
                     stats += $" • {player}\n";
                 }
@@ -199,14 +182,12 @@ namespace Runtime.Scripts.Levels
             statsObj.transform.SetParent(card.transform);
             TextMeshProUGUI tmp = statsObj.AddComponent<TextMeshProUGUI>();
             tmp.text = stats;
-            tmp.color = colorTexto;
+            tmp.color = textColor;
             tmp.fontSize = 24;
             tmp.alignment = TextAlignmentOptions.TopLeft;
             tmp.textWrappingMode = TextWrappingModes.Normal;
             tmp.lineSpacing = 10;
         }
-
-        // --- MÉTODOS HELPERS ---
 
         private void CreateSubText(Transform p, string c, Vector2 min, Vector2 max, TextAlignmentOptions al, Color col, float size)
         {
@@ -232,7 +213,7 @@ namespace Runtime.Scripts.Levels
             b.layer = LayerMask.NameToLayer("UI");
             b.AddComponent<Image>().color = bg;
             b.AddComponent<Button>().onClick.AddListener(act);
-            CreateOutline(b.transform, colorBorde);
+            CreateOutline(b.transform, borderColor);
             RectTransform r = b.GetComponent<RectTransform>();
             r.anchorMin = new Vector2(anchorPos.x - 0.12f, anchorPos.y - 0.04f);
             r.anchorMax = new Vector2(anchorPos.x + 0.12f, anchorPos.y + 0.04f);
@@ -243,10 +224,10 @@ namespace Runtime.Scripts.Levels
 
         private void CreateOutline(Transform p, Color c)
         {
-            CreateAdaptiveLine(p, new Vector2(0, 1), new Vector2(1, 1), c); // Top
-            CreateAdaptiveLine(p, new Vector2(0, 0), new Vector2(1, 0), c); // Bottom
-            CreateAdaptiveLine(p, new Vector2(0, 0), new Vector2(0, 1), c); // Left
-            CreateAdaptiveLine(p, new Vector2(1, 0), new Vector2(1, 1), c); // Right
+            CreateAdaptiveLine(p, new Vector2(0, 1), new Vector2(1, 1), c);
+            CreateAdaptiveLine(p, new Vector2(0, 0), new Vector2(1, 0), c);
+            CreateAdaptiveLine(p, new Vector2(0, 0), new Vector2(0, 1), c);
+            CreateAdaptiveLine(p, new Vector2(1, 0), new Vector2(1, 1), c);
         }
 
         private void CreateAdaptiveLine(Transform p, Vector2 min, Vector2 max, Color c)
@@ -274,7 +255,7 @@ namespace Runtime.Scripts.Levels
             r.anchoredPosition3D = Vector3.zero; r.localScale = Vector3.one;
         }
 
-        public void VolverAlMenu()
+        public void ReturnToMenu()
         {
             var allNMs = Object.FindObjectsByType<NetworkManager>(FindObjectsSortMode.None);
             foreach (var nm in allNMs)
@@ -282,7 +263,7 @@ namespace Runtime.Scripts.Levels
                 if (nm.IsListening) nm.Shutdown();
                 Destroy(nm.gameObject);
             }
-            SceneManager.LoadScene(escenaMenuPrincipal);
+            SceneManager.LoadScene(mainMenuScene);
         }
     }
 }

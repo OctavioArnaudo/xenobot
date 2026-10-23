@@ -6,31 +6,27 @@ using Unity.Netcode;
 
 namespace Runtime.Scripts.Main
 {
-
     public class MainMenu : MonoBehaviour
     {
-        [Header("Configuración de Escenas")]
-        public string escenaJuego = "NetworkScene";
-        public string escenaNiveles = "LevelsScene";
-        public string escenaCreditos = "CreditsScene";
-        public string escenaAjustes = "SettingsScene";
+        [Header("Scene Configuration")]
+        public string gameScene = "NetworkScene";
+        public string levelsScene = "LevelsScene";
+        public string creditsScene = "CreditsScene";
+        public string settingsScene = "SettingsScene";
 
-        [Header("Referencias UI (Opcional)")]
-        [Tooltip("El cover del juego. Se reseteará su posición y escala para que se vea correctamente al frente.")]
+        [Header("UI References (Optional)")]
         [SerializeField] private GameObject coverImageObject;
 
-        [Header("Estilo Visual")]
-        public Color colorTitulo = Color.cyan;
-        public Color colorBotones = new Color(0.15f, 0.15f, 0.15f, 0.9f);
-        public Color colorTextoBotones = Color.white;
+        [Header("Visual Style")]
+        public Color titleColor = Color.cyan;
+        public Color buttonsColor = new Color(0.15f, 0.15f, 0.15f, 0.9f);
+        public Color buttonTextColor = Color.white;
 
         private void Start()
         {
-            // Limpieza absoluta de cursor
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
 
-            // Limpiar TODOS los NetworkManagers para evitar duplicados y errores de Singleton
             var allNMs = Object.FindObjectsByType<NetworkManager>(FindObjectsSortMode.None);
             foreach (var nm in allNMs)
             {
@@ -43,16 +39,14 @@ namespace Runtime.Scripts.Main
 
         private void SetupUI()
         {
-            // 1. Crear Canvas con alta prioridad
             GameObject canvasObj = new GameObject("MainMenuCanvas");
             Canvas canvas = canvasObj.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            canvas.sortingOrder = 10; // Prioridad alta para que no quede detrás de nada
+            canvas.sortingOrder = 10;
 
             canvasObj.AddComponent<CanvasScaler>().uiScaleMode = CanvasScaler.ScaleMode.ConstantPixelSize;
             canvasObj.AddComponent<GraphicRaycaster>();
 
-            // 2. EventSystem
             if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             {
                 GameObject esObj = new GameObject("EventSystem");
@@ -60,10 +54,8 @@ namespace Runtime.Scripts.Main
                 esObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
             }
 
-            // 3. Fondo oscuro sutil para dar contraste
             CreateAdaptiveImage(canvasObj.transform, "DarkOverlay", new Vector2(0.5f, 0.5f), new Vector2(1.2f, 1.2f), new Color(0, 0, 0, 0.5f));
 
-            // 4. Manejo del Cover Image (Reseteo de Z y Escala)
             if (coverImageObject != null)
             {
                 coverImageObject.transform.SetParent(canvasObj.transform);
@@ -71,8 +63,6 @@ namespace Runtime.Scripts.Main
                 rt.anchorMin = new Vector2(0.5f, 0.5f);
                 rt.anchorMax = new Vector2(0.5f, 0.5f);
                 rt.pivot = new Vector2(0.5f, 0.5f);
-
-                // Forzar posición al frente del canvas y escala normal
                 rt.anchoredPosition3D = Vector3.zero;
                 rt.localScale = Vector3.one;
             }
@@ -81,14 +71,13 @@ namespace Runtime.Scripts.Main
                 CreateAdaptiveImage(canvasObj.transform, "CoverPlaceholder", new Vector2(0.5f, 0.5f), new Vector2(0.35f, 0.45f), new Color(0.3f, 0.3f, 0.3f, 0.8f));
             }
 
-            // 5. Título y Botones
-            CreateAdaptiveText(canvasObj.transform, "XENOBOT", new Vector2(0.5f, 0.85f), colorTitulo, true);
+            CreateAdaptiveText(canvasObj.transform, "XENOBOT", new Vector2(0.5f, 0.85f), titleColor, true);
 
-            CreateAdaptiveButton(canvasObj.transform, "AJUSTES", new Vector2(0.2f, 0.6f), AbrirAjustes, colorBotones);
-            CreateAdaptiveButton(canvasObj.transform, "NIVELES", new Vector2(0.2f, 0.4f), AbrirNiveles, colorBotones);
-            CreateAdaptiveButton(canvasObj.transform, "CREDITOS", new Vector2(0.8f, 0.6f), AbrirCreditos, colorBotones);
-            CreateAdaptiveButton(canvasObj.transform, "SALIR", new Vector2(0.8f, 0.4f), Salir, new Color(0.7f, 0.1f, 0.1f));
-            CreateAdaptiveButton(canvasObj.transform, "JUGAR", new Vector2(0.5f, 0.18f), Jugar, new Color(0.1f, 0.7f, 0.1f));
+            CreateAdaptiveButton(canvasObj.transform, "SETTINGS", new Vector2(0.2f, 0.6f), OpenSettings, buttonsColor);
+            CreateAdaptiveButton(canvasObj.transform, "LEVELS", new Vector2(0.2f, 0.4f), OpenLevels, buttonsColor);
+            CreateAdaptiveButton(canvasObj.transform, "CREDITS", new Vector2(0.8f, 0.6f), OpenCredits, buttonsColor);
+            CreateAdaptiveButton(canvasObj.transform, "QUIT", new Vector2(0.8f, 0.4f), Quit, new Color(0.7f, 0.1f, 0.1f));
+            CreateAdaptiveButton(canvasObj.transform, "PLAY", new Vector2(0.5f, 0.18f), Play, new Color(0.1f, 0.7f, 0.1f));
         }
 
         private void CreateAdaptiveText(Transform parent, string content, Vector2 anchorPos, Color color, bool isUpper)
@@ -151,7 +140,7 @@ namespace Runtime.Scripts.Main
             txtObj.transform.SetParent(btnObj.transform);
             TextMeshProUGUI tmp = txtObj.AddComponent<TextMeshProUGUI>();
             tmp.text = label;
-            tmp.color = colorTextoBotones;
+            tmp.color = buttonTextColor;
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.enableAutoSizing = true;
 
@@ -164,23 +153,20 @@ namespace Runtime.Scripts.Main
             txtRect.localScale = Vector3.one;
         }
 
-        public void Jugar()
+        public void Play()
         {
-            // El botón JUGAR ahora solo carga la escena de red de forma offline
-            // La red se iniciará realmente dentro de NetworkScene tras configurar el nombre/host
-            CargarEscena(escenaJuego);
+            LoadScene(gameScene);
         }
 
-        public void AbrirNiveles() => CargarEscena(escenaNiveles);
-        public void AbrirCreditos() => CargarEscena(escenaCreditos);
-        public void AbrirAjustes() => CargarEscena(escenaAjustes);
+        public void OpenLevels() => LoadScene(levelsScene);
+        public void OpenCredits() => LoadScene(creditsScene);
+        public void OpenSettings() => LoadScene(settingsScene);
 
-        private void CargarEscena(string nombre)
+        private void LoadScene(string sceneName)
         {
-            if (!string.IsNullOrEmpty(nombre)) SceneManager.LoadScene(nombre);
-            else Debug.LogWarning("Escena no configurada.");
+            if (!string.IsNullOrEmpty(sceneName)) SceneManager.LoadScene(sceneName);
         }
 
-        public void Salir() => Application.Quit();
+        public void Quit() => Application.Quit();
     }
 }

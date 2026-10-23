@@ -6,55 +6,49 @@ namespace Runtime.Scripts.Levels
     [CreateAssetMenu(fileName = "Level_", menuName = "Levels/Level Data")]
     public class LevelsData : ScriptableObject
     {
-        [Header("Configuración del Nivel")]
-        public string nombreNivel;
-        public Sprite miniatura;
-        public string escenaNombre;
+        [Header("Level Configuration")]
+        public string levelName;
+        public Sprite thumbnail;
+        public string sceneName;
 
-        [Header("Estadísticas (Sesión Actual)")]
-        public string mejorTiempo = "00:00";
-        public float mejorTiempoSegundos = float.MaxValue;
-        public bool mejorEsVictoria = false;
-        public List<string> jugadoresCompletados = new List<string>();
+        [Header("Statistics (Current Session)")]
+        public string bestTime = "00:00";
+        public float bestTimeSeconds = float.MaxValue;
+        public bool bestIsVictory = false;
+        public List<string> completedPlayers = new List<string>();
 
-        public void ActualizarRecord(string tiempoFormateado, float tiempoSegundos, bool esVictoria, string jugador = "")
+        public void UpdateRecord(string formattedTime, float timeSeconds, bool isVictory, string player = "")
         {
-            bool actualizar = false;
+            bool update = false;
 
-            // 1. Si no hay record previo (es el primero)
-            if (mejorTiempoSegundos == float.MaxValue || mejorTiempo == "00:00")
+            if (bestTimeSeconds == float.MaxValue || bestTime == "00:00")
             {
-                actualizar = true;
+                update = true;
             }
-            // 2. Si es victoria y el record anterior era derrota -> Sobreescribe siempre
-            else if (esVictoria && !mejorEsVictoria)
+            else if (isVictory && !bestIsVictory)
             {
-                actualizar = true;
+                update = true;
             }
-            // 3. Si ambos son del mismo tipo (ambos victoria o ambos derrota) -> El menor tiempo gana
-            else if (esVictoria == mejorEsVictoria)
+            else if (isVictory == bestIsVictory)
             {
-                if (tiempoSegundos < mejorTiempoSegundos)
+                if (timeSeconds < bestTimeSeconds)
                 {
-                    actualizar = true;
+                    update = true;
                 }
             }
-            // Nota: Si es derrota pero ya hay un record de victoria, no se hace nada.
 
-            if (actualizar)
+            if (update)
             {
-                mejorTiempo = tiempoFormateado;
-                mejorTiempoSegundos = tiempoSegundos;
-                mejorEsVictoria = esVictoria;
-                Debug.Log($"[LevelData] Nuevo record para {nombreNivel}: {tiempoFormateado} (Es Victoria: {esVictoria})");
+                bestTime = formattedTime;
+                bestTimeSeconds = timeSeconds;
+                bestIsVictory = isVictory;
             }
 
-            // Registrar jugador si fue victoria
-            if (esVictoria && !string.IsNullOrEmpty(jugador))
+            if (isVictory && !string.IsNullOrEmpty(player))
             {
-                if (!jugadoresCompletados.Contains(jugador))
+                if (!completedPlayers.Contains(player))
                 {
-                    jugadoresCompletados.Add(jugador);
+                    completedPlayers.Add(player);
                 }
             }
         }

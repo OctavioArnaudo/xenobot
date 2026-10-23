@@ -7,32 +7,30 @@ using Runtime.Scripts.Player;
 
 namespace Runtime.Scripts.Fmod
 {
-
     public class FmodController : MonoBehaviour
     {
         public static FmodController Instance { get; private set; }
 
-        [Header("Configuración de Rol")]
-        [Tooltip("Si se marca, este objeto gestiona la instancia de audio de FMOD (Solo debe haber uno en la escena).")]
-        [SerializeField] private bool esControladorPrincipal = true;
+        [Header("Role Configuration")]
+        [Tooltip("If checked, this object manages the FMOD audio instance.")]
+        [SerializeField] private bool isMainController = true;
 
-        [Tooltip("Si se marca, este objeto detecta colisiones para cambiar el nivel de alerta.")]
-        [SerializeField] private bool esTrigger = false;
+        [Tooltip("If checked, this object detects collisions to change alert level.")]
+        [SerializeField] private bool isTrigger = false;
 
-        [Header("Ajustes de Sonido (Solo Principal)")]
-        [SerializeField] private EventReference referenciaEvento;
-        [SerializeField] private string nombreParametroAlerta = "Alerta";
+        [Header("Sound Settings (Main Only)")]
+        [SerializeField] private EventReference eventReference;
+        [SerializeField] private string alertParameterName = "Alerta";
 
-        [Header("Ajustes de Alerta (Solo Trigger)")]
-        [SerializeField] private float nivelAlerta = 50.0f;
+        [Header("Alert Settings (Trigger Only)")]
+        [SerializeField] private float alertLevel = 50.0f;
 
-        private EventInstance instanciaAmbiente;
-        private Dictionary<int, float> alertasActivas = new Dictionary<int, float>();
+        private EventInstance _environmentInstance;
+        private Dictionary<int, float> _activeAlerts = new Dictionary<int, float>();
 
         private void Awake()
         {
-            // Sistema de Singleton para el controlador principal
-            if (esControladorPrincipal)
+            if (isMainController)
             {
                 if (Instance == null)
                 {
@@ -40,7 +38,6 @@ namespace Runtime.Scripts.Fmod
                 }
                 else if (Instance != this)
                 {
-                    Debug.LogWarning("[FMOD] Se encontró más de un FmodController principal. Eliminando duplicado.");
                     Destroy(gameObject);
                     return;
                 }
@@ -49,38 +46,34 @@ namespace Runtime.Scripts.Fmod
 
         private void Start()
         {
-            if (esControladorPrincipal && !referenciaEvento.IsNull)
+            if (isMainController && !eventReference.IsNull)
             {
-                instanciaAmbiente = RuntimeManager.CreateInstance(referenciaEvento);
-                instanciaAmbiente.start();
-                ActualizarFMOD();
-                Debug.Log("[FMOD] Evento de ambiente iniciado.");
+                _environmentInstance = RuntimeManager.CreateInstance(eventReference);
+                _environmentInstance.start();
+                UpdateFMOD();
             }
         }
 
-        #region Lógica de Trigger
+        #region Trigger Logic
         private void OnTriggerEnter(Collider other)
         {
-            if (esTrigger && EsJugadorLocal(other))
+            if (isTrigger && IsLocalPlayer(other))
             {
-                // Reportar la alerta al controlador principal
                 if (Instance != null)
-                    Instance.RegistrarAlerta(gameObject.GetInstanceID(), nivelAlerta);
-                else
-                    Debug.LogWarning("[FMOD] Trigger detectado pero no hay FmodController principal activo.");
+                    Instance.RegisterAlert(gameObject.GetInstanceID(), alertLevel);
             }
         }
 
         private void OnTriggerExit(Collider other)
         {
-            if (esTrigger && EsJugadorLocal(other))
+            if (isTrigger && IsLocalPlayer(other))
             {
                 if (Instance != null)
-                    Instance.EliminarAlerta(gameObject.GetInstanceID());
+                    Instance.RemoveAlert(gameObject.GetInstanceID());
             }
         }
 
-        private bool EsJugadorLocal(Collider other)
+        private bool IsLocalPlayer(Collider other)
         {
             if (!other.CompareTag("Player")) return false;
             var pc = other.GetComponent<PlayerController>();
@@ -88,55 +81,53 @@ namespace Runtime.Scripts.Fmod
         }
         #endregion
 
-        #region Gestión de Alertas (Solo Procesado en el Principal)
-        public void RegistrarAlerta(int idFuente, float valor)
+        #region Alert Management (Main Only)
+        public void RegisterAlert(int sourceId, float value)
         {
-            // Si este componente no es el principal, redirigir a la instancia estática
-            if (!esControladorPrincipal)
+            if (!isMainController)
             {
-                if (Instance != null) Instance.RegistrarAlerta(idFuente, valor);
+                if (Instance != null) Instance.RegisterAlert(sourceId, value);
                 return;
             }
 
-            if (!alertasActivas.ContainsKey(idFuente))
-                alertasActivas.Add(idFuente, valor);
+            if (!_activeAlerts.ContainsKey(sourceId))
+                _activeAlerts.Add(sourceId, value);
             else
-                alertasActivas[idFuente] = valor;
+                _activeAlerts[sourceId] = value;
 
-            ActualizarFMOD();
+            UpdateFMOD();
         }
 
-        public void EliminarAlerta(int idFuente)
+        public void RemoveAlert(int sourceId)
         {
-            if (!esControladorPrincipal)
+            if (!isMainController)
             {
-                if (Instance != null) Instance.EliminarAlerta(idFuente);
+                if (Instance != null) Instance.RemoveAlert(sourceId);
                 return;
             }
 
-            if (alertasActivas.ContainsKey(idFuente))
+            if (_activeAlerts.ContainsKey(sourceId))
             {
-                alertasActivas.Remove(idFuente);
-                ActualizarFMOD();
+                _activeAlerts.Remove(sourceId);
+                UpdateFMOD();
             }
         }
 
-        private void ActualizarFMOD()
+        private void UpdateFMOD()
         {
-            if (!esControladorPrincipal || !instanciaAmbiente.isValid()) return;
+            if (!isMainController || !_environmentInstance.isValid()) return;
 
-            // Tomamos el valor máximo de todas las zonas activas
-            float valorFinal = alertasActivas.Count > 0 ? alertasActivas.Values.Max() : 0f;
-            instanciaAmbiente.setParameterByName(nombreParametroAlerta, valorFinal);
+            float finalValue = _activeAlerts.Count > 0 ? _activeAlerts.Values.Max() : 0f;
+            _environmentInstance.setParameterByName(alertParameterName, finalValue);
         }
         #endregion
 
         private void OnDestroy()
         {
-            if (esControladorPrincipal && instanciaAmbiente.isValid())
+            if (isMainController && _environmentInstance.isValid())
             {
-                instanciaAmbiente.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
-                instanciaAmbiente.release();
+                _environmentInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+                _environmentInstance.release();
             }
         }
     }
