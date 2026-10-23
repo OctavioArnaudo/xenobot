@@ -386,6 +386,11 @@ namespace Runtime.Scripts.Melee
         [ClientRpc]
         private void NotifySlamClientRpc(Vector3 impactPosition)
         {
+            PlaySlamEffects(impactPosition);
+        }
+
+        private void PlaySlamEffects(Vector3 impactPosition)
+        {
             Animator anim = GetComponentInChildren<Animator>();
             if (anim != null && HasParameter(anim, "groundSlamImpact"))
             {
@@ -432,7 +437,7 @@ namespace Runtime.Scripts.Melee
         private void ExecuteGroundSlam(Vector3 impactPosition)
         {
             ExecuteGroundSlamDamageServer(impactPosition);
-            NotifySlamClientRpc(impactPosition);
+            PlaySlamEffects(impactPosition);
         }
 
         private void RotateVisualsTowards(Vector3 targetPosition)
