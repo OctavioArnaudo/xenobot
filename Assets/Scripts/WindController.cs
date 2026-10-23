@@ -4,24 +4,23 @@ using FMOD.Studio;
 
 namespace Runtime.Scripts.Wind
 {
-
     public class WindController : MonoBehaviour
     {
-        [SerializeField] EventReference sfxViento;
-        EventInstance _viento;
+        [SerializeField] private EventReference windSfx;
+        private EventInstance _windInstance;
 
-        void OnTriggerEnter(Collider other)
+        private void OnTriggerEnter(Collider other)
         {
             if (!other.CompareTag("Player")) return;
-            _viento = RuntimeManager.CreateInstance(sfxViento);
-            _viento.start();
+            _windInstance = RuntimeManager.CreateInstance(windSfx);
+            _windInstance.start();
         }
 
-        void OnTriggerExit(Collider other)
+        private void OnTriggerExit(Collider other)
         {
             if (!other.CompareTag("Player")) return;
-            _viento.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
-            _viento.release();
+            _windInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            _windInstance.release();
         }
     }
 }
