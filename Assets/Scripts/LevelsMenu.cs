@@ -10,7 +10,7 @@ namespace Runtime.Scripts.Levels
     public class LevelsMenu : MonoBehaviour
     {
         [Header("Scene Configuration")]
-        public string mainMenuScene = "MainMenuScene";
+        public string mainScene = "MainScene";
 
         [Header("Level Data")]
         public static List<LevelsData> levelsList = new List<LevelsData>();
@@ -22,7 +22,7 @@ namespace Runtime.Scripts.Levels
 
         public static string FormatTime(float t) => string.Format("{0:00}:{1:00}", Mathf.FloorToInt(t / 60), Mathf.FloorToInt(t % 60));
 
-        [Header("Xenobot Visual Style")]
+        [Header("Visual Style")]
         public Color backgroundColor = new Color(0.01f, 0.02f, 0.05f, 1f);
         public Color cardColor = new Color(0.05f, 0.1f, 0.2f, 0.8f);
         public Color accentColor = new Color(0f, 1f, 1f, 1f);
@@ -263,7 +263,7 @@ namespace Runtime.Scripts.Levels
                 if (nm.IsListening) nm.Shutdown();
                 Destroy(nm.gameObject);
             }
-            SceneManager.LoadScene(mainMenuScene);
+            SceneManager.LoadScene(mainScene);
         }
     }
 }

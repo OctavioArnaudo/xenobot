@@ -46,7 +46,7 @@ namespace Runtime.Scripts.Experience
         {
             foreach (Transform child in transform)
             {
-                if (child.name.StartsWith("Xenobot_"))
+                if (child.name.StartsWith("ExpVisual_"))
                 {
                     if (Application.isPlaying) Destroy(child.gameObject);
                     else DestroyImmediate(child.gameObject);
@@ -54,7 +54,7 @@ namespace Runtime.Scripts.Experience
             }
 
             GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            visual.name = "Xenobot_ExpVisual_Mesh";
+            visual.name = "ExpVisual_Mesh";
             visual.transform.SetParent(transform, false);
             visual.transform.localScale = Vector3.one * sphereRadius;
 

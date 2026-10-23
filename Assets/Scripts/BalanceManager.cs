@@ -1016,7 +1016,7 @@ namespace Runtime.Scripts.Balance
             int atkPerLvl = Math.Max(1, 2 + typeVal);
             int defPerLvl = Math.Max(1, 2 + typeVal);
 
-            // Estadísticas avanzadas del Jugador (User / XenoBot) con Jetpack y Doble Salto habilitados por defecto
+            // Estadísticas avanzadas del Jugador (User) con Jetpack y Doble Salto habilitados por defecto
             return new StatSpawnPointData
             {
                 maxHealth = health,

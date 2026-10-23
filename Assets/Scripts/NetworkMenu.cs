@@ -15,7 +15,7 @@ namespace Runtime.Scripts.Network
     {
 
         [Header("Scene Navigation")]
-        [SerializeField] private string mainMenuScene = "MainMenuScene";
+        [SerializeField] private string mainScene = "MainScene";
         [SerializeField] private string lobbySceneName = "LobbyScene";
 
         [Header("Cyberpunk Theme Colors")]
@@ -46,7 +46,7 @@ namespace Runtime.Scripts.Network
         // Active Codes Carousel for Join Status Bar (PlayerPrefs-backed for cross-instance persistence)
         public static System.Collections.Generic.List<string> GetActiveCodes()
         {
-            string raw = PlayerPrefs.GetString("Xenobot_ActiveCodes", "");
+            string raw = PlayerPrefs.GetString("ActiveCodes", "");
             var list = new System.Collections.Generic.List<string>();
             if (!string.IsNullOrEmpty(raw))
             {
@@ -65,7 +65,7 @@ namespace Runtime.Scripts.Network
             if (!list.Contains(code))
             {
                 list.Add(code);
-                PlayerPrefs.SetString("Xenobot_ActiveCodes", string.Join(",", list));
+                PlayerPrefs.SetString("ActiveCodes", string.Join(",", list));
                 PlayerPrefs.Save();
             }
         }
@@ -77,7 +77,7 @@ namespace Runtime.Scripts.Network
             if (list.Contains(code))
             {
                 list.Remove(code);
-                PlayerPrefs.SetString("Xenobot_ActiveCodes", string.Join(",", list));
+                PlayerPrefs.SetString("ActiveCodes", string.Join(",", list));
                 PlayerPrefs.Save();
             }
         }
@@ -142,7 +142,7 @@ namespace Runtime.Scripts.Network
             Application.runInBackground = true;
 
             // Clear any stale active room codes from previous cache runs on startup
-            PlayerPrefs.SetString("Xenobot_ActiveCodes", "");
+            PlayerPrefs.SetString("ActiveCodes", "");
             PlayerPrefs.Save();
 
             BuildCyberpunkUI();
@@ -222,9 +222,9 @@ namespace Runtime.Scripts.Network
             if (_joinPanelGo != null) _joinPanelGo.SetActive(true);
         }
 
-        public void GoBackToMainMenuScene()
+        public void GoBackToMainScene()
         {
-            SceneManager.LoadScene(mainMenuScene);
+            SceneManager.LoadScene(mainScene);
         }
 
         private void SaveHostSettings()
@@ -512,7 +512,7 @@ namespace Runtime.Scripts.Network
 
             CreateCyberButton("HostMatchButton", _mainPanelGo.transform, "HOST", new Vector2(0, 30), neonCyan, ShowHostSubpanel);
             CreateCyberButton("JoinMatchButton", _mainPanelGo.transform, "JOIN", new Vector2(0, -50), neonYellow, ShowJoinSubpanel);
-            CreateCyberButton("BackButton", _mainPanelGo.transform, "BACK", new Vector2(0, -130), neonMagenta, GoBackToMainMenuScene);
+            CreateCyberButton("BackButton", _mainPanelGo.transform, "BACK", new Vector2(0, -130), neonMagenta, GoBackToMainScene);
 
             // 2. HOST SUBPANEL
             _hostPanelGo = CreatePanel("HostPanel", _canvasRoot.transform, new Vector2(850, 780));

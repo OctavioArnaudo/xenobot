@@ -10,7 +10,7 @@ using Runtime.Scripts.Spawn;
 namespace Runtime.Scripts.Pickup
 {
     /// <summary>
-    /// Universal Pickup Controller for Xenobot.
+    /// Universal Pickup Controller.
     /// Handles all items generically using ItemType and prefab logic.
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]

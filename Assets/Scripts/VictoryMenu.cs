@@ -13,7 +13,7 @@ namespace Runtime.Scripts.Victory
     {
 
         [Header("Settings")]
-        public string levelsMenuScene = "LevelsMenuScene";
+        public string levelsScene = "LevelsScene";
         public Color winColor = new Color(0f, 0.8f, 0.2f, 0.9f);
         public Color accentColor = Color.yellow;
 
@@ -173,7 +173,7 @@ namespace Runtime.Scripts.Victory
         private void ReturnToLevels()
         {
             // Mantenemos la red activa para que LevelsMenu pueda sincronizar datos
-            SceneManager.LoadScene(levelsMenuScene);
+            SceneManager.LoadScene(levelsScene);
         }
 
         private void CreateDecoration(string sym, Transform parent, Vector2 pos, float size)

@@ -86,7 +86,7 @@ namespace Runtime.Scripts.Enemy
     }
 
     /// <summary>
-    /// Advanced AI Controller for Xenobot Enemies.
+    /// Advanced AI Controller for Enemies.
     /// Supports 3 Enemy Categories (Melee, Ranged, Hybrid), customizable Phases with flexible Triggers,
     /// and 9 Category-Agnostic AI Behavior Archetypes with internal hardcoded defaults and manual inspector overrides.
     /// </summary>

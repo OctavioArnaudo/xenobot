@@ -15,9 +15,9 @@ namespace Runtime.Scripts.Pause
     {
 
         [Header("Settings & Navigation")]
-        public string settingsSceneName = "SettingsMenuScene";
-        public string mainMenuSceneName = "MainMenuScene";
-        public string levelsMenuScene = "LevelsMenuScene";
+        public string settingsSceneName = "SettingsScene";
+        public string mainSceneName = "MainScene";
+        public string levelsScene = "LevelsScene";
 
         [Header("UI Panel (Optional - Auto-built if null)")]
         [SerializeField] private GameObject pauseMenuPanel;
@@ -114,7 +114,7 @@ namespace Runtime.Scripts.Pause
             {
                 Unity.Netcode.NetworkManager.Singleton.Shutdown();
             }
-            SceneManager.LoadScene(!string.IsNullOrEmpty(levelsMenuScene) ? levelsMenuScene : mainMenuSceneName);
+            SceneManager.LoadScene(!string.IsNullOrEmpty(levelsScene) ? levelsScene : mainSceneName);
         }
 
         private void BuildCyberpunkUI()

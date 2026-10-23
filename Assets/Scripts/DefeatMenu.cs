@@ -10,7 +10,7 @@ namespace Runtime.Scripts.Defeat
     public class DefeatMenu : MonoBehaviour
     {
         [Header("Settings")]
-        public string levelsMenuScene = "LevelsMenuScene";
+        public string levelsScene = "LevelsScene";
         public Color loseColor = new Color(0.6f, 0.1f, 0.1f, 0.9f);
         public Color accentColor = Color.gray;
 
@@ -187,7 +187,7 @@ namespace Runtime.Scripts.Defeat
         private void ReturnToLevels()
         {
             // Mantenemos la red activa para que LevelsMenu pueda sincronizar datos
-            SceneManager.LoadScene(levelsMenuScene);
+            SceneManager.LoadScene(levelsScene);
         }
 
         private void CreateDecoration(string sym, Transform parent, Vector2 pos, float size)

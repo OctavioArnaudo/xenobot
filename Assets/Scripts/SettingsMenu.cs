@@ -20,9 +20,9 @@ namespace Runtime.Scripts.Settings
                 LastJoinCode
             }
 
-            public const string UserNameKey = "Xenobot_UserName";
-            public const string MaxPlayersKey = "Xenobot_MaxPlayers";
-            public const string LastJoinCodeKey = "Xenobot_LastJoinCode";
+            public const string UserNameKey = "UserName";
+            public const string MaxPlayersKey = "MaxPlayers";
+            public const string LastJoinCodeKey = "LastJoinCode";
 
             public static string GetKey(Key key)
             {
@@ -37,9 +37,9 @@ namespace Runtime.Scripts.Settings
         }
 
         [Header("Scene Configuration")]
-        public string mainMenuScene = "MainMenuScene";
+        public string mainScene = "MainScene";
 
-        [Header("Xenobot Visual Style")]
+        [Header("Visual Style")]
         public Color backgroundColor = new Color(0.01f, 0.02f, 0.05f, 1f);
         public Color sidebarColor = new Color(0.05f, 0.1f, 0.2f, 0.95f);
         public Color panelColor = new Color(0.1f, 0.2f, 0.3f, 0.7f);
@@ -360,7 +360,7 @@ namespace Runtime.Scripts.Settings
                 return;
             }
 
-            string targetScene = !string.IsNullOrEmpty(PreviousScene) ? PreviousScene : mainMenuScene;
+            string targetScene = !string.IsNullOrEmpty(PreviousScene) ? PreviousScene : mainScene;
             PreviousScene = "";
             SceneManager.LoadScene(targetScene);
         }

@@ -8,7 +8,7 @@ namespace Runtime.Scripts.Credits
     public class CreditsMenu : MonoBehaviour
     {
         [Header("Scene Configuration")]
-        public string mainMenuScene = "MainMenuScene";
+        public string mainScene = "MainScene";
 
         [Header("Visual Style")]
         public Color titleColor = Color.cyan;
@@ -123,8 +123,8 @@ namespace Runtime.Scripts.Credits
 
         public void ReturnToMenu()
         {
-            if (!string.IsNullOrEmpty(mainMenuScene))
-                SceneManager.LoadScene(mainMenuScene);
+            if (!string.IsNullOrEmpty(mainScene))
+                SceneManager.LoadScene(mainScene);
             else
                 Debug.LogWarning("Escena de menú no configurada.");
         }
