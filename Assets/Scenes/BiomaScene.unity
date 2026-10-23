@@ -15,7 +15,7 @@ RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
   m_Fog: 1
-  m_FogColor: {r: 1, g: 0.20289853, b: 0, a: 1}
+  m_FogColor: {r: 1, g: 0.20392157, b: 0, a: 1}
   m_FogMode: 2
   m_FogDensity: 0
   m_LinearFogStart: 0
@@ -4649,6 +4649,22 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 1928529482}
+    - target: {fileID: 6856443839240908840, guid: e4645a5e4545f96449a1233565b56076, type: 3}
+      propertyPath: m_Color.b
+      value: 0.56078434
+      objectReference: {fileID: 0}
+    - target: {fileID: 6856443839240908840, guid: e4645a5e4545f96449a1233565b56076, type: 3}
+      propertyPath: m_Color.g
+      value: 0.5803922
+      objectReference: {fileID: 0}
+    - target: {fileID: 6856443839240908840, guid: e4645a5e4545f96449a1233565b56076, type: 3}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6856443839240908840, guid: e4645a5e4545f96449a1233565b56076, type: 3}
+      propertyPath: m_Intensity
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 6899809819893956341, guid: e4645a5e4545f96449a1233565b56076, type: 3}
       propertyPath: m_InScenePlaced
       value: 1

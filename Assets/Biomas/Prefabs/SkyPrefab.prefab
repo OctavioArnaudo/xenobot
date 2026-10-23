@@ -9,9 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3103291168873191822}
-  - component: {fileID: 6892104431568194403}
-  - component: {fileID: 5611848289658187026}
-  - component: {fileID: 3224995933172544990}
+  - component: {fileID: 5550520090894872384}
+  - component: {fileID: 5652693524345595015}
+  - component: {fileID: 5796400187798116643}
   m_Layer: 0
   m_Name: SkyPrefab
   m_TagString: Untagged
@@ -34,7 +34,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &6892104431568194403
+--- !u!114 &5550520090894872384
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -43,15 +43,15 @@ MonoBehaviour:
   m_GameObject: {fileID: 8290281214044165213}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b8d2efb11a72ea7409dd3badf546f90b, type: 3}
+  m_Script: {fileID: 11500000, guid: da3a969e57407974a918283595cbb4cf, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SepiaAmbiente
-  luzAmbiente: {r: 1, g: 1, b: 1, a: 1}
-  luzDireccional: {r: 1, g: 0.58096313, b: 0.5613208, a: 1}
-  colorNiebla: {r: 1, g: 0.20289853, b: 0, a: 1}
-  densidadNiebla: 0
-  intensidadLuz: 1
---- !u!114 &5611848289658187026
+  m_EditorClassIdentifier: Assembly-CSharp::Runtime.Scripts.Sepia.LightingController
+  ambientLight: {r: 1, g: 1, b: 1, a: 1}
+  directionalLight: {r: 1, g: 0.5803922, b: 0.56078434, a: 1}
+  fogColor: {r: 1, g: 0.20392157, b: 0, a: 1}
+  fogDensity: 0
+  lightIntensity: 1
+--- !u!114 &5652693524345595015
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -60,29 +60,29 @@ MonoBehaviour:
   m_GameObject: {fileID: 8290281214044165213}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc2e40d5092c31341867dd3d9940733d, type: 3}
+  m_Script: {fileID: 11500000, guid: abd4f4b7c42005540a1bd06f7b0167fe, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SepiaParticulas
+  m_EditorClassIdentifier: Assembly-CSharp::Runtime.Scripts.Sepia.GradingController
+  hueShift: -8
+  saturation: -25
+  contrast: 15
+  tint: {r: 0.9, g: 0.55, b: 0.3, a: 1}
+--- !u!114 &5796400187798116643
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8290281214044165213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2fdc44a9f8ef188409e221021393b5b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Runtime.Scripts.Sepia.RainController
   areaSize: 1500
   heightAbove: 35
   fallSpeed: 1
   count: 5000
   minSize: 1.68
   maxSize: 3.97
-  color: {r: 1, g: 0.08, b: 0.02, a: 0.9}
---- !u!114 &3224995933172544990
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8290281214044165213}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a723b2a544bc7347a61ed763c41d83e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::SepiaTonemap
-  hueShift: -8
-  saturation: -25
-  contraste: 15
-  tinte: {r: 0.9, g: 0.55, b: 0.3, a: 1}
+  color: {r: 1, g: 0.078431375, b: 0.019607844, a: 0.9019608}
