@@ -44,6 +44,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9f2c79c7d5a47d046ae9768ede658b2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Menus.Scripts.VictoryMenu
-  levelsMenuScene: LevelsMenuScene
+  persistAcrossScenes: 1
+  destroyDuplicates: 1
+  levelsMenuScene: LevelsScene
   winColor: {r: 0, g: 0.8, b: 0.2, a: 0.9}
   accentColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}

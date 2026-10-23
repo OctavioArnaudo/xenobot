@@ -205,7 +205,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7f60afccc94b9394bb2d053415c16145, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::NGO.Networking.NetworkMenu
-  mainMenuScene: MainMenuScene
+  persistAcrossScenes: 0
+  destroyDuplicates: 0
+  mainMenuScene: MainScene
   lobbySceneName: LobbyScene
   panelColor: {r: 0.04, g: 0.08, b: 0.12, a: 0.92}
   neonCyan: {r: 0, g: 1, b: 0.95, a: 1}

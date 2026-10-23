@@ -44,9 +44,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4e4f826629885e418169eeea7d2c1fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Menus.Scripts.EscapeMenu
-  settingsSceneName: SettingsMenuScene
-  mainMenuSceneName: MainMenuScene
-  levelsMenuScene: LevelsMenuScene
+  persistAcrossScenes: 1
+  destroyDuplicates: 1
+  settingsSceneName: SettingsScene
+  mainMenuSceneName: MainScene
+  levelsMenuScene: LevelsScene
   pauseMenuPanel: {fileID: 0}
   panelColor: {r: 0.04, g: 0.08, b: 0.12, a: 0.92}
   neonCyan: {r: 0, g: 1, b: 0.95, a: 1}
