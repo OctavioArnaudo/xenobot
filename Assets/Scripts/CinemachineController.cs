@@ -5,9 +5,9 @@ using Unity.Cinemachine;
 using Runtime.Scripts.Modular;
 using Runtime.Scripts.Player;
 
-namespace Runtime.Scripts.CameraCinemachine
+namespace Runtime.Scripts.Cinemachine
 {
-    public class CameraController : MonoBehaviour, IModular
+    public class CinemachineController : MonoBehaviour, IModular
     {
         [Header("Settings")]
         public Vector2 LookSensitivity = new Vector2(1.0f, 0.8f);

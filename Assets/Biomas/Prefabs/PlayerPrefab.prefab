@@ -619,17 +619,7 @@ MonoBehaviour:
   cornerRadius: 15
   panelColor: {r: 0.05, g: 0.05, b: 0.05, a: 0.95}
   accentColor: {r: 1, g: 0.85, b: 0, a: 1}
-  itemDatabase:
-  - {fileID: 11400000, guid: bb42e76d6f734c5091156f6de5048962, type: 2}
-  - {fileID: 11400000, guid: 9c17cf8896f842ca89037bfc4f46889c, type: 2}
-  - {fileID: 11400000, guid: 75b6b99d3e052724095a1f53dea46401, type: 2}
-  - {fileID: 11400000, guid: d7c9c3ed602c45bda00bb8572b645ef1, type: 2}
-  - {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
-  - {fileID: 11400000, guid: efd5d0a0c9077794ebff867795e6eea0, type: 2}
-  - {fileID: 11400000, guid: 255df1421f3a00a4ebd8665f47c31710, type: 2}
-  - {fileID: 11400000, guid: 125d620cfc9627c489cc73f5df68953e, type: 2}
-  - {fileID: 11400000, guid: daed6fcceb87bce418b245a5c5b7f855, type: 2}
-  - {fileID: 11400000, guid: 8eee5fae4dbf594448b2248a273b7ccf, type: 2}
+  itemsDatabase: []
   dropDistance: 3.5
 --- !u!114 &6229371320334411257
 MonoBehaviour:
@@ -785,11 +775,11 @@ MonoBehaviour:
   targetLayers:
     serializedVersion: 2
     m_Bits: 64
-  SlamHoldDuration: 0.25
+  SlamHoldDuration: 0.15
   slamHoldDuration:
     use: 0
     value: 0
-  SlamDamage: 1
+  SlamDamage: 2
   slamDamage:
     use: 0
     value: 0
@@ -938,7 +928,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 165653068685440053, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_Name
-      value: CameraPrefab
+      value: CinemachinePrefab
       objectReference: {fileID: 0}
     - target: {fileID: 1422253556353421033, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
       propertyPath: m_LocalPosition.x
