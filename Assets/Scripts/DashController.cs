@@ -114,7 +114,9 @@ namespace Runtime.Scripts.Singleton
 
         void Update()
         {
+#if UNITY_EDITOR
             UpdateInspectorValues();
+#endif
             if (m_Player == null || m_CharController == null || m_Animator == null) RefreshReferences();
             if (m_Player == null || m_CharController == null) return;
 

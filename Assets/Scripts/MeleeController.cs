@@ -208,7 +208,9 @@ namespace Runtime.Scripts.Melee
 
         void Update()
         {
+#if UNITY_EDITOR
             UpdateInspectorValues();
+#endif
             if (IsNetworkActive && !IsOwner) return;
 
             if (m_IsSlamming)

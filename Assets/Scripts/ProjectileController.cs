@@ -453,7 +453,9 @@ namespace Runtime.Scripts.Projectile
 
         private void Update()
         {
+#if UNITY_EDITOR
             UpdateInspectorValues();
+#endif
             if (m_Owner == null && !m_IsAttached) return;
             if (m_IsAttached)
             {

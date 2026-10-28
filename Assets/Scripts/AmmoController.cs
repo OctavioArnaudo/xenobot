@@ -42,7 +42,9 @@ namespace Runtime.Scripts.Ammo
 
         private void Update()
         {
+#if UNITY_EDITOR
             UpdateInspectorValues();
+#endif
         }
 
         void Awake()

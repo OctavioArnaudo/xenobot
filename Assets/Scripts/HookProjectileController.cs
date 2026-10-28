@@ -96,7 +96,9 @@ namespace Runtime.Scripts.Hook
 
         private void Update()
         {
+#if UNITY_EDITOR
             UpdateInspectorValues();
+#endif
             UpdateLineVisuals();
 
             if (!m_HasHit)

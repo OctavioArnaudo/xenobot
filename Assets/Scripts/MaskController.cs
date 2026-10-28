@@ -56,7 +56,9 @@ namespace Runtime.Scripts.Mask
 
         private void Update()
         {
+#if UNITY_EDITOR
             UpdateInspectorValues();
+#endif
         }
 
         private bool _isEquipped = false;

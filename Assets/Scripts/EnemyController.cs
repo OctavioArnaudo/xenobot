@@ -586,7 +586,9 @@ namespace Runtime.Scripts.Enemy
 
         void Update()
         {
+#if UNITY_EDITOR
             UpdateInspectorValues();
+#endif
             if (!CanExecuteLogic) return;
 
             if (m_Health != null && m_Health.CurrentHP <= 0)

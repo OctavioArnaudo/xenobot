@@ -261,7 +261,9 @@ namespace Runtime.Scripts.Health
 
         void Update()
         {
+#if UNITY_EDITOR
             UpdateInspectorValues();
+#endif
             if (m_DamageFlashTimer > 0)
             {
                 m_DamageFlashTimer -= Time.deltaTime;
