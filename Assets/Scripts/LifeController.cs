@@ -128,6 +128,7 @@ namespace Runtime.Scripts.Life
             Light lt = visual.GetComponent<Light>();
             if (lt == null) lt = visual.AddComponent<Light>();
             lt.type = LightType.Point;
+            lt.shadows = LightShadows.None;
             lt.color = emissionColor;
             lt.intensity = 1.5f;
             lt.range = 3f;

@@ -229,6 +229,7 @@ namespace Runtime.Scripts.Teleport
             if (portalLight != null)
             {
                 portalLight.type = LightType.Point;
+                portalLight.shadows = LightShadows.None;
                 portalLight.color = color;
                 portalLight.intensity = 2.5f;
                 portalLight.range = 5.0f;

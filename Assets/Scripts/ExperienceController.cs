@@ -82,6 +82,7 @@ namespace Runtime.Scripts.Experience
             if (lt == null) lt = gameObject.AddComponent<Light>();
 
             lt.type = LightType.Point;
+            lt.shadows = LightShadows.None;
             lt.color = orbColor;
             lt.intensity = lightIntensity;
             lt.range = lightRange;
