@@ -478,7 +478,7 @@ namespace Runtime.Scripts.Projectile
                 return;
             }
 
-            GuideTowardsRivalTarget();
+            //GuideTowardsRivalTarget();
 
             float moveDistance = EffectiveSpeed * Time.deltaTime;
 
