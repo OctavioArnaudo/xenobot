@@ -33,6 +33,11 @@ namespace Runtime.Scripts.Sepia
                 _light.color = directionalLight;
                 _light.intensity = lightIntensity;
             }
+
+            foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None))
+            {
+                if (l != null && l.type != LightType.Directional) l.shadows = LightShadows.None;
+            }
         }
     }
 }
