@@ -534,11 +534,7 @@ namespace Runtime.Scripts.Balance
             if (_activeInstanceToKey.TryGetValue(instanceID, out string poolKey))
             {
                 instance.SetActive(false);
-                if (netObj != null)
-                {
-                    instance.transform.SetParent(null);
-                }
-                else
+                if (!instance.TryGetComponent<NetworkObject>(out _))
                 {
                     instance.transform.SetParent(_poolParentTransform);
                 }

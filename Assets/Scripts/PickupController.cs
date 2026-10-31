@@ -233,7 +233,7 @@ namespace Runtime.Scripts.Pickup
                 _taken = true;
                 foreach (var col in GetComponents<Collider>()) col.enabled = false;
 
-                if (IsNetworkActive) ProcessPickupAuthoritative(inv, root.gameObject);
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening) ProcessPickupAuthoritative(inv, root.gameObject);
                 else ProcessPickupLocal(inv, root.gameObject);
             }
         }
