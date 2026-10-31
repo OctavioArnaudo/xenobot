@@ -534,7 +534,7 @@ namespace Runtime.Scripts.Balance
             if (_activeInstanceToKey.TryGetValue(instanceID, out string poolKey))
             {
                 instance.SetActive(false);
-                if (instance.TryGetComponent<NetworkObject>(out var netComp)) Object.Destroy(netComp);
+                if (instance.TryGetComponent<NetworkObject>(out var netComp)) Destroy(netComp);
                 instance.transform.SetParent(_poolParentTransform);
                 _objectPools[poolKey].Enqueue(instance);
             }
