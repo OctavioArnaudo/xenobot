@@ -18,12 +18,18 @@ namespace Runtime.Scripts.Settings
             {
                 UserName,
                 MaxPlayers,
-                LastJoinCode
+                LastJoinCode,
+                Volume,
+                Music,
+                Effects
             }
 
             public const string UserNameKey = "UserName";
             public const string MaxPlayersKey = "MaxPlayers";
             public const string LastJoinCodeKey = "LastJoinCode";
+            public const string VolumeKey = "Volume";
+            public const string MusicKey = "Music";
+            public const string EffectsKey = "Effects";
 
             public static string GetKey(Key key)
             {
@@ -32,7 +38,68 @@ namespace Runtime.Scripts.Settings
                     case Key.UserName: return UserNameKey;
                     case Key.MaxPlayers: return MaxPlayersKey;
                     case Key.LastJoinCode: return LastJoinCodeKey;
+                    case Key.Volume: return VolumeKey;
+                    case Key.Music: return MusicKey;
+                    case Key.Effects: return EffectsKey;
                     default: return key.ToString();
+                }
+            }
+        }
+
+        public static float MasterVolume
+        {
+            get => PlayerPrefs.GetFloat(PrefKeys.GetKey(PrefKeys.Key.Volume), 0.8f);
+            set
+            {
+                PlayerPrefs.SetFloat(PrefKeys.GetKey(PrefKeys.Key.Volume), value);
+                PlayerPrefs.Save();
+                ApplyAudioSettings();
+            }
+        }
+
+        public static float MusicVolume
+        {
+            get => PlayerPrefs.GetFloat(PrefKeys.GetKey(PrefKeys.Key.Music), 0.5f);
+            set
+            {
+                PlayerPrefs.SetFloat(PrefKeys.GetKey(PrefKeys.Key.Music), value);
+                PlayerPrefs.Save();
+                ApplyAudioSettings();
+            }
+        }
+
+        public static float EffectsVolume
+        {
+            get => PlayerPrefs.GetFloat(PrefKeys.GetKey(PrefKeys.Key.Effects), 0.9f);
+            set
+            {
+                PlayerPrefs.SetFloat(PrefKeys.GetKey(PrefKeys.Key.Effects), value);
+                PlayerPrefs.Save();
+                ApplyAudioSettings();
+            }
+        }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        public static void ApplyAudioSettings()
+        {
+            float vol = PlayerPrefs.GetFloat(PrefKeys.GetKey(PrefKeys.Key.Volume), 0.8f);
+            AudioListener.volume = vol;
+
+            float music = PlayerPrefs.GetFloat(PrefKeys.GetKey(PrefKeys.Key.Music), 0.5f);
+            float effects = PlayerPrefs.GetFloat(PrefKeys.GetKey(PrefKeys.Key.Effects), 0.9f);
+
+            AudioSource[] sources = Object.FindObjectsByType<AudioSource>(FindObjectsSortMode.None);
+            foreach (var src in sources)
+            {
+                if (src == null) continue;
+                string srcName = src.gameObject.name.ToLower();
+                if (srcName.Contains("music") || srcName.Contains("bgm"))
+                {
+                    src.volume = music;
+                }
+                else if (srcName.Contains("effect") || srcName.Contains("sfx") || srcName.Contains("sound"))
+                {
+                    src.volume = effects;
                 }
             }
         }
@@ -56,6 +123,7 @@ namespace Runtime.Scripts.Settings
 
         private void Start()
         {
+            ApplyAudioSettings();
             SetupUI();
         }
 
@@ -127,9 +195,9 @@ namespace Runtime.Scripts.Settings
         private GameObject SetupAudioPanel()
         {
             GameObject panel = CreateBasePanel("Panel_Audio", "AUDIO SYSTEM");
-            CreateSettingSlider(panel.transform, "VOLUME", 0.75f, 0.8f);
-            CreateSettingSlider(panel.transform, "MUSIC", 0.60f, 0.5f);
-            CreateSettingSlider(panel.transform, "EFFECTS", 0.45f, 0.9f);
+            CreateSettingSlider(panel.transform, "VOLUME", 0.75f, MasterVolume, (v) => MasterVolume = v);
+            CreateSettingSlider(panel.transform, "MUSIC", 0.60f, MusicVolume, (v) => MusicVolume = v);
+            CreateSettingSlider(panel.transform, "EFFECTS", 0.45f, EffectsVolume, (v) => EffectsVolume = v);
             return panel;
         }
 
@@ -180,7 +248,7 @@ namespace Runtime.Scripts.Settings
             return panel;
         }
 
-        private void CreateSettingSlider(Transform parent, string labelText, float yAnchor, float defaultValue)
+        private void CreateSettingSlider(Transform parent, string labelText, float yAnchor, float defaultValue, System.Action<float> onValueChanged = null)
         {
             GameObject container = new GameObject("SliderGroup_" + labelText);
             container.transform.SetParent(parent);
@@ -225,6 +293,10 @@ namespace Runtime.Scripts.Settings
             slider.fillRect.anchoredPosition3D = Vector3.zero; slider.fillRect.localScale = Vector3.one;
 
             slider.value = defaultValue;
+            if (onValueChanged != null)
+            {
+                slider.onValueChanged.AddListener((v) => onValueChanged.Invoke(v));
+            }
         }
 
         private void CreateControlLabel(Transform parent, string action, string key, float yAnchor)
