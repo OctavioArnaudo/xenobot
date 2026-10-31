@@ -1,6 +1,7 @@
 using Runtime.Scripts.Player;
 using System.Collections;
 using UnityEngine;
+using Unity.Netcode;
 
 namespace Runtime.Scripts.Teleport
 {
@@ -8,7 +9,7 @@ namespace Runtime.Scripts.Teleport
     /// Controla la lógica de teletransporte entre dos puntos interconectados (Portal A y Portal B).
     /// Auto-genera y configura visuales de portales cilíndricos ovalados para representar los puntos interconectados.
     /// </summary>
-    public class TeleportController : MonoBehaviour
+    public class TeleportController : NetworkBehaviour
     {
         [Header("Ajustes de Teletransporte")]
         [Tooltip("Distancia por delante del portal de destino hacia donde saldrá expulsado el jugador.")]

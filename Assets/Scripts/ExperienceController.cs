@@ -1,6 +1,7 @@
 using Runtime.Scripts.Hud;
 using Runtime.Scripts.Items;
 using UnityEngine;
+using Unity.Netcode;
 
 namespace Runtime.Scripts.Experience
 {
@@ -8,7 +9,7 @@ namespace Runtime.Scripts.Experience
     /// Specialized script to handle experience orb visuals and logic.
     /// Implements IItemFunctional, IItemUseAction, and IItemPickupAction to add EXP to the player.
     /// </summary>
-    public class ExperienceController : MonoBehaviour, IItemUseAction, IItemPickupAction
+    public class ExperienceController : NetworkBehaviour, IItemUseAction, IItemPickupAction
     {
         // Economy Reliability Constants
         private const float EXP_AMOUNT = 25f;

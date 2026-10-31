@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 using FMODUnity;
 using FMOD.Studio;
 using System.Collections.Generic;
@@ -7,7 +8,7 @@ using Runtime.Scripts.Player;
 
 namespace Runtime.Scripts.Fmod
 {
-    public class FmodController : MonoBehaviour
+    public class FmodController : NetworkBehaviour
     {
         public static FmodController Instance { get; private set; }
 

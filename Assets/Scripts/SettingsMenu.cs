@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
@@ -6,7 +7,7 @@ using System.Collections.Generic;
 
 namespace Runtime.Scripts.Settings
 {
-    public class SettingsMenu : MonoBehaviour
+    public class SettingsMenu : NetworkBehaviour
     {
         public static string PreviousScene { get; set; } = "";
         public bool IsOverlayMode { get; set; } = false;

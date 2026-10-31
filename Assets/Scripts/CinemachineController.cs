@@ -7,7 +7,7 @@ using Runtime.Scripts.Player;
 
 namespace Runtime.Scripts.Cinemachine
 {
-    public class CinemachineController : MonoBehaviour, IModular
+    public class CinemachineController : NetworkBehaviour, IModular
     {
         [Header("Settings")]
         public Vector2 LookSensitivity = new Vector2(1.0f, 0.8f);

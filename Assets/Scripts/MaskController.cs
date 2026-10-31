@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 
 using System.Linq;
 using Runtime.Scripts.Items;
@@ -21,7 +22,7 @@ namespace Runtime.Scripts.Mask
     /// Superpone el visor/máscara sobre la cabeza del personaje sin reemplazar su cuerpo base.
     /// Aplica efectos visuales HUD en cámara al ser usado desde el inventario.
     /// </summary>
-    public class MaskController : MonoBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction
+    public class MaskController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction
     {
         private const VisorType DEFAULT_VISOR_TYPE = VisorType.VisorTermico;
         private static readonly Vector3 DEFAULT_HEAD_BONE_OFFSET = new Vector3(0f, 0.05f, 0.08f);

@@ -1,19 +1,20 @@
 using UnityEngine;
+using Unity.Netcode;
 using FMODUnity;
 
 namespace Runtime.Scripts.Fmod
 {
 
-    public class FmodManager : MonoBehaviour
+    public class FmodManager : NetworkBehaviour
     {
         [Header("Componente de FMOD")]
         [SerializeField] private StudioEventEmitter musicaEmitter;
 
-        [Header("Configuración del Parámetro")]
-        [Tooltip("El nombre exacto del parámetro creado en FMOD Studio")]
+        [Header("Configuraciï¿½n del Parï¿½metro")]
+        [Tooltip("El nombre exacto del parï¿½metro creado en FMOD Studio")]
         [SerializeField] private string nombreParametro = "Zona trigger";
 
-        // En parámetros etiquetados de FMOD, la primera etiqueta vale 0f y la segunda 1f
+        // En parï¿½metros etiquetados de FMOD, la primera etiqueta vale 0f y la segunda 1f
         private float indiceChill = 0f;
         private float indiceAccion = 1f;
 
@@ -39,7 +40,7 @@ namespace Runtime.Scripts.Fmod
         {
             if (musicaEmitter != null)
             {
-                // Usamos el método nativo SetParameter enviando el índice de la etiqueta
+                // Usamos el mï¿½todo nativo SetParameter enviando el ï¿½ndice de la etiqueta
                 musicaEmitter.SetParameter(nombreParametro, valorIndice);
             }
             else

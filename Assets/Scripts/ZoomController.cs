@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 using UnityEngine.InputSystem;
 using Unity.Cinemachine;
 
@@ -9,7 +10,7 @@ namespace Runtime.Scripts.Zoom
     /// Zoom con rueda del mouse via FOV de la CinemachineCamera activa.
     /// Attach a cualquier GameObject en la escena.
     /// </summary>
-    public class ZoomController : MonoBehaviour
+    public class ZoomController : NetworkBehaviour
     {
         [Header("FOV")]
         public float minFov = 20f;

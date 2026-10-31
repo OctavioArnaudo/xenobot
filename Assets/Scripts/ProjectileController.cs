@@ -22,7 +22,7 @@ namespace Runtime.Scripts.Projectile
     /// <summary>
     /// Componente helper adjuntado dinámicamente a los objetivos para gestionar estados de Congelación (slow) y Corrosión (DoT).
     /// </summary>
-    public class ProjectileStatusReceiver : MonoBehaviour
+    public class ProjectileStatusReceiver : NetworkBehaviour
     {
         private int m_FreezeStacks = 0;
         private float m_FreezeTimer = 0f;

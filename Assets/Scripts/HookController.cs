@@ -1,9 +1,10 @@
 using UnityEngine;
+using Unity.Netcode;
 
 namespace Runtime.Scripts.Hook
 {
 
-    public class HookController : MonoBehaviour
+    public class HookController : NetworkBehaviour
     {
         [Header("Configuración General")]
         [SerializeField] private bool generateOnStart = true;

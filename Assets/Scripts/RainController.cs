@@ -1,8 +1,9 @@
 ﻿using UnityEngine;
+using Unity.Netcode;
 
 namespace Runtime.Scripts.Sepia
 {
-    public class RainController : MonoBehaviour
+    public class RainController : NetworkBehaviour
     {
         [Header("Rain")]
         [Tooltip("Emission area width and length (meters)")]

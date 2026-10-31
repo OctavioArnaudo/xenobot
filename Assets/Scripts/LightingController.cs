@@ -1,9 +1,10 @@
 using UnityEngine;
+using Unity.Netcode;
 
 namespace Runtime.Scripts.Sepia
 {
     [ExecuteAlways]
-    public class LightingController : MonoBehaviour
+    public class LightingController : NetworkBehaviour
     {
         [ColorUsage(false)] public Color ambientLight = new Color(0.18f, 0.08f, 0.05f);
         [ColorUsage(false)] public Color directionalLight = new Color(0.55f, 0.18f, 0.08f);

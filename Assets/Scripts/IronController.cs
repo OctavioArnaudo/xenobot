@@ -12,7 +12,7 @@ namespace Runtime.Scripts.Iron
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
     [RequireComponent(typeof(PickupController))]
-    public class IronController : MonoBehaviour
+    public class IronController : NetworkBehaviour
     {
         [Header("Visual Settings")]
         public Color ironColor = new Color(0.75f, 0.75f, 0.8f); // Shiny Metallic Gray

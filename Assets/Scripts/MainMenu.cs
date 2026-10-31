@@ -6,7 +6,7 @@ using Unity.Netcode;
 
 namespace Runtime.Scripts.Main
 {
-    public class MainMenu : MonoBehaviour
+    public class MainMenu : NetworkBehaviour
     {
         [Header("Scene Configuration")]
         public string gameScene = "NetworkScene";

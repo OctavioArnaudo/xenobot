@@ -1,10 +1,11 @@
 using UnityEngine;
+using Unity.Netcode;
 using FMODUnity;
 using FMOD.Studio;
 
 namespace Runtime.Scripts.Wind
 {
-    public class WindController : MonoBehaviour
+    public class WindController : NetworkBehaviour
     {
         [SerializeField] private EventReference windSfx;
         private EventInstance _windInstance;

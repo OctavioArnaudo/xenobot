@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
@@ -7,7 +8,7 @@ using Runtime.Scripts.Levels;
 
 namespace Runtime.Scripts.Defeat
 {
-    public class DefeatMenu : MonoBehaviour
+    public class DefeatMenu : NetworkBehaviour
     {
         [Header("Settings")]
         public string levelsScene = "LevelsScene";

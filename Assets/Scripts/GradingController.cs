@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 
 #if UNITY_POST_PROCESSING_STACK_V2
 using UnityEngine.Rendering.PostProcessing;
@@ -10,7 +11,7 @@ using UnityEngine.Rendering.Universal;
 namespace Runtime.Scripts.Sepia
 {
     [ExecuteAlways]
-    public class GradingController : MonoBehaviour
+    public class GradingController : NetworkBehaviour
     {
         [Range(-180f, 180f)] public float hueShift = -8f;
         [Range(-100f, 100f)] public float saturation = -25f;

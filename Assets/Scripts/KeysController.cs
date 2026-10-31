@@ -12,7 +12,7 @@ namespace Runtime.Scripts.Keys
     /// Generates a 3D door key mesh procedurally.
     /// Requires NetworkObject and PickupController (pre-configured with Item_Key).
     /// </summary>
-    public class KeyController : MonoBehaviour, IItemUseAction, IItemPickupAction
+    public class KeyController : NetworkBehaviour, IItemUseAction, IItemPickupAction
     {
         [Header("Visual Settings")]
         public Color keyColor = new Color(0.1f, 0.4f, 1f); // Bright Blue

@@ -1,11 +1,12 @@
 using UnityEngine;
+using Unity.Netcode;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
 
 namespace Runtime.Scripts.Credits
 {
-    public class CreditsMenu : MonoBehaviour
+    public class CreditsMenu : NetworkBehaviour
     {
         [Header("Scene Configuration")]
         public string mainScene = "MainScene";

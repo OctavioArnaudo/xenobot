@@ -218,7 +218,7 @@ namespace Runtime.Scripts.Spawn
         }
     }
 
-    public class SimpleBillboard : MonoBehaviour
+    public class SimpleBillboard : NetworkBehaviour
     {
         private Transform _camTransform;
         void Start() { if (Camera.main != null) _camTransform = Camera.main.transform; }

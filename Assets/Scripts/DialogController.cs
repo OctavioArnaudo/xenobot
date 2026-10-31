@@ -1,14 +1,15 @@
 using UnityEngine;
+using Unity.Netcode;
 using UnityEngine.InputSystem;
 
 namespace Runtime.Scripts.Dialog
 {
     [AddComponentMenu("Dialogs/Dialog Controller")]
-    public class DialogTrigger : MonoBehaviour
+    public class DialogTrigger : NetworkBehaviour
     {
         public enum ActivationMode { OnEnter, OnInputInsideTrigger }
 
-        [Header("Configuración")]
+        [Header("Configuraciï¿½n")]
         public string dialogId;
         public ActivationMode activationMode = ActivationMode.OnEnter;
         public bool onlyOnce = true;
@@ -52,7 +53,7 @@ namespace Runtime.Scripts.Dialog
             if (!_playerInside) return;
             if (_used && onlyOnce) return;
 
-            // Si ya hay un diálogo abierto, esa E le pertenece al DialogManager (avanzar/cerrar), no a nosotros
+            // Si ya hay un diï¿½logo abierto, esa E le pertenece al DialogManager (avanzar/cerrar), no a nosotros
             if (DialogManager.Instance != null && DialogManager.Instance.IsOpen) return;
 
             if (Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
@@ -65,7 +66,7 @@ namespace Runtime.Scripts.Dialog
         {
             if (DialogManager.Instance == null)
             {
-                Debug.LogWarning("[DialogTrigger] No se encontró DialogManager en la escena.");
+                Debug.LogWarning("[DialogTrigger] No se encontrï¿½ DialogManager en la escena.");
                 return;
             }
 

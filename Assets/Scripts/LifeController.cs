@@ -12,7 +12,7 @@ namespace Runtime.Scripts.Life
     /// Handles procedural mesh generation and healing effect.
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
-    public class LifeController : MonoBehaviour, IItemUseAction, IItemPickupAction
+    public class LifeController : NetworkBehaviour, IItemUseAction, IItemPickupAction
     {
         // Economy Reliability Constants
         private const int HEAL_AMOUNT = 30;

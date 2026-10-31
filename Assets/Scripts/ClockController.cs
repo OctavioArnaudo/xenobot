@@ -1,9 +1,10 @@
 ﻿using UnityEngine;
+using Unity.Netcode;
 using Runtime.Scripts.Cycle;
 
 namespace Runtime.Scripts.Clock
 {
-    public class ClockController : MonoBehaviour
+    public class ClockController : NetworkBehaviour
     {
         [Header("Panel")]
         public int panelWidth = 140;

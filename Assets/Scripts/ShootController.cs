@@ -19,7 +19,7 @@ namespace Runtime.Scripts.Shoot
     /// Logic controller for shooting mechanics.
     /// Supports Infinite Ammo, Auto-Reload from Inventory on empty clip, and Ammo Damage Multipliers.
     /// </summary>
-    public class ShootController : MonoBehaviour
+    public class ShootController : NetworkBehaviour
     {
         private const float DEFAULT_PLAYER_SHOOT_DAMAGE = 2f;
         private const float DEFAULT_PLAYER_FIRE_RATE = 8.0f;

@@ -7,7 +7,7 @@ using Unity.Netcode;
 
 namespace Runtime.Scripts.Levels
 {
-    public class LevelsMenu : MonoBehaviour
+    public class LevelsMenu : NetworkBehaviour
     {
         [Header("Scene Configuration")]
         public string mainScene = "MainScene";

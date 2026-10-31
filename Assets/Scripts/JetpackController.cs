@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +13,7 @@ namespace Runtime.Scripts.Jetpack
     /// Generates a procedural 3D jetpack mesh.
     /// Implements IItemFunctional to handle auto-positioning when equipped.
     /// </summary>
-    public class JetpackController : MonoBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
+    public class JetpackController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
     {
         [Header("Visuals (Procedural)")]
         public Color jetpackColor = new Color(0.3f, 0.3f, 0.4f);

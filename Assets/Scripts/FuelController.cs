@@ -1,6 +1,7 @@
 using Runtime.Scripts.Items;
 using Runtime.Scripts.Propulsion;
 using UnityEngine;
+using Unity.Netcode;
 
 namespace Runtime.Scripts.Fuel
 {
@@ -8,7 +9,7 @@ namespace Runtime.Scripts.Fuel
     /// Specialized script to handle fuel jerrycan visuals and logic.
     /// Implements IItemFunctional, IItemUseAction, and IItemPickupAction to restore fuel to the entity's tank.
     /// </summary>
-    public class FuelController : MonoBehaviour, IItemUseAction, IItemPickupAction
+    public class FuelController : NetworkBehaviour, IItemUseAction, IItemPickupAction
     {
         // Economy Reliability Constants
         private const float FUEL_AMOUNT = 40f;

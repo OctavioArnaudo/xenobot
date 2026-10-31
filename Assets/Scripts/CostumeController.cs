@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 using System.Collections.Generic;
 using System.Linq;
 using Runtime.Scripts.Items;
@@ -11,7 +12,7 @@ namespace Runtime.Scripts.Costume
     /// Specialized modular controller for appearance changes.
     /// Handles hiding current visuals and restoring them when removed.
     /// </summary>
-    public class CostumeController : MonoBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction
+    public class CostumeController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction
     {
         [Header("Settings")]
         [Tooltip("Tag to find the render root in the player hierarchy")]

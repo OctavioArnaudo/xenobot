@@ -11,7 +11,7 @@ namespace Runtime.Scripts.Ammo
     /// Controller for Ammo visual representation and reload logic.
     /// Implements IItemFunctional, IItemUseAction, and IItemPickupAction to restore ammunition to ShootController.
     /// </summary>
-    public class AmmoController : MonoBehaviour, IItemUseAction, IItemPickupAction
+    public class AmmoController : NetworkBehaviour, IItemUseAction, IItemPickupAction
     {
         private const int DEFAULT_AMMO_AMOUNT = 30;
         private const float DEFAULT_DAMAGE_MULTIPLIER = 1.25f;

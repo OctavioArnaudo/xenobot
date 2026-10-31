@@ -1,4 +1,5 @@
 using UnityEngine;
+using Unity.Netcode;
 
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace Runtime.Scripts.Weapon
     /// Specialized controller for Weapon visual representation.
     /// Optimized for a closer, more natural shooting position.
     /// </summary>
-    public class WeaponController : MonoBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
+    public class WeaponController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
     {
         [Header("Visuals (Procedural)")]
         public Color weaponColor = new Color(0.2f, 0.2f, 0.25f);
