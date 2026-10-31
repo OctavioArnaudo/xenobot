@@ -384,6 +384,7 @@ namespace Runtime.Scripts.Network
                 catch (System.Exception ex)
                 {
                     Debug.LogWarning($"[NetworkMenu] Relay Join failed for code {roomCode}: {ex.Message}. Falling back to Direct IP.");
+                    RemoveActiveCode(roomCode);
                 }
             }
 
