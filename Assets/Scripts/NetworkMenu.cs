@@ -141,10 +141,6 @@ namespace Runtime.Scripts.Network
             Cursor.lockState = CursorLockMode.None;
             Application.runInBackground = true;
 
-            // Clear any stale active room codes from previous cache runs on startup
-            PlayerPrefs.SetString("ActiveCodes", "");
-            PlayerPrefs.Save();
-
             BuildCyberpunkUI();
             ShowMainSubpanel();
         }
