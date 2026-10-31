@@ -165,6 +165,12 @@ namespace Runtime.Scripts.Inventory
         {
             if (IsNetworkActive)
             {
+                if (!IsServer)
+                {
+                    AddItemServerRpc(hash, qty);
+                    return;
+                }
+
                 for (int i = 0; i < NetworkBag.Count; i++)
                 {
                     if (NetworkBag[i].itemHash == hash)
@@ -202,6 +208,12 @@ namespace Runtime.Scripts.Inventory
         {
             if (IsNetworkActive)
             {
+                if (!IsServer)
+                {
+                    RemoveItemServerRpc(hash, qty);
+                    return;
+                }
+
                 for (int i = 0; i < NetworkBag.Count; i++)
                 {
                     if (NetworkBag[i].itemHash == hash)
