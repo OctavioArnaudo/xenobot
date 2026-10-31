@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1622122613
+  GlobalObjectIdHash: 2385884697
   InScenePlacedSourceGlobalObjectIdHash: 2385884697
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -189,24 +189,12 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5244958483593408444, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
-      propertyPath: m_InScenePlaced
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5244958483593408444, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 3560855515
-      objectReference: {fileID: 0}
-    - target: {fileID: 5244958483593408444, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
-      propertyPath: InScenePlacedSourceGlobalObjectIdHash
-      value: 2385884697
+      value: 629485334
       objectReference: {fileID: 0}
     - target: {fileID: 7349165637636185266, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_Name
       value: MaskPrefab (ObjetoClave2)
-      objectReference: {fileID: 0}
-    - target: {fileID: 7349165637636185266, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -265,6 +253,34 @@ PrefabInstance:
     - target: {fileID: 3772765388619512562, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5536139387566288626, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: HeadScale.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5536139387566288626, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: HeadScale.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5536139387566288626, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: HeadScale.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5536139387566288626, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: HeadOffset.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5536139387566288626, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: HeadOffset.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5536139387566288626, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: headScale.use
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5536139387566288626, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: headOffset.use
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6541982445443734164, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_Name

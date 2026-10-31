@@ -843,6 +843,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 80086f02cce5bd94ebf45996aa75ec2d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraZoom
+  ShowTopMostFoldoutHeaderGroup: 1
   minFov: 35
   maxFov: 100
   sensitivity: 800
@@ -4735,6 +4736,22 @@ PrefabInstance:
       propertyPath: hostSpawnPoints.Array.data[13].pointTransform
       value: 
       objectReference: {fileID: 720385081}
+    - target: {fileID: 7000910548287998250, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
+      propertyPath: m_InScenePlaced
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7000910548287998250, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 2330882277
+      objectReference: {fileID: 0}
+    - target: {fileID: 7000910548287998250, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
+      propertyPath: SceneMigrationSynchronization
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7000910548287998250, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 4230217296
+      objectReference: {fileID: 0}
     - target: {fileID: 7062432668465732339, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
