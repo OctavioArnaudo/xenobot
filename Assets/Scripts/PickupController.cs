@@ -222,7 +222,6 @@ namespace Runtime.Scripts.Pickup
         {
             if (_taken || Time.time < _spawnTime + PICKUP_DELAY) return;
 
-            // Robust player detection: Check root and parent hierarchy
             Transform root = other.transform.root;
             InventoryController inv = root.GetComponentInChildren<InventoryController>();
             bool isPlayer = root.CompareTag("Player") || other.CompareTag("Player") || inv != null;
@@ -232,6 +231,8 @@ namespace Runtime.Scripts.Pickup
                 ResolveItemsDataIfNeeded();
 
                 _taken = true;
+                foreach (var col in GetComponents<Collider>()) col.enabled = false;
+
                 if (IsNetworkActive) ProcessPickupAuthoritative(inv, root.gameObject);
                 else ProcessPickupLocal(inv, root.gameObject);
             }
@@ -261,16 +262,37 @@ namespace Runtime.Scripts.Pickup
         {
             if (IsServer)
             {
-                ApplyReward(inv, player);
-                SpawnPickupEffectClientRpc();
+                ExecutePickup(inv, player);
+            }
+            else
+            {
+                RequestPickupServerRpc();
+            }
+        }
 
-                if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
-                else
-                {
-                    NetworkObject netObj = GetComponent<NetworkObject>();
-                    if (netObj != null && netObj.IsSpawned) netObj.Despawn(false);
-                    gameObject.SetActive(false);
-                }
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void RequestPickupServerRpc(RpcParams rpcParams = default)
+        {
+            ulong clientId = rpcParams.Receive.SenderClientId;
+            if (NetworkManager.Singleton.ConnectedClients.TryGetValue(clientId, out var client) && client.PlayerObject != null)
+            {
+                var playerObj = client.PlayerObject.gameObject;
+                var inv = playerObj.GetComponentInChildren<InventoryController>();
+                ExecutePickup(inv, playerObj);
+            }
+        }
+
+        private void ExecutePickup(InventoryController inv, GameObject player)
+        {
+            ApplyReward(inv, player);
+            SpawnPickupEffectClientRpc();
+
+            if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
+            else
+            {
+                NetworkObject netObj = GetComponent<NetworkObject>();
+                if (netObj != null && netObj.IsSpawned) netObj.Despawn(false);
+                gameObject.SetActive(false);
             }
         }
 
