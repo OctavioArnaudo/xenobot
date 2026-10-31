@@ -285,6 +285,7 @@ namespace Runtime.Scripts.Pickup
         private void ExecutePickup(InventoryController inv, GameObject player)
         {
             ApplyReward(inv, player);
+            HidePickupClientRpc();
             SpawnPickupEffectClientRpc();
 
             if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
@@ -294,6 +295,16 @@ namespace Runtime.Scripts.Pickup
                 if (netObj != null && netObj.IsSpawned) netObj.Despawn(false);
                 gameObject.SetActive(false);
             }
+        }
+
+        [ClientRpc]
+        private void HidePickupClientRpc()
+        {
+            _taken = true;
+            foreach (var col in GetComponents<Collider>()) col.enabled = false;
+            foreach (var mr in GetComponentsInChildren<MeshRenderer>(true)) mr.enabled = false;
+            Transform msg = transform.Find("LootMsg");
+            if (msg != null) msg.gameObject.SetActive(false);
         }
 
         private void ProcessPickupLocal(InventoryController inv, GameObject player)
