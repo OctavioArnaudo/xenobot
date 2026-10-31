@@ -82,7 +82,7 @@ namespace Runtime.Scripts.Network
             }
         }
 
-        private static string _currentLobbyId = "";
+        private static string _currentSessionId = "";
         private float _ugsQueryTimer = 0f;
 
         public static async System.Threading.Tasks.Task RefreshActiveCodesFromUGSAsync()
@@ -92,13 +92,13 @@ namespace Runtime.Scripts.Network
                 if (Unity.Services.Core.UnityServices.State == Unity.Services.Core.ServicesInitializationState.Initialized &&
                     Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn)
                 {
-                    var queryResponse = await Unity.Services.Lobbies.Lobbies.Instance.QueryLobbiesAsync();
+                    var queryResponse = await Unity.Services.Multiplayer.MultiplayerService.Instance.QuerySessionsAsync(new Unity.Services.Multiplayer.QuerySessionsOptions());
                     var list = new System.Collections.Generic.List<string>();
-                    foreach (var lobby in queryResponse.Results)
+                    foreach (var s in queryResponse.Results)
                     {
-                        if (lobby.Data != null && lobby.Data.ContainsKey("JoinCode"))
+                        if (s.Properties != null && s.Properties.ContainsKey("JoinCode"))
                         {
-                            string c = lobby.Data["JoinCode"].Value;
+                            string c = s.Properties["JoinCode"].Value;
                             if (!string.IsNullOrEmpty(c)) list.Add(c.ToUpper());
                         }
                     }
@@ -119,16 +119,17 @@ namespace Runtime.Scripts.Network
                 if (Unity.Services.Core.UnityServices.State == Unity.Services.Core.ServicesInitializationState.Initialized &&
                     Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn)
                 {
-                    var options = new Unity.Services.Lobbies.Models.CreateLobbyOptions
+                    var options = new Unity.Services.Multiplayer.CreateSessionOptions
                     {
+                        MaxPlayers = maxPlayers,
                         IsPrivate = false,
-                        Data = new System.Collections.Generic.Dictionary<string, Unity.Services.Lobbies.Models.DataObject>
+                        Properties = new System.Collections.Generic.Dictionary<string, Unity.Services.Multiplayer.SessionProperty>
                         {
-                            { "JoinCode", new Unity.Services.Lobbies.Models.DataObject(Unity.Services.Lobbies.Models.DataObject.VisibilityOptions.Public, code) }
+                            { "JoinCode", new Unity.Services.Multiplayer.SessionProperty(code) }
                         }
                     };
-                    var lobby = await Unity.Services.Lobbies.Lobbies.Instance.CreateLobbyAsync("XenobotRoom", maxPlayers, options);
-                    _currentLobbyId = lobby.Id;
+                    var session = await Unity.Services.Multiplayer.MultiplayerService.Instance.CreateSessionAsync("XenobotRoom", options);
+                    _currentSessionId = session.Id;
                 }
             }
             catch { }
@@ -138,12 +139,12 @@ namespace Runtime.Scripts.Network
         {
             try
             {
-                if (!string.IsNullOrEmpty(_currentLobbyId) &&
+                if (!string.IsNullOrEmpty(_currentSessionId) &&
                     Unity.Services.Core.UnityServices.State == Unity.Services.Core.ServicesInitializationState.Initialized &&
                     Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn)
                 {
-                    await Unity.Services.Lobbies.Lobbies.Instance.DeleteLobbyAsync(_currentLobbyId);
-                    _currentLobbyId = "";
+                    await Unity.Services.Multiplayer.MultiplayerService.Instance.DeleteSessionAsync(_currentSessionId);
+                    _currentSessionId = "";
                 }
             }
             catch { }
