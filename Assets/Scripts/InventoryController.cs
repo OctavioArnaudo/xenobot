@@ -36,9 +36,9 @@ namespace Runtime.Scripts.Inventory
     }
 
     [RequireComponent(typeof(SpawnController))]
-    public class InventoryController : NetworkBehaviour
+    public class InventoryController : CSingletonNB<InventoryController>
     {
-        public static InventoryController LocalInstance => CSingleton<InventoryController>.Instance;
+        public static InventoryController LocalInstance => Instance;
 
         [Header("Network Data")]
         public NetworkList<NetworkInventorySlot> NetworkBag;
@@ -84,33 +84,19 @@ namespace Runtime.Scripts.Inventory
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
         private bool CanExecuteLocalLogic => !IsNetworkActive || IsOwner;
 
-        private void Awake()
+        protected override void Awake()
         {
+            base.Awake();
             NetworkBag = new NetworkList<NetworkInventorySlot>();
-            if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
-            {
-                CSingleton<InventoryController>.Instance = this;
-                InitializeComponents();
-            }
+            InitializeComponents();
         }
 
         public override void OnNetworkSpawn()
         {
+            base.OnNetworkSpawn();
             InitializeComponents();
-            if (IsOwner) CSingleton<InventoryController>.Instance = this;
             NetworkBag.OnListChanged += (changeEvent) => RefreshLocalCache();
             RefreshLocalCache();
-        }
-
-        public override void OnNetworkDespawn()
-        {
-            CSingleton<InventoryController>.UnregisterInstance(this);
-            base.OnNetworkDespawn();
-        }
-
-        private void OnDestroy()
-        {
-            CSingleton<InventoryController>.UnregisterInstance(this);
         }
 
         private void InitializeComponents()

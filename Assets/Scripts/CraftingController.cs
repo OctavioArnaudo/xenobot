@@ -16,10 +16,9 @@ namespace Runtime.Scripts.Crafting
     /// Unified controller for the Crafting System.
     /// Handles UI, trigger proximity, player-attached crafting, and tracking completed trades.
     /// </summary>
-    public class CraftingController : NetworkBehaviour
+    public class CraftingController : CSingletonNB<CraftingController>
     {
-        public static CraftingController Instance => CSingleton<CraftingController>.Instance;
-        public static CraftingController LocalInstance => CSingleton<CraftingController>.Instance;
+        public static CraftingController LocalInstance => Instance;
 
         public bool IsUIOpen => _open;
 
@@ -55,12 +54,9 @@ namespace Runtime.Scripts.Crafting
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
-        private void Awake()
+        protected override void Awake()
         {
-            if (!CSingleton<CraftingController>.HasInstance)
-            {
-                CSingleton<CraftingController>.Instance = this;
-            }
+            base.Awake();
 
             bool isPlayer = CompareTag("Player") ||
                             (transform.root != null && transform.root.CompareTag("Player")) ||
@@ -68,7 +64,6 @@ namespace Runtime.Scripts.Crafting
 
             if (isPlayer)
             {
-                CSingleton<CraftingController>.Instance = this;
                 _isPlayerInRange = true;
                 requireProximity = false;
             }
@@ -80,28 +75,9 @@ namespace Runtime.Scripts.Crafting
             }
         }
 
-        public override void OnDestroy()
-        {
-            CSingleton<CraftingController>.UnregisterInstance(this);
-            base.OnDestroy();
-        }
-
-        public override void OnNetworkDespawn()
-        {
-            CSingleton<CraftingController>.UnregisterInstance(this);
-            base.OnNetworkDespawn();
-        }
-
         public override void OnNetworkSpawn()
         {
-            bool isPlayer = CompareTag("Player") ||
-                            (transform.root != null && transform.root.CompareTag("Player")) ||
-                            GetComponentInParent<InventoryController>() != null;
-
-            if (isPlayer && IsOwner)
-            {
-                CSingleton<CraftingController>.Instance = this;
-            }
+            base.OnNetworkSpawn();
 
             if (IsServer && _completedTrades == null)
             {
