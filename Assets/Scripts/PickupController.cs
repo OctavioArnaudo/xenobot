@@ -264,7 +264,7 @@ namespace Runtime.Scripts.Pickup
             {
                 ExecutePickup(inv, player);
             }
-            else
+            else if (IsSpawned)
             {
                 RequestPickupServerRpc();
             }
