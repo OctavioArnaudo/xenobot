@@ -123,7 +123,7 @@ namespace Runtime.Scripts.Network
                     {
                         MaxPlayers = maxPlayers,
                         IsPrivate = false
-                    }.WithOption("JoinCode", code);
+                    }.WithProperty("JoinCode", code);
                     _currentSession = await Unity.Services.Multiplayer.MultiplayerService.Instance.CreateSessionAsync("XenobotRoom", options);
                 }
             }
