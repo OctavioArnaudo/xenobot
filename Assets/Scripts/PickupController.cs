@@ -306,10 +306,7 @@ namespace Runtime.Scripts.Pickup
         private void HidePickupClientRpc()
         {
             _taken = true;
-            foreach (var col in GetComponents<Collider>()) col.enabled = false;
-            foreach (var mr in GetComponentsInChildren<MeshRenderer>(true)) mr.enabled = false;
-            Transform msg = transform.Find("LootMsg");
-            if (msg != null) msg.gameObject.SetActive(false);
+            gameObject.SetActive(false);
         }
 
         private void ProcessPickupLocal(InventoryController inv, GameObject player)
