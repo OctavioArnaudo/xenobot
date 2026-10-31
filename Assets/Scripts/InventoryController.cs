@@ -15,6 +15,7 @@ using Runtime.Scripts.Weapon;
 using Runtime.Scripts.Mask;
 using Runtime.Scripts.Pickup;
 using Runtime.Scripts.Crafting;
+using Runtime.Scripts.Singleton;
 
 namespace Runtime.Scripts.Inventory
 {
@@ -37,7 +38,7 @@ namespace Runtime.Scripts.Inventory
     [RequireComponent(typeof(SpawnController))]
     public class InventoryController : NetworkBehaviour
     {
-        public static InventoryController LocalInstance { get; private set; }
+        public static InventoryController LocalInstance => CSingleton<InventoryController>.Instance;
 
         [Header("Network Data")]
         public NetworkList<NetworkInventorySlot> NetworkBag;
@@ -88,7 +89,7 @@ namespace Runtime.Scripts.Inventory
             NetworkBag = new NetworkList<NetworkInventorySlot>();
             if (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening)
             {
-                LocalInstance = this;
+                CSingleton<InventoryController>.Instance = this;
                 InitializeComponents();
             }
         }
@@ -96,9 +97,20 @@ namespace Runtime.Scripts.Inventory
         public override void OnNetworkSpawn()
         {
             InitializeComponents();
-            if (IsOwner) LocalInstance = this;
+            if (IsOwner) CSingleton<InventoryController>.Instance = this;
             NetworkBag.OnListChanged += (changeEvent) => RefreshLocalCache();
             RefreshLocalCache();
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            CSingleton<InventoryController>.UnregisterInstance(this);
+            base.OnNetworkDespawn();
+        }
+
+        private void OnDestroy()
+        {
+            CSingleton<InventoryController>.UnregisterInstance(this);
         }
 
         private void InitializeComponents()

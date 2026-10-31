@@ -8,6 +8,7 @@ using Runtime.Scripts.Trades;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Missions;
 using Runtime.Scripts.Items;
+using Runtime.Scripts.Singleton;
 
 namespace Runtime.Scripts.Crafting
 {
@@ -17,8 +18,8 @@ namespace Runtime.Scripts.Crafting
     /// </summary>
     public class CraftingController : NetworkBehaviour
     {
-        public static CraftingController Instance { get; private set; }
-        public static CraftingController LocalInstance { get; private set; }
+        public static CraftingController Instance => CSingleton<CraftingController>.Instance;
+        public static CraftingController LocalInstance => CSingleton<CraftingController>.Instance;
 
         public bool IsUIOpen => _open;
 
@@ -56,7 +57,10 @@ namespace Runtime.Scripts.Crafting
 
         private void Awake()
         {
-            if (Instance == null) Instance = this;
+            if (!CSingleton<CraftingController>.HasInstance)
+            {
+                CSingleton<CraftingController>.Instance = this;
+            }
 
             bool isPlayer = CompareTag("Player") ||
                             (transform.root != null && transform.root.CompareTag("Player")) ||
@@ -64,7 +68,7 @@ namespace Runtime.Scripts.Crafting
 
             if (isPlayer)
             {
-                LocalInstance = this;
+                CSingleton<CraftingController>.Instance = this;
                 _isPlayerInRange = true;
                 requireProximity = false;
             }
@@ -78,9 +82,14 @@ namespace Runtime.Scripts.Crafting
 
         public override void OnDestroy()
         {
+            CSingleton<CraftingController>.UnregisterInstance(this);
             base.OnDestroy();
-            if (Instance == this) Instance = null;
-            if (LocalInstance == this) LocalInstance = null;
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            CSingleton<CraftingController>.UnregisterInstance(this);
+            base.OnNetworkDespawn();
         }
 
         public override void OnNetworkSpawn()
@@ -91,7 +100,7 @@ namespace Runtime.Scripts.Crafting
 
             if (isPlayer && IsOwner)
             {
-                LocalInstance = this;
+                CSingleton<CraftingController>.Instance = this;
             }
 
             if (IsServer && _completedTrades == null)

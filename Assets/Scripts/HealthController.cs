@@ -7,6 +7,7 @@ using Runtime.Scripts.Optional;
 using Runtime.Scripts.Player;
 using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Shield;
+using Runtime.Scripts.Singleton;
 
 namespace Runtime.Scripts.Health
 {
@@ -17,6 +18,7 @@ namespace Runtime.Scripts.Health
     /// </summary>
     public class HealthController : NetworkBehaviour, IBalanceCalibratable
     {
+        public static HealthController LocalInstance => CSingleton<HealthController>.Instance;
         public StatSpawnPointData CurrentStats { get; private set; }
         public event System.Action<StatSpawnPointData> OnStatsUpdated;
 
@@ -183,6 +185,12 @@ namespace Runtime.Scripts.Health
         {
             m_OfflineHealth = EffectiveMaxHealth;
 
+            bool isPlayer = CompareTag("Player") || GetComponent<PlayerController>() != null;
+            if (isPlayer && (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening))
+            {
+                CSingleton<HealthController>.Instance = this;
+            }
+
             m_Animator = GetComponentInChildren<Animator>();
             if (m_Animator != null)
             {
@@ -222,6 +230,12 @@ namespace Runtime.Scripts.Health
 
         public override void OnNetworkSpawn()
         {
+            bool isPlayer = CompareTag("Player") || GetComponent<PlayerController>() != null;
+            if (isPlayer && IsOwner)
+            {
+                CSingleton<HealthController>.Instance = this;
+            }
+
             if (IsServer)
             {
                 currentHealth.Value = EffectiveMaxHealth;
@@ -246,7 +260,13 @@ namespace Runtime.Scripts.Health
         public override void OnNetworkDespawn()
         {
             currentHealth.OnValueChanged -= (oldVal, newVal) => { };
+            CSingleton<HealthController>.UnregisterInstance(this);
             base.OnNetworkDespawn();
+        }
+
+        private void OnDestroy()
+        {
+            CSingleton<HealthController>.UnregisterInstance(this);
         }
 
         private void UpdateInspectorValues()
