@@ -109,9 +109,10 @@ namespace Runtime.Scripts.Costume
             foreach (var c in GetComponentsInChildren<Collider>(true)) c.enabled = false;
         }
 
-        private void OnDestroy()
+        public override void OnDestroy()
         {
             OnQuitItem(null);
+            base.OnDestroy();
         }
 
         private GameObject FindChildWithTag(GameObject parent, string tag)

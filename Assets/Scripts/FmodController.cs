@@ -74,7 +74,7 @@ namespace Runtime.Scripts.Fmod
             }
         }
 
-        private bool IsLocalPlayer(Collider other)
+        private new bool IsLocalPlayer(Collider other)
         {
             if (!other.CompareTag("Player")) return false;
             var pc = other.GetComponent<PlayerController>();

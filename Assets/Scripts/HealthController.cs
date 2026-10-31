@@ -264,9 +264,10 @@ namespace Runtime.Scripts.Health
             base.OnNetworkDespawn();
         }
 
-        private void OnDestroy()
+        public override void OnDestroy()
         {
             CSingleton<HealthController>.UnregisterInstance(this);
+            base.OnDestroy();
         }
 
         private void UpdateInspectorValues()

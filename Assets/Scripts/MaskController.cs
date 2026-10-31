@@ -275,9 +275,10 @@ namespace Runtime.Scripts.Mask
             }
         }
 
-        private void OnDestroy()
+        public override void OnDestroy()
         {
             _isEquipped = false;
+            base.OnDestroy();
         }
 
         // --- VISOR HUD OVERLAY RENDERING (OnGUI) ---

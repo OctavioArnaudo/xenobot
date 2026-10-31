@@ -66,13 +66,13 @@ namespace Runtime.Scripts.Weapon
             }
         }
 
-        private void OnDestroy()
+        public override void OnDestroy()
         {
             if (lockOnUnequip && _targetShooter != null)
             {
                 _targetShooter.isUnlocked = false;
-                Debug.Log($"[WeaponController] Sistema de disparo BLOQUEADO (ítem retirado).");
             }
+            base.OnDestroy();
         }
 
         [ContextMenu("Generate Weapon Mesh")]
