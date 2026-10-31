@@ -137,7 +137,7 @@ namespace Runtime.Scripts.Lobby
         public void OnClickLeaveLobby()
         {
             string currentCode = m_JoinCode.Value.ToString();
-            if (!string.IsNullOrEmpty(currentCode))
+            if (IsServer && !string.IsNullOrEmpty(currentCode))
             {
                 NetworkMenu.RemoveActiveCode(currentCode);
             }
