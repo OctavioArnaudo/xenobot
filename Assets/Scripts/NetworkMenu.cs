@@ -82,6 +82,73 @@ namespace Runtime.Scripts.Network
             }
         }
 
+        private static string _currentLobbyId = "";
+        private float _ugsQueryTimer = 0f;
+
+        public static async System.Threading.Tasks.Task RefreshActiveCodesFromUGSAsync()
+        {
+            try
+            {
+                if (Unity.Services.Core.UnityServices.State == Unity.Services.Core.ServicesInitializationState.Initialized &&
+                    Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn)
+                {
+                    var queryResponse = await Unity.Services.Lobbies.Lobbies.Instance.QueryLobbiesAsync();
+                    var list = new System.Collections.Generic.List<string>();
+                    foreach (var lobby in queryResponse.Results)
+                    {
+                        if (lobby.Data != null && lobby.Data.ContainsKey("JoinCode"))
+                        {
+                            string c = lobby.Data["JoinCode"].Value;
+                            if (!string.IsNullOrEmpty(c)) list.Add(c.ToUpper());
+                        }
+                    }
+                    if (list.Count > 0)
+                    {
+                        PlayerPrefs.SetString("ActiveCodes", string.Join(",", list));
+                        PlayerPrefs.Save();
+                    }
+                }
+            }
+            catch { }
+        }
+
+        public static async void PublishCodeToUGS(string code, int maxPlayers)
+        {
+            try
+            {
+                if (Unity.Services.Core.UnityServices.State == Unity.Services.Core.ServicesInitializationState.Initialized &&
+                    Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn)
+                {
+                    var options = new Unity.Services.Lobbies.Models.CreateLobbyOptions
+                    {
+                        IsPrivate = false,
+                        Data = new System.Collections.Generic.Dictionary<string, Unity.Services.Lobbies.Models.DataObject>
+                        {
+                            { "JoinCode", new Unity.Services.Lobbies.Models.DataObject(Unity.Services.Lobbies.Models.DataObject.VisibilityOptions.Public, code) }
+                        }
+                    };
+                    var lobby = await Unity.Services.Lobbies.Lobbies.Instance.CreateLobbyAsync("XenobotRoom", maxPlayers, options);
+                    _currentLobbyId = lobby.Id;
+                }
+            }
+            catch { }
+        }
+
+        public static async void RemoveCodeFromUGS()
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(_currentLobbyId) &&
+                    Unity.Services.Core.UnityServices.State == Unity.Services.Core.ServicesInitializationState.Initialized &&
+                    Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn)
+                {
+                    await Unity.Services.Lobbies.Lobbies.Instance.DeleteLobbyAsync(_currentLobbyId);
+                    _currentLobbyId = "";
+                }
+            }
+            catch { }
+        }
+
         private int _carouselIndex = 0;
         private float _carouselTimer = 0f;
 
@@ -92,6 +159,7 @@ namespace Runtime.Scripts.Network
 
         private void OnApplicationQuit()
         {
+            RemoveCodeFromUGS();
             if (NetworkManager.Singleton != null && (NetworkManager.Singleton.IsServer || NetworkManager.Singleton.IsHost))
             {
                 string code = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.LastJoinCode), "");
@@ -147,6 +215,13 @@ namespace Runtime.Scripts.Network
 
         private void Update()
         {
+            _ugsQueryTimer += Time.unscaledDeltaTime;
+            if (_ugsQueryTimer >= 5.0f)
+            {
+                _ugsQueryTimer = 0f;
+                _ = RefreshActiveCodesFromUGSAsync();
+            }
+
             if (_joinCodeDisplay != null)
             {
                 var codes = GetActiveCodes();
@@ -304,6 +379,7 @@ namespace Runtime.Scripts.Network
                             allocation.ConnectionData
                         );
                         relaySuccess = true;
+                        PublishCodeToUGS(code, maxPlayers);
                     }
                 }
                 catch (System.Exception ex)

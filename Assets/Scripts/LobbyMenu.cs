@@ -140,6 +140,7 @@ namespace Runtime.Scripts.Lobby
             if (IsServer && !string.IsNullOrEmpty(currentCode))
             {
                 NetworkMenu.RemoveActiveCode(currentCode);
+                NetworkMenu.RemoveCodeFromUGS();
             }
 
             var allNMs = Object.FindObjectsByType<NetworkManager>(FindObjectsSortMode.None);
