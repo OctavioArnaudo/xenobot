@@ -526,16 +526,22 @@ namespace Runtime.Scripts.Balance
             bool isNetworkActive = NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
             bool isNetworkObj = instance.TryGetComponent<NetworkObject>(out var netObj) && netObj.IsSpawned;
 
+            if (isNetworkActive && isNetworkObj && NetworkManager.Singleton.IsServer)
+            {
+                netObj.Despawn(false);
+            }
+
             if (_activeInstanceToKey.TryGetValue(instanceID, out string poolKey))
             {
                 instance.SetActive(false);
-                instance.transform.SetParent(_poolParentTransform);
-
-                if (isNetworkActive && isNetworkObj && NetworkManager.Singleton.IsServer)
+                if (netObj != null)
                 {
-                    netObj.Despawn(false);
+                    instance.transform.SetParent(null);
                 }
-
+                else
+                {
+                    instance.transform.SetParent(_poolParentTransform);
+                }
                 _objectPools[poolKey].Enqueue(instance);
             }
             else
