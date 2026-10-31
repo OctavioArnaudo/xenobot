@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7062432668465732339}
   - component: {fileID: 6466432156898265303}
+  - component: {fileID: 7000910548287998250}
   m_Layer: 0
   m_Name: BalancePrefab
   m_TagString: Untagged
@@ -44,6 +45,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 090c81bcbb73cfc4aa60f0d42bc099c5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.BalanceManager
+  persistAcrossScenes: 1
+  destroyDuplicates: 1
   difficultyLevel: 1
   aggroMultiplier: 1
   growthFactor: 2
@@ -127,3 +130,30 @@ MonoBehaviour:
   propMineralPrefab: {fileID: 0}
   propPlantPrefab: {fileID: 0}
   navMeshSurface: {fileID: 0}
+--- !u!114 &7000910548287998250
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 555355138813923222}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 0
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 0
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
