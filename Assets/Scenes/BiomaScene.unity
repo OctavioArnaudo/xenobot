@@ -5458,6 +5458,26 @@ PrefabInstance:
       propertyPath: m_Name
       value: MineralsPrefab
       objectReference: {fileID: 0}
+    - target: {fileID: 867693599608709393, guid: 9959350e57eebbb4cb5528c92f1e310d, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2363447832417868364, guid: 9959350e57eebbb4cb5528c92f1e310d, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3058060521186915372, guid: 9959350e57eebbb4cb5528c92f1e310d, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4023436449383335855, guid: 9959350e57eebbb4cb5528c92f1e310d, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5573368599500509696, guid: 9959350e57eebbb4cb5528c92f1e310d, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8799128798446638280, guid: 9959350e57eebbb4cb5528c92f1e310d, type: 3}
       propertyPath: m_LocalPosition.x
       value: -1539
@@ -5846,6 +5866,18 @@ PrefabInstance:
     - target: {fileID: 4119664143271117891, guid: 64a568b6552f86e4a864803c6870d549, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5762568484496607439, guid: 64a568b6552f86e4a864803c6870d549, type: 3}
+      propertyPath: m_Color.b
+      value: 0.56078434
+      objectReference: {fileID: 0}
+    - target: {fileID: 5762568484496607439, guid: 64a568b6552f86e4a864803c6870d549, type: 3}
+      propertyPath: m_Color.g
+      value: 0.5803922
+      objectReference: {fileID: 0}
+    - target: {fileID: 5762568484496607439, guid: 64a568b6552f86e4a864803c6870d549, type: 3}
+      propertyPath: m_Intensity
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6095142168393336506, guid: 64a568b6552f86e4a864803c6870d549, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -6422,6 +6454,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7785373333387574801, guid: 986c2a5a9184e0441b46c2e15b1c58a1, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -6663,6 +6699,14 @@ PrefabInstance:
       propertyPath: GlobalObjectIdHash
       value: 3670308691
       objectReference: {fileID: 0}
+    - target: {fileID: 4515823566900658180, guid: b0a5f6c293ad2164288adb902d8700ba, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6887823988124186885, guid: b0a5f6c293ad2164288adb902d8700ba, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7550260902213879879, guid: b0a5f6c293ad2164288adb902d8700ba, type: 3}
       propertyPath: m_InScenePlaced
       value: 1
@@ -6670,6 +6714,10 @@ PrefabInstance:
     - target: {fileID: 7550260902213879879, guid: b0a5f6c293ad2164288adb902d8700ba, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 3447281896
+      objectReference: {fileID: 0}
+    - target: {fileID: 7711585206513243865, guid: b0a5f6c293ad2164288adb902d8700ba, type: 3}
+      propertyPath: m_Shadows.m_Type
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7984630535249095175, guid: b0a5f6c293ad2164288adb902d8700ba, type: 3}
       propertyPath: m_LocalPosition.x

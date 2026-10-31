@@ -48,14 +48,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 921067398
-  InScenePlacedSourceGlobalObjectIdHash: 1155652179
+  GlobalObjectIdHash: 2953776419
+  InScenePlacedSourceGlobalObjectIdHash: 2385884697
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -123,14 +123,14 @@ MonoBehaviour:
   visorType:
     use: 0
     value: 0
-  HeadOffset: {x: 0, y: 0.05, z: 0.08}
+  HeadOffset: {x: -3.84, y: 1.13, z: 0.98}
   headOffset:
-    use: 0
-    value: {x: 0, y: 0, z: 0}
-  HeadScale: {x: 0.35, y: 0.35, z: 0.35}
+    use: 1
+    value: {x: -3.84, y: 1.13, z: 0.98}
+  HeadScale: {x: 1, y: 1, z: 1}
   headScale:
-    use: 0
-    value: {x: 0, y: 0, z: 0}
+    use: 1
+    value: {x: 1, y: 1, z: 1}
 --- !u!1001 &8121945998329889359
 PrefabInstance:
   m_ObjectHideFlags: 0
