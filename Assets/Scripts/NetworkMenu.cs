@@ -122,8 +122,12 @@ namespace Runtime.Scripts.Network
                     var options = new Unity.Services.Multiplayer.SessionOptions
                     {
                         MaxPlayers = maxPlayers,
-                        IsPrivate = false
-                    }.WithProperty("JoinCode", code);
+                        IsPrivate = false,
+                        SessionProperties = new System.Collections.Generic.Dictionary<string, Unity.Services.Multiplayer.SessionProperty>
+                        {
+                            { "JoinCode", new Unity.Services.Multiplayer.SessionProperty(code) }
+                        }
+                    };
                     _currentSession = await Unity.Services.Multiplayer.MultiplayerService.Instance.CreateSessionAsync("XenobotRoom", options);
                 }
             }
