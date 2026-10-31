@@ -551,7 +551,14 @@ namespace Runtime.Scripts.Shield
 
             if (IsNetworkActive)
             {
-                m_IsShieldActive.Value = active;
+                if (IsServer)
+                {
+                    m_IsShieldActive.Value = active;
+                }
+                else
+                {
+                    SetShieldStateServerRpc(active);
+                }
             }
             else
             {
@@ -560,6 +567,9 @@ namespace Runtime.Scripts.Shield
                 OnShieldStateChanged(previous, active);
             }
         }
+
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        private void SetShieldStateServerRpc(bool active) => m_IsShieldActive.Value = active;
 
         public void StartCooldown()
         {

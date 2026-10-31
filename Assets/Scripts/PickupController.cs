@@ -264,14 +264,13 @@ namespace Runtime.Scripts.Pickup
                 ApplyReward(inv, player);
                 SpawnPickupEffectClientRpc();
 
-                NetworkObject netObj = GetComponent<NetworkObject>();
-                if (netObj != null && netObj.IsSpawned)
-                {
-                    netObj.Despawn(false);
-                }
-
                 if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
-                else gameObject.SetActive(false);
+                else
+                {
+                    NetworkObject netObj = GetComponent<NetworkObject>();
+                    if (netObj != null && netObj.IsSpawned) netObj.Despawn(false);
+                    gameObject.SetActive(false);
+                }
             }
         }
 
