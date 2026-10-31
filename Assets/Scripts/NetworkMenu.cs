@@ -122,11 +122,12 @@ namespace Runtime.Scripts.Network
                     var options = new Unity.Services.Multiplayer.SessionOptions
                     {
                         MaxPlayers = maxPlayers,
-                        IsPrivate = false
-                    }.WithProperties(new System.Collections.Generic.Dictionary<string, Unity.Services.Multiplayer.SessionProperty>
-                    {
-                        { "JoinCode", new Unity.Services.Multiplayer.SessionProperty(code) }
-                    });
+                        IsPrivate = false,
+                        Properties = new System.Collections.Generic.Dictionary<string, Unity.Services.Multiplayer.SessionProperty>
+                        {
+                            { "JoinCode", new Unity.Services.Multiplayer.SessionProperty(code) }
+                        }
+                    };
                     _currentSession = await Unity.Services.Multiplayer.MultiplayerService.Instance.CreateSessionAsync("XenobotRoom", options);
                 }
             }
@@ -141,7 +142,7 @@ namespace Runtime.Scripts.Network
                     Unity.Services.Core.UnityServices.State == Unity.Services.Core.ServicesInitializationState.Initialized &&
                     Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn)
                 {
-                    await _currentSession.DeleteAsync();
+                    await _currentSession.LeaveAsync();
                     _currentSession = null;
                 }
             }
