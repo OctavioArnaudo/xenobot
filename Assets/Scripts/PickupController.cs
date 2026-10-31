@@ -45,6 +45,11 @@ namespace Runtime.Scripts.Pickup
             _grounded = false;
             _timer = 0f;
 
+            foreach (var col in GetComponents<Collider>()) col.enabled = true;
+            foreach (var mr in GetComponentsInChildren<MeshRenderer>(true)) mr.enabled = true;
+            Transform msg = transform.Find("LootMsg");
+            if (msg != null) msg.gameObject.SetActive(true);
+
             float groundOffset = 0.4f;
             if (BalanceManager.Instance != null)
             {
