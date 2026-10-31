@@ -82,7 +82,7 @@ namespace Runtime.Scripts.Network
             }
         }
 
-        private static string _currentSessionId = "";
+        private static Unity.Services.Multiplayer.ISession _currentSession = null;
         private float _ugsQueryTimer = 0f;
 
         public static async System.Threading.Tasks.Task RefreshActiveCodesFromUGSAsync()
@@ -94,7 +94,7 @@ namespace Runtime.Scripts.Network
                 {
                     var queryResponse = await Unity.Services.Multiplayer.MultiplayerService.Instance.QuerySessionsAsync(new Unity.Services.Multiplayer.QuerySessionsOptions());
                     var list = new System.Collections.Generic.List<string>();
-                    foreach (var s in queryResponse.Results)
+                    foreach (var s in queryResponse.Sessions)
                     {
                         if (s.Properties != null && s.Properties.ContainsKey("JoinCode"))
                         {
@@ -119,17 +119,15 @@ namespace Runtime.Scripts.Network
                 if (Unity.Services.Core.UnityServices.State == Unity.Services.Core.ServicesInitializationState.Initialized &&
                     Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn)
                 {
-                    var options = new Unity.Services.Multiplayer.CreateSessionOptions
+                    var options = new Unity.Services.Multiplayer.SessionOptions
                     {
                         MaxPlayers = maxPlayers,
-                        IsPrivate = false,
-                        Properties = new System.Collections.Generic.Dictionary<string, Unity.Services.Multiplayer.SessionProperty>
-                        {
-                            { "JoinCode", new Unity.Services.Multiplayer.SessionProperty(code) }
-                        }
-                    };
-                    var session = await Unity.Services.Multiplayer.MultiplayerService.Instance.CreateSessionAsync("XenobotRoom", options);
-                    _currentSessionId = session.Id;
+                        IsPrivate = false
+                    }.WithProperties(new System.Collections.Generic.Dictionary<string, Unity.Services.Multiplayer.SessionProperty>
+                    {
+                        { "JoinCode", new Unity.Services.Multiplayer.SessionProperty(code) }
+                    });
+                    _currentSession = await Unity.Services.Multiplayer.MultiplayerService.Instance.CreateSessionAsync("XenobotRoom", options);
                 }
             }
             catch { }
@@ -139,12 +137,12 @@ namespace Runtime.Scripts.Network
         {
             try
             {
-                if (!string.IsNullOrEmpty(_currentSessionId) &&
+                if (_currentSession != null &&
                     Unity.Services.Core.UnityServices.State == Unity.Services.Core.ServicesInitializationState.Initialized &&
                     Unity.Services.Authentication.AuthenticationService.Instance.IsSignedIn)
                 {
-                    await Unity.Services.Multiplayer.MultiplayerService.Instance.DeleteSessionAsync(_currentSessionId);
-                    _currentSessionId = "";
+                    await _currentSession.DeleteAsync();
+                    _currentSession = null;
                 }
             }
             catch { }
