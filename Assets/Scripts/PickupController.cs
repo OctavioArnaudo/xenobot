@@ -265,6 +265,9 @@ namespace Runtime.Scripts.Pickup
 
         private void ProcessPickupAuthoritative(InventoryController inv, GameObject player)
         {
+            _taken = true;
+            gameObject.SetActive(false);
+
             if (IsServer)
             {
                 ExecutePickup(inv, player);
