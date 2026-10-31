@@ -123,13 +123,14 @@ namespace Runtime.Scripts.Fmod
         }
         #endregion
 
-        private void OnDestroy()
+        public override void OnDestroy()
         {
             if (isMainController && _environmentInstance.isValid())
             {
                 _environmentInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
                 _environmentInstance.release();
             }
+            base.OnDestroy();
         }
     }
 }

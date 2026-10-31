@@ -58,14 +58,13 @@ namespace Runtime.Scripts.Jetpack
             }
         }
 
-        private void OnDestroy()
+        public override void OnDestroy()
         {
-            // Si el ítem se destruye (QUIT/DROP), volvemos a bloquear la habilidad si así está configurado
             if (lockOnUnequip && _targetPropulsion != null)
             {
                 _targetPropulsion.isUnlocked = false;
-                Debug.Log($"[JetpackController] Sistema de propulsión BLOQUEADO (ítem retirado).");
             }
+            base.OnDestroy();
         }
 
         [ContextMenu("Generate Jetpack Mesh")]
