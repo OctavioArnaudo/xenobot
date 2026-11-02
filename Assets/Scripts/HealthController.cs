@@ -4,6 +4,7 @@ using Unity.Netcode;
 using UnityEngine.Events;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Optional;
+using Runtime.Scripts.Effective;
 using Runtime.Scripts.Player;
 using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Shield;
@@ -25,9 +26,9 @@ namespace Runtime.Scripts.Health
         public void CalibrateStats(StatSpawnPointData stats)
         {
             CurrentStats = stats;
-            if (stats.maxHealth > 0)
+            if (stats.maxHealth.use && stats.maxHealth.value > 0)
             {
-                SetHealth(stats.maxHealth);
+                SetHealth(stats.maxHealth.value);
             }
             OnStatsUpdated?.Invoke(stats);
         }
@@ -84,23 +85,9 @@ namespace Runtime.Scripts.Health
         {
             get
             {
-                try
-                {
-                    if (Application.isPlaying && MaxHealth != DEFAULT_PLAYER_MAX_HEALTH && MaxHealth > 0) return MaxHealth;
-                    if (maxHealth.use) return maxHealth.value;
-                    if (CurrentStats.maxHealth > 0) return CurrentStats.maxHealth;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.maxHealth > 0) return stats.maxHealth;
-                    }
-                }
-                catch (System.Exception ex)
-                {
-                    Debug.LogWarning($"[Fallback] maxHealth en {gameObject.name}: {ex.Message}");
-                }
-
-                return CalculateDynamicHealthBalance();
+                int defaultVal = CalculateDynamicHealthBalance();
+                Optional<int> balanceOpt = CurrentStats.maxHealth.use ? CurrentStats.maxHealth : (BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject).maxHealth : default);
+                return maxHealth.Get(MaxHealth, defaultVal, balanceOpt);
             }
         }
 

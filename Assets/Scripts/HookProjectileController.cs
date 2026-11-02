@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using Runtime.Scripts.Optional;
+using Runtime.Scripts.Effective;
 using Runtime.Scripts.Health;
 
 namespace Runtime.Scripts.Hook
@@ -57,19 +58,7 @@ namespace Runtime.Scripts.Hook
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
-        public float EffectiveStunDuration
-        {
-            get
-            {
-                try
-                {
-                    if (Application.isPlaying && StunDuration != DEFAULT_STUN_DURATION) return StunDuration;
-                    return stunDuration.GetValue(DEFAULT_STUN_DURATION);
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] StunDuration: {ex.Message}"); }
-                return DEFAULT_STUN_DURATION;
-            }
-        }
+        public float EffectiveStunDuration => stunDuration.Get(StunDuration, DEFAULT_STUN_DURATION);
 
         private void UpdateInspectorValues()
         {

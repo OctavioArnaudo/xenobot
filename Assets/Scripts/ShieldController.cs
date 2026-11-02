@@ -4,6 +4,7 @@ using Unity.Netcode;
 using System.Collections.Generic;
 using System.Linq;
 using Runtime.Scripts.Optional;
+using Runtime.Scripts.Effective;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Items;
 using Runtime.Scripts.Hud;
@@ -139,9 +140,9 @@ namespace Runtime.Scripts.Shield
         {
             get
             {
-                if (customBashDamage.use) return customBashDamage.value;
+                float baseVal = customBashDamage.Get(shieldBashDamage, 15.0f);
                 int lvl = HudController.Instance != null ? HudController.Instance.Level : 1;
-                return shieldBashDamage + (lvl - 1) * 3f;
+                return baseVal + (lvl - 1) * 3f;
             }
         }
 
@@ -149,8 +150,7 @@ namespace Runtime.Scripts.Shield
         {
             get
             {
-                if (Application.isPlaying && DamageReduction != DEFAULT_DAMAGE_REDUCTION) return DamageReduction;
-                float baseVal = damageReduction.GetValue(DEFAULT_DAMAGE_REDUCTION);
+                float baseVal = damageReduction.Get(DamageReduction, DEFAULT_DAMAGE_REDUCTION);
                 if (IsEnemy)
                 {
                     float peak = Mathf.Min(0.90f, baseVal * 1.5f);
@@ -170,14 +170,8 @@ namespace Runtime.Scripts.Shield
         {
             get
             {
-                if (Application.isPlaying && MaxShieldHealth != DEFAULT_MAX_SHIELD_HEALTH) return MaxShieldHealth;
-                if (maxShieldHealth.use) return maxShieldHealth.value;
-                if (BalanceManager.Instance != null)
-                {
-                    var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                    if (stats.shieldCapacity > 0) return stats.shieldCapacity;
-                }
-                float baseVal = maxShieldHealth.GetValue(DEFAULT_MAX_SHIELD_HEALTH);
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                float baseVal = maxShieldHealth.Get(MaxShieldHealth, DEFAULT_MAX_SHIELD_HEALTH, stats.shieldCapacity);
                 if (IsEnemy)
                 {
                     float peak = baseVal * 1.6f;
@@ -197,8 +191,7 @@ namespace Runtime.Scripts.Shield
         {
             get
             {
-                if (Application.isPlaying && MaxShieldDuration != DEFAULT_MAX_SHIELD_DURATION) return MaxShieldDuration;
-                float baseVal = maxShieldDuration.GetValue(DEFAULT_MAX_SHIELD_DURATION);
+                float baseVal = maxShieldDuration.Get(MaxShieldDuration, DEFAULT_MAX_SHIELD_DURATION);
                 if (IsEnemy)
                 {
                     float peak = baseVal * 1.5f;
@@ -218,8 +211,7 @@ namespace Runtime.Scripts.Shield
         {
             get
             {
-                if (Application.isPlaying && CooldownDuration != DEFAULT_COOLDOWN_DURATION) return CooldownDuration;
-                float baseVal = cooldownDuration.GetValue(DEFAULT_COOLDOWN_DURATION);
+                float baseVal = cooldownDuration.Get(CooldownDuration, DEFAULT_COOLDOWN_DURATION);
                 if (IsEnemy)
                 {
                     float peak = baseVal * 0.8f;
@@ -235,7 +227,7 @@ namespace Runtime.Scripts.Shield
             }
         }
 
-        public bool EffectiveInfiniteShield => infiniteShield.GetValue(DEFAULT_INFINITE_SHIELD);
+        public bool EffectiveInfiniteShield => infiniteShield.Get(InfiniteShield, DEFAULT_INFINITE_SHIELD);
 
         // --- State Properties ---
         public bool IsShieldActive => isUnlocked && (!InCooldown || EffectiveInfiniteShield) && (IsNetworkActive ? m_IsShieldActive.Value : m_OfflineShieldActive);

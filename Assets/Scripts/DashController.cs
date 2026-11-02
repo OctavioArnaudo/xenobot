@@ -5,6 +5,7 @@ using Runtime.Scripts.Player;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Propulsion;
 using Runtime.Scripts.Optional;
+using Runtime.Scripts.Effective;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Inventory;
 
@@ -35,19 +36,14 @@ namespace Runtime.Scripts.Singleton
         {
             get
             {
-                try
+                Optional<float> balanceOpt = default;
+                if (BalanceManager.Instance != null)
                 {
-                    if (Application.isPlaying && StaminaCost != DEFAULT_STAMINA_COST) return StaminaCost;
-                    if (staminaCost.use) return staminaCost.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.jetpackConsumptionRate > 0) return stats.jetpackConsumptionRate * 2f;
-                    }
-                    return staminaCost.GetValue(DEFAULT_STAMINA_COST);
+                    var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
+                    if (stats.jetpackConsumptionRate > 0)
+                        balanceOpt = new Optional<float> { use = true, value = stats.jetpackConsumptionRate * 2f };
                 }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] StaminaCost: {ex.Message}"); }
-                return DEFAULT_STAMINA_COST;
+                return staminaCost.Get(StaminaCost, DEFAULT_STAMINA_COST, balanceOpt);
             }
         }
 

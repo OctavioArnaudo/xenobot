@@ -1,6 +1,7 @@
 using UnityEngine;
 using Unity.Netcode;
 using Runtime.Scripts.Optional;
+using Runtime.Scripts.Effective;
 using Runtime.Scripts.Items;
 using Runtime.Scripts.Shoot;
 using Runtime.Scripts.Pickup;
@@ -21,8 +22,8 @@ namespace Runtime.Scripts.Ammo
         public float DamageMultiplier;
         public Optional<float> damageMultiplier;
 
-        public int EffectiveAmmoAmount => (Application.isPlaying && AmmoAmountToAdd != DEFAULT_AMMO_AMOUNT) ? AmmoAmountToAdd : ammoAmountToAdd.GetValue(DEFAULT_AMMO_AMOUNT);
-        public float EffectiveDamageMultiplier => (Application.isPlaying && DamageMultiplier != DEFAULT_DAMAGE_MULTIPLIER) ? DamageMultiplier : damageMultiplier.GetValue(DEFAULT_DAMAGE_MULTIPLIER);
+        public int EffectiveAmmoAmount => ammoAmountToAdd.Get(AmmoAmountToAdd, DEFAULT_AMMO_AMOUNT);
+        public float EffectiveDamageMultiplier => damageMultiplier.Get(DamageMultiplier, DEFAULT_DAMAGE_MULTIPLIER);
 
         [Header("Visual Settings")]
         public bool generateDefaultVisuals = true;

@@ -9,6 +9,7 @@ using Runtime.Scripts.Health;
 using Runtime.Scripts.Melee;
 using Runtime.Scripts.Spawn;
 using Runtime.Scripts.Optional;
+using Runtime.Scripts.Effective;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Projectile;
 using Runtime.Scripts.Shield;
@@ -162,86 +163,30 @@ namespace Runtime.Scripts.Enemy
         public float VisionAngleOverride;
         public Optional<float> visionAngleOverride;
 
-        public float EffectiveVisionAngle => (Application.isPlaying && VisionAngleOverride != DEFAULT_VISION_ANGLE) ? VisionAngleOverride : visionAngleOverride.GetValue(DEFAULT_VISION_ANGLE);
+        public float EffectiveVisionAngle => visionAngleOverride.Get(VisionAngleOverride, DEFAULT_VISION_ANGLE);
 
         // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
-        public float EffectiveHoverHeight
-        {
-            get
-            {
-                try
-                {
-                    if (Application.isPlaying && HoverHeight != DEFAULT_HOVER_HEIGHT) return HoverHeight;
-                    return hoverHeight.GetValue(DEFAULT_HOVER_HEIGHT);
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] HoverHeight: {ex.Message}"); }
-                return DEFAULT_HOVER_HEIGHT;
-            }
-        }
+        public float EffectiveHoverHeight => hoverHeight.Get(HoverHeight, DEFAULT_HOVER_HEIGHT);
 
-        public float EffectiveWanderSpeed
-        {
-            get
-            {
-                try
-                {
-                    if (Application.isPlaying && WanderSpeed != DEFAULT_WANDER_SPEED) return WanderSpeed;
-                    return wanderSpeed.GetValue(DEFAULT_WANDER_SPEED);
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] WanderSpeed: {ex.Message}"); }
-                return DEFAULT_WANDER_SPEED;
-            }
-        }
+        public float EffectiveWanderSpeed => wanderSpeed.Get(WanderSpeed, DEFAULT_WANDER_SPEED);
 
         public float EffectiveChaseSpeed
         {
             get
             {
-                try
-                {
-                    if (Application.isPlaying && ChaseSpeed != DEFAULT_CHASE_SPEED) return ChaseSpeed;
-                    if (chaseSpeed.use) return chaseSpeed.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.moveSpeed > 0) return stats.moveSpeed;
-                    }
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] ChaseSpeed: {ex.Message}"); }
-                return DEFAULT_CHASE_SPEED;
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return chaseSpeed.Get(ChaseSpeed, DEFAULT_CHASE_SPEED, stats.moveSpeed);
             }
         }
 
-        public float EffectiveTurnSpeed
-        {
-            get
-            {
-                try
-                {
-                    if (Application.isPlaying && TurnSpeed != DEFAULT_TURN_SPEED) return TurnSpeed;
-                    return turnSpeed.GetValue(DEFAULT_TURN_SPEED);
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] TurnSpeed: {ex.Message}"); }
-                return DEFAULT_TURN_SPEED;
-            }
-        }
+        public float EffectiveTurnSpeed => turnSpeed.Get(TurnSpeed, DEFAULT_TURN_SPEED);
 
         public float EffectiveWanderRadius
         {
             get
             {
-                try
-                {
-                    if (Application.isPlaying && WanderRadius != DEFAULT_WANDER_RADIUS) return WanderRadius;
-                    if (wanderRadius.use) return wanderRadius.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.wanderRadius > 0) return stats.wanderRadius;
-                    }
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] WanderRadius: {ex.Message}"); }
-                return DEFAULT_WANDER_RADIUS;
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return wanderRadius.Get(WanderRadius, DEFAULT_WANDER_RADIUS, stats.wanderRadius);
             }
         }
 
@@ -249,18 +194,8 @@ namespace Runtime.Scripts.Enemy
         {
             get
             {
-                try
-                {
-                    if (Application.isPlaying && DetectionRange != DEFAULT_DETECTION_RANGE) return DetectionRange;
-                    if (detectionRange.use) return detectionRange.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.detectionRadius > 0) return stats.detectionRadius;
-                    }
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] DetectionRange: {ex.Message}"); }
-                return DEFAULT_DETECTION_RANGE;
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return detectionRange.Get(DetectionRange, DEFAULT_DETECTION_RANGE, stats.detectionRadius);
             }
         }
 
@@ -268,18 +203,8 @@ namespace Runtime.Scripts.Enemy
         {
             get
             {
-                try
-                {
-                    if (Application.isPlaying && ShootRange != DEFAULT_SHOOT_RANGE) return ShootRange;
-                    if (shootRange.use) return shootRange.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.shootRange > 0) return stats.shootRange;
-                    }
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] ShootRange: {ex.Message}"); }
-                return DEFAULT_SHOOT_RANGE;
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return shootRange.Get(ShootRange, DEFAULT_SHOOT_RANGE, stats.shootRange);
             }
         }
 
@@ -301,19 +226,7 @@ namespace Runtime.Scripts.Enemy
             }
         }
 
-        public float EffectiveMeleeRange
-        {
-            get
-            {
-                try
-                {
-                    if (Application.isPlaying && MeleeRange != DEFAULT_MELEE_RANGE) return MeleeRange;
-                    return meleeRange.GetValue(DEFAULT_MELEE_RANGE);
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] MeleeRange: {ex.Message}"); }
-                return DEFAULT_MELEE_RANGE;
-            }
-        }
+        public float EffectiveMeleeRange => meleeRange.Get(MeleeRange, DEFAULT_MELEE_RANGE);
 
         [Header("Combat Controllers (null = Auto-detectar)")]
         public ShootController m_Shooter = null;
