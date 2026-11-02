@@ -21,8 +21,8 @@ namespace Runtime.Scripts.Ammo
         public float DamageMultiplier;
         public Optional<float> damageMultiplier;
 
-        public int EffectiveAmmoAmount => ammoAmountToAdd.GetValue(DEFAULT_AMMO_AMOUNT);
-        public float EffectiveDamageMultiplier => damageMultiplier.GetValue(DEFAULT_DAMAGE_MULTIPLIER);
+        public int EffectiveAmmoAmount => (Application.isPlaying && AmmoAmountToAdd != DEFAULT_AMMO_AMOUNT) ? AmmoAmountToAdd : ammoAmountToAdd.GetValue(DEFAULT_AMMO_AMOUNT);
+        public float EffectiveDamageMultiplier => (Application.isPlaying && DamageMultiplier != DEFAULT_DAMAGE_MULTIPLIER) ? DamageMultiplier : damageMultiplier.GetValue(DEFAULT_DAMAGE_MULTIPLIER);
 
         [Header("Visual Settings")]
         public bool generateDefaultVisuals = true;

@@ -39,9 +39,9 @@ namespace Runtime.Scripts.Mask
         public Vector3 HeadScale;
         public Optional<Vector3> headScale;
 
-        public VisorType EffectiveVisorType => visorType.GetValue(DEFAULT_VISOR_TYPE);
-        public Vector3 EffectiveHeadOffset => headOffset.GetValue(DEFAULT_HEAD_BONE_OFFSET);
-        public Vector3 EffectiveHeadScale => headScale.GetValue(DEFAULT_HEAD_SCALE);
+        public VisorType EffectiveVisorType => (Application.isPlaying && VisorType != DEFAULT_VISOR_TYPE) ? VisorType : visorType.GetValue(DEFAULT_VISOR_TYPE);
+        public Vector3 EffectiveHeadOffset => (Application.isPlaying && HeadOffset != DEFAULT_HEAD_BONE_OFFSET) ? HeadOffset : headOffset.GetValue(DEFAULT_HEAD_BONE_OFFSET);
+        public Vector3 EffectiveHeadScale => (Application.isPlaying && HeadScale != DEFAULT_HEAD_SCALE) ? HeadScale : headScale.GetValue(DEFAULT_HEAD_SCALE);
 
         private void UpdateInspectorValues()
         {

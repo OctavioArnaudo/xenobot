@@ -31,6 +31,9 @@ namespace Runtime.Scripts.Melee
         private const float DEFAULT_ENEMY_BASE_SLAM_DAMAGE = 1f;
         private const float DEFAULT_ENEMY_BASE_SLAM_RADIUS = 4.0f;
         private const float DEFAULT_ROTATION_SPEED = 10f;
+        private const float DEFAULT_SLAM_HOLD_DURATION = 0.15f;
+        private const float DEFAULT_SLAM_SPEED = 35f;
+        private const float DEFAULT_SLAM_KNOCKBACK_FORCE = 600f;
 
         public float AttackRange;
         public Optional<float> attackRange;
@@ -82,14 +85,15 @@ namespace Runtime.Scripts.Melee
             {
                 try
                 {
+                    var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
+                    float defaultRange = (enemy != null) ? DEFAULT_ENEMY_BASE_MELEE_RANGE : DEFAULT_PLAYER_MELEE_RANGE;
+                    if (Application.isPlaying && AttackRange != defaultRange) return AttackRange;
                     if (attackRange.use) return attackRange.value;
                     if (BalanceManager.Instance != null)
                     {
                         var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
                         if (stats.meleeRange > 0) return stats.meleeRange;
                     }
-                    var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
-                    float defaultRange = (enemy != null) ? DEFAULT_ENEMY_BASE_MELEE_RANGE : DEFAULT_PLAYER_MELEE_RANGE;
                     return attackRange.GetValue(defaultRange);
                 }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] attackRange: {ex.Message}"); }
@@ -104,6 +108,7 @@ namespace Runtime.Scripts.Melee
             {
                 try
                 {
+                    if (Application.isPlaying && AttackDamage != DEFAULT_PLAYER_MELEE_DAMAGE) return AttackDamage;
                     if (attackDamage.use) return attackDamage.value;
                     if (BalanceManager.Instance != null)
                     {
@@ -125,6 +130,7 @@ namespace Runtime.Scripts.Melee
                 {
                     var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
                     float defaultCooldown = (enemy != null && enemy.activeArchetype == AIArchetype.CargaFrenetica) ? 0.4f : ((enemy != null) ? DEFAULT_ENEMY_BASE_MELEE_COOLDOWN : DEFAULT_PLAYER_MELEE_COOLDOWN);
+                    if (Application.isPlaying && AttackCooldown != defaultCooldown) return AttackCooldown;
                     return attackCooldown.GetValue(defaultCooldown);
                 }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] attackCooldown: {ex.Message}"); }
@@ -137,10 +143,14 @@ namespace Runtime.Scripts.Melee
         {
             get
             {
-                try { return slamDamage.GetValue(2f); }
+                try
+                {
+                    if (Application.isPlaying && SlamDamage != DEFAULT_PLAYER_SLAM_DAMAGE) return SlamDamage;
+                    return slamDamage.GetValue(DEFAULT_PLAYER_SLAM_DAMAGE);
+                }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] slamDamage: {ex.Message}"); }
 
-                return 2f;
+                return DEFAULT_PLAYER_SLAM_DAMAGE;
             }
         }
 
@@ -152,6 +162,7 @@ namespace Runtime.Scripts.Melee
                 {
                     var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
                     float defaultRadius = (enemy != null) ? DEFAULT_ENEMY_BASE_SLAM_RADIUS : DEFAULT_PLAYER_SLAM_RADIUS;
+                    if (Application.isPlaying && SlamRadius != defaultRadius) return SlamRadius;
                     return slamRadius.GetValue(defaultRadius);
                 }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] slamRadius: {ex.Message}"); }
@@ -160,10 +171,10 @@ namespace Runtime.Scripts.Melee
             }
         }
 
-        public float EffectiveSlamHoldDuration => slamHoldDuration.GetValue(0.15f);
-        public float EffectiveSlamSpeed => slamSpeed.GetValue(35f);
-        public float EffectiveSlamKnockbackForce => slamKnockbackForce.GetValue(600f);
-        public float EffectiveRotationSpeed => rotationSpeedOverride.GetValue(DEFAULT_ROTATION_SPEED);
+        public float EffectiveSlamHoldDuration => (Application.isPlaying && SlamHoldDuration != DEFAULT_SLAM_HOLD_DURATION) ? SlamHoldDuration : slamHoldDuration.GetValue(DEFAULT_SLAM_HOLD_DURATION);
+        public float EffectiveSlamSpeed => (Application.isPlaying && SlamSpeed != DEFAULT_SLAM_SPEED) ? SlamSpeed : slamSpeed.GetValue(DEFAULT_SLAM_SPEED);
+        public float EffectiveSlamKnockbackForce => (Application.isPlaying && SlamKnockbackForce != DEFAULT_SLAM_KNOCKBACK_FORCE) ? SlamKnockbackForce : slamKnockbackForce.GetValue(DEFAULT_SLAM_KNOCKBACK_FORCE);
+        public float EffectiveRotationSpeed => (Application.isPlaying && RotationSpeedOverride != DEFAULT_ROTATION_SPEED) ? RotationSpeedOverride : rotationSpeedOverride.GetValue(DEFAULT_ROTATION_SPEED);
 
         private float CalculateDynamicMeleeDamage()
         {

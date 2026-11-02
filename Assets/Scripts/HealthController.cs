@@ -86,6 +86,7 @@ namespace Runtime.Scripts.Health
             {
                 try
                 {
+                    if (Application.isPlaying && MaxHealth != DEFAULT_PLAYER_MAX_HEALTH && MaxHealth > 0) return MaxHealth;
                     if (maxHealth.use) return maxHealth.value;
                     if (CurrentStats.maxHealth > 0) return CurrentStats.maxHealth;
                     if (BalanceManager.Instance != null)

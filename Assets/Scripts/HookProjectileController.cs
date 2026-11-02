@@ -61,7 +61,11 @@ namespace Runtime.Scripts.Hook
         {
             get
             {
-                try { return stunDuration.GetValue(DEFAULT_STUN_DURATION); }
+                try
+                {
+                    if (Application.isPlaying && StunDuration != DEFAULT_STUN_DURATION) return StunDuration;
+                    return stunDuration.GetValue(DEFAULT_STUN_DURATION);
+                }
                 catch (System.Exception ex) { Debug.LogWarning($"[Fallback] StunDuration: {ex.Message}"); }
                 return DEFAULT_STUN_DURATION;
             }

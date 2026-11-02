@@ -37,6 +37,7 @@ namespace Runtime.Scripts.Singleton
             {
                 try
                 {
+                    if (Application.isPlaying && StaminaCost != DEFAULT_STAMINA_COST) return StaminaCost;
                     if (staminaCost.use) return staminaCost.value;
                     if (BalanceManager.Instance != null)
                     {
