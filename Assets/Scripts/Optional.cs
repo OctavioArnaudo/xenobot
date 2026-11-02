@@ -2,10 +2,6 @@ using UnityEngine;
 
 namespace Runtime.Scripts.Optional
 {
-
-    /// <summary>
-    /// Generic serializable struct for Optional Inspector overrides.
-    /// </summary>
     [System.Serializable]
     public struct Optional<T>
     {
@@ -17,6 +13,11 @@ namespace Runtime.Scripts.Optional
         public readonly T GetValue(T defaultValue)
         {
             return use ? value : defaultValue;
+        }
+
+        public static implicit operator Optional<T>(T value)
+        {
+            return new Optional<T> { use = true, value = value };
         }
     }
 }

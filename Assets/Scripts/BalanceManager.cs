@@ -8,6 +8,7 @@ using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Pickup;
 using Runtime.Scripts.Projectile;
 using Runtime.Scripts.Player;
+using Runtime.Scripts.Optional;
 
 namespace Runtime.Scripts.Balance
 {
@@ -111,78 +112,78 @@ namespace Runtime.Scripts.Balance
     public struct StatSpawnPointData
     {
         // Estadísticas Base
-        public int maxHealth;
-        public int currentHealth;
-        public int attackDamage;
-        public int moveSpeed;
-        public int defenseRatio;
+        public Optional<int> maxHealth;
+        public Optional<int> currentHealth;
+        public Optional<int> attackDamage;
+        public Optional<int> moveSpeed;
+        public Optional<int> defenseRatio;
 
         // Rangos y Detección
-        public int detectionRadius;
-        public int shootRange;
-        public int meleeRange;
-        public int wanderRadius;
+        public Optional<int> detectionRadius;
+        public Optional<int> shootRange;
+        public Optional<int> meleeRange;
+        public Optional<int> wanderRadius;
 
         // Capacidades de Combate y Soporte
-        public int maxAmmo;
-        public int shieldCapacity;
-        public int fuelCapacity;
+        public Optional<int> maxAmmo;
+        public Optional<int> shieldCapacity;
+        public Optional<int> fuelCapacity;
 
         // Progresión y Experiencia
-        public int expReward;
-        public int expToNextLevel;
-        public int attackPerLevel;
-        public int defensePerLevel;
+        public Optional<int> expReward;
+        public Optional<int> expToNextLevel;
+        public Optional<int> attackPerLevel;
+        public Optional<int> defensePerLevel;
 
         // Sistema de Botín
         public ItemType lootItemType;
-        public int lootQuantity;
-        public int lootDropChance;
+        public Optional<int> lootQuantity;
+        public Optional<int> lootDropChance;
 
         // IA y Resistencias de Enemigos
-        public int attackCooldown;
-        public int physicalResistance;
-        public int energyResistance;
-        public int explosiveResistance;
-        public int retreatRadius;
-        public int retreatHealthThreshold;
-        public int specialSkillChance;
+        public Optional<int> attackCooldown;
+        public Optional<int> physicalResistance;
+        public Optional<int> energyResistance;
+        public Optional<int> explosiveResistance;
+        public Optional<int> retreatRadius;
+        public Optional<int> retreatHealthThreshold;
+        public Optional<int> specialSkillChance;
 
         // Movimiento Avanzado, Vuelo y Saltos (Solo Enteros)
-        public int jumpHeight;
-        public int maxJumps;
-        public int hasJetpack;              // 0 = Falso, 1 = Verdadero
-        public int jetpackConsumptionRate;
-        public int jetpackRechargeRate;
+        public Optional<int> jumpHeight;
+        public Optional<int> maxJumps;
+        public Optional<int> hasJetpack;              // 0 = Falso, 1 = Verdadero
+        public Optional<int> jetpackConsumptionRate;
+        public Optional<int> jetpackRechargeRate;
 
         // Tipos de Ataques Avanzados
-        public int smashDamage;
-        public int smashRadius;
-        public int shootFireRate;
-        public int shootSpread;
+        public Optional<int> smashDamage;
+        public Optional<int> smashRadius;
+        public Optional<int> shootFireRate;
+        public Optional<int> shootSpread;
 
         // Mecánicas de Escudo Avanzadas
-        public int shieldRegenRate;
-        public int shieldRechargeDelay;
-        public int shieldBlockAngle;
+        public Optional<int> shieldRegenRate;
+        public Optional<int> shieldRechargeDelay;
+        public Optional<int> shieldBlockAngle;
 
         // Restauración de Recursos (Ítems Específicos)
-        public int healthRestoreAmount;
-        public int fuelRestoreAmount;
-        public int shieldRestoreAmount;
-        public int ammoRestoreAmount;
-        public int effectMagnitude;
-        public int itemRarity;
+        public Optional<int> healthRestoreAmount;
+        public Optional<int> fuelRestoreAmount;
+        public Optional<int> shieldRestoreAmount;
+        public Optional<int> ammoRestoreAmount;
+        public Optional<int> effectMagnitude;
+        public Optional<int> itemRarity;
 
         // Propiedades de Elementos del Entorno (Props)
-        public int customLootType;
-        public int destructionDamage;
-        public int destructionRadius;
-        public int requiredDamageType;
+        public Optional<int> customLootType;
+        public Optional<int> destructionDamage;
+        public Optional<int> destructionRadius;
+        public Optional<int> requiredDamageType;
 
         public override string ToString()
         {
-            return $"[HP: {maxHealth} | DMG: {attackDamage} | SMASH: {smashDamage} | JUMP: {jumpHeight} (Max: {maxJumps}) | JETPACK: {hasJetpack}]";
+            return $"[HP: {maxHealth.value} | DMG: {attackDamage.value} | SMASH: {smashDamage.value} | JUMP: {jumpHeight.value} (Max: {maxJumps.value}) | JETPACK: {hasJetpack.value}]";
         }
     }
 
