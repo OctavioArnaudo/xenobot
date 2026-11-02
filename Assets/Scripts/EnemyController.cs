@@ -119,13 +119,13 @@ namespace Runtime.Scripts.Enemy
 
         private const float DEFAULT_HOVER_HEIGHT = 3.5f;
         private const float DEFAULT_WANDER_SPEED = 3.5f;
-        private const float DEFAULT_CHASE_SPEED = 8.0f;
+        private const int DEFAULT_CHASE_SPEED = 8;
         private const float DEFAULT_TURN_SPEED = 20.0f;
-        private const float DEFAULT_WANDER_RADIUS = 20.0f;
+        private const int DEFAULT_WANDER_RADIUS = 20;
 
-        private const float DEFAULT_DETECTION_RANGE = 35.0f;
-        private const float DEFAULT_SHOOT_RANGE = 120.0f;
-        private const float DEFAULT_MELEE_RANGE = 4.0f;
+        private const int DEFAULT_DETECTION_RANGE = 35;
+        private const int DEFAULT_SHOOT_RANGE = 120;
+        private const int DEFAULT_MELEE_RANGE = 4;
         private const float DEFAULT_VISION_ANGLE = 120.0f;
 
         [Header("Core Configuration")]
@@ -146,20 +146,20 @@ namespace Runtime.Scripts.Enemy
         public Optional<float> hoverHeight;
         public float WanderSpeed;
         public Optional<float> wanderSpeed;
-        public float ChaseSpeed;
-        public Optional<float> chaseSpeed;
+        public int ChaseSpeed;
+        public Optional<int> chaseSpeed;
         public float TurnSpeed;
         public Optional<float> turnSpeed;
-        public float WanderRadius;
-        public Optional<float> wanderRadius;
+        public int WanderRadius;
+        public Optional<int> wanderRadius;
 
         [Header("Perception & Range")]
-        public float DetectionRange;
-        public Optional<float> detectionRange;
-        public float ShootRange;
-        public Optional<float> shootRange;
-        public float MeleeRange;
-        public Optional<float> meleeRange;
+        public int DetectionRange;
+        public Optional<int> detectionRange;
+        public int ShootRange;
+        public Optional<int> shootRange;
+        public int MeleeRange;
+        public Optional<int> meleeRange;
         public float VisionAngleOverride;
         public Optional<float> visionAngleOverride;
 
@@ -170,7 +170,7 @@ namespace Runtime.Scripts.Enemy
 
         public float EffectiveWanderSpeed => wanderSpeed.Get(WanderSpeed, DEFAULT_WANDER_SPEED);
 
-        public float EffectiveChaseSpeed
+        public int EffectiveChaseSpeed
         {
             get
             {
@@ -181,7 +181,7 @@ namespace Runtime.Scripts.Enemy
 
         public float EffectiveTurnSpeed => turnSpeed.Get(TurnSpeed, DEFAULT_TURN_SPEED);
 
-        public float EffectiveWanderRadius
+        public int EffectiveWanderRadius
         {
             get
             {
@@ -190,7 +190,7 @@ namespace Runtime.Scripts.Enemy
             }
         }
 
-        public float EffectiveDetectionRange
+        public int EffectiveDetectionRange
         {
             get
             {
@@ -199,7 +199,7 @@ namespace Runtime.Scripts.Enemy
             }
         }
 
-        public float EffectiveShootRange
+        public int EffectiveShootRange
         {
             get
             {
@@ -226,7 +226,14 @@ namespace Runtime.Scripts.Enemy
             }
         }
 
-        public float EffectiveMeleeRange => meleeRange.Get(MeleeRange, DEFAULT_MELEE_RANGE);
+        public int EffectiveMeleeRange
+        {
+            get
+            {
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return meleeRange.Get(MeleeRange, DEFAULT_MELEE_RANGE, stats.meleeRange);
+            }
+        }
 
         [Header("Combat Controllers (null = Auto-detectar)")]
         public ShootController m_Shooter = null;
