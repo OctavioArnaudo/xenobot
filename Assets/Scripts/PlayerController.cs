@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Unity.Cinemachine;
 using Runtime.Scripts.Optional;
+using Runtime.Scripts.Effective;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Shoot;
 using Runtime.Scripts.Inventory;
@@ -148,78 +149,39 @@ namespace Runtime.Scripts.Player
         {
             get
             {
-                try
-                {
-                    if (moveSpeed.use) return moveSpeed.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.moveSpeed > 0) return stats.moveSpeed;
-                    }
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] moveSpeed: {ex.Message}"); }
-                return DEFAULT_MOVE_SPEED;
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return moveSpeed.Get(MoveSpeed, DEFAULT_MOVE_SPEED, stats.moveSpeed);
             }
         }
 
-        public float EffectiveSprintSpeed
-        {
-            get
-            {
-                try
-                {
-                    if (sprintSpeed.use) return sprintSpeed.value;
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] sprintSpeed: {ex.Message}"); }
-                return DEFAULT_SPRINT_SPEED;
-            }
-        }
-
-        public float EffectiveSprintHoldThreshold => sprintHoldThreshold.GetValue(DEFAULT_SPRINT_HOLD_THRESHOLD);
-        public float EffectiveRotationSmoothTime => rotationSmoothTime.GetValue(DEFAULT_ROTATION_SMOOTH_TIME);
-        public float EffectiveSpeedChangeRate => speedChangeRate.GetValue(DEFAULT_SPEED_CHANGE_RATE);
+        public float EffectiveSprintSpeed => sprintSpeed.Get(SprintSpeed, DEFAULT_SPRINT_SPEED);
+        public float EffectiveSprintHoldThreshold => sprintHoldThreshold.Get(SprintHoldThreshold, DEFAULT_SPRINT_HOLD_THRESHOLD);
+        public float EffectiveRotationSmoothTime => rotationSmoothTime.Get(RotationSmoothTime, DEFAULT_ROTATION_SMOOTH_TIME);
+        public float EffectiveSpeedChangeRate => speedChangeRate.Get(SpeedChangeRate, DEFAULT_SPEED_CHANGE_RATE);
 
         public float EffectiveJumpHeight
         {
             get
             {
-                try
-                {
-                    if (jumpHeight.use) return jumpHeight.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.jumpHeight > 0) return stats.jumpHeight;
-                    }
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] jumpHeight: {ex.Message}"); }
-                return DEFAULT_JUMP_HEIGHT;
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return jumpHeight.Get(JumpHeight, DEFAULT_JUMP_HEIGHT, stats.jumpHeight);
             }
         }
 
-        public float EffectiveDoubleJumpHeight => doubleJumpHeight.GetValue(DEFAULT_DOUBLE_JUMP_HEIGHT);
+        public float EffectiveDoubleJumpHeight => doubleJumpHeight.Get(DoubleJumpHeight, DEFAULT_DOUBLE_JUMP_HEIGHT);
 
         public int EffectiveMaxJumps
         {
             get
             {
-                try
-                {
-                    if (maxJumps.use) return maxJumps.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.maxJumps > 0) return stats.maxJumps;
-                    }
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] maxJumps: {ex.Message}"); }
-                return DEFAULT_MAX_JUMPS;
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return maxJumps.Get(MaxJumps, DEFAULT_MAX_JUMPS, stats.maxJumps);
             }
         }
 
-        public float EffectiveGravity => gravity.GetValue(DEFAULT_GRAVITY);
-        public float EffectiveGroundedRadius => groundedRadius.GetValue(DEFAULT_GROUNDED_RADIUS);
-        public float EffectiveGroundedOffset => groundedOffset.GetValue(DEFAULT_GROUNDED_OFFSET);
+        public float EffectiveGravity => gravity.Get(Gravity, DEFAULT_GRAVITY);
+        public float EffectiveGroundedRadius => groundedRadius.Get(GroundedRadius, DEFAULT_GROUNDED_RADIUS);
+        public float EffectiveGroundedOffset => groundedOffset.Get(GroundedOffset, DEFAULT_GROUNDED_OFFSET);
         #endregion
 
         #region Internal State

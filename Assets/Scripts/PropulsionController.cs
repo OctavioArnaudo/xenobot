@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Runtime.Scripts.Optional;
+using Runtime.Scripts.Effective;
 using Runtime.Scripts.Player;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Balance;
@@ -67,60 +68,22 @@ namespace Runtime.Scripts.Propulsion
         {
             get
             {
-                try
-                {
-                    if (maxFuel.use) return maxFuel.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.fuelCapacity > 0) return stats.fuelCapacity;
-                    }
-                    var pc = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
-                    float defaultFuel = (pc != null || CompareTag("Player")) ? DEFAULT_PLAYER_MAX_FUEL : DEFAULT_ENEMY_MAX_FUEL;
-                    return maxFuel.GetValue(defaultFuel);
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] maxFuel: {ex.Message}"); }
-
-                return DEFAULT_PLAYER_MAX_FUEL;
+                var pc = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
+                float defaultFuel = (pc != null || CompareTag("Player")) ? DEFAULT_PLAYER_MAX_FUEL : DEFAULT_ENEMY_MAX_FUEL;
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return maxFuel.Get(MaxFuel, defaultFuel, stats.fuelCapacity);
             }
         }
 
-        public float EffectiveJetpackForce
-        {
-            get
-            {
-                try { return jetpackForce.GetValue(DEFAULT_JETPACK_FORCE); }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] jetpackForce: {ex.Message}"); }
-                return DEFAULT_JETPACK_FORCE;
-            }
-        }
-
-        public float EffectiveHoverForce
-        {
-            get
-            {
-                try { return hoverForce.GetValue(DEFAULT_HOVER_FORCE); }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] hoverForce: {ex.Message}"); }
-                return DEFAULT_HOVER_FORCE;
-            }
-        }
+        public float EffectiveJetpackForce => jetpackForce.Get(JetpackForce, DEFAULT_JETPACK_FORCE);
+        public float EffectiveHoverForce => hoverForce.Get(HoverForce, DEFAULT_HOVER_FORCE);
 
         public float EffectiveFuelConsumption
         {
             get
             {
-                try
-                {
-                    if (fuelConsumption.use) return fuelConsumption.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.jetpackConsumptionRate > 0) return stats.jetpackConsumptionRate;
-                    }
-                    return fuelConsumption.GetValue(DEFAULT_FUEL_CONSUMPTION);
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] fuelConsumption: {ex.Message}"); }
-                return DEFAULT_FUEL_CONSUMPTION;
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return fuelConsumption.Get(FuelConsumption, DEFAULT_FUEL_CONSUMPTION, stats.jetpackConsumptionRate);
             }
         }
 
@@ -128,30 +91,12 @@ namespace Runtime.Scripts.Propulsion
         {
             get
             {
-                try
-                {
-                    if (fuelRegen.use) return fuelRegen.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.jetpackRechargeRate > 0) return stats.jetpackRechargeRate;
-                    }
-                    return fuelRegen.GetValue(DEFAULT_FUEL_REGEN);
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] fuelRegen: {ex.Message}"); }
-                return DEFAULT_FUEL_REGEN;
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return fuelRegen.Get(FuelRegen, DEFAULT_FUEL_REGEN, stats.jetpackRechargeRate);
             }
         }
 
-        public float EffectiveMaxUpwardVelocity
-        {
-            get
-            {
-                try { return maxUpwardVelocity.GetValue(12f); }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] maxUpwardVelocity: {ex.Message}"); }
-                return 12f;
-            }
-        }
+        public float EffectiveMaxUpwardVelocity => maxUpwardVelocity.Get(MaxUpwardVelocity, 12f);
 
         private void UpdateInspectorValues()
         {
