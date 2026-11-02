@@ -149,6 +149,7 @@ namespace Runtime.Scripts.Shield
         {
             get
             {
+                if (Application.isPlaying && DamageReduction >= 0f) return DamageReduction;
                 float baseVal = damageReduction.GetValue(DEFAULT_DAMAGE_REDUCTION);
                 if (IsEnemy)
                 {
@@ -169,6 +170,7 @@ namespace Runtime.Scripts.Shield
         {
             get
             {
+                if (Application.isPlaying && MaxShieldHealth >= 0f) return MaxShieldHealth;
                 if (maxShieldHealth.use) return maxShieldHealth.value;
                 if (BalanceManager.Instance != null)
                 {
@@ -195,6 +197,7 @@ namespace Runtime.Scripts.Shield
         {
             get
             {
+                if (Application.isPlaying && MaxShieldDuration >= 0f) return MaxShieldDuration;
                 float baseVal = maxShieldDuration.GetValue(DEFAULT_MAX_SHIELD_DURATION);
                 if (IsEnemy)
                 {
@@ -215,6 +218,7 @@ namespace Runtime.Scripts.Shield
         {
             get
             {
+                if (Application.isPlaying && CooldownDuration >= 0f) return CooldownDuration;
                 float baseVal = cooldownDuration.GetValue(DEFAULT_COOLDOWN_DURATION);
                 if (IsEnemy)
                 {
@@ -245,6 +249,10 @@ namespace Runtime.Scripts.Shield
             if (Application.isPlaying)
             {
                 RefreshReferences();
+                DamageReduction = -1f;
+                MaxShieldHealth = -1f;
+                MaxShieldDuration = -1f;
+                CooldownDuration = -1f;
             }
 
             InitVisuals();
@@ -321,7 +329,6 @@ namespace Runtime.Scripts.Shield
 
         private void Update()
         {
-            UpdateInspectorValues();
             if (GetComponent<PickupController>() != null || GetComponentInParent<PickupController>() != null)
             {
                 UpdateVisualsState();
