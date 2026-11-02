@@ -262,6 +262,7 @@ namespace Runtime.Scripts.Shield
             {
                 InitVisuals();
             }
+            m_CurrentShieldHealth = EffectiveMaxShieldHealth;
         }
 
         private void UpdateInspectorValues()
