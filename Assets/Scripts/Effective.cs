@@ -13,7 +13,7 @@ namespace Runtime.Scripts.Effective
             T defaultValue,
             Optional<T> balance = default,
             [CallerMemberName] string propertyName = ""
-        ) where T : System.IEquatable<T>
+        )
         {
             try
             {
