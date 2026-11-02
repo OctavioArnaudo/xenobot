@@ -40,8 +40,8 @@ namespace Runtime.Scripts.Singleton
                 if (BalanceManager.Instance != null)
                 {
                     var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                    if (stats.jetpackConsumptionRate > 0)
-                        balanceOpt = new Optional<float> { use = true, value = stats.jetpackConsumptionRate * 2f };
+                    if (stats.jetpackConsumptionRate.use && stats.jetpackConsumptionRate.value > 0)
+                        balanceOpt = new Optional<float> { use = true, value = stats.jetpackConsumptionRate.value * 2f };
                 }
                 return staminaCost.Get(StaminaCost, DEFAULT_STAMINA_COST, balanceOpt);
             }

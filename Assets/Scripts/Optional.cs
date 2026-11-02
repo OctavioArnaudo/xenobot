@@ -19,5 +19,10 @@ namespace Runtime.Scripts.Optional
         {
             return new Optional<T> { use = true, value = value };
         }
+
+        public static implicit operator Optional<float>(Optional<int> optInt)
+        {
+            return new Optional<float> { use = optInt.use, value = optInt.value };
+        }
     }
 }

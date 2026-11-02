@@ -500,13 +500,15 @@ namespace Runtime.Scripts.Balance
             }
             else if (_activeStatsRegistry.TryGetValue(instance, out StatSpawnPointData stats))
             {
-                if (stats.lootQuantity > 0 && UnityEngine.Random.Range(0, 100) < stats.lootDropChance)
+                int dropChance = stats.lootDropChance.use ? stats.lootDropChance.value : 0;
+                int lootQty = stats.lootQuantity.use ? stats.lootQuantity.value : 0;
+                if (lootQty > 0 && UnityEngine.Random.Range(0, 100) < dropChance)
                 {
-                    for (int l = 0; l < stats.lootQuantity; l++)
+                    for (int l = 0; l < lootQty; l++)
                     {
                         SpawnItem(stats.lootItemType, instance.transform.position, instance.transform.rotation);
                     }
-                    OnLootDropped?.Invoke(instance, stats.lootItemType, stats.lootQuantity);
+                    OnLootDropped?.Invoke(instance, stats.lootItemType, lootQty);
                 }
             }
 

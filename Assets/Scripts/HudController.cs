@@ -359,7 +359,7 @@ namespace Runtime.Scripts.Hud
                 if (BalanceManager.Instance != null)
                 {
                     var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                    if (stats.attackPerLevel > 0) return stats.attackPerLevel;
+                    if (stats.attackPerLevel.use && stats.attackPerLevel.value > 0) return stats.attackPerLevel.value;
                 }
                 return attackPerLevel;
             }
@@ -372,7 +372,7 @@ namespace Runtime.Scripts.Hud
                 if (BalanceManager.Instance != null)
                 {
                     var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                    if (stats.defensePerLevel > 0) return stats.defensePerLevel;
+                    if (stats.defensePerLevel.use && stats.defensePerLevel.value > 0) return stats.defensePerLevel.value;
                 }
                 return defensePerLevel;
             }
