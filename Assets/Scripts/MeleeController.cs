@@ -86,13 +86,8 @@ namespace Runtime.Scripts.Melee
             {
                 var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
                 float defaultRange = (enemy != null) ? DEFAULT_ENEMY_BASE_MELEE_RANGE : DEFAULT_PLAYER_MELEE_RANGE;
-                Optional<float> balanceOpt = default;
-                if (BalanceManager.Instance != null)
-                {
-                    float balVal = BalanceManager.Instance.GetEntityBalance(gameObject).meleeRange;
-                    if (balVal > 0) balanceOpt = new Optional<float> { use = true, value = balVal };
-                }
-                return attackRange.Get(AttackRange, defaultRange, balanceOpt);
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return attackRange.Get(AttackRange, defaultRange, stats.meleeRange);
             }
         }
 
@@ -101,13 +96,8 @@ namespace Runtime.Scripts.Melee
             get
             {
                 float defaultDamage = CalculateDynamicMeleeDamage();
-                Optional<float> balanceOpt = default;
-                if (BalanceManager.Instance != null)
-                {
-                    float balVal = BalanceManager.Instance.GetEntityBalance(gameObject).attackDamage;
-                    if (balVal > 0) balanceOpt = new Optional<float> { use = true, value = balVal };
-                }
-                return attackDamage.Get(AttackDamage, defaultDamage, balanceOpt);
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return attackDamage.Get(AttackDamage, defaultDamage, stats.attackDamage);
             }
         }
 

@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Runtime.Scripts.Optional;
+using Runtime.Scripts.Effective;
 using Runtime.Scripts.Player;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Projectile;
@@ -91,51 +92,21 @@ namespace Runtime.Scripts.Shoot
         {
             get
             {
-                try
-                {
-                    if (damage.use) return damage.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.attackDamage > 0) return stats.attackDamage;
-                    }
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] Damage: {ex.Message}"); }
-
-                return CalculateDynamicShootDamage();
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return damage.Get(Damage, CalculateDynamicShootDamage(), stats.attackDamage);
             }
         }
 
-        public float EffectiveFireRate
-        {
-            get
-            {
-                try { return fireRate.GetValue(CalculateDynamicFireRate()); }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] FireRate: {ex.Message}"); }
-
-                return CalculateDynamicFireRate();
-            }
-        }
+        public float EffectiveFireRate => fireRate.Get(FireRate, CalculateDynamicFireRate());
 
         public float EffectiveAimDistance
         {
             get
             {
-                try
-                {
-                    if (aimDistance.use) return aimDistance.value;
-                    if (BalanceManager.Instance != null)
-                    {
-                        var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                        if (stats.shootRange > 0) return stats.shootRange;
-                    }
-                    var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
-                    float defaultDist = (enemy != null) ? DEFAULT_ENEMY_BASE_AIM_DISTANCE : DEFAULT_PLAYER_AIM_DISTANCE;
-                    return aimDistance.GetValue(defaultDist);
-                }
-                catch (System.Exception ex) { Debug.LogWarning($"[Fallback] AimDistance: {ex.Message}"); }
-
-                return DEFAULT_PLAYER_AIM_DISTANCE;
+                var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
+                float defaultDist = (enemy != null) ? DEFAULT_ENEMY_BASE_AIM_DISTANCE : DEFAULT_PLAYER_AIM_DISTANCE;
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return aimDistance.Get(AimDistance, defaultDist, stats.shootRange);
             }
         }
 
@@ -143,17 +114,13 @@ namespace Runtime.Scripts.Shoot
         {
             get
             {
-                if (maxAmmo.use) return maxAmmo.value;
-                if (BalanceManager.Instance != null)
-                {
-                    var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                    if (stats.maxAmmo > 0) return stats.maxAmmo;
-                }
-                return DEFAULT_MAX_AMMO;
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return maxAmmo.Get(MaxAmmo, DEFAULT_MAX_AMMO, stats.maxAmmo);
             }
         }
-        public float EffectiveReloadDuration => reloadDuration.GetValue(DEFAULT_RELOAD_DURATION);
-        public bool EffectiveInfiniteAmmo => infiniteAmmo.GetValue(DEFAULT_INFINITE_AMMO);
+
+        public float EffectiveReloadDuration => reloadDuration.Get(ReloadDuration, DEFAULT_RELOAD_DURATION);
+        public bool EffectiveInfiniteAmmo => infiniteAmmo.Get(InfiniteAmmo, DEFAULT_INFINITE_AMMO);
 
         public void AddAmmo(int amount, float damageMultiplier = 1.0f)
         {
