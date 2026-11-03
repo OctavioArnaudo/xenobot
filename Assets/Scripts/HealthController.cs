@@ -75,11 +75,11 @@ namespace Runtime.Scripts.Health
             {
                 if (team != Team.Neutral) return team;
 
-                var pc = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
-                if (pc != null || CompareTag("Player")) return Team.Player;
+                var pc = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>() ?? GetComponentInChildren<PlayerController>();
+                if (pc != null || CompareTag("Player") || transform.root.CompareTag("Player")) return Team.Player;
 
-                var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
-                if (enemy != null || CompareTag("Enemy")) return Team.Enemy;
+                var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>() ?? GetComponentInChildren<EnemyController>();
+                if (enemy != null || CompareTag("Enemy") || transform.root.CompareTag("Enemy")) return Team.Enemy;
 
                 return Team.Neutral;
             }
@@ -89,9 +89,10 @@ namespace Runtime.Scripts.Health
         {
             get
             {
-                int defaultVal = CalculateDynamicHealthBalance();
+                if (maxHealth.use) return maxHealth.value;
                 Optional<int> balanceOpt = CurrentStats.maxHealth.use ? CurrentStats.maxHealth : (BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject).maxHealth : default);
-                return maxHealth.Get(MaxHealth, defaultVal, balanceOpt);
+                if (balanceOpt.use) return balanceOpt.value;
+                return CalculateDynamicHealthBalance();
             }
         }
 
@@ -99,9 +100,10 @@ namespace Runtime.Scripts.Health
         {
             get
             {
-                int defaultVal = EffectiveMaxHealth;
+                if (currentHealth.use) return currentHealth.value;
                 Optional<int> balanceOpt = CurrentStats.currentHealth.use ? CurrentStats.currentHealth : (BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject).currentHealth : default);
-                return currentHealth.Get(CurrentHealth, defaultVal, balanceOpt);
+                if (balanceOpt.use) return balanceOpt.value;
+                return CurrentHealth > 0 ? Mathf.Min(CurrentHealth, EffectiveMaxHealth) : EffectiveMaxHealth;
             }
         }
 
@@ -187,6 +189,8 @@ namespace Runtime.Scripts.Health
 
         void Awake()
         {
+            CurrentHealth = EffectiveMaxHealth;
+
             bool isPlayer = CompareTag("Player") || GetComponent<PlayerController>() != null;
             if (isPlayer && (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening))
             {
@@ -254,7 +258,10 @@ namespace Runtime.Scripts.Health
         private void UpdateInspectorValues()
         {
             MaxHealth = EffectiveMaxHealth;
-            CurrentHealth = EffectiveCurrentHealth;
+            if (!Application.isPlaying)
+            {
+                CurrentHealth = EffectiveCurrentHealth;
+            }
         }
 
         private void OnValidate()

@@ -256,8 +256,14 @@ namespace Runtime.Scripts.Melee
 
             if (targetHealth == null || targetHealth.EffectiveCurrentHealth <= 0) return;
 
-            Team myTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") ? Team.Player : Team.Enemy);
-            if (targetHealth.EffectiveTeam == myTeam) return;
+            Team myTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") || transform.root.CompareTag("Player") ? Team.Player : Team.Enemy);
+            Team targetTeam = targetHealth.EffectiveTeam;
+
+            bool isHostile = (myTeam != targetTeam) ||
+                             (myTeam == Team.Enemy && (hitObject.CompareTag("Player") || hitObject.transform.root.CompareTag("Player") || hitObject.GetComponentInParent<PlayerController>() != null)) ||
+                             (myTeam == Team.Player && (hitObject.CompareTag("Enemy") || hitObject.transform.root.CompareTag("Enemy") || hitObject.GetComponentInParent<EnemyController>() != null));
+
+            if (!isHostile) return;
 
             float damage = EffectiveAttackDamage;
             targetHealth.TakeDamage((int)damage);
@@ -322,7 +328,8 @@ namespace Runtime.Scripts.Melee
 
             if (IsNetworkActive)
             {
-                if (IsOwner) RequestMeleeServerRpc();
+                if (IsServer) ExecuteMelee();
+                else if (IsOwner) RequestMeleeServerRpc();
             }
             else
             {
@@ -449,14 +456,21 @@ namespace Runtime.Scripts.Melee
             Vector3 attackCenter = transform.position + transform.forward * (EffectiveAttackRange * 0.5f);
             Collider[] hits = Physics.OverlapSphere(attackCenter, EffectiveAttackRange, mask, QueryTriggerInteraction.Collide);
 
-            Team myTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") ? Team.Player : Team.Enemy);
+            Team myTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") || transform.root.CompareTag("Player") ? Team.Player : Team.Enemy);
 
             foreach (Collider hit in hits)
             {
                 if (hit.gameObject == gameObject || hit.transform.IsChildOf(transform)) continue;
 
                 var targetHealth = hit.GetComponentInParent<HealthController>() ?? hit.GetComponent<HealthController>();
-                if (targetHealth != null && targetHealth.EffectiveTeam != myTeam && targetHealth.EffectiveCurrentHealth > 0)
+                if (targetHealth == null || targetHealth.EffectiveCurrentHealth <= 0) continue;
+
+                Team targetTeam = targetHealth.EffectiveTeam;
+                bool isHostile = (myTeam != targetTeam) ||
+                                 (myTeam == Team.Enemy && (hit.CompareTag("Player") || hit.transform.root.CompareTag("Player") || hit.GetComponentInParent<PlayerController>() != null)) ||
+                                 (myTeam == Team.Player && (hit.CompareTag("Enemy") || hit.transform.root.CompareTag("Enemy") || hit.GetComponentInParent<EnemyController>() != null));
+
+                if (isHostile)
                 {
                     targetHealth.TakeDamage((int)finalDamage);
                 }

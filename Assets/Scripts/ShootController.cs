@@ -101,7 +101,7 @@ namespace Runtime.Scripts.Shoot
             }
         }
 
-        public Team EffectiveTeam => m_Health != null ? m_Health.EffectiveTeam : (transform.root.CompareTag("Player") ? Team.Player : (transform.root.CompareTag("Enemy") ? Team.Enemy : Team.Neutral));
+        public Team EffectiveTeam => m_Health != null ? m_Health.EffectiveTeam : (transform.root.CompareTag("Player") || GetComponentInParent<PlayerController>() != null ? Team.Player : (transform.root.CompareTag("Enemy") || GetComponentInParent<EnemyController>() != null ? Team.Enemy : Team.Neutral));
 
         public float EffectiveDamage
         {
