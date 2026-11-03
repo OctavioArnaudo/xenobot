@@ -430,13 +430,15 @@ namespace Runtime.Scripts.Balance
                 _objectPools[poolKey] = new Queue<GameObject>();
             }
 
-            GameObject instance;
+            GameObject instance = null;
 
-            if (_objectPools[poolKey].Count > 0)
+            while (_objectPools[poolKey].Count > 0)
             {
                 instance = _objectPools[poolKey].Dequeue();
+                if (instance != null) break;
             }
-            else
+
+            if (instance == null)
             {
                 instance = Instantiate(prefab, _poolParentTransform);
                 instance.name = prefab.name;

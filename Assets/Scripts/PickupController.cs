@@ -293,6 +293,7 @@ namespace Runtime.Scripts.Pickup
         private void ExecutePickup(InventoryController inv, GameObject player)
         {
             ApplyReward(inv, player);
+            if (this == null || gameObject == null) return;
             HidePickupClientRpc();
             SpawnPickupEffectClientRpc();
             gameObject.SetActive(false);
@@ -315,6 +316,7 @@ namespace Runtime.Scripts.Pickup
         private void ProcessPickupLocal(InventoryController inv, GameObject player)
         {
             ApplyReward(inv, player);
+            if (this == null || gameObject == null) return;
             SpawnHardcodedEffect();
             if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
             else gameObject.SetActive(false);
