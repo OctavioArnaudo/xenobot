@@ -34,6 +34,10 @@ namespace Runtime.Scripts.Shoot
         private const float DEFAULT_RELOAD_DURATION = 1.8f;
         private const bool DEFAULT_INFINITE_AMMO = false;
 
+        private const int DEFAULT_BURST_CAPACITY = 30;
+        private const float DEFAULT_BURST_COOLDOWN = 1.2f;
+        private const float DEFAULT_RECALIBRATION_DELAY = 0.5f;
+
         [Header("References")]
         public bool isUnlocked = false; // Si está marcado, dispara desde el inicio. Si no, requiere arma.
         public Camera AimCamera;
@@ -53,6 +57,17 @@ namespace Runtime.Scripts.Shoot
         public Optional<float> reloadDuration;
         public bool InfiniteAmmo;
         public Optional<bool> infiniteAmmo;
+
+        [Header("Burst & Recalibration Settings")]
+        public int BurstShotsCapacity;
+        public Optional<int> burstShotsCapacity;
+        public float BurstCooldownDuration;
+        public Optional<float> burstCooldownDuration;
+        public float TargetRecalibrationDelay;
+        public Optional<float> targetRecalibrationDelay;
+
+        private int m_CurrentBurstShots = 0;
+        private float m_BurstCooldownTimer = 0f;
 
         public LayerMask AimLayers = ~0;
         public bool HoldToFire = true;
@@ -121,6 +136,33 @@ namespace Runtime.Scripts.Shoot
 
         public float EffectiveReloadDuration => reloadDuration.Get(ReloadDuration, DEFAULT_RELOAD_DURATION);
         public bool EffectiveInfiniteAmmo => infiniteAmmo.Get(InfiniteAmmo, DEFAULT_INFINITE_AMMO);
+
+        public int EffectiveBurstShotsCapacity
+        {
+            get
+            {
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return burstShotsCapacity.Get(BurstShotsCapacity, DEFAULT_BURST_CAPACITY, stats.burstShotsCapacity);
+            }
+        }
+
+        public float EffectiveBurstCooldownDuration
+        {
+            get
+            {
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return burstCooldownDuration.Get(BurstCooldownDuration, DEFAULT_BURST_COOLDOWN, stats.burstCooldownDuration);
+            }
+        }
+
+        public float EffectiveTargetRecalibrationDelay
+        {
+            get
+            {
+                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                return targetRecalibrationDelay.Get(TargetRecalibrationDelay, DEFAULT_RECALIBRATION_DELAY, stats.targetRecalibrationDelay);
+            }
+        }
 
         public void AddAmmo(int amount, float damageMultiplier = 1.0f)
         {
@@ -313,6 +355,12 @@ namespace Runtime.Scripts.Shoot
                 isReloading = false;
             }
 
+            if (m_BurstCooldownTimer > 0f)
+            {
+                m_BurstCooldownTimer -= Time.deltaTime;
+                if (m_BurstCooldownTimer < 0f) m_BurstCooldownTimer = 0f;
+            }
+
             if (isReloading)
             {
                 m_ReloadTimer += Time.deltaTime;
@@ -351,7 +399,7 @@ namespace Runtime.Scripts.Shoot
                 if (Projectile == null || Muzzle == null) return false;
             }
 
-            if (isReloading) return false;
+            if (isReloading || m_BurstCooldownTimer > 0f) return false;
 
             if (!EffectiveInfiniteAmmo && currentAmmo <= 0)
             {
@@ -384,7 +432,7 @@ namespace Runtime.Scripts.Shoot
                 if (Projectile == null || Muzzle == null) return false;
             }
 
-            if (isReloading) return false;
+            if (isReloading || m_BurstCooldownTimer > 0f) return false;
 
             if (!EffectiveInfiniteAmmo && currentAmmo <= 0)
             {
@@ -429,6 +477,13 @@ namespace Runtime.Scripts.Shoot
 
         private void ExecuteFire(Vector3 direction, Vector3 spawnPos)
         {
+            m_CurrentBurstShots++;
+            if (m_CurrentBurstShots >= EffectiveBurstShotsCapacity)
+            {
+                m_CurrentBurstShots = 0;
+                m_BurstCooldownTimer = EffectiveBurstCooldownDuration + EffectiveTargetRecalibrationDelay;
+            }
+
             float finalDamage = EffectiveDamage * currentAmmoDamageMultiplier;
             Team team = EffectiveTeam;
 

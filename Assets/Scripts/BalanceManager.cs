@@ -181,10 +181,12 @@ namespace Runtime.Scripts.Balance
         public Optional<int> destructionRadius;
         public Optional<int> requiredDamageType;
 
-        public override string ToString()
-        {
-            return $"[HP: {maxHealth.value} | DMG: {attackDamage.value} | SMASH: {smashDamage.value} | JUMP: {jumpHeight.value} (Max: {maxJumps.value}) | JETPACK: {hasJetpack.value}]";
-        }
+        // Control de Ráfaga, Pausas de Disparo y Recalibración de Objetivo
+        public Optional<int> burstShotsCapacity;
+        public Optional<int> burstCooldownDuration;
+        public Optional<int> targetRecalibrationDelay;
+        public Optional<int> maxContinuousFireDuration;
+
     }
 
     #endregion
@@ -916,6 +918,11 @@ namespace Runtime.Scripts.Balance
             int sDelay = Math.Max(1, 5 - typeVal);
             int sAngle = 90;
 
+            int burstCapacity = (enemyType == HostType.Range || enemyType == HostType.Hybrid) ? Math.Max(3, 5 + (typeVal * 2)) : 1;
+            int burstCd = Math.Max(300, 1500 - (typeVal * 200) + (difficultyLevel * 100));
+            int recalibrateDelay = Math.Max(400, 800 + (difficultyLevel * 100));
+            int maxFireDuration = Math.Max(2, 4 + typeVal);
+
             return new StatSpawnPointData
             {
                 maxHealth = health,
@@ -955,7 +962,11 @@ namespace Runtime.Scripts.Balance
                 shootSpread = spread,
                 shieldRegenRate = sRegen,
                 shieldRechargeDelay = sDelay,
-                shieldBlockAngle = sAngle
+                shieldBlockAngle = sAngle,
+                burstShotsCapacity = burstCapacity,
+                burstCooldownDuration = burstCd,
+                targetRecalibrationDelay = recalibrateDelay,
+                maxContinuousFireDuration = maxFireDuration
             };
         }
 
@@ -1028,6 +1039,11 @@ namespace Runtime.Scripts.Balance
             int defPerLvl = Math.Max(1, 2 + typeVal);
 
             // Estadísticas avanzadas del Jugador (User) con Jetpack y Doble Salto habilitados por defecto
+            int uBurstCapacity = 30;
+            int uBurstCd = 1200;
+            int uRecalibrateDelay = 200;
+            int uMaxFireDuration = 10;
+
             return new StatSpawnPointData
             {
                 maxHealth = health,
@@ -1051,6 +1067,10 @@ namespace Runtime.Scripts.Balance
                 lootDropChance = 0,
                 jumpHeight = 3,
                 maxJumps = 2,
+                burstShotsCapacity = uBurstCapacity,
+                burstCooldownDuration = uBurstCd,
+                targetRecalibrationDelay = uRecalibrateDelay,
+                maxContinuousFireDuration = uMaxFireDuration,
                 hasJetpack = 1,
                 jetpackConsumptionRate = 4,
                 jetpackRechargeRate = 12,
