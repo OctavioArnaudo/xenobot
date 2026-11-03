@@ -30,6 +30,10 @@ namespace Runtime.Scripts.Health
             {
                 SetHealth(stats.maxHealth.value);
             }
+            if (stats.currentHealth.use && stats.currentHealth.value >= 0)
+            {
+                SetHealth(stats.currentHealth.value);
+            }
             OnStatsUpdated?.Invoke(stats);
         }
         // --- Internal Hardcoded Health Defaults ---
@@ -42,6 +46,8 @@ namespace Runtime.Scripts.Health
         [Header("Health")]
         public int MaxHealth;
         public Optional<int> maxHealth;
+        public int CurrentHealth;
+        public Optional<int> currentHealth;
 
         [Header("Visual Feedback (Optional)")]
         public Renderer[] visualsToFlash;
@@ -52,7 +58,7 @@ namespace Runtime.Scripts.Health
         public UnityEvent OnDeath;
         public UnityEvent<int> OnTakeDamage;
 
-        private NetworkVariable<int> currentHealth = new NetworkVariable<int>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        private NetworkVariable<int> m_CurrentHealth = new NetworkVariable<int>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         private int m_OfflineHealth;
         private float m_DamageFlashTimer;
 
@@ -91,7 +97,17 @@ namespace Runtime.Scripts.Health
             }
         }
 
-        public int CurrentHP => IsNetworkActive ? currentHealth.Value : m_OfflineHealth;
+        public int EffectiveCurrentHealth
+        {
+            get
+            {
+                int defaultVal = EffectiveMaxHealth;
+                Optional<int> balanceOpt = CurrentStats.currentHealth.use ? CurrentStats.currentHealth : (BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject).currentHealth : default);
+                return currentHealth.Get(CurrentHealth, defaultVal, balanceOpt);
+            }
+        }
+
+        public int CurrentHP => IsNetworkActive ? m_CurrentHealth.Value : m_OfflineHealth;
 
         private int CalculateDynamicHealthBalance()
         {
@@ -171,7 +187,7 @@ namespace Runtime.Scripts.Health
 
         void Awake()
         {
-            m_OfflineHealth = EffectiveMaxHealth;
+            m_OfflineHealth = EffectiveCurrentHealth;
 
             bool isPlayer = CompareTag("Player") || GetComponent<PlayerController>() != null;
             if (isPlayer && (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening))
@@ -226,10 +242,10 @@ namespace Runtime.Scripts.Health
 
             if (IsServer)
             {
-                currentHealth.Value = EffectiveMaxHealth;
+                m_CurrentHealth.Value = EffectiveCurrentHealth;
             }
 
-            currentHealth.OnValueChanged += (oldVal, newVal) =>
+            m_CurrentHealth.OnValueChanged += (oldVal, newVal) =>
             {
                 int diff = oldVal - newVal;
                 if (diff > 0)
@@ -247,7 +263,7 @@ namespace Runtime.Scripts.Health
 
         public override void OnNetworkDespawn()
         {
-            currentHealth.OnValueChanged -= (oldVal, newVal) => { };
+            m_CurrentHealth.OnValueChanged -= (oldVal, newVal) => { };
             CSingleton<HealthController>.UnregisterInstance(this);
             base.OnNetworkDespawn();
         }
@@ -261,6 +277,7 @@ namespace Runtime.Scripts.Health
         private void UpdateInspectorValues()
         {
             MaxHealth = EffectiveMaxHealth;
+            CurrentHealth = CurrentHP;
         }
 
         private void OnValidate()
@@ -317,7 +334,8 @@ namespace Runtime.Scripts.Health
         public void SetHealth(int newHealth)
         {
             if (maxHealth.use) maxHealth.value = Mathf.Max(maxHealth.value, newHealth);
-            if (IsNetworkActive && IsServer) currentHealth.Value = newHealth;
+            if (currentHealth.use) currentHealth.value = Mathf.Max(currentHealth.value, newHealth);
+            if (IsNetworkActive && IsServer) m_CurrentHealth.Value = newHealth;
             else m_OfflineHealth = newHealth;
         }
 
@@ -354,11 +372,11 @@ namespace Runtime.Scripts.Health
 
         private void ApplyDamageServer(int damage)
         {
-            currentHealth.Value = Mathf.Max(0, currentHealth.Value - damage);
+            m_CurrentHealth.Value = Mathf.Max(0, m_CurrentHealth.Value - damage);
             TriggerDamageFlash();
             OnTakeDamage?.Invoke(damage);
 
-            if (currentHealth.Value <= 0)
+            if (m_CurrentHealth.Value <= 0)
             {
                 OnDeath?.Invoke();
                 if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
@@ -386,7 +404,7 @@ namespace Runtime.Scripts.Health
 
             if (IsNetworkActive)
             {
-                if (IsServer) currentHealth.Value = Mathf.Min(EffectiveMaxHealth, currentHealth.Value + amount);
+                if (IsServer) m_CurrentHealth.Value = Mathf.Min(EffectiveMaxHealth, m_CurrentHealth.Value + amount);
                 else HealServerRpc(amount);
             }
             else
@@ -404,7 +422,7 @@ namespace Runtime.Scripts.Health
             {
                 if (IsServer)
                 {
-                    currentHealth.Value += healthBonus;
+                    m_CurrentHealth.Value += healthBonus;
                 }
             }
             else
