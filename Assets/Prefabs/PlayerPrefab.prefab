@@ -462,6 +462,10 @@ MonoBehaviour:
   maxHealth:
     use: 1
     value: 100
+  CurrentHealth: 100
+  currentHealth:
+    use: 1
+    value: 100
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
