@@ -81,7 +81,7 @@ namespace Runtime.Scripts.Projectile
                 if (m_CorrosionTickTimer >= 0.5f)
                 {
                     m_CorrosionTickTimer = 0f;
-                    if (m_Health != null && m_Health.CurrentHP > 0)
+                    if (m_Health != null && m_Health.EffectiveCurrentHealth > 0)
                     {
                         int dotDamage = Mathf.Max(1, Mathf.RoundToInt(m_CorrosionStacks * m_CorrosionDamagePerStack * 0.5f));
                         m_Health.TakeDamage(dotDamage);
@@ -526,7 +526,7 @@ namespace Runtime.Scripts.Projectile
                     HealthController hc = h.GetComponentInParent<HealthController>() ?? h.GetComponent<HealthController>();
                     if (hc != null)
                     {
-                        if (hc.CurrentHP <= 0) continue;
+                        if (hc.EffectiveCurrentHealth <= 0) continue;
 
                         bool isOpposing = (m_OwnerTeam != Team.Neutral && hc.EffectiveTeam != m_OwnerTeam) ||
                                           (m_OwnerTeam == Team.Neutral && hc.EffectiveTeam != Team.Neutral) ||

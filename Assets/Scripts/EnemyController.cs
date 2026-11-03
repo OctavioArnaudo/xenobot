@@ -531,7 +531,7 @@ namespace Runtime.Scripts.Enemy
 #endif
             if (!CanExecuteLogic) return;
 
-            if (m_Health != null && m_Health.CurrentHP <= 0)
+            if (m_Health != null && m_Health.EffectiveCurrentHealth <= 0)
             {
                 OnEnemyDeath();
                 return;
@@ -624,7 +624,7 @@ namespace Runtime.Scripts.Enemy
 
         private bool CheckTrigger(PhaseTrigger trigger)
         {
-            float hpPercent = m_Health != null ? ((float)m_Health.CurrentHP / Mathf.Max(1, m_Health.MaxHealth)) * 100f : 100f;
+            float hpPercent = m_Health != null ? ((float)m_Health.EffectiveCurrentHealth / Mathf.Max(1, m_Health.MaxHealth)) * 100f : 100f;
             float distToTarget = m_Target != null ? Vector3.Distance(transform.position, m_Target.position) : 999f;
 
             switch (trigger.triggerType)
@@ -633,7 +633,7 @@ namespace Runtime.Scripts.Enemy
                     return hpPercent <= trigger.thresholdValue;
 
                 case PhaseTriggerType.HealthAbsoluteLessThan:
-                    return m_Health != null && m_Health.CurrentHP <= trigger.thresholdValue;
+                    return m_Health != null && m_Health.EffectiveCurrentHealth <= trigger.thresholdValue;
 
                 case PhaseTriggerType.PlayerDistanceLessThan:
                     return distToTarget <= trigger.thresholdValue;
@@ -831,7 +831,7 @@ namespace Runtime.Scripts.Enemy
             ShieldController targetShield = m_Target.GetComponent<ShieldController>() ?? m_Target.GetComponentInParent<ShieldController>();
             ShootController targetShooter = m_Target.GetComponent<ShootController>() ?? m_Target.GetComponentInParent<ShootController>();
 
-            if (m_Health != null && (m_Health.CurrentHP / (float)m_Health.MaxHealth) < 0.25f)
+            if (m_Health != null && (m_Health.EffectiveCurrentHealth / (float)m_Health.MaxHealth) < 0.25f)
             {
                 currentArchetype = AIArchetype.FlanqueoYCobertura;
                 return;
@@ -843,7 +843,7 @@ namespace Runtime.Scripts.Enemy
                 return;
             }
 
-            if (targetHealth != null && (targetHealth.CurrentHP / (float)targetHealth.MaxHealth) < 0.20f)
+            if (targetHealth != null && (targetHealth.EffectiveCurrentHealth / (float)targetHealth.MaxHealth) < 0.20f)
             {
                 currentArchetype = AIArchetype.CargaFrenetica;
                 return;
@@ -1269,7 +1269,7 @@ namespace Runtime.Scripts.Enemy
 
         private bool RequestMeleeAttackToken()
         {
-            s_ActiveMeleeAttackers.RemoveWhere(e => e == null || !e.enabled || e.m_Health == null || e.m_Health.CurrentHP <= 0);
+            s_ActiveMeleeAttackers.RemoveWhere(e => e == null || !e.enabled || e.m_Health == null || e.m_Health.EffectiveCurrentHealth <= 0);
             if (s_ActiveMeleeAttackers.Contains(this)) return true;
             if (s_ActiveMeleeAttackers.Count < MAX_CONCURRENT_MELEE_ATTACKERS)
             {

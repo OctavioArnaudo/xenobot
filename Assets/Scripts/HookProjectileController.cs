@@ -159,7 +159,7 @@ namespace Runtime.Scripts.Hook
 
             HealthController health = hitObj.GetComponentInParent<HealthController>() ?? hitObj.GetComponent<HealthController>();
 
-            if (health != null && health.CurrentHP > 0)
+            if (health != null && health.EffectiveCurrentHealth > 0)
             {
                 m_CaughtTarget = health.transform;
                 m_IsPulling = true;

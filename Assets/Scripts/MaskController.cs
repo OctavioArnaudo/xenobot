@@ -386,7 +386,7 @@ namespace Runtime.Scripts.Mask
             var healths = Object.FindObjectsByType<HealthController>(FindObjectsSortMode.None);
             foreach (var h in healths)
             {
-                if (h == null || h.gameObject == _playerRoot || h.CurrentHP <= 0) continue;
+                if (h == null || h.gameObject == _playerRoot || h.EffectiveCurrentHealth <= 0) continue;
 
                 Vector3 worldPos = h.transform.position + Vector3.up * 1.0f;
                 Vector3 screenPos = _mainCamCache.WorldToScreenPoint(worldPos);
@@ -399,7 +399,7 @@ namespace Runtime.Scripts.Mask
                 Rect box = new Rect(screenPos.x - 30, guiY - 30, 60, 60);
                 GUI.DrawTexture(box, _texTargetBox);
 
-                string heatLabel = $"[HEAT: {h.CurrentHP} HP]\n{dist:F1}m";
+                string heatLabel = $"[HEAT: {h.EffectiveCurrentHealth} HP]\n{dist:F1}m";
                 GUI.Label(new Rect(screenPos.x - 60, guiY + 32, 120, 30), heatLabel, _hudTargetStyle);
             }
         }
@@ -409,7 +409,7 @@ namespace Runtime.Scripts.Mask
             var healths = Object.FindObjectsByType<HealthController>(FindObjectsSortMode.None);
             foreach (var h in healths)
             {
-                if (h == null || h.gameObject == _playerRoot || h.CurrentHP <= 0) continue;
+                if (h == null || h.gameObject == _playerRoot || h.EffectiveCurrentHealth <= 0) continue;
 
                 Vector3 worldPos = h.transform.position + Vector3.up * 1.2f;
                 Vector3 screenPos = _mainCamCache.WorldToScreenPoint(worldPos);
@@ -422,7 +422,7 @@ namespace Runtime.Scripts.Mask
                 Rect box = new Rect(screenPos.x - 60, guiY - 35, 120, 70);
                 GUI.DrawTexture(box, _texTargetBox);
 
-                string statsLabel = $"{h.gameObject.name}\nHP: {h.CurrentHP}/{h.EffectiveMaxHealth}\nEQUIPO: {h.EffectiveTeam}\nDIST: {dist:F1}m";
+                string statsLabel = $"{h.gameObject.name}\nHP: {h.EffectiveCurrentHealth}/{h.EffectiveMaxHealth}\nEQUIPO: {h.EffectiveTeam}\nDIST: {dist:F1}m";
                 GUI.Label(box, statsLabel, _hudValueStyle);
             }
         }

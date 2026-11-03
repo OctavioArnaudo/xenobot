@@ -107,6 +107,8 @@ namespace Runtime.Scripts.Health
 
 
 
+
+
         private int CalculateDynamicHealthBalance()
         {
             var pc = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
@@ -332,13 +334,13 @@ namespace Runtime.Scripts.Health
 
             if (finalDamage <= 0) return;
 
-            int newHp = Mathf.Max(0, CurrentHP - finalDamage);
+            int newHp = Mathf.Max(0, EffectiveCurrentHealth - finalDamage);
             SetHealth(newHp);
 
             TriggerDamageFlash();
             OnTakeDamage?.Invoke(finalDamage);
 
-            if (CurrentHP <= 0)
+            if (EffectiveCurrentHealth <= 0)
             {
                 OnDeath?.Invoke();
                 if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
@@ -350,7 +352,7 @@ namespace Runtime.Scripts.Health
         {
             if (amount <= 0) return;
 
-            int newHp = Mathf.Min(EffectiveMaxHealth, CurrentHP + amount);
+            int newHp = Mathf.Min(EffectiveMaxHealth, EffectiveCurrentHealth + amount);
             SetHealth(newHp);
         }
 
@@ -365,7 +367,7 @@ namespace Runtime.Scripts.Health
                 MaxHealth += healthBonus;
             }
 
-            int newHp = Mathf.Min(EffectiveMaxHealth, CurrentHP + healthBonus);
+            int newHp = Mathf.Min(EffectiveMaxHealth, EffectiveCurrentHealth + healthBonus);
             SetHealth(newHp);
         }
     }

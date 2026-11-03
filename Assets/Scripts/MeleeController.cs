@@ -254,7 +254,7 @@ namespace Runtime.Scripts.Melee
 
             HealthController targetHealth = hitObject.GetComponentInParent<HealthController>() ?? hitObject.GetComponent<HealthController>();
 
-            if (targetHealth == null || targetHealth.CurrentHP <= 0) return;
+            if (targetHealth == null || targetHealth.EffectiveCurrentHealth <= 0) return;
 
             Team myTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") ? Team.Player : Team.Enemy);
             if (targetHealth.EffectiveTeam == myTeam) return;
@@ -456,7 +456,7 @@ namespace Runtime.Scripts.Melee
                 if (hit.gameObject == gameObject || hit.transform.IsChildOf(transform)) continue;
 
                 var targetHealth = hit.GetComponentInParent<HealthController>() ?? hit.GetComponent<HealthController>();
-                if (targetHealth != null && targetHealth.EffectiveTeam != myTeam && targetHealth.CurrentHP > 0)
+                if (targetHealth != null && targetHealth.EffectiveTeam != myTeam && targetHealth.EffectiveCurrentHealth > 0)
                 {
                     targetHealth.TakeDamage((int)finalDamage);
                 }

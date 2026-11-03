@@ -457,7 +457,7 @@ namespace Runtime.Scripts.Shield
                 if (hit.gameObject == gameObject || hit.transform.IsChildOf(transform)) continue;
 
                 var targetHealth = hit.GetComponentInParent<HealthController>() ?? hit.GetComponent<HealthController>();
-                if (targetHealth != null && targetHealth.EffectiveTeam != myTeam && targetHealth.CurrentHP > 0)
+                if (targetHealth != null && targetHealth.EffectiveTeam != myTeam && targetHealth.EffectiveCurrentHealth > 0)
                 {
                     float damage = EffectiveShieldBashDamage;
                     targetHealth.TakeDamage((int)damage);
