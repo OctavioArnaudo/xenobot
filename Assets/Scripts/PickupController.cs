@@ -326,7 +326,7 @@ namespace Runtime.Scripts.Pickup
         {
             // 1. Si el objeto tiene un SpawnController con loot o itemsToSpawn, activamos el spawneo al interactuar/recoger la primera vez
             var sc = GetComponent<SpawnController>();
-            if (sc != null)
+            if (sc != null && !sc.HasTriggeredDeath)
             {
                 sc.TriggerDeath();
                 if (this == null) return;

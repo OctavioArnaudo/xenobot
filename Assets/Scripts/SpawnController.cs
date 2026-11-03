@@ -55,6 +55,14 @@ namespace Runtime.Scripts.Spawn
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
+        public bool HasTriggeredDeath => _hasTriggeredDeath;
+        private bool _hasTriggeredDeath;
+
+        public void MarkAsTriggered()
+        {
+            _hasTriggeredDeath = true;
+        }
+
         public void ApplyEffect(GameObject player)
         {
             TriggerDeath();
@@ -65,6 +73,9 @@ namespace Runtime.Scripts.Spawn
         /// </summary>
         public void TriggerDeath()
         {
+            if (_hasTriggeredDeath) return;
+            _hasTriggeredDeath = true;
+
             if (IsNetworkActive && !IsServer) return;
 
             // 1. Efectos Visuales
@@ -145,6 +156,11 @@ namespace Runtime.Scripts.Spawn
             }
 
             if (spawned == null) return;
+
+            if (spawned.TryGetComponent<SpawnController>(out var sc))
+            {
+                sc.MarkAsTriggered();
+            }
 
             // Inyectar datos en el PickupController si se proporcionan
             var pickup = spawned.GetComponent<PickupController>();
