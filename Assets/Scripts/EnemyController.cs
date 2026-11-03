@@ -3,6 +3,7 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.AI;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using Runtime.Scripts.Hook;
 using Runtime.Scripts.Shoot;
 using Runtime.Scripts.Health;
@@ -265,10 +266,21 @@ namespace Runtime.Scripts.Enemy
         private bool _hasAnimSpeed;
         private bool _hasAnimGrounded;
 
+        private readonly NetworkVariable<float> m_NetworkSpeedParam = new NetworkVariable<float>(
+            0f,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Server
+        );
+
         void Awake()
         {
             _startPosition = transform.position;
             m_Agent = GetComponentInChildren<NavMeshAgent>() ?? gameObject.AddComponent<NavMeshAgent>();
+
+            if (GetComponent<NetworkTransform>() == null && GetComponent<NetworkObject>() != null)
+            {
+                gameObject.AddComponent<NetworkTransform>();
+            }
 
             if (m_Agent != null)
             {
@@ -424,7 +436,57 @@ namespace Runtime.Scripts.Enemy
 
         public override void OnNetworkSpawn()
         {
-            if (!IsServer) enabled = false;
+            base.OnNetworkSpawn();
+
+            if (!IsServer)
+            {
+                if (m_Agent != null)
+                {
+                    m_Agent.enabled = false;
+                }
+            }
+
+            m_NetworkSpeedParam.OnValueChanged += OnNetworkSpeedParamChanged;
+
+            if (!IsServer)
+            {
+                ApplyAnimatorSpeed(m_NetworkSpeedParam.Value);
+            }
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            m_NetworkSpeedParam.OnValueChanged -= OnNetworkSpeedParamChanged;
+            base.OnNetworkDespawn();
+        }
+
+        private void OnNetworkSpeedParamChanged(float previousValue, float newValue)
+        {
+            if (!IsServer)
+            {
+                ApplyAnimatorSpeed(newValue);
+            }
+        }
+
+        private void ApplyAnimatorSpeed(float speedParam)
+        {
+            if (m_Animator == null || !m_Animator.gameObject.activeInHierarchy)
+            {
+                m_Animator = GetComponentInChildren<Animator>(true);
+                if (m_Animator != null)
+                {
+                    m_Animator.enabled = true;
+                    _hasAnimSpeed = HasParameter(m_Animator, _animIDSpeed);
+                    _hasAnimGrounded = HasParameter(m_Animator, _animIDIsGrounded);
+                }
+            }
+
+            if (m_Animator == null) return;
+            if (!m_Animator.enabled) m_Animator.enabled = true;
+
+            bool isTerrestrial = GetCurrentCategory() == EnemyCategory.Melee;
+            if (_hasAnimSpeed) m_Animator.SetFloat(_animIDSpeed, speedParam);
+            if (_hasAnimGrounded) m_Animator.SetBool(_animIDIsGrounded, isTerrestrial);
         }
 
         private void OnDamageTaken(int damage)
@@ -1461,6 +1523,11 @@ namespace Runtime.Scripts.Enemy
             bool isTerrestrial = GetCurrentCategory() == EnemyCategory.Melee;
             if (_hasAnimSpeed) m_Animator.SetFloat(_animIDSpeed, speedParam);
             if (_hasAnimGrounded) m_Animator.SetBool(_animIDIsGrounded, isTerrestrial);
+
+            if (IsNetworkActive && IsServer)
+            {
+                m_NetworkSpeedParam.Value = speedParam;
+            }
         }
 
         public override void OnDestroy()
