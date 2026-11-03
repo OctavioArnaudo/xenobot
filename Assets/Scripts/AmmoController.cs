@@ -29,6 +29,7 @@ namespace Runtime.Scripts.Ammo
         public bool generateDefaultVisuals = true;
         public Color brassColor = new Color(0.9f, 0.7f, 0.2f); // Gold / Brass
         public Color tipColor = new Color(0.8f, 0.2f, 0.1f);   // Red tracer tip
+        public float renderScale = 2.0f;
 
         private void UpdateInspectorValues()
         {
@@ -93,16 +94,21 @@ namespace Runtime.Scripts.Ammo
         {
             foreach (Transform child in transform)
             {
-                if (child.name.StartsWith("AmmoRender"))
+                if (child.name.StartsWith("AmmoRender") || child.name == "AmmoRenderRoot")
                 {
                     if (Application.isPlaying) Destroy(child.gameObject);
                     else DestroyImmediate(child.gameObject);
                 }
             }
 
+            GameObject rootVisual = new GameObject("AmmoRenderRoot");
+            rootVisual.transform.SetParent(transform, false);
+            rootVisual.transform.localPosition = Vector3.zero;
+            rootVisual.transform.localScale = Vector3.one * renderScale;
+
             GameObject box = GameObject.CreatePrimitive(PrimitiveType.Cube);
             box.name = "AmmoRender";
-            box.transform.SetParent(transform, false);
+            box.transform.SetParent(rootVisual.transform, false);
             box.transform.localScale = new Vector3(0.5f, 0.35f, 0.4f);
             DestroyColliders(box);
 
