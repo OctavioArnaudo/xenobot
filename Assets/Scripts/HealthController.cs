@@ -89,10 +89,9 @@ namespace Runtime.Scripts.Health
         {
             get
             {
-                if (maxHealth.use) return maxHealth.value;
+                int defaultVal = CalculateDynamicHealthBalance();
                 Optional<int> balanceOpt = CurrentStats.maxHealth.use ? CurrentStats.maxHealth : (BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject).maxHealth : default);
-                if (balanceOpt.use) return balanceOpt.value;
-                return CalculateDynamicHealthBalance();
+                return maxHealth.Get(MaxHealth, defaultVal, balanceOpt);
             }
         }
 
@@ -100,10 +99,9 @@ namespace Runtime.Scripts.Health
         {
             get
             {
-                if (currentHealth.use) return currentHealth.value;
+                int defaultVal = EffectiveMaxHealth;
                 Optional<int> balanceOpt = CurrentStats.currentHealth.use ? CurrentStats.currentHealth : (BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject).currentHealth : default);
-                if (balanceOpt.use) return balanceOpt.value;
-                return CurrentHealth > 0 ? Mathf.Min(CurrentHealth, EffectiveMaxHealth) : EffectiveMaxHealth;
+                return currentHealth.Get(CurrentHealth, defaultVal, balanceOpt);
             }
         }
 
@@ -321,10 +319,7 @@ namespace Runtime.Scripts.Health
             {
                 currentHealth.value = newHealth;
             }
-            else
-            {
-                CurrentHealth = newHealth;
-            }
+            CurrentHealth = newHealth;
         }
 
         public void TakeDamage(int damage)
