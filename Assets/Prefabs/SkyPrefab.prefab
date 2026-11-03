@@ -9,6 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3103291168873191822}
+  - component: {fileID: 1755618976109966688}
   - component: {fileID: 5550520090894872384}
   - component: {fileID: 5652693524345595015}
   - component: {fileID: 5796400187798116643}
@@ -34,6 +35,33 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1755618976109966688
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8290281214044165213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1446619700
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!114 &5550520090894872384
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46,6 +74,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da3a969e57407974a918283595cbb4cf, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Runtime.Scripts.Sepia.LightingController
+  ShowTopMostFoldoutHeaderGroup: 1
   ambientLight: {r: 1, g: 1, b: 1, a: 1}
   directionalLight: {r: 1, g: 0.5803922, b: 0.56078434, a: 1}
   fogColor: {r: 1, g: 0.20392157, b: 0, a: 1}
@@ -63,6 +92,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abd4f4b7c42005540a1bd06f7b0167fe, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Runtime.Scripts.Sepia.GradingController
+  ShowTopMostFoldoutHeaderGroup: 1
   hueShift: -8
   saturation: -25
   contrast: 15
@@ -79,6 +109,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2fdc44a9f8ef188409e221021393b5b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Runtime.Scripts.Sepia.RainController
+  ShowTopMostFoldoutHeaderGroup: 1
   areaSize: 1500
   heightAbove: 35
   fallSpeed: 1

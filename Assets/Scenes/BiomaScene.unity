@@ -824,6 +824,9 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 2646646013940076878, guid: 06d8cbbc1c6505d43b957c55395f9b52, type: 3}
       insertIndex: -1
+      addedObject: {fileID: 443271900}
+    - targetCorrespondingSourceObject: {fileID: 2646646013940076878, guid: 06d8cbbc1c6505d43b957c55395f9b52, type: 3}
+      insertIndex: -1
       addedObject: {fileID: 443271893}
   m_SourcePrefab: {fileID: 100100000, guid: 06d8cbbc1c6505d43b957c55395f9b52, type: 3}
 --- !u!1 &443271892 stripped
@@ -848,6 +851,33 @@ MonoBehaviour:
   maxFov: 100
   sensitivity: 800
   smoothSpeed: 500
+--- !u!114 &443271900
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 443271892}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 1236603642
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!1 &460230611 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1845358734894520005, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
@@ -1802,7 +1832,10 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2975583572009817475, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+      insertIndex: 1
+      addedObject: {fileID: 1050809272}
   m_SourcePrefab: {fileID: 100100000, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
 --- !u!1 &819777022 stripped
 GameObject:
@@ -1948,6 +1981,38 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 598277302063295029, guid: 012d63212fd1fe646b661cb8446c7bd4, type: 3}
   m_PrefabInstance: {fileID: 1096428082}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1050809269 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2975583572009817475, guid: dc3c8a0e153d1e04183e94a372996ad3, type: 3}
+  m_PrefabInstance: {fileID: 767178486}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1050809272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1050809269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2786680151
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
 --- !u!43 &1060680832
 Mesh:
   m_ObjectHideFlags: 0
@@ -5531,6 +5596,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1755618976109966688, guid: 672480683c63ecc4aa5e544d4ea20deb, type: 3}
+      propertyPath: m_InScenePlaced
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1755618976109966688, guid: 672480683c63ecc4aa5e544d4ea20deb, type: 3}
+      propertyPath: GlobalObjectIdHash
+      value: 2055152431
+      objectReference: {fileID: 0}
+    - target: {fileID: 1755618976109966688, guid: 672480683c63ecc4aa5e544d4ea20deb, type: 3}
+      propertyPath: InScenePlacedSourceGlobalObjectIdHash
+      value: 983412473
+      objectReference: {fileID: 0}
     - target: {fileID: 3103291168873191822, guid: 672480683c63ecc4aa5e544d4ea20deb, type: 3}
       propertyPath: m_LocalPosition.x
       value: 904
