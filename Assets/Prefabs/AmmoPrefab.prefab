@@ -139,7 +139,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3394364600
+  GlobalObjectIdHash: 1009777616
   InScenePlacedSourceGlobalObjectIdHash: 1628841563
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -220,6 +220,7 @@ MonoBehaviour:
   generateDefaultVisuals: 1
   brassColor: {r: 0.9, g: 0.7, b: 0.2, a: 1}
   tipColor: {r: 0.8, g: 0.2, b: 0.1, a: 1}
+  renderScale: 3
 --- !u!1 &3544311958317946543
 GameObject:
   m_ObjectHideFlags: 0

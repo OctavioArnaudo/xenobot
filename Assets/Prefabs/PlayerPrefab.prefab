@@ -332,7 +332,7 @@ MonoBehaviour:
     m_ActionId: e4ce1614-c754-48c1-9103-33130441661f
     m_ActionName: UI/New action
   m_NeverAutoSwitchControlSchemes: 0
-  m_DefaultControlScheme: 
+  m_DefaultControlScheme: KeyboardMouse
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
   m_Camera: {fileID: 0}
@@ -458,10 +458,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 1
-  MaxHealth: 250
+  MaxHealth: 100
   maxHealth:
-    use: 0
-    value: 0
+    use: 1
+    value: 100
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -633,6 +633,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
+  ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 3596114446979786384}
@@ -660,6 +661,18 @@ MonoBehaviour:
     value: 0
   InfiniteAmmo: 0
   infiniteAmmo:
+    use: 0
+    value: 0
+  BurstShotsCapacity: 0
+  burstShotsCapacity:
+    use: 0
+    value: 0
+  BurstCooldownDuration: 0
+  burstCooldownDuration:
+    use: 0
+    value: 0
+  TargetRecalibrationDelay: 0
+  targetRecalibrationDelay:
     use: 0
     value: 0
   AimLayers:
