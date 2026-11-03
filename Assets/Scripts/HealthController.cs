@@ -28,7 +28,7 @@ namespace Runtime.Scripts.Health
             CurrentStats = stats;
             if (stats.maxHealth.use && stats.maxHealth.value > 0)
             {
-                SetHealth(stats.maxHealth.value);
+                MaxHealth = stats.maxHealth.value;
             }
             if (stats.currentHealth.use && stats.currentHealth.value >= 0)
             {
@@ -277,7 +277,7 @@ namespace Runtime.Scripts.Health
         private void UpdateInspectorValues()
         {
             MaxHealth = EffectiveMaxHealth;
-            CurrentHealth = CurrentHP;
+            CurrentHealth = EffectiveCurrentHealth;
         }
 
         private void OnValidate()
@@ -333,8 +333,9 @@ namespace Runtime.Scripts.Health
 
         public void SetHealth(int newHealth)
         {
-            if (maxHealth.use) maxHealth.value = Mathf.Max(maxHealth.value, newHealth);
-            if (currentHealth.use) currentHealth.value = Mathf.Max(currentHealth.value, newHealth);
+            if (currentHealth.use) currentHealth.value = newHealth;
+            else CurrentHealth = newHealth;
+
             if (IsNetworkActive && IsServer) m_CurrentHealth.Value = newHealth;
             else m_OfflineHealth = newHealth;
         }
