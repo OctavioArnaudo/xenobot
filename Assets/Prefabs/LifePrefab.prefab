@@ -102,7 +102,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 12
   m_Type: 2
-  m_Color: {r: 1, g: 0.58096313, b: 0.5613208, a: 1}
+  m_Color: {r: 1, g: 0.5803922, b: 0.56078434, a: 1}
   m_Intensity: 1
   m_Range: 3
   m_SpotAngle: 30
@@ -234,14 +234,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 848461821
+  GlobalObjectIdHash: 809730373
   InScenePlacedSourceGlobalObjectIdHash: 902188285
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -282,6 +282,7 @@ MonoBehaviour:
   heartColor: {r: 0.6, g: 0, b: 0, a: 1}
   emissionColor: {r: 1, g: 0.1, b: 0.1, a: 1}
   emissionIntensity: 2
+  renderScale: 3
 --- !u!114 &2092363302075613153
 MonoBehaviour:
   m_ObjectHideFlags: 0
