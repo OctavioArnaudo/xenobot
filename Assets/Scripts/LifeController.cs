@@ -24,6 +24,7 @@ namespace Runtime.Scripts.Life
         public Color heartColor = new Color(0.6f, 0f, 0f); // Dark Red
         public Color emissionColor = new Color(1f, 0.1f, 0.1f); // Bright Red Glow
         public float emissionIntensity = 2.0f;
+        public float renderScale = 2.0f;
 
         void Awake()
         {
@@ -67,6 +68,7 @@ namespace Runtime.Scripts.Life
             GameObject visual = new GameObject("LifeRender");
             visual.transform.SetParent(transform, false);
             visual.transform.localPosition = Vector3.zero;
+            visual.transform.localScale = Vector3.one * renderScale;
 
             MeshFilter mf = visual.AddComponent<MeshFilter>();
             MeshRenderer mr = visual.AddComponent<MeshRenderer>();
