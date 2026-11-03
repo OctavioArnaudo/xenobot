@@ -26,11 +26,11 @@ namespace Runtime.Scripts.Health
         public void CalibrateStats(StatSpawnPointData stats)
         {
             CurrentStats = stats;
-            if (stats.maxHealth.use && stats.maxHealth.value > 0)
+            if (!maxHealth.use && stats.maxHealth.use && stats.maxHealth.value > 0)
             {
                 MaxHealth = stats.maxHealth.value;
             }
-            if (stats.currentHealth.use && stats.currentHealth.value >= 0)
+            if (!currentHealth.use && stats.currentHealth.use && stats.currentHealth.value >= 0)
             {
                 SetHealth(stats.currentHealth.value);
             }
@@ -89,6 +89,7 @@ namespace Runtime.Scripts.Health
         {
             get
             {
+                if (maxHealth.use) return maxHealth.value;
                 int defaultVal = CalculateDynamicHealthBalance();
                 Optional<int> balanceOpt = CurrentStats.maxHealth.use ? CurrentStats.maxHealth : (BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject).maxHealth : default);
                 return maxHealth.Get(MaxHealth, defaultVal, balanceOpt);
@@ -99,6 +100,7 @@ namespace Runtime.Scripts.Health
         {
             get
             {
+                if (currentHealth.use) return currentHealth.value;
                 int defaultVal = EffectiveMaxHealth;
                 Optional<int> balanceOpt = CurrentStats.currentHealth.use ? CurrentStats.currentHealth : (BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject).currentHealth : default);
                 return currentHealth.Get(CurrentHealth, defaultVal, balanceOpt);
