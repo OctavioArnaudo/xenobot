@@ -469,7 +469,7 @@ namespace Runtime.Scripts.Player
                 return;
             }
 
-            if (_health != null && _health.CurrentHP <= 0)
+            if (_health != null && _health.EffectiveCurrentHealth <= 0)
             {
                 OnPlayerDeath();
                 return;

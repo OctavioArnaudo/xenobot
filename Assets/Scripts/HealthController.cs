@@ -58,8 +58,6 @@ namespace Runtime.Scripts.Health
         public UnityEvent OnDeath;
         public UnityEvent<int> OnTakeDamage;
 
-        private NetworkVariable<int> m_CurrentHealth = new NetworkVariable<int>(100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        private int m_OfflineHealth;
         private float m_DamageFlashTimer;
 
         // Caché de colores originales para restaurar exactamente la apariencia sin decolorar al personaje
@@ -107,7 +105,7 @@ namespace Runtime.Scripts.Health
             }
         }
 
-        public int CurrentHP => IsNetworkActive ? m_CurrentHealth.Value : m_OfflineHealth;
+
 
         private int CalculateDynamicHealthBalance()
         {
@@ -187,8 +185,6 @@ namespace Runtime.Scripts.Health
 
         void Awake()
         {
-            m_OfflineHealth = EffectiveCurrentHealth;
-
             bool isPlayer = CompareTag("Player") || GetComponent<PlayerController>() != null;
             if (isPlayer && (NetworkManager.Singleton == null || !NetworkManager.Singleton.IsListening))
             {
@@ -239,31 +235,10 @@ namespace Runtime.Scripts.Health
             {
                 CSingleton<HealthController>.Instance = this;
             }
-
-            if (IsServer)
-            {
-                m_CurrentHealth.Value = EffectiveCurrentHealth;
-            }
-
-            m_CurrentHealth.OnValueChanged += (oldVal, newVal) =>
-            {
-                int diff = oldVal - newVal;
-                if (diff > 0)
-                {
-                    TriggerDamageFlash();
-                    OnTakeDamage?.Invoke(diff);
-                }
-
-                if (newVal <= 0)
-                {
-                    OnDeath?.Invoke();
-                }
-            };
         }
 
         public override void OnNetworkDespawn()
         {
-            m_CurrentHealth.OnValueChanged -= (oldVal, newVal) => { };
             CSingleton<HealthController>.UnregisterInstance(this);
             base.OnNetworkDespawn();
         }
@@ -333,11 +308,14 @@ namespace Runtime.Scripts.Health
 
         public void SetHealth(int newHealth)
         {
-            if (currentHealth.use) currentHealth.value = newHealth;
-            else CurrentHealth = newHealth;
-
-            if (IsNetworkActive && IsServer) m_CurrentHealth.Value = newHealth;
-            else m_OfflineHealth = newHealth;
+            if (currentHealth.use)
+            {
+                currentHealth.value = newHealth;
+            }
+            else
+            {
+                CurrentHealth = newHealth;
+            }
         }
 
         public void TakeDamage(int damage)
@@ -354,44 +332,13 @@ namespace Runtime.Scripts.Health
 
             if (finalDamage <= 0) return;
 
-            if (IsNetworkActive)
-            {
-                if (IsServer) ApplyDamageServer(finalDamage);
-                else RequestTakeDamageServerRpc(finalDamage);
-            }
-            else
-            {
-                ApplyDamageLocal(finalDamage);
-            }
-        }
+            int newHp = Mathf.Max(0, CurrentHP - finalDamage);
+            SetHealth(newHp);
 
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void RequestTakeDamageServerRpc(int damage)
-        {
-            ApplyDamageServer(damage);
-        }
-
-        private void ApplyDamageServer(int damage)
-        {
-            m_CurrentHealth.Value = Mathf.Max(0, m_CurrentHealth.Value - damage);
             TriggerDamageFlash();
-            OnTakeDamage?.Invoke(damage);
+            OnTakeDamage?.Invoke(finalDamage);
 
-            if (m_CurrentHealth.Value <= 0)
-            {
-                OnDeath?.Invoke();
-                if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
-                else gameObject.SetActive(false);
-            }
-        }
-
-        private void ApplyDamageLocal(int damage)
-        {
-            m_OfflineHealth = Mathf.Max(0, m_OfflineHealth - damage);
-            TriggerDamageFlash();
-            OnTakeDamage?.Invoke(damage);
-
-            if (m_OfflineHealth <= 0)
+            if (CurrentHP <= 0)
             {
                 OnDeath?.Invoke();
                 if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
@@ -403,33 +350,23 @@ namespace Runtime.Scripts.Health
         {
             if (amount <= 0) return;
 
-            if (IsNetworkActive)
-            {
-                if (IsServer) m_CurrentHealth.Value = Mathf.Min(EffectiveMaxHealth, m_CurrentHealth.Value + amount);
-                else HealServerRpc(amount);
-            }
-            else
-            {
-                m_OfflineHealth = Mathf.Min(EffectiveMaxHealth, m_OfflineHealth + amount);
-            }
+            int newHp = Mathf.Min(EffectiveMaxHealth, CurrentHP + amount);
+            SetHealth(newHp);
         }
-
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
-        private void HealServerRpc(int amount) => Heal(amount);
 
         public void UpgradeMaxStats(int healthBonus)
         {
-            if (IsNetworkActive)
+            if (maxHealth.use)
             {
-                if (IsServer)
-                {
-                    m_CurrentHealth.Value += healthBonus;
-                }
+                maxHealth.value += healthBonus;
             }
             else
             {
-                m_OfflineHealth += healthBonus;
+                MaxHealth += healthBonus;
             }
+
+            int newHp = Mathf.Min(EffectiveMaxHealth, CurrentHP + healthBonus);
+            SetHealth(newHp);
         }
     }
 }

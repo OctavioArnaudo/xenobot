@@ -521,8 +521,8 @@ namespace Runtime.Scripts.Hud
             var shooter = GetShooter();
             var shield = GetShield();
 
-            Bar(0, "HP", m_PlayerHealth.CurrentHP, m_PlayerHealth.EffectiveMaxHealth,
-                $"{m_PlayerHealth.CurrentHP}/{m_PlayerHealth.EffectiveMaxHealth}");
+            Bar(0, "HP", m_PlayerHealth.EffectiveCurrentHealth, m_PlayerHealth.EffectiveMaxHealth,
+                $"{m_PlayerHealth.EffectiveCurrentHealth}/{m_PlayerHealth.EffectiveMaxHealth}");
 
             if (prop != null && prop.MaxJetpack > 0) Bar(1, "JET", prop.JetpackFuel, prop.MaxJetpack, $"{prop.JetpackFuel:F0}/{prop.MaxJetpack:F0}");
             else Bar(1, "JET", 0f, 1f, "N/A");
