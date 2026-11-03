@@ -324,7 +324,6 @@ namespace Runtime.Scripts.Pickup
 
         private void ApplyReward(InventoryController inv, GameObject player)
         {
-            // 1. Si el objeto tiene un SpawnController con loot o itemsToSpawn, activamos el spawneo al interactuar/recoger la primera vez
             var sc = GetComponent<SpawnController>();
             if (sc != null && !sc.HasTriggeredDeath)
             {
@@ -334,22 +333,16 @@ namespace Runtime.Scripts.Pickup
 
             ResolveItemsDataIfNeeded();
 
-            // Ejecutar acciones de pickup o efectos funcionales directamente del objeto
-            var pickupActions = GetComponentsInChildren<IItemPickupAction>(true);
-            if (pickupActions.Length > 0)
-            {
-                foreach (var act in pickupActions) act.OnPickupItem(player);
-            }
-            else
-            {
-            }
-
-            // Si el ítem es pickupable y no es de tipo Additivity (efecto directo al pickear), agregarlo al inventario
             if (item != null && inv != null && item.isPickable)
             {
                 int hash = item.GetHashCode();
                 if (IsNetworkActive) inv.AddItemServerRpc(hash, 1);
                 else inv.InternalAddItem(hash, 1);
+            }
+            else
+            {
+                var pickupActions = GetComponentsInChildren<IItemPickupAction>(true);
+                foreach (var act in pickupActions) act.OnPickupItem(player);
             }
         }
 
