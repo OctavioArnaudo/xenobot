@@ -125,8 +125,6 @@ namespace Runtime.Scripts.Enemy
         private const int DEFAULT_WANDER_RADIUS = 20;
 
         private const int DEFAULT_DETECTION_RANGE = 35;
-        private const int DEFAULT_SHOOT_RANGE = 120;
-        private const int DEFAULT_MELEE_RANGE = 4;
         private const float DEFAULT_VISION_ANGLE = 120.0f;
 
         [Header("Core Configuration")]
@@ -154,18 +152,6 @@ namespace Runtime.Scripts.Enemy
         public int WanderRadius;
         public Optional<int> wanderRadius;
 
-        [Header("Perception & Range")]
-        public int DetectionRange;
-        public Optional<int> detectionRange;
-        public int ShootRange;
-        public Optional<int> shootRange;
-        public int MeleeRange;
-        public Optional<int> meleeRange;
-        public float VisionAngleOverride;
-        public Optional<float> visionAngleOverride;
-
-        public float EffectiveVisionAngle => visionAngleOverride.Get(VisionAngleOverride, DEFAULT_VISION_ANGLE);
-
         // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
         public float EffectiveHoverHeight => hoverHeight.Get(HoverHeight, DEFAULT_HOVER_HEIGHT);
 
@@ -191,23 +177,18 @@ namespace Runtime.Scripts.Enemy
             }
         }
 
-        public int EffectiveDetectionRange
+        public float EffectiveVisionAngle => 120.0f;
+
+        public float EffectiveDetectionRange
         {
             get
             {
                 var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
-                return detectionRange.Get(DetectionRange, DEFAULT_DETECTION_RANGE, stats.detectionRadius);
+                return stats.detectionRadius.use ? stats.detectionRadius.value : 35f;
             }
         }
 
-        public int EffectiveShootRange
-        {
-            get
-            {
-                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
-                return shootRange.Get(ShootRange, DEFAULT_SHOOT_RANGE, stats.shootRange);
-            }
-        }
+        public float EffectiveShootRange => m_Shooter != null ? m_Shooter.EffectiveAimDistance : 120f;
 
         public float EffectiveMaxProjectileReach
         {
@@ -227,20 +208,12 @@ namespace Runtime.Scripts.Enemy
             }
         }
 
-        public int EffectiveMeleeRange
-        {
-            get
-            {
-                var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
-                return meleeRange.Get(MeleeRange, DEFAULT_MELEE_RANGE, stats.meleeRange);
-            }
-        }
+        public float EffectiveMeleeRange => m_Melee != null ? m_Melee.EffectiveAttackRange : 3.8f;
 
-        [Header("Combat Controllers (null = Auto-detectar)")]
-        public ShootController m_Shooter = null;
-        public MeleeController m_Melee = null;
-        public HealthController m_Health = null;
-        public SpawnController m_Spawn = null;
+        private ShootController m_Shooter = null;
+        private MeleeController m_Melee = null;
+        private HealthController m_Health = null;
+        private SpawnController m_Spawn = null;
 
         [Header("Reinforcements / Minions (Vacio = Autoduplicarse)")]
         public List<GameObject> minionPrefabs = new List<GameObject>();
@@ -501,8 +474,7 @@ namespace Runtime.Scripts.Enemy
             if (_isEnemyDead) return;
             _isEnemyDead = true;
 
-            //Debug.Log($"<color=orange>[EnemyAI]</color> {gameObject.name} ha muerto.");
-
+            ReleaseMeleeAttackToken();
             StopMoving();
 
             if (m_Spawn != null)
@@ -532,10 +504,6 @@ namespace Runtime.Scripts.Enemy
             ChaseSpeed = EffectiveChaseSpeed;
             TurnSpeed = EffectiveTurnSpeed;
             WanderRadius = EffectiveWanderRadius;
-            DetectionRange = EffectiveDetectionRange;
-            ShootRange = EffectiveShootRange;
-            MeleeRange = EffectiveMeleeRange;
-            VisionAngleOverride = EffectiveVisionAngle;
         }
 
         private void OnValidate()
@@ -1413,10 +1381,7 @@ namespace Runtime.Scripts.Enemy
                     {
                         m_Melee.PerformMeleeAction(m_Target.position);
                     }
-                    else
-                    {
-                        ReleaseMeleeAttackToken();
-                    }
+                    ReleaseMeleeAttackToken();
                     break;
 
                 case EnemyCategory.Ranged:
@@ -1430,11 +1395,16 @@ namespace Runtime.Scripts.Enemy
                     if (isMeleeRange && m_Melee != null)
                     {
                         m_Melee.PerformMeleeAction(m_Target.position);
+                        ReleaseMeleeAttackToken();
                     }
                     else if (isShootRange && m_Shooter != null)
                     {
                         ReleaseMeleeAttackToken();
                         m_Shooter.FireAt(aimPos);
+                    }
+                    else
+                    {
+                        ReleaseMeleeAttackToken();
                     }
                     break;
             }
@@ -1530,8 +1500,14 @@ namespace Runtime.Scripts.Enemy
             }
         }
 
+        private void OnDisable()
+        {
+            ReleaseMeleeAttackToken();
+        }
+
         public override void OnDestroy()
         {
+            ReleaseMeleeAttackToken();
             if (m_Health != null)
             {
                 m_Health.OnTakeDamage.RemoveListener(OnDamageTaken);

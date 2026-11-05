@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -43,6 +44,10 @@ namespace Runtime.Scripts.Melee
         public float AttackCooldown;
         public Optional<float> attackCooldown;
         public LayerMask targetLayers;
+
+        [Header("Specific Hitboxes & MeshColliders")]
+        public MeshCollider[] specificMeshColliders;
+        public Collider[] meleeHitboxes;
 
         [Header("Ground Slam")]
         public float SlamHoldDuration;
@@ -150,6 +155,65 @@ namespace Runtime.Scripts.Melee
 
             if (visualsToRotate == null || visualsToRotate.Length == 0)
                 visualsToRotate = GetComponentsInChildren<Renderer>();
+
+            // Rigidbody cinemático en el objeto raíz para habilitar callbacks de físicas en MeshColliders
+            Rigidbody rb = GetComponent<Rigidbody>() ?? GetComponentInParent<Rigidbody>();
+            if (rb == null)
+            {
+                rb = gameObject.AddComponent<Rigidbody>();
+                rb.isKinematic = true;
+                rb.useGravity = false;
+            }
+
+            SetupSpecificMeshColliders();
+        }
+
+        public void SetupSpecificMeshColliders()
+        {
+            if (specificMeshColliders == null || specificMeshColliders.Length == 0)
+            {
+                specificMeshColliders = GetComponentsInChildren<MeshCollider>(true);
+            }
+
+            if (specificMeshColliders != null)
+            {
+                foreach (var meshCol in specificMeshColliders)
+                {
+                    if (meshCol == null || meshCol.gameObject == gameObject) continue;
+
+                    if (!meshCol.convex)
+                    {
+                        meshCol.convex = true;
+                    }
+
+                    if (!meshCol.gameObject.TryGetComponent<MeleeHitboxBridge>(out var bridge))
+                    {
+                        bridge = meshCol.gameObject.AddComponent<MeleeHitboxBridge>();
+                    }
+                    bridge.ownerMeleeController = this;
+                }
+            }
+
+            if (meleeHitboxes == null || meleeHitboxes.Length == 0)
+            {
+                meleeHitboxes = GetComponentsInChildren<Collider>(true)
+                    .Where(c => !(c is CharacterController) && c.gameObject != gameObject)
+                    .ToArray();
+            }
+
+            if (meleeHitboxes != null)
+            {
+                foreach (var col in meleeHitboxes)
+                {
+                    if (col == null || col.gameObject == gameObject) continue;
+
+                    if (!col.gameObject.TryGetComponent<MeleeHitboxBridge>(out var bridge))
+                    {
+                        bridge = col.gameObject.AddComponent<MeleeHitboxBridge>();
+                    }
+                    bridge.ownerMeleeController = this;
+                }
+            }
         }
 
         private void UpdateInspectorValues()
@@ -241,10 +305,28 @@ namespace Runtime.Scripts.Melee
 
         // --- TRANSMISIÓN DE DAÑO POR CONTACTO FÍSICO / COLISIÓN ---
 
-        private void OnTriggerEnter(Collider other) => TryContactDamage(other.gameObject, other.ClosestPoint(transform.position));
-        private void OnTriggerStay(Collider other) => TryContactDamage(other.gameObject, other.ClosestPoint(transform.position));
+        private static Vector3 GetSafeImpactPoint(Collider col, Vector3 referencePosition)
+        {
+            if (col == null) return referencePosition;
+            if (col is BoxCollider || col is SphereCollider || col is CapsuleCollider || (col is MeshCollider mc && mc.convex))
+            {
+                return col.ClosestPoint(referencePosition);
+            }
+            return col.bounds.ClosestPoint(referencePosition);
+        }
+
+        private void OnTriggerEnter(Collider other) => TryContactDamage(other.gameObject, GetSafeImpactPoint(other, transform.position));
+        private void OnTriggerStay(Collider other) => TryContactDamage(other.gameObject, GetSafeImpactPoint(other, transform.position));
         private void OnCollisionEnter(Collision collision) => TryContactDamage(collision.gameObject, collision.contacts.Length > 0 ? collision.contacts[0].point : transform.position);
         private void OnCollisionStay(Collision collision) => TryContactDamage(collision.gameObject, collision.contacts.Length > 0 ? collision.contacts[0].point : transform.position);
+
+        private void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            if (hit != null && hit.gameObject != null)
+            {
+                TryContactDamage(hit.gameObject, hit.point);
+            }
+        }
 
         private void TryContactDamage(GameObject hitObject, Vector3 impactPoint)
         {
@@ -252,7 +334,7 @@ namespace Runtime.Scripts.Melee
 
             if (Time.time < m_NextAttackTime) return;
 
-            HealthController targetHealth = hitObject.GetComponentInParent<HealthController>() ?? hitObject.GetComponent<HealthController>();
+            HealthController targetHealth = hitObject.GetComponentInParent<HealthController>() ?? hitObject.GetComponent<HealthController>() ?? hitObject.GetComponentInChildren<HealthController>();
 
             if (targetHealth == null || targetHealth.EffectiveCurrentHealth <= 0) return;
 
@@ -260,12 +342,14 @@ namespace Runtime.Scripts.Melee
             Team targetTeam = targetHealth.EffectiveTeam;
 
             bool isHostile = (myTeam != targetTeam) ||
-                             (myTeam == Team.Enemy && (hitObject.CompareTag("Player") || hitObject.transform.root.CompareTag("Player") || hitObject.GetComponentInParent<PlayerController>() != null)) ||
-                             (myTeam == Team.Player && (hitObject.CompareTag("Enemy") || hitObject.transform.root.CompareTag("Enemy") || hitObject.GetComponentInParent<EnemyController>() != null));
+                             (myTeam == Team.Enemy && (hitObject.CompareTag("Player") || hitObject.transform.root.CompareTag("Player") || hitObject.GetComponentInParent<PlayerController>() != null || hitObject.GetComponentInChildren<PlayerController>() != null)) ||
+                             (myTeam == Team.Player && (hitObject.CompareTag("Enemy") || hitObject.transform.root.CompareTag("Enemy") || hitObject.GetComponentInParent<EnemyController>() != null || hitObject.GetComponentInChildren<EnemyController>() != null)) ||
+                             (myTeam == Team.Neutral && targetTeam != Team.Neutral);
 
             if (!isHostile) return;
 
             float damage = EffectiveAttackDamage;
+            int hpBefore = targetHealth.EffectiveCurrentHealth;
             targetHealth.TakeDamage((int)damage);
 
             m_NextAttackTime = Time.time + EffectiveAttackCooldown;
@@ -432,7 +516,7 @@ namespace Runtime.Scripts.Melee
         private void RequestMeleeServerRpc()
         {
             ExecuteMeleeDamageServer();
-            Vector3 attackCenter = transform.position + transform.forward * (EffectiveAttackRange * 0.5f);
+            Vector3 attackCenter = transform.position + Vector3.up * 1.0f + transform.forward * (EffectiveAttackRange * 0.5f);
             NotifyMeleeClientRpc(attackCenter, transform.forward);
         }
 
@@ -448,39 +532,81 @@ namespace Runtime.Scripts.Melee
             }
         }
 
+        public void TryContactDamageFromHitbox(GameObject hitObject, Vector3 impactPoint)
+        {
+            TryContactDamage(hitObject, impactPoint);
+        }
+
         private void ExecuteMeleeDamageServer()
         {
             float finalDamage = EffectiveAttackDamage;
             int mask = (targetLayers.value != 0) ? targetLayers.value : ~0;
 
-            Vector3 attackCenter = transform.position + transform.forward * (EffectiveAttackRange * 0.5f);
-            Collider[] hits = Physics.OverlapSphere(attackCenter, EffectiveAttackRange, mask, QueryTriggerInteraction.Collide);
+            HashSet<GameObject> hitTargets = new HashSet<GameObject>();
+
+            // 1. Detección por colisionadores/MeshColliders específicos asignados o detectados en la jerarquía
+            List<Collider> allHitboxes = new List<Collider>();
+            if (specificMeshColliders != null) allHitboxes.AddRange(specificMeshColliders.Where(c => c != null));
+            if (meleeHitboxes != null) allHitboxes.AddRange(meleeHitboxes.Where(c => c != null));
+
+            foreach (var col in allHitboxes)
+            {
+                if (col == null || !col.enabled || !col.gameObject.activeInHierarchy) continue;
+
+                Bounds bounds = col.bounds;
+                float radius = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z, 0.6f);
+                Collider[] hitsFromMesh = Physics.OverlapSphere(bounds.center, radius, mask, QueryTriggerInteraction.Collide);
+
+                foreach (var hit in hitsFromMesh)
+                {
+                    ProcessHitTarget(hit, finalDamage, hitTargets);
+                }
+            }
+
+            // 2. Detección frontal amplia por esfera de respaldo
+            Vector3 attackCenter = transform.position + Vector3.up * 1.0f + transform.forward * (EffectiveAttackRange * 0.5f);
+            Collider[] hitsFrontal = Physics.OverlapSphere(attackCenter, EffectiveAttackRange, mask, QueryTriggerInteraction.Collide);
+
+            foreach (var hit in hitsFrontal)
+            {
+                ProcessHitTarget(hit, finalDamage, hitTargets);
+            }
+
+            Team currentTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") || transform.root.CompareTag("Player") ? Team.Player : Team.Enemy);
+        }
+
+        private void ProcessHitTarget(Collider hit, float finalDamage, HashSet<GameObject> processedTargets)
+        {
+            if (hit == null || hit.gameObject == gameObject || hit.transform.IsChildOf(transform)) return;
+
+            var targetHealth = hit.GetComponentInParent<HealthController>() ?? hit.GetComponent<HealthController>() ?? hit.GetComponentInChildren<HealthController>();
+            if (targetHealth == null || targetHealth.EffectiveCurrentHealth <= 0) return;
+
+            if (processedTargets.Contains(targetHealth.gameObject)) return;
 
             Team myTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") || transform.root.CompareTag("Player") ? Team.Player : Team.Enemy);
+            Team targetTeam = targetHealth.EffectiveTeam;
 
-            foreach (Collider hit in hits)
+            bool isHostile = (myTeam != targetTeam) ||
+                             (myTeam == Team.Enemy && (hit.CompareTag("Player") || hit.transform.root.CompareTag("Player") || hit.GetComponentInParent<PlayerController>() != null || hit.GetComponentInChildren<PlayerController>() != null)) ||
+                             (myTeam == Team.Player && (hit.CompareTag("Enemy") || hit.transform.root.CompareTag("Enemy") || hit.GetComponentInParent<EnemyController>() != null || hit.GetComponentInChildren<EnemyController>() != null)) ||
+                             (myTeam == Team.Neutral && targetTeam != Team.Neutral);
+
+            if (isHostile)
             {
-                if (hit.gameObject == gameObject || hit.transform.IsChildOf(transform)) continue;
-
-                var targetHealth = hit.GetComponentInParent<HealthController>() ?? hit.GetComponent<HealthController>();
-                if (targetHealth == null || targetHealth.EffectiveCurrentHealth <= 0) continue;
-
-                Team targetTeam = targetHealth.EffectiveTeam;
-                bool isHostile = (myTeam != targetTeam) ||
-                                 (myTeam == Team.Enemy && (hit.CompareTag("Player") || hit.transform.root.CompareTag("Player") || hit.GetComponentInParent<PlayerController>() != null)) ||
-                                 (myTeam == Team.Player && (hit.CompareTag("Enemy") || hit.transform.root.CompareTag("Enemy") || hit.GetComponentInParent<EnemyController>() != null));
-
-                if (isHostile)
-                {
-                    targetHealth.TakeDamage((int)finalDamage);
-                }
+                processedTargets.Add(targetHealth.gameObject);
+                int hpBefore = targetHealth.EffectiveCurrentHealth;
+                targetHealth.TakeDamage((int)finalDamage);
+            }
+            else
+            {
             }
         }
 
         private void ExecuteExecuteMelee()
         {
             ExecuteMeleeDamageServer();
-            Vector3 attackCenter = transform.position + transform.forward * (EffectiveAttackRange * 0.5f);
+            Vector3 attackCenter = transform.position + Vector3.up * 1.0f + transform.forward * (EffectiveAttackRange * 0.5f);
             TriggerMeleeVisualEffect(attackCenter, transform.forward);
 
             Animator anim = GetComponentInChildren<Animator>();
@@ -493,7 +619,7 @@ namespace Runtime.Scripts.Melee
         private void ExecuteMelee()
         {
             ExecuteMeleeDamageServer();
-            Vector3 attackCenter = transform.position + transform.forward * (EffectiveAttackRange * 0.5f);
+            Vector3 attackCenter = transform.position + Vector3.up * 1.0f + transform.forward * (EffectiveAttackRange * 0.5f);
             TriggerMeleeVisualEffect(attackCenter, transform.forward);
 
             Animator anim = GetComponentInChildren<Animator>();
@@ -567,11 +693,60 @@ namespace Runtime.Scripts.Melee
         private void OnDrawGizmosSelected()
         {
             Gizmos.color = Color.red;
-            Vector3 attackCenter = transform.position + transform.forward * (EffectiveAttackRange * 0.5f);
+            Vector3 attackCenter = transform.position + Vector3.up * 1.0f + transform.forward * (EffectiveAttackRange * 0.5f);
             Gizmos.DrawWireSphere(attackCenter, EffectiveAttackRange);
 
             Gizmos.color = Color.yellow;
             Gizmos.DrawWireSphere(transform.position, EffectiveSlamRadius);
+        }
+    }
+
+    /// <summary>
+    /// Componente puente adjuntado automáticamente a GameObjects hijos con MeshColliders / Colliders específicos.
+    /// Redirige los eventos de colisión y triggers de Unity al MeleeController principal.
+    /// </summary>
+    public class MeleeHitboxBridge : MonoBehaviour
+    {
+        public MeleeController ownerMeleeController;
+
+        private Vector3 GetSafePoint(Collider col)
+        {
+            if (col == null) return transform.position;
+            if (col is BoxCollider || col is SphereCollider || col is CapsuleCollider || (col is MeshCollider mc && mc.convex))
+            {
+                return col.ClosestPoint(transform.position);
+            }
+            return col.bounds.ClosestPoint(transform.position);
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (ownerMeleeController != null && other != null)
+                ownerMeleeController.TryContactDamageFromHitbox(other.gameObject, GetSafePoint(other));
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            if (ownerMeleeController != null && other != null)
+                ownerMeleeController.TryContactDamageFromHitbox(other.gameObject, GetSafePoint(other));
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (ownerMeleeController != null && collision != null && collision.gameObject != null)
+                ownerMeleeController.TryContactDamageFromHitbox(collision.gameObject, collision.contacts.Length > 0 ? collision.contacts[0].point : transform.position);
+        }
+
+        private void OnCollisionStay(Collision collision)
+        {
+            if (ownerMeleeController != null && collision != null && collision.gameObject != null)
+                ownerMeleeController.TryContactDamageFromHitbox(collision.gameObject, collision.contacts.Length > 0 ? collision.contacts[0].point : transform.position);
+        }
+
+        private void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            if (ownerMeleeController != null && hit != null && hit.gameObject != null)
+                ownerMeleeController.TryContactDamageFromHitbox(hit.gameObject, hit.point);
         }
     }
 }

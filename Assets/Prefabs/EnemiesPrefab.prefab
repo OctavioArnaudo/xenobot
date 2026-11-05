@@ -1289,6 +1289,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
+  ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 5027030347244565460}
@@ -1316,6 +1317,18 @@ MonoBehaviour:
     value: 0
   InfiniteAmmo: 0
   infiniteAmmo:
+    use: 0
+    value: 0
+  BurstShotsCapacity: 0
+  burstShotsCapacity:
+    use: 0
+    value: 0
+  BurstCooldownDuration: 0
+  burstCooldownDuration:
+    use: 0
+    value: 0
+  TargetRecalibrationDelay: 0
+  targetRecalibrationDelay:
     use: 0
     value: 0
   AimLayers:
@@ -1346,6 +1359,10 @@ MonoBehaviour:
   team: 2
   MaxHealth: 120
   maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
     use: 0
     value: 0
   visualsToFlash: []
@@ -1447,6 +1464,17 @@ MonoBehaviour:
   infiniteShield:
     use: 0
     value: 0
+  shieldBashDamage: 15
+  customBashDamage:
+    use: 0
+    value: 0
+  shieldBashKnockbackForce: 500
+  bashRadius: 2.5
+  bashTargetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  bashSound: {fileID: 0}
+  bashVfxPrefab: {fileID: 0}
   healAmountOnBlock: 5
   inputMode: 0
   autoUnlockOnStart: 0
@@ -1937,6 +1965,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
+  ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 3831307437880435059}
@@ -1964,6 +1993,18 @@ MonoBehaviour:
     value: 0
   InfiniteAmmo: 0
   infiniteAmmo:
+    use: 0
+    value: 0
+  BurstShotsCapacity: 0
+  burstShotsCapacity:
+    use: 0
+    value: 0
+  BurstCooldownDuration: 0
+  burstCooldownDuration:
+    use: 0
+    value: 0
+  TargetRecalibrationDelay: 0
+  targetRecalibrationDelay:
     use: 0
     value: 0
   AimLayers:
@@ -1994,6 +2035,10 @@ MonoBehaviour:
   team: 2
   MaxHealth: 120
   maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
     use: 0
     value: 0
   visualsToFlash: []
@@ -2217,6 +2262,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
+  ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 6379814195262186618}
@@ -2244,6 +2290,18 @@ MonoBehaviour:
     value: 0
   InfiniteAmmo: 0
   infiniteAmmo:
+    use: 0
+    value: 0
+  BurstShotsCapacity: 0
+  burstShotsCapacity:
+    use: 0
+    value: 0
+  BurstCooldownDuration: 0
+  burstCooldownDuration:
+    use: 0
+    value: 0
+  TargetRecalibrationDelay: 0
+  targetRecalibrationDelay:
     use: 0
     value: 0
   AimLayers:
@@ -2274,6 +2332,10 @@ MonoBehaviour:
   team: 2
   MaxHealth: 120
   maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
     use: 0
     value: 0
   visualsToFlash: []
@@ -2702,6 +2764,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
+  ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 215122690192891280}
@@ -2729,6 +2792,18 @@ MonoBehaviour:
     value: 0
   InfiniteAmmo: 0
   infiniteAmmo:
+    use: 0
+    value: 0
+  BurstShotsCapacity: 0
+  burstShotsCapacity:
+    use: 0
+    value: 0
+  BurstCooldownDuration: 0
+  burstCooldownDuration:
+    use: 0
+    value: 0
+  TargetRecalibrationDelay: 0
+  targetRecalibrationDelay:
     use: 0
     value: 0
   AimLayers:
@@ -2759,6 +2834,10 @@ MonoBehaviour:
   team: 2
   MaxHealth: 120
   maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
     use: 0
     value: 0
   visualsToFlash: []
@@ -2994,11 +3073,13 @@ MonoBehaviour:
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  SlamHoldDuration: 0.25
+  specificMeshColliders: []
+  meleeHitboxes: []
+  SlamHoldDuration: 0.15
   slamHoldDuration:
     use: 0
     value: 0
-  SlamDamage: 1
+  SlamDamage: 2
   slamDamage:
     use: 0
     value: 0
@@ -3039,6 +3120,10 @@ MonoBehaviour:
   team: 2
   MaxHealth: 120
   maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
     use: 0
     value: 0
   visualsToFlash: []
@@ -3262,6 +3347,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
+  ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 4284258703486034231}
@@ -3289,6 +3375,18 @@ MonoBehaviour:
     value: 0
   InfiniteAmmo: 0
   infiniteAmmo:
+    use: 0
+    value: 0
+  BurstShotsCapacity: 0
+  burstShotsCapacity:
+    use: 0
+    value: 0
+  BurstCooldownDuration: 0
+  burstCooldownDuration:
+    use: 0
+    value: 0
+  TargetRecalibrationDelay: 0
+  targetRecalibrationDelay:
     use: 0
     value: 0
   AimLayers:
@@ -3319,6 +3417,10 @@ MonoBehaviour:
   team: 2
   MaxHealth: 120
   maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
     use: 0
     value: 0
   visualsToFlash: []
@@ -3858,10 +3960,10 @@ MonoBehaviour:
   attackRange:
     use: 0
     value: 0
-  AttackDamage: 1
+  AttackDamage: 10
   attackDamage:
-    use: 0
-    value: 0
+    use: 1
+    value: 10
   AttackCooldown: 1
   attackCooldown:
     use: 0
@@ -3869,11 +3971,13 @@ MonoBehaviour:
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  SlamHoldDuration: 0.25
+  specificMeshColliders: []
+  meleeHitboxes: []
+  SlamHoldDuration: 0.15
   slamHoldDuration:
     use: 0
     value: 0
-  SlamDamage: 1
+  SlamDamage: 2
   slamDamage:
     use: 0
     value: 0
@@ -3912,10 +4016,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 2
-  MaxHealth: 120
+  MaxHealth: 40
   maxHealth:
-    use: 0
-    value: 0
+    use: 1
+    value: 40
+  CurrentHealth: 40
+  currentHealth:
+    use: 1
+    value: 40
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -4152,6 +4260,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
+  ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 5630633374476518528}
@@ -4179,6 +4288,18 @@ MonoBehaviour:
     value: 0
   InfiniteAmmo: 0
   infiniteAmmo:
+    use: 0
+    value: 0
+  BurstShotsCapacity: 0
+  burstShotsCapacity:
+    use: 0
+    value: 0
+  BurstCooldownDuration: 0
+  burstCooldownDuration:
+    use: 0
+    value: 0
+  TargetRecalibrationDelay: 0
+  targetRecalibrationDelay:
     use: 0
     value: 0
   AimLayers:
@@ -4246,11 +4367,13 @@ MonoBehaviour:
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  SlamHoldDuration: 0.25
+  specificMeshColliders: []
+  meleeHitboxes: []
+  SlamHoldDuration: 0.15
   slamHoldDuration:
     use: 0
     value: 0
-  SlamDamage: 1
+  SlamDamage: 2
   slamDamage:
     use: 0
     value: 0
@@ -4291,6 +4414,10 @@ MonoBehaviour:
   team: 2
   MaxHealth: 120
   maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
     use: 0
     value: 0
   visualsToFlash: []
@@ -4359,6 +4486,17 @@ MonoBehaviour:
   infiniteShield:
     use: 0
     value: 0
+  shieldBashDamage: 15
+  customBashDamage:
+    use: 0
+    value: 0
+  shieldBashKnockbackForce: 500
+  bashRadius: 2.5
+  bashTargetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  bashSound: {fileID: 0}
+  bashVfxPrefab: {fileID: 0}
   healAmountOnBlock: 5
   inputMode: 0
   autoUnlockOnStart: 0
@@ -4611,11 +4749,13 @@ MonoBehaviour:
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  SlamHoldDuration: 0.25
+  specificMeshColliders: []
+  meleeHitboxes: []
+  SlamHoldDuration: 0.15
   slamHoldDuration:
     use: 0
     value: 0
-  SlamDamage: 1
+  SlamDamage: 2
   slamDamage:
     use: 0
     value: 0
@@ -4656,6 +4796,10 @@ MonoBehaviour:
   team: 2
   MaxHealth: 120
   maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
     use: 0
     value: 0
   visualsToFlash: []
@@ -4898,11 +5042,13 @@ MonoBehaviour:
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  SlamHoldDuration: 0.25
+  specificMeshColliders: []
+  meleeHitboxes: []
+  SlamHoldDuration: 0.15
   slamHoldDuration:
     use: 0
     value: 0
-  SlamDamage: 1
+  SlamDamage: 2
   slamDamage:
     use: 0
     value: 0
@@ -4943,6 +5089,10 @@ MonoBehaviour:
   team: 2
   MaxHealth: 120
   maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
     use: 0
     value: 0
   visualsToFlash: []
@@ -5165,6 +5315,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
+  ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 1
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 6882175535980379663}
@@ -5192,6 +5343,18 @@ MonoBehaviour:
     value: 0
   InfiniteAmmo: 0
   infiniteAmmo:
+    use: 0
+    value: 0
+  BurstShotsCapacity: 0
+  burstShotsCapacity:
+    use: 0
+    value: 0
+  BurstCooldownDuration: 0
+  burstCooldownDuration:
+    use: 0
+    value: 0
+  TargetRecalibrationDelay: 0
+  targetRecalibrationDelay:
     use: 0
     value: 0
   AimLayers:
@@ -5222,6 +5385,10 @@ MonoBehaviour:
   team: 2
   MaxHealth: 120
   maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
     use: 0
     value: 0
   visualsToFlash: []
@@ -5462,11 +5629,13 @@ MonoBehaviour:
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  SlamHoldDuration: 0.25
+  specificMeshColliders: []
+  meleeHitboxes: []
+  SlamHoldDuration: 0.15
   slamHoldDuration:
     use: 0
     value: 0
-  SlamDamage: 1
+  SlamDamage: 2
   slamDamage:
     use: 0
     value: 0
@@ -5507,6 +5676,10 @@ MonoBehaviour:
   team: 2
   MaxHealth: 120
   maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
     use: 0
     value: 0
   visualsToFlash: []
@@ -5750,11 +5923,13 @@ MonoBehaviour:
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
-  SlamHoldDuration: 0.25
+  specificMeshColliders: []
+  meleeHitboxes: []
+  SlamHoldDuration: 0.15
   slamHoldDuration:
     use: 0
     value: 0
-  SlamDamage: 1
+  SlamDamage: 2
   slamDamage:
     use: 0
     value: 0
@@ -5795,6 +5970,10 @@ MonoBehaviour:
   team: 2
   MaxHealth: 120
   maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
     use: 0
     value: 0
   visualsToFlash: []
@@ -5896,6 +6075,17 @@ MonoBehaviour:
   infiniteShield:
     use: 0
     value: 0
+  shieldBashDamage: 15
+  customBashDamage:
+    use: 0
+    value: 0
+  shieldBashKnockbackForce: 500
+  bashRadius: 2.5
+  bashTargetLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  bashSound: {fileID: 0}
+  bashVfxPrefab: {fileID: 0}
   healAmountOnBlock: 5
   inputMode: 0
   autoUnlockOnStart: 0

@@ -202,6 +202,22 @@ namespace Runtime.Scripts.Balance
         [Range(1, 100)] public int difficultyLevel = 1;
         [Range(1, 10)] public int aggroMultiplier = 1;
         [Range(1, 10)] public int growthFactor = 2;
+        [Range(1, 10)] public int combatPacingMultiplier = 3;  // Multiplicador de daño para combates más dinámicos y rápidos
+        [Range(1, 10)] public int healthScalingDivider = 3;     // Divisor para ajustar y reducir la vida excesiva de enemigos
+
+        [Header("Advanced Combat Pacing & Time Metrics")]
+        [Tooltip("Mínimo de golpes necesarios para derrotar a un enemigo básico (Mínimo absoluto: 1)")]
+        [Range(1, 5)] public int targetMinHitsToKill = 2;
+        [Tooltip("Máximo de golpes permitidos para derrotar a un jefe o final boss (Cota para evitar fatiga de combate)")]
+        [Range(5, 50)] public int targetMaxBossHits = 20;
+        [Tooltip("Tiempo mínimo deseado para una batalla final / clímax (en segundos)")]
+        public int minFinalBattleDurationSeconds = 30;
+        [Tooltip("Tiempo máximo límite para una batalla antes de volverse tediosa y dropeable (en segundos)")]
+        public int maxFinalBattleDurationSeconds = 120;
+        [Tooltip("Tiempo promedio deseado por batalla individual / encuentro estándar (en segundos)")]
+        public int individualBattleDurationSeconds = 12;
+        [Tooltip("Tiempo objetivo para estilo Speedrun / Rush (en segundos)")]
+        public int speedrunBattleDurationSeconds = 5;
 
         public int DifficultyLevel => difficultyLevel;
         public int AggroMultiplier => aggroMultiplier;
@@ -232,10 +248,30 @@ namespace Runtime.Scripts.Balance
         [SerializeField] private GameObject propMineralPrefab;
         [SerializeField] private GameObject propPlantPrefab;
 
-        private const int MIN_BASE_HEALTH = 1;
-        private const int MIN_BASE_DAMAGE = 1;
+        // --- CRITERIOS FUNDAMENTADOS DE BALANCE DE COMBATE ---
+        // 1. PLAYER_MIN_SURVIVAL_HEALTH (250 HP): Garantiza un Time-To-Kill (TTK) equilibrado donde el jugador
+        //    puede resistir 10-15 impactos estándar de enemigos (con daño promedio de 15-25),
+        //    dando margen táctico para usar dash, cobertura e ítems curativos.
+        private const int PLAYER_MIN_SURVIVAL_HEALTH = 250;
+
+        // 2. ENEMY_MIN_TACTICAL_HEALTH (40 HP): Asegura que un enemigo básico caiga en 2-4 impactos
+        //    de un arma estándar del jugador (daño 15-25), evitando enemigos "esponja de balas"
+        //    y manteniendo un ritmo de combate rápido y ágil.
+        private const int ENEMY_MIN_TACTICAL_HEALTH = 40;
+
+        // 3. MIN_BASE_DAMAGE (10 Daño): Establece una penalización real por error táctico.
+        //    El daño enemigo debe ser lo suficientemente significativo para exigir atención,
+        //    evitando combates triviales donde el daño es insignificante.
+        private const int MIN_BASE_DAMAGE = 10;
+
+        // 4. MIN_BASE_SPEED (5 Velocidad): Asegura que la movilidad básica permita la maniobrabilidad
+        //    y técnicas de kiting frente a la IA enemiga.
+        private const int MIN_BASE_SPEED = 5;
+
+        // 5. PROP_MIN_DURABILITY (50 HP): Garantiza que los elementos del entorno (árboles, edificios, minerales)
+        //    tengan una resistencia lógica que soporte múltiples golpes antes de destruirse.
+        private const int PROP_MIN_DURABILITY = 50;
         private const int MIN_BASE_DEFENSE = 0;
-        private const int MIN_BASE_SPEED = 1;
 
         private const int BASE_EXP_TO_LEVEL = 100;
         private const int BASE_DETECTION_RADIUS = 15;
@@ -820,7 +856,7 @@ namespace Runtime.Scripts.Balance
 
             int difficultyFactor = 1 + difficultyLevel;
             int baseThreat = SafeMultiply(threat, difficultyFactor);
-            return Math.Max(MIN_BASE_HEALTH, SafeMultiply(baseThreat, aggroMultiplier));
+            return Math.Max(ENEMY_MIN_TACTICAL_HEALTH, SafeMultiply(baseThreat, aggroMultiplier));
         }
 
         private const int MAX_PROP_HEALTH = 10000;
@@ -840,7 +876,7 @@ namespace Runtime.Scripts.Balance
             int itemCount = Math.Max(1, itemSpawnPoints.Count);
 
             int scaledVal = SafeMultiply(totalThreat, 100) / itemCount;
-            int baseItemVal = SafeMultiply(scaledVal / 100, MIN_BASE_HEALTH);
+            int baseItemVal = SafeMultiply(scaledVal / 100, ENEMY_MIN_TACTICAL_HEALTH);
 
             int categoryFactor = 1 + (int)category;
             return Math.Max(1, SafeMultiply(baseItemVal, categoryFactor));
@@ -851,26 +887,21 @@ namespace Runtime.Scripts.Balance
             int typeVal = (int)enemyType;
             int typeFactor = 1 + typeVal;
 
-            int spatialFactor = totalSpawns > 1 ? (spawnIndex * 10 / (totalSpawns - 1)) : 10;
-            int itemCompensation = 1 + itemSpawnPoints.Count;
+            int pacingMult = Math.Max(1, combatPacingMultiplier);
+            int minHits = Math.Max(1, targetMinHitsToKill);
+            int maxBossHits = Math.Max(minHits, targetMaxBossHits);
 
-            int powGrowth = 1;
-            for (int p = 0; p < difficultyLevel; p++)
-            {
-                powGrowth = SafeMultiply(powGrowth, Math.Max(1, growthFactor));
-            }
-
-            int baseHealthCalc = SafeMultiply(MIN_BASE_HEALTH, typeFactor);
-            int healthStep1 = SafeMultiply(baseHealthCalc, powGrowth);
-            int healthStep2 = SafeMultiply(healthStep1, itemCompensation);
-            int spatialScaled = 10 + SafeMultiply(spatialFactor, aggroMultiplier);
-            int healthStep3 = SafeMultiply(healthStep2, spatialScaled);
-            int health = Math.Max(MIN_BASE_HEALTH, Math.Min(MAX_ENTITY_HEALTH, healthStep3 / 10));
+            // Criterio Fundamentado: Salud del enemigo basada en Hits-to-Kill (HTK) y Pacing de Tiempo
+            int hitMultiplier = typeVal >= 2 ? maxBossHits : minHits;
+            int baseEnemyHp = ENEMY_MIN_TACTICAL_HEALTH; // 40
+            int difficultyBonus = difficultyLevel * 15;
+            int health = Math.Max(ENEMY_MIN_TACTICAL_HEALTH, (baseEnemyHp * (1 + typeVal)) + (hitMultiplier * 12) + difficultyBonus);
 
             int diffFactor = 1 + difficultyLevel;
             int damageStep1 = SafeMultiply(MIN_BASE_DAMAGE, typeFactor);
             int damageStep2 = SafeMultiply(damageStep1, diffFactor);
-            int damage = Math.Max(MIN_BASE_DAMAGE, SafeMultiply(damageStep2, aggroMultiplier));
+            int baseDmg = SafeMultiply(damageStep2, aggroMultiplier);
+            int damage = Math.Max(2, SafeMultiply(baseDmg, pacingMult));
 
             int speed = Math.Max(MIN_BASE_SPEED, MIN_BASE_SPEED + Math.Max(0, 4 - typeVal));
             int defense = Math.Min(80, Math.Max(MIN_BASE_DEFENSE, MIN_BASE_DEFENSE + (typeVal * 5) + (difficultyLevel * 2)));
@@ -888,7 +919,7 @@ namespace Runtime.Scripts.Balance
             int expStep = SafeMultiply(baseExp, diffFactor);
             int exp = Math.Max(1, SafeMultiply(expStep, aggroMultiplier));
 
-            int nextExp = Math.Max(1, SafeMultiply(BASE_EXP_TO_LEVEL, powGrowth));
+            int nextExp = Math.Max(1, BASE_EXP_TO_LEVEL + (difficultyLevel * 50));
             int atkPerLvl = Math.Max(1, 1 + typeVal);
             int defPerLvl = Math.Max(1, 1 + typeVal);
 
@@ -1004,20 +1035,9 @@ namespace Runtime.Scripts.Balance
             int typeVal = (int)playerType;
             int userFactor = 1 + typeVal;
 
-            int totalThreat = GetTotalEnemyThreatWeight();
-            int itemCount = Math.Max(1, itemSpawnPoints.Count);
-            int scaledRatio = SafeMultiply(totalThreat, 100) / itemCount;
-            int threatToItemsRatio = Math.Max(1, scaledRatio / 100);
-
-            int powGrowth = 1;
-            for (int p = 0; p < difficultyLevel; p++)
-            {
-                powGrowth = SafeMultiply(powGrowth, Math.Max(1, growthFactor));
-            }
-
-            int healthCalc = SafeMultiply(MIN_BASE_HEALTH, userFactor);
-            int healthStep = SafeMultiply(healthCalc, powGrowth);
-            int health = Math.Max(MIN_BASE_HEALTH, Math.Min(MAX_ENTITY_HEALTH, SafeMultiply(healthStep, threatToItemsRatio)));
+            // Criterio Fundamentado: Salud del jugador con progresión lineal controlada por nivel de dificultad
+            int basePlayerHp = PLAYER_MIN_SURVIVAL_HEALTH; // 250
+            int health = basePlayerHp + (difficultyLevel * 25);
 
             int diffFactor = 1 + difficultyLevel;
             int dmgStep1 = SafeMultiply(MIN_BASE_DAMAGE, userFactor);
@@ -1036,7 +1056,7 @@ namespace Runtime.Scripts.Balance
             int shield = Math.Max(1, BASE_SHIELD_CAPACITY * userFactor);
             int fuel = Math.Max(1, BASE_FUEL_CAPACITY * userFactor);
 
-            int nextExp = Math.Max(1, SafeMultiply(BASE_EXP_TO_LEVEL, powGrowth));
+            int nextExp = Math.Max(1, BASE_EXP_TO_LEVEL + (difficultyLevel * 50));
             int atkPerLvl = Math.Max(1, 2 + typeVal);
             int defPerLvl = Math.Max(1, 2 + typeVal);
 
@@ -1092,10 +1112,10 @@ namespace Runtime.Scripts.Balance
             int propFactor = 1 + propVal;
             int sceneThreat = GetTotalEnemyThreatWeight();
 
-            int step1 = SafeMultiply(MIN_BASE_HEALTH, propFactor);
+            int step1 = SafeMultiply(PROP_MIN_DURABILITY, propFactor);
             int step2 = SafeMultiply(step1, DEFAULT_PROP_HEALTH_MULT);
             int rawHealth = SafeMultiply(step2, Math.Max(1, sceneThreat));
-            int health = Math.Max(MIN_BASE_HEALTH, Math.Min(MAX_PROP_HEALTH, rawHealth));
+            int health = Math.Max(PROP_MIN_DURABILITY, Math.Min(MAX_PROP_HEALTH, rawHealth));
 
             ItemType propLootType = category == PropType.Tree ? ItemType.Resource : ItemType.Thing;
             int destDmg = category == PropType.Building ? SafeMultiply(50, difficultyLevel) : 0;
