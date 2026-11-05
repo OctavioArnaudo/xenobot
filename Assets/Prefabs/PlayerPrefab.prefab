@@ -458,13 +458,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 1
-  MaxHealth: 100
+  MaxHealth: 250
   maxHealth:
-    use: 1
+    use: 0
     value: 100
-  CurrentHealth: 100
+  CurrentHealth: 250
   currentHealth:
-    use: 1
+    use: 0
     value: 100
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
@@ -784,7 +784,7 @@ MonoBehaviour:
   AttackDamage: 2
   attackDamage:
     use: 0
-    value: 0
+    value: 20
   AttackCooldown: 0.8
   attackCooldown:
     use: 0

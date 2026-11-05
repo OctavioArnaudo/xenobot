@@ -7,6 +7,7 @@ using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Optional;
 using Runtime.Scripts.Player;
+using Runtime.Scripts.Shoot;
 
 namespace Runtime.Scripts.Projectile
 {
@@ -197,7 +198,30 @@ namespace Runtime.Scripts.Projectile
         public ProjectileType EffectiveType => type.GetValue(DEFAULT_TYPE);
         public bool EffectiveAutoRandomize => autoRandomize.GetValue(DEFAULT_AUTO_RANDOMIZE);
         public float EffectiveSpeed => speed.GetValue(EffectiveType == ProjectileType.RayoContinuo ? DEFAULT_SPEED * 2.2f : DEFAULT_SPEED);
-        public float EffectiveDamage => damage.GetValue(DEFAULT_DAMAGE);
+        public float EffectiveDamage
+        {
+            get
+            {
+                if (damage.use) return damage.value;
+
+                // Jerarquía ascendente 1: Consultar al lanzador (ShootController del owner)
+                if (m_Owner != null)
+                {
+                    var shooter = m_Owner.GetComponent<ShootController>() ?? m_Owner.GetComponentInChildren<ShootController>();
+                    if (shooter != null) return shooter.EffectiveDamage;
+
+                    // Jerarquía ascendente 2: Consultar las estadísticas de Balance del owner
+                    var balance = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(m_Owner) : default;
+                    if (balance.attackDamage.use) return balance.attackDamage.value;
+                }
+
+                // Jerarquía ascendente 3: Consultar Balance del propio proyectil o fallback predeterminado
+                var selfBalance = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
+                if (selfBalance.attackDamage.use) return (float)selfBalance.attackDamage.value;
+
+                return Damage > 0f ? Damage : DEFAULT_DAMAGE;
+            }
+        }
         public float EffectiveLifeTime => lifeTime.GetValue(DEFAULT_LIFETIME);
         public float EffectiveHomingTurnSpeed => homingTurnSpeed.GetValue(DEFAULT_HOMING_TURN_SPEED);
         public float EffectiveDetectionRadius => detectionRadius.GetValue(DEFAULT_DETECTION_RADIUS);

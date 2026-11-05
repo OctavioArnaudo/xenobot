@@ -198,29 +198,22 @@ namespace Runtime.Scripts.Balance
         public event Action<GameObject, ItemType, int> OnLootDropped;
         public event Action<GameObject> OnEntityRecycled;
 
-        [Header("Balance Parameters")]
-        [Range(1, 100)] public int difficultyLevel = 1;
-        [Range(1, 10)] public int aggroMultiplier = 1;
-        [Range(1, 10)] public int growthFactor = 2;
-        [Range(1, 10)] public int combatPacingMultiplier = 3;  // Multiplicador de daño para combates más dinámicos y rápidos
-        [Range(1, 10)] public int healthScalingDivider = 3;     // Divisor para ajustar y reducir la vida excesiva de enemigos
+        // --- MOTOR DE BALANCE Y MÉTRICAS DE PACING PRIVADAS E INTERNAS (Deterministas y No Sobrescribibles) ---
+        private const int DIFFICULTY_LEVEL = 1;
+        private const int AGGRO_MULTIPLIER = 1;
+        private const int GROWTH_FACTOR = 2;
+        private const int COMBAT_PACING_MULTIPLIER = 3;
+        private const int HEALTH_SCALING_DIVIDER = 3;
 
-        [Header("Advanced Combat Pacing & Time Metrics")]
-        [Tooltip("Mínimo de golpes necesarios para derrotar a un enemigo básico (Mínimo absoluto: 1)")]
-        [Range(1, 5)] public int targetMinHitsToKill = 2;
-        [Tooltip("Máximo de golpes permitidos para derrotar a un jefe o final boss (Cota para evitar fatiga de combate)")]
-        [Range(5, 50)] public int targetMaxBossHits = 20;
-        [Tooltip("Tiempo mínimo deseado para una batalla final / clímax (en segundos)")]
-        public int minFinalBattleDurationSeconds = 30;
-        [Tooltip("Tiempo máximo límite para una batalla antes de volverse tediosa y dropeable (en segundos)")]
-        public int maxFinalBattleDurationSeconds = 120;
-        [Tooltip("Tiempo promedio deseado por batalla individual / encuentro estándar (en segundos)")]
-        public int individualBattleDurationSeconds = 12;
-        [Tooltip("Tiempo objetivo para estilo Speedrun / Rush (en segundos)")]
-        public int speedrunBattleDurationSeconds = 5;
+        private const int TARGET_MIN_HITS_TO_KILL = 2;
+        private const int TARGET_MAX_BOSS_HITS = 20;
+        private const int MIN_FINAL_BATTLE_DURATION_SECONDS = 30;
+        private const int MAX_FINAL_BATTLE_DURATION_SECONDS = 120;
+        private const int INDIVIDUAL_BATTLE_DURATION_SECONDS = 12;
+        private const int SPEEDRUN_BATTLE_DURATION_SECONDS = 5;
 
-        public int DifficultyLevel => difficultyLevel;
-        public int AggroMultiplier => aggroMultiplier;
+        public int DifficultyLevel => DIFFICULTY_LEVEL;
+        public int AggroMultiplier => AGGRO_MULTIPLIER;
 
         [Header("Spawn Setup")]
         [SerializeField] private List<UserSpawnPointData> userSpawnPoints = new List<UserSpawnPointData>();
@@ -368,7 +361,7 @@ namespace Runtime.Scripts.Balance
 
         private float CalculateCalibrationDistance()
         {
-            return DEFAULT_CALIBRATION_DISTANCE + (difficultyLevel * 2.0f);
+            return DEFAULT_CALIBRATION_DISTANCE + (DIFFICULTY_LEVEL * 2.0f);
         }
 
         public float GetVerticalGroundOffset(GameObject entity)
@@ -854,9 +847,9 @@ namespace Runtime.Scripts.Balance
                 threat += 1 + (int)type;
             }
 
-            int difficultyFactor = 1 + difficultyLevel;
+            int difficultyFactor = 1 + DIFFICULTY_LEVEL;
             int baseThreat = SafeMultiply(threat, difficultyFactor);
-            return Math.Max(ENEMY_MIN_TACTICAL_HEALTH, SafeMultiply(baseThreat, aggroMultiplier));
+            return Math.Max(ENEMY_MIN_TACTICAL_HEALTH, SafeMultiply(baseThreat, AGGRO_MULTIPLIER));
         }
 
         private const int MAX_PROP_HEALTH = 10000;
@@ -887,26 +880,25 @@ namespace Runtime.Scripts.Balance
             int typeVal = (int)enemyType;
             int typeFactor = 1 + typeVal;
 
-            int pacingMult = Math.Max(1, combatPacingMultiplier);
-            int minHits = Math.Max(1, targetMinHitsToKill);
-            int maxBossHits = Math.Max(minHits, targetMaxBossHits);
+            int minHits = Math.Max(1, TARGET_MIN_HITS_TO_KILL); // 2
+            int maxBossHits = Math.Max(minHits, TARGET_MAX_BOSS_HITS); // 20
 
-            // Criterio Fundamentado: Salud del enemigo basada en Hits-to-Kill (HTK) y Pacing de Tiempo
-            int hitMultiplier = typeVal >= 2 ? maxBossHits : minHits;
-            int baseEnemyHp = ENEMY_MIN_TACTICAL_HEALTH; // 40
-            int difficultyBonus = difficultyLevel * 15;
-            int health = Math.Max(ENEMY_MIN_TACTICAL_HEALTH, (baseEnemyHp * (1 + typeVal)) + (hitMultiplier * 12) + difficultyBonus);
+            // Criterio Fundamentado: Sincronización exacta de Hits-to-Kill (HTK)
+            // Asumiendo un daño base del jugador de ~20:
+            // - Enemigos grunts (Melee/Range) caen en 2 a 3 golpes (40 - 60 HP).
+            // - Enemigos Híbridos/Bosses caen en maxBossHits golpes (400 HP).
+            int estimatedPlayerDamage = 20;
+            int targetHits = typeVal >= 2 ? maxBossHits : minHits;
+            int health = estimatedPlayerDamage * targetHits;
 
-            int diffFactor = 1 + difficultyLevel;
-            int damageStep1 = SafeMultiply(MIN_BASE_DAMAGE, typeFactor);
-            int damageStep2 = SafeMultiply(damageStep1, diffFactor);
-            int baseDmg = SafeMultiply(damageStep2, aggroMultiplier);
-            int damage = Math.Max(2, SafeMultiply(baseDmg, pacingMult));
+            // Criterio Fundamentado: Daño del enemigo calibrado para que el jugador sea derrotado en múltiples intercambios
+            int baseEnemyDmg = 15;
+            int damage = Math.Max(MIN_BASE_DAMAGE, baseEnemyDmg * typeFactor); // Melee = 30, Range = 45, etc.
 
             int speed = Math.Max(MIN_BASE_SPEED, MIN_BASE_SPEED + Math.Max(0, 4 - typeVal));
-            int defense = Math.Min(80, Math.Max(MIN_BASE_DEFENSE, MIN_BASE_DEFENSE + (typeVal * 5) + (difficultyLevel * 2)));
+            int defense = Math.Min(80, Math.Max(MIN_BASE_DEFENSE, MIN_BASE_DEFENSE + (typeVal * 5) + (DIFFICULTY_LEVEL * 2)));
 
-            int detRadius = Math.Max(1, BASE_DETECTION_RADIUS + (typeVal * 5) + (difficultyLevel * 2));
+            int detRadius = Math.Max(1, BASE_DETECTION_RADIUS + (typeVal * 5) + (DIFFICULTY_LEVEL * 2));
             int sRange = enemyType == HostType.Range || enemyType == HostType.Hybrid ? Math.Max(1, BASE_SHOOT_RANGE + (typeVal * 3)) : 0;
             int mRange = enemyType == HostType.Melee || enemyType == HostType.Hybrid ? Math.Max(1, BASE_MELEE_RANGE + typeVal) : 0;
             int wRadius = Math.Max(1, BASE_WANDER_RADIUS + (typeVal * 2));
@@ -915,11 +907,12 @@ namespace Runtime.Scripts.Balance
             int shield = typeVal >= 2 ? Math.Max(1, BASE_SHIELD_CAPACITY + (typeVal * 15)) : 0;
             int fuel = Math.Max(1, BASE_FUEL_CAPACITY + (typeVal * 20));
 
+            int diffFactor = 1 + DIFFICULTY_LEVEL;
             int baseExp = 10 + SafeMultiply(typeVal, 15);
             int expStep = SafeMultiply(baseExp, diffFactor);
-            int exp = Math.Max(1, SafeMultiply(expStep, aggroMultiplier));
+            int exp = Math.Max(1, SafeMultiply(expStep, AGGRO_MULTIPLIER));
 
-            int nextExp = Math.Max(1, BASE_EXP_TO_LEVEL + (difficultyLevel * 50));
+            int nextExp = Math.Max(1, BASE_EXP_TO_LEVEL + (DIFFICULTY_LEVEL * 50));
             int atkPerLvl = Math.Max(1, 1 + typeVal);
             int defPerLvl = Math.Max(1, 1 + typeVal);
 
@@ -928,13 +921,13 @@ namespace Runtime.Scripts.Balance
             int dropChance = Math.Min(100, 50 + (typeVal * 15));
 
             // Variables de Combate, Movimiento Aéreo, Escudos y Ataques Especiales (Enteros)
-            int cd = Math.Max(100, 2000 - (typeVal * 300) - (difficultyLevel * 50));
-            int physRes = Math.Min(90, (typeVal * 10) + (difficultyLevel * 2));
-            int nrgRes = Math.Min(90, (typeVal * 8) + (difficultyLevel * 3));
-            int expRes = Math.Min(90, (typeVal * 5) + (difficultyLevel * 4));
+            int cd = Math.Max(100, 2000 - (typeVal * 300) - (DIFFICULTY_LEVEL * 50));
+            int physRes = Math.Min(90, (typeVal * 10) + (DIFFICULTY_LEVEL * 2));
+            int nrgRes = Math.Min(90, (typeVal * 8) + (DIFFICULTY_LEVEL * 3));
+            int expRes = Math.Min(90, (typeVal * 5) + (DIFFICULTY_LEVEL * 4));
             int rRadius = Math.Max(1, BASE_WANDER_RADIUS + (typeVal * 3));
             int rThreshold = Math.Min(100, 15 + (typeVal * 5));
-            int skillChance = Math.Min(100, 10 + (typeVal * 15) + (difficultyLevel * 2));
+            int skillChance = Math.Min(100, 10 + (typeVal * 15) + (DIFFICULTY_LEVEL * 2));
 
             int jHeight = 2;
             int mJumps = typeVal >= 2 ? 2 : 1;
@@ -944,7 +937,7 @@ namespace Runtime.Scripts.Balance
 
             int sDamage = SafeMultiply(damage, 2);
             int sRadius = 5;
-            int fireRate = Math.Max(50, 1000 - SafeMultiply(typeVal, 100) - SafeMultiply(difficultyLevel, 10));
+            int fireRate = Math.Max(50, 1000 - SafeMultiply(typeVal, 100) - SafeMultiply(DIFFICULTY_LEVEL, 10));
             int spread = Math.Max(0, 15 - (typeVal * 3));
 
             int sRegen = SafeMultiply(2, typeFactor);
@@ -952,8 +945,8 @@ namespace Runtime.Scripts.Balance
             int sAngle = 90;
 
             int burstCapacity = (enemyType == HostType.Range || enemyType == HostType.Hybrid) ? Math.Max(3, 5 + (typeVal * 2)) : 1;
-            int burstCd = Math.Max(300, 1500 - (typeVal * 200) + (difficultyLevel * 100));
-            int recalibrateDelay = Math.Max(400, 800 + (difficultyLevel * 100));
+            int burstCd = Math.Max(300, 1500 - (typeVal * 200) + (DIFFICULTY_LEVEL * 100));
+            int recalibrateDelay = Math.Max(400, 800 + (DIFFICULTY_LEVEL * 100));
             int maxFireDuration = Math.Max(2, 4 + typeVal);
 
             return new StatSpawnPointData
@@ -1007,7 +1000,7 @@ namespace Runtime.Scripts.Balance
         {
             int baseVal = CalculateItemValue(category);
             int mag = baseVal;
-            int rarity = Math.Max(1, 100 - ((int)category * 20) - (difficultyLevel * 5));
+            int rarity = Math.Max(1, 100 - ((int)category * 20) - (DIFFICULTY_LEVEL * 5));
 
             int hRest = category == ItemType.Consumible ? SafeMultiply(mag, 2) : 0;
             int fRest = category == ItemType.Resource ? SafeMultiply(mag, 3) : 0;
@@ -1037,15 +1030,15 @@ namespace Runtime.Scripts.Balance
 
             // Criterio Fundamentado: Salud del jugador con progresión lineal controlada por nivel de dificultad
             int basePlayerHp = PLAYER_MIN_SURVIVAL_HEALTH; // 250
-            int health = basePlayerHp + (difficultyLevel * 25);
+            int health = basePlayerHp + (DIFFICULTY_LEVEL * 25);
 
-            int diffFactor = 1 + difficultyLevel;
+            int diffFactor = 1 + DIFFICULTY_LEVEL;
             int dmgStep1 = SafeMultiply(MIN_BASE_DAMAGE, userFactor);
             int dmgStep2 = SafeMultiply(dmgStep1, diffFactor);
-            int damage = Math.Max(MIN_BASE_DAMAGE, SafeMultiply(dmgStep2, aggroMultiplier));
+            int damage = Math.Max(MIN_BASE_DAMAGE, SafeMultiply(dmgStep2, AGGRO_MULTIPLIER));
 
             int speed = Math.Max(MIN_BASE_SPEED, MIN_BASE_SPEED + 6);
-            int defense = Math.Min(85, Math.Max(MIN_BASE_DEFENSE, MIN_BASE_DEFENSE + (typeVal * 5) + (difficultyLevel * 2)));
+            int defense = Math.Min(85, Math.Max(MIN_BASE_DEFENSE, MIN_BASE_DEFENSE + (typeVal * 5) + (DIFFICULTY_LEVEL * 2)));
 
             int detRadius = Math.Max(1, BASE_DETECTION_RADIUS * 2);
             int sRange = Math.Max(1, BASE_SHOOT_RANGE * 2);
@@ -1056,7 +1049,7 @@ namespace Runtime.Scripts.Balance
             int shield = Math.Max(1, BASE_SHIELD_CAPACITY * userFactor);
             int fuel = Math.Max(1, BASE_FUEL_CAPACITY * userFactor);
 
-            int nextExp = Math.Max(1, BASE_EXP_TO_LEVEL + (difficultyLevel * 50));
+            int nextExp = Math.Max(1, BASE_EXP_TO_LEVEL + (DIFFICULTY_LEVEL * 50));
             int atkPerLvl = Math.Max(1, 2 + typeVal);
             int defPerLvl = Math.Max(1, 2 + typeVal);
 
@@ -1118,7 +1111,7 @@ namespace Runtime.Scripts.Balance
             int health = Math.Max(PROP_MIN_DURABILITY, Math.Min(MAX_PROP_HEALTH, rawHealth));
 
             ItemType propLootType = category == PropType.Tree ? ItemType.Resource : ItemType.Thing;
-            int destDmg = category == PropType.Building ? SafeMultiply(50, difficultyLevel) : 0;
+            int destDmg = category == PropType.Building ? SafeMultiply(50, DIFFICULTY_LEVEL) : 0;
             int destRad = category == PropType.Building ? 10 : 0;
             int reqDmgType = category == PropType.Building ? 2 : 0;
 
