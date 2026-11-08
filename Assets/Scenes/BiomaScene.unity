@@ -1699,7 +1699,7 @@ MonoBehaviour:
   - key: {fileID: 1729981758}
     terminal: {fileID: 1482448864}
     keyText: "Este chip de memoria puede ser reparado para recuperar informaci\xF3n
-      del pasado"
+      del pasado, tambi\xE9n otorga acceso al arsenal de mascaras de asalto"
     openText: Mascara activada; Portal desplegado al siguiente objetivo
     keyGoal: 
     openGoal: 
@@ -1733,8 +1733,9 @@ MonoBehaviour:
   - key: {fileID: 1369784270}
     terminal: {fileID: 644866038}
     keyText: "Esta m\xE1scara permite desplegar operaciones de rescate o combate
-      escaramuza"
-    openText: El desnivel es una muestra del poder nuclear que acabo con la humanidad
+      escaramuza. adem\xE1s confiere autoridad para activacion de la siguiente mascara"
+    openText: El desnivel es una muestra del poder nuclear que acabo con la humanidad.
+      El siguiente objetivo esta al NorOeste del laboratorio central
     keyGoal: 
     openGoal: 
     onOpen:
@@ -1754,7 +1755,8 @@ MonoBehaviour:
           m_CallState: 2
   - key: {fileID: 238148568}
     terminal: {fileID: 1310381043}
-    keyText: "Esta m\xE1scara otorga potencia de ataque"
+    keyText: "Esta m\xE1scara otorga potencia de ataque, me servira para abrirme
+      paso hasta el laboratorio de los embriones"
     openText: el sentido de nuestra mision, eclosionar los embriones en la incubadora;
       El nuevo portal se ha desplegado muy cerca de aqui hacia el nuevo objetivo
     keyGoal: 
@@ -1788,7 +1790,8 @@ MonoBehaviour:
           m_CallState: 2
   - key: {fileID: 1408411318}
     terminal: {fileID: 389148614}
-    keyText: El futuro de la raza humana depende de estos embriones
+    keyText: El futuro de la raza humana depende de estos embriones, Debo Llevarlos
+      a salvo para que la incubadora active el crecimiento
     openText: Fallo el sistema de regriferacion! solo restan 2 hembriones, debo apresurarme
       a buscar el combustible necesario para encencer la nave!; Para encontrarlo
       debo alcanzar el portal que acaba de activarse muy cerca de aqui
@@ -1824,7 +1827,7 @@ MonoBehaviour:
   - key: {fileID: 1468774466}
     terminal: {fileID: 29468383}
     keyText: "Este cargamento deber\xEDa ser suficiente para la producir ignicion
-      de los motores"
+      de los motores. La Nave se Encuentra NorEste desde el laboratorio Central"
     openText: Preparandose para el despegue
     keyGoal: 
     openGoal: 
