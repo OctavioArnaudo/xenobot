@@ -18,6 +18,7 @@ using Runtime.Scripts.Balance;
 using Runtime.Scripts.Hook;
 using Runtime.Scripts.Defeat;
 using Runtime.Scripts.Keys;
+using Runtime.Scripts.Zoom;
 
 namespace Runtime.Scripts.Player
 {
@@ -81,6 +82,15 @@ namespace Runtime.Scripts.Player
         public Vector3 defaultShoulderOffset = new Vector3(0.35f, 0.0f, 0.0f);
         public bool toggleAim = false;
 
+        [Header("Camara de hombro (clic derecho)")]
+        [Tooltip("Camara normal: personaje levemente a la izquierda, mira central libre.")] public Vector3 shoulderOffset = new Vector3(0.9f, 0.3f, 0f);
+        public float shoulderDistance = 3.8f;
+        [Tooltip("Apuntando (clic derecho): mas cerca y mas enfocado.")] public Vector3 shoulderAimOffset = new Vector3(1.0f, 0.25f, 0f);
+        public float shoulderAimDistance = 2.2f;
+        public float shoulderAimFOV = 50f;
+        [Range(0.2f, 1f)] public float aimMoveSpeedMultiplier = 0.6f;
+        // aimFOV / aimCameraDistance / aimShoulderOffset ahora son la mira telescopica (clic central).
+
         [Header("Hook Settings")]
         public GameObject hookProjectilePrefab;
         public Transform hookMuzzle;
@@ -134,6 +144,7 @@ namespace Runtime.Scripts.Player
         public bool fireHeld;
         public bool fireReleased;
         public bool aim;
+        public bool scope;
         public bool hook;
         public bool crouch;
         public bool reload;
@@ -194,6 +205,7 @@ namespace Runtime.Scripts.Player
         private float _speed;
         private float _animationBlend;
         private float _targetRotation = 0.0f;
+        private Vector3 _moveDir = Vector3.forward;
         private float _rotationVelocity;
         private float _verticalVelocity;
         private float _terminalVelocity = 53.0f;
@@ -659,17 +671,19 @@ namespace Runtime.Scripts.Player
                                        (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame);
             bool aimIsHeld = (_aimAction != null && _aimAction.IsPressed()) ||
                              (Mouse.current != null && Mouse.current.rightButton.isPressed);
+            // Clic central (boton 2) -> mira telescopica
+            bool scopePressed = Mouse.current != null && Mouse.current.middleButton.wasPressedThisFrame;
+            bool scopeHeld = Mouse.current != null && Mouse.current.middleButton.isPressed;
 
             if (toggleAim)
             {
-                if (aimPressedThisFrame)
-                {
-                    aim = !aim;
-                }
+                if (scopePressed) { scope = !scope; aim = scope; }
+                else if (aimPressedThisFrame) { scope = false; aim = !aim; }
             }
             else
             {
-                aim = aimIsHeld;
+                scope = scopeHeld;
+                aim = aimIsHeld || scopeHeld;
             }
 
             // Tecla G -> Disparar Gancho
@@ -709,7 +723,7 @@ namespace Runtime.Scripts.Player
 
             if (_vcamCache == null) SetupCamera();
 
-            float targetFOV = aim ? aimFOV : normalFOV;
+            float targetFOV = scope ? aimFOV : aim ? shoulderAimFOV : normalFOV;
 
             if (_vcamCache != null)
             {
@@ -722,8 +736,9 @@ namespace Runtime.Scripts.Player
 
                 if (_vcam3rdPerson != null)
                 {
-                    float targetDistance = aim ? aimCameraDistance : defaultCameraDistance;
-                    Vector3 targetShoulderOffset = aim ? aimShoulderOffset : defaultShoulderOffset;
+                    float targetDistance = scope ? aimCameraDistance : aim ? shoulderAimDistance : shoulderDistance * ZoomController.Factor;
+                    Vector3 targetShoulderOffset = scope ? aimShoulderOffset : aim ? shoulderAimOffset : shoulderOffset;
+                    _vcam3rdPerson.CameraSide = 1f; // hombro derecho de la camara: el personaje queda a la izquierda
 
                     _vcam3rdPerson.CameraDistance = Mathf.Lerp(_vcam3rdPerson.CameraDistance, targetDistance, Time.deltaTime * 10f);
                     _vcam3rdPerson.ShoulderOffset = Vector3.Lerp(_vcam3rdPerson.ShoulderOffset, targetShoulderOffset, Time.deltaTime * 10f);
@@ -944,25 +959,31 @@ namespace Runtime.Scripts.Player
 
         private void Move()
         {
-            float targetSpeed = sprint ? SprintSpeed : MoveSpeed;
+            float targetSpeed = aim ? MoveSpeed * aimMoveSpeedMultiplier : (sprint ? SprintSpeed : MoveSpeed);
             if (move == Vector2.zero) targetSpeed = 0.0f;
 
             _speed = Mathf.Lerp(_speed, targetSpeed, Time.deltaTime * SpeedChangeRate);
             _animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, Time.deltaTime * SpeedChangeRate);
 
-            if (move != Vector2.zero)
+            if (_mainCamera == null) _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
+            float camYaw = (_mainCamera != null) ? _mainCamera.transform.eulerAngles.y : 0f;
+
+            if (aim)
             {
-                if (_mainCamera == null) _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
-                float camYaw = (_mainCamera != null) ? _mainCamera.transform.eulerAngles.y : 0f;
-
+                // Apuntando: el cuerpo mira siempre hacia donde apunta la camara y el movimiento es de costado (relativo a la camara).
+                float rot = Mathf.SmoothDampAngle(transform.eulerAngles.y, camYaw, ref _rotationVelocity, Mathf.Min(RotationSmoothTime, 0.06f));
+                transform.rotation = Quaternion.Euler(0.0f, rot, 0.0f);
+                if (move != Vector2.zero) _moveDir = Quaternion.Euler(0.0f, camYaw, 0.0f) * new Vector3(move.x, 0f, move.y);
+            }
+            else if (move != Vector2.zero)
+            {
                 _targetRotation = Mathf.Atan2(move.x, move.y) * Mathf.Rad2Deg + camYaw;
-
                 float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
                 transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
+                _moveDir = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
             }
 
-            Vector3 targetDirection = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
-            _controller.Move(targetDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+            _controller.Move(_moveDir.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
         }
 
         private void JumpAndGravity()

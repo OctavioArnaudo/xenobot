@@ -785,9 +785,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraZoom
   ShowTopMostFoldoutHeaderGroup: 1
-  minFov: 35
-  maxFov: 100
-  sensitivity: 800
+  minFactor: 0.7
+  maxFactor: 3
+  step: 0.1
   smoothSpeed: 500
 --- !u!114 &443271900
 MonoBehaviour:

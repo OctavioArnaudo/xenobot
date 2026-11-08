@@ -1,44 +1,33 @@
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
-using Unity.Cinemachine;
 
 namespace Runtime.Scripts.Zoom
 {
-
     /// <summary>
-    /// Zoom con rueda del mouse via FOV de la CinemachineCamera activa.
-    /// Attach a cualquier GameObject en la escena.
+    /// Zoom con la rueda del mouse: no toca el FOV (PlayerController lo gestiona), solo expone un factor
+    /// suave que multiplica la distancia de la camara en vista normal. Attach a cualquier GameObject.
     /// </summary>
     public class ZoomController : NetworkBehaviour
     {
-        [Header("FOV")]
-        public float minFov = 20f;
-        public float maxFov = 80f;
-        public float sensitivity = 5f;
-        public float smoothSpeed = 8f;
+        public static float Factor { get; private set; } = 1f;
 
-        CinemachineCamera _vcam;
-        float _targetFov;
+        public float minFactor = 0.7f;
+        public float maxFactor = 1.3f;
+        [Tooltip("Cambio del factor por cada click de rueda.")] public float step = 0.1f;
+        public float smoothSpeed = 10f;
 
-        void Start()
-        {
-            _vcam = FindFirstObjectByType<CinemachineCamera>();
-            if (_vcam == null) { Debug.LogWarning("[CameraZoom] No CinemachineCamera found."); return; }
-            _targetFov = _vcam.Lens.FieldOfView;
-        }
+        float _target = 1f;
+
+        void Start() => Factor = _target = 1f;
 
         void Update()
         {
-            if (_vcam == null) return;
+            float scroll = Mouse.current != null ? Mouse.current.scroll.ReadValue().y : 0f;
+            if (scroll != 0f) _target = Mathf.Clamp(_target - Mathf.Sign(scroll) * step, minFactor, maxFactor);
 
-            float scroll = Mouse.current?.scroll.ReadValue().y ?? 0f;
-            if (scroll != 0f)
-                _targetFov = Mathf.Clamp(_targetFov - scroll * sensitivity * 0.01f, minFov, maxFov);
-
-            var lens = _vcam.Lens;
-            lens.FieldOfView = Mathf.Lerp(lens.FieldOfView, _targetFov, Time.deltaTime * smoothSpeed);
-            _vcam.Lens = lens;
+            if (Mathf.Abs(Factor - _target) < 0.0005f) { Factor = _target; return; }
+            Factor = Mathf.Lerp(Factor, _target, 1f - Mathf.Exp(-smoothSpeed * Time.unscaledDeltaTime));
         }
     }
 }

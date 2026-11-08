@@ -152,14 +152,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 900052251
+  GlobalObjectIdHash: 2082353490
   InScenePlacedSourceGlobalObjectIdHash: 2082353490
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -399,6 +399,12 @@ MonoBehaviour:
   aimShoulderOffset: {x: 0.55, y: 0.05, z: 0.8}
   defaultShoulderOffset: {x: 0.35, y: 0, z: 0}
   toggleAim: 0
+  shoulderOffset: {x: 2, y: 0.3, z: 0}
+  shoulderDistance: 4
+  shoulderAimOffset: {x: 2, y: 0.25, z: 0}
+  shoulderAimDistance: 2.2
+  shoulderAimFOV: 50
+  aimMoveSpeedMultiplier: 0.6
   hookProjectilePrefab: {fileID: 987970283401832635, guid: 4acfa825610b469479174c24059b6bdd, type: 3}
   hookMuzzle: {fileID: 2129362248708108617}
   Grounded: 1
@@ -436,6 +442,7 @@ MonoBehaviour:
   fireHeld: 0
   fireReleased: 0
   aim: 0
+  scope: 0
   hook: 0
   crouch: 0
   reload: 0
