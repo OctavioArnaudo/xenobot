@@ -1700,7 +1700,7 @@ MonoBehaviour:
     terminal: {fileID: 1482448864}
     keyText: "Este chip de memoria puede ser reparado para recuperar informaci\xF3n
       del pasado"
-    openText: Mascara activada
+    openText: Mascara activada; Portal desplegado al siguiente objetivo
     keyGoal: 
     openGoal: 
     onOpen:
@@ -1755,7 +1755,8 @@ MonoBehaviour:
   - key: {fileID: 238148568}
     terminal: {fileID: 1310381043}
     keyText: "Esta m\xE1scara otorga potencia de ataque"
-    openText: el sentido de nuestra mision, eclosionar los embriones en la incubadora
+    openText: el sentido de nuestra mision, eclosionar los embriones en la incubadora;
+      El nuevo portal se ha desplegado muy cerca de aqui hacia el nuevo objetivo
     keyGoal: 
     openGoal: 
     onOpen:
@@ -1789,7 +1790,8 @@ MonoBehaviour:
     terminal: {fileID: 389148614}
     keyText: El futuro de la raza humana depende de estos embriones
     openText: Fallo el sistema de regriferacion! solo restan 2 hembriones, debo apresurarme
-      a buscar el combustible necesario para encencer la nave!
+      a buscar el combustible necesario para encencer la nave!; Para encontrarlo
+      debo alcanzar el portal que acaba de activarse muy cerca de aqui
     keyGoal: 
     openGoal: 
     onOpen:
