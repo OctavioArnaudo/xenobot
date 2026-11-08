@@ -1,4 +1,5 @@
 using UnityEngine;
+using Runtime.Scripts.Gate;
 using Unity.Netcode;
 using UnityEngine.UI;
 using TMPro;
@@ -71,6 +72,8 @@ namespace Runtime.Scripts.Credits
             CreateAdaptiveText(canvasObj.transform, titleText, titlePos, 0.12f, titleColor, true);
             CreateAdaptiveText(canvasObj.transform, developersList, contentPos, 0.45f, namesColor, false);
             CreateAdaptiveButton(canvasObj.transform, "BACK", buttonPos, ReturnToMenu, backButtonColor);
+
+            MenuGate.Reskin(canvasObj.transform); // skin metalico unificado
         }
 
         private void CreateAdaptiveText(Transform parent, string content, Vector2 anchorPos, float heightRatio, Color color, bool isUpper)

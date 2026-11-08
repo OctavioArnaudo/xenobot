@@ -1,4 +1,5 @@
 using UnityEngine;
+using Runtime.Scripts.Gate;
 using Unity.Netcode;
 using UnityEngine.UI;
 using TMPro;
@@ -190,6 +191,7 @@ namespace Runtime.Scripts.Settings
             CreateSidebarButton(sidebar.transform, "BACK", 7, ReturnToMenu, new Color(0.8f, 0.2f, 0.2f, 0.8f));
 
             ShowPanel(0);
+            MenuGate.Reskin(_rootCanvasObj.transform); // skin metalico unificado
         }
 
         private GameObject SetupAudioPanel()
@@ -402,7 +404,7 @@ namespace Runtime.Scripts.Settings
             {
                 _panels[i].SetActive(i == idx);
                 if (i < _sidebarButtonImages.Count)
-                    _sidebarButtonImages[i].color = (i == idx) ? activeButtonColor : new Color(0, 0, 0, 0);
+                    _sidebarButtonImages[i].color = (i == idx) ? Color.white : new Color(0.45f, 0.45f, 0.45f, 1f); // placa metalica: activa brillante, inactiva apagada
             }
         }
 

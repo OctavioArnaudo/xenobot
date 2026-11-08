@@ -1,5 +1,6 @@
 using Unity.Netcode;
 using UnityEngine;
+using Runtime.Scripts.Gate;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
@@ -237,6 +238,8 @@ namespace Runtime.Scripts.Lobby
             // Action Buttons
             _startButton = CreateCyberButton("StartMatchButton", _centerPanel.transform, "START", new Vector2(0, 10), neonCyan, OnClickStartMatch);
             CreateCyberButton("LeaveButton", _centerPanel.transform, "LEAVE", new Vector2(0, -75), neonMagenta, OnClickLeaveLobby);
+
+            MenuGate.Reskin(_canvasRoot.transform); // skin metalico unificado
 
             // Initially show center panel
             _centerPanel.SetActive(true);

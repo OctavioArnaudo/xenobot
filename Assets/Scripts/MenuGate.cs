@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -205,6 +204,104 @@ namespace Runtime.Scripts.Gate
             r.sizeDelta = new Vector2(s, s);
         }
 
+        static readonly Vector3 LightDir = new Vector3(-0.5f, 0.55f, 0.67f).normalized;
+
+        // Curva en S: mas contraste, luces que casi queman y sombras profundas.
+        static byte Tone(float c)
+        {
+            c = Mathf.Clamp01(c);
+            return (byte)(Mathf.Lerp(c, c * c * (3f - 2f * c), 0.7f) * 255f);
+        }
+
+        // ---------- Skin para menus (una sola textura 9-slice, sin generar nada por tamano) ----------
+
+        static Sprite s_plate;
+        static readonly Color Dark = new Color(0.01f, 0.03f, 0.02f, 0.97f);
+
+        static Sprite PlateSprite() => s_plate != null ? s_plate : (s_plate = Sprite.Create(Gen(128, 128, false), new Rect(0, 0, 128, 128), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(40, 40, 40, 40)));
+
+        /// <summary>Placa metalica escalable.</summary>
+        public static RectTransform Plate(Transform p, Color? tint = null)
+        {
+            var r = Img(p, tint ?? Color.white);
+            var im = r.GetComponent<Image>();
+            im.sprite = PlateSprite();
+            im.type = Image.Type.Sliced;
+            return r;
+        }
+
+        static void SkinImage(Image im, Color tint)
+        {
+            im.sprite = PlateSprite();
+            im.type = Image.Type.Sliced;
+            im.color = tint;
+        }
+
+        static Image Inset(Transform p, float pad)
+        {
+            var s = Rnd(Img(p, Dark));
+            Fit(s, 0f, 0f, 1f, 1f, pad);
+            s.SetAsFirstSibling();
+            return s.GetComponent<Image>();
+        }
+
+        // Feedback de clic: la pantalla oscura (casi todo el boton) es la que reacciona: apagada -> verde al pasar -> verde intenso al pulsar.
+        static void ClickFx(Button b, Image screen)
+        {
+            screen.color = Color.white; // el ColorBlock multiplica: asi los colores salen tal cual
+            b.targetGraphic = screen;
+            b.transition = Selectable.Transition.ColorTint;
+            var cb = b.colors;
+            cb.normalColor = cb.selectedColor = Dark;
+            cb.highlightedColor = new Color(0.06f, 0.32f, 0.13f, 1f);
+            cb.pressedColor = new Color(0.16f, 0.62f, 0.28f, 1f);
+            cb.disabledColor = new Color(0.08f, 0.08f, 0.08f, 0.6f);
+            cb.colorMultiplier = 1f;
+            cb.fadeDuration = 0.06f;
+            b.colors = cb;
+        }
+
+        /// <summary>Convierte un menu construido con Images planas al skin metalico: paneles y botones = placa + pantalla oscura, cajas = pantalla, filetes de neon fuera, texto neon = verde/ambar.</summary>
+        public static void Reskin(Transform root)
+        {
+            Canvas.ForceUpdateCanvases();
+            var grey = new Color(0.75f, 0.75f, 0.75f);
+            foreach (var o in root.GetComponentsInChildren<Outline>(true)) UnityEngine.Object.Destroy(o);
+            foreach (var im in root.GetComponentsInChildren<Image>(true))
+            {
+                if (im == null || im.sprite != null) continue; // portadas, iconos y piezas ya skineadas
+                string n = im.name;
+                if (n == "T" || n == "B" || n == "L" || n == "R") { UnityEngine.Object.Destroy(im.gameObject); continue; } // filetes de borde
+                if (n == "Fill" || n == "Checkmark") { im.color = Green; continue; }
+                if (n == "Background" && im.transform.parent == root || n == "DarkOverlay") continue; // fondos
+                var sz = im.rectTransform.rect.size;
+                if (sz.x > 1700f || sz.y > 950f) continue; // fondos a pantalla completa
+                var tr = im.transform;
+                if (im.GetComponent<Button>() != null)
+                {
+                    var c = im.color;
+                    SkinImage(im, c.a < 0.05f ? new Color(0.45f, 0.45f, 0.45f) : Color.Lerp(grey, new Color(c.r, c.g, c.b), 0.55f));
+                    ClickFx(im.GetComponent<Button>(), Inset(tr, 8f));
+                    foreach (var t in tr.GetComponentsInChildren<TMP_Text>(true)) t.color = Green;
+                }
+                else if (im.GetComponent<TMP_InputField>() != null || Mathf.Min(sz.x, sz.y) < 150f)
+                {
+                    Rnd(im.rectTransform, 8);
+                    im.color = Dark;
+                }
+                else
+                {
+                    SkinImage(im, Color.white);
+                    Inset(tr, 16f);
+                }
+            }
+            foreach (var t in root.GetComponentsInChildren<TMP_Text>(true))
+            {
+                var c = t.color;
+                if (Mathf.Max(c.r, c.g, c.b) - Mathf.Min(c.r, c.g, c.b) > 0.35f) t.color = c.g >= c.r ? Green : Amber;
+            }
+        }
+
         // ---------- Texturas por codigo (una vez, compartidas) ----------
 
         static Sprite Glass()
@@ -281,8 +378,8 @@ namespace Runtime.Scripts.Gate
             const int Cell = 96;
             int rr = Mathf.Min(Radius, Mathf.Min(w, h) / 4);
             var px = new Color32[w * h];
-            var rustA = new Color(0.33f, 0.15f, 0.06f);
-            var rustB = new Color(0.62f, 0.30f, 0.09f);
+            var rustA = new Color(0.26f, 0.09f, 0.03f);
+            var rustB = new Color(0.80f, 0.36f, 0.08f);
             for (int y = 0; y < h; y++)
                 for (int x = 0; x < w; x++)
                 {
@@ -290,34 +387,50 @@ namespace Runtime.Scripts.Gate
                     float qx = Mathf.Clamp(x, rr, w - 1 - rr);
                     float qy = (dash ? Top((int)qx, w) : h) - 1f - rr;
                     float ey = y > qy ? y - qy : (!dash && y < rr ? rr - y : 0f);
-                    float e = Mathf.Min(Mathf.Min(Mathf.Min(x, w - 1 - x), Mathf.Min(y, top - 1f - y)), rr - Mathf.Sqrt((x - qx) * (x - qx) + ey * ey));
+                    float dl = x, dr = w - 1 - x, db = y, dt = top - 1f - y;
+                    float e = Mathf.Min(Mathf.Min(Mathf.Min(dl, dr), Mathf.Min(db, dt)), rr - Mathf.Sqrt((x - qx) * (x - qx) + ey * ey));
                     if (e < -0.5f) continue;
 
                     float fx = x, fy = y;
-                    float m = 0.30f + 0.14f * (F(fx / 60f, fy / 60f, 1) - 0.5f) + 0.07f * (V(fx * 0.015f, fy * 1.2f, 5) - 0.5f) + 0.05f * (H(x, y, 3) - 0.5f);
+                    // Metal base: grano, cepillado y ruido (mas amplitud = mas contraste)
+                    float m0 = 0.36f + 0.18f * (F(fx / 60f, fy / 60f, 1) - 0.5f) + 0.16f * (V(fx * 0.015f, fy * 1.2f, 5) - 0.5f) + 0.07f * (H(x, y, 3) - 0.5f);
+
+                    // Luz arriba-izquierda: normal exterior del borde mas cercano
+                    float mn = Mathf.Min(Mathf.Min(dl, dr), Mathf.Min(db, dt));
+                    float ox = mn == dl ? -1f : mn == dr ? 1f : 0f, oy = mn == db ? -1f : mn == dt ? 1f : 0f;
+                    float lit = ox * LightDir.x + oy * LightDir.y;
+
+                    float shade = 1f;
+                    if (e < 11f) shade *= Mathf.Max(0.15f, 1f + 1.5f * lit * (1f - e / 11f)); // bisel: cara iluminada brilla, la opuesta cae en sombra
+                    else if (e < 14.5f) shade *= 0.3f;                                         // ranura interior oscura
 
                     int lx = x % Cell, ly = y % Cell;
                     bool seam = lx < 4 || ly < 4;
-                    if (lx < 2 || ly < 2) m *= 0.45f; else if (seam) m *= 1.18f;
+                    if (lx < 2 || ly < 2) shade *= 0.3f; else if (seam) shade *= 1.6f;          // junta: sombra + canto brillante
 
                     for (int k = 0; k < 4; k++)
                     {
                         float cx = (k & 1) == 0 ? 12f : Cell - 12f, cy = (k & 2) == 0 ? 12f : Cell - 12f;
                         float dx = lx - cx, dy = ly - cy, d = Mathf.Sqrt(dx * dx + dy * dy);
-                        if (d < 4.5f) m = 0.5f + 0.18f * (1f - d / 4.5f) - 0.08f * (dx + dy) / 4.5f;
-                        else if (d < 6f) m *= 0.6f;
+                        if (d < 4.5f)
+                        {
+                            float nz = Mathf.Sqrt(1f - d * d / 20.25f);
+                            float l = Mathf.Max(0f, (dx / 4.5f) * LightDir.x + (dy / 4.5f) * LightDir.y + nz * LightDir.z);
+                            shade = 0.3f + 2.1f * l * l;                                        // remache: domo con brillo especular
+                        }
+                        else if (d < 8f && dx - dy > 0f) shade *= 0.4f;                         // sombra proyectada del remache
                     }
 
-                    if (e < 5f) m *= 0.5f; else if (e < 9f) m *= 1.2f;
+                    shade *= 0.62f + 0.76f * Mathf.Clamp01(y / Mathf.Max(1f, top - 1f));       // degradado vertical: arriba luz, abajo sombra
+                    shade *= 0.5f + 0.7f * Smooth(0f, 1f, Mathf.Clamp01(e / 70f));            // vineta: bordes mas oscuros
+
                     float edge = 1f - Mathf.Clamp01(e / 70f);
-
                     float rr2 = F(fx / 55f, fy / 55f, 21) + 0.2f * (F(fx / 12f, fy / 12f, 33) - 0.5f) + 0.3f * edge + (seam ? 0.08f : 0f);
-                    float mask = Smooth(0.55f, 0.72f, rr2) * 0.9f;
-                    var rust = Color.Lerp(rustA, rustB, F(fx / 7f, fy / 7f, 44)) * (0.8f + 0.4f * H(x, y, 9));
-                    var col = Color.Lerp(new Color(m, m * 1.02f, m * 1.05f), rust, mask);
+                    float mask = Smooth(0.52f, 0.70f, rr2) * 0.95f;
+                    var rust = Color.Lerp(rustA, rustB, F(fx / 7f, fy / 7f, 44)) * (0.7f + 0.6f * H(x, y, 9));
+                    var col = Color.Lerp(new Color(m0, m0 * 1.02f, m0 * 1.06f), rust, mask) * shade;
 
-                    col *= (0.8f + 0.2f * Smooth(0f, 1f, Mathf.Clamp01(e / 90f))) * 0.92f;
-                    px[y * w + x] = new Color32((byte)(Mathf.Clamp01(col.r) * 255f), (byte)(Mathf.Clamp01(col.g) * 255f), (byte)(Mathf.Clamp01(col.b) * 255f), (byte)(Mathf.Clamp01(e + 0.5f) * 255f));
+                    px[y * w + x] = new Color32(Tone(col.r), Tone(col.g), Tone(col.b), (byte)(Mathf.Clamp01(e + 0.5f) * 255f));
                 }
             var t = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
             t.SetPixels32(px);
@@ -353,27 +466,9 @@ namespace Runtime.Scripts.Gate
         static float F(float x, float y, int s) =>
             (V(x, y, s) * 0.5f + V(x * 2f, y * 2f, s + 1) * 0.25f + V(x * 4f, y * 4f, s + 2) * 0.125f + V(x * 8f, y * 8f, s + 3) * 0.0625f) / 0.9375f;
 
-        // Texturas metalicas que usa la UI: se generan una por frame al arrancar (detras del menu principal), nunca en mitad de la partida.
-        static readonly Vector2Int[] Warm =
-        {
-            new Vector2Int(512, 400),  // inventario / crafteo (IMGUI)
-            new Vector2Int(960, -112), // tablero HUD (negativo = dash)
-            new Vector2Int(380, 210),  // panel stats
-            new Vector2Int(400, 190), new Vector2Int(360, 100), new Vector2Int(550, 300) // historia: log, dialogo, misiones
-        };
-
         [DefaultExecutionOrder(-1000)]
         sealed class Runner : MonoBehaviour
         {
-            IEnumerator Start()
-            {
-                foreach (var v in Warm)
-                {
-                    yield return null;
-                    Gen(v.x, Mathf.Abs(v.y), v.y < 0);
-                }
-            }
-
             void Update()
             {
                 if (!_esc) return;

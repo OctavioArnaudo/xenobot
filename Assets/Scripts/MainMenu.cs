@@ -1,4 +1,5 @@
 using UnityEngine;
+using Runtime.Scripts.Gate;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
@@ -77,6 +78,8 @@ namespace Runtime.Scripts.Main
             CreateAdaptiveButton(canvasObj.transform, "CREDITS", new Vector2(0.8f, 0.6f), OpenCredits, buttonsColor);
             CreateAdaptiveButton(canvasObj.transform, "QUIT", new Vector2(0.8f, 0.4f), Quit, quitButtonColor);
             CreateAdaptiveButton(canvasObj.transform, "PLAY", new Vector2(0.5f, 0.18f), Play, playButtonColor);
+
+            MenuGate.Reskin(canvasObj.transform); // skin metalico unificado
         }
 
         private void CreateAdaptiveText(Transform parent, string content, Vector2 anchorPos, Color color, bool isUpper)

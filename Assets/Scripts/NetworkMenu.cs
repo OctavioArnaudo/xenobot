@@ -1,4 +1,5 @@
 using UnityEngine;
+using Runtime.Scripts.Gate;
 using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
@@ -698,6 +699,8 @@ namespace Runtime.Scripts.Network
 
             CreateCyberButton("ConnectClientBtn", _joinPanelGo.transform, "MATCH", new Vector2(0, -190), neonCyan, OnClickSmartConnectClient);
             CreateCyberButton("JoinBackBtn", _joinPanelGo.transform, "BACK", new Vector2(0, -260), neonMagenta, ShowMainSubpanel);
+
+            MenuGate.Reskin(_canvasRoot.transform); // skin metalico unificado (se aplica con todos los paneles ya construidos)
         }
 
         private GameObject CreatePanel(string name, Transform parent, Vector2 size)

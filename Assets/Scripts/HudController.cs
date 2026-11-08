@@ -116,45 +116,6 @@ namespace Runtime.Scripts.Hud
             return _player;
         }
 
-        private System.Collections.Generic.List<string> GetDynamicDefenseKeys()
-        {
-            var keys = _kd; keys.Clear();
-            var pc = GetPlayer();
-            var prop = GetPropulsion();
-
-            bool isMoving = pc != null && pc.move.sqrMagnitude > 0.01f;
-            bool isSprinting = pc != null && pc.sprint;
-            bool isGrounded = pc == null || pc.Grounded;
-            bool isFlying = prop != null && prop.IsFlying;
-            bool hasJet = prop != null && prop.MaxJetpack > 0;
-
-            if (!isMoving) keys.Add("WASD: Walk");
-            if (isMoving && !isSprinting) keys.Add("Shift: Sprint");
-            if (isGrounded) keys.Add("Space: Jump");
-            if (hasJet && !isFlying) keys.Add("Space/B: Fly");
-
-            return keys;
-        }
-
-        private System.Collections.Generic.List<string> GetDynamicAttackKeys()
-        {
-            var keys = _ka; keys.Clear();
-            var pc = GetPlayer();
-            var shooter = GetShooter();
-            var shield = GetShield();
-
-            bool isFiring = pc != null && (pc.fire || pc.fireHeld);
-            bool isShieldActive = shield != null && shield.IsShieldActive;
-            bool isReloading = shooter != null && shooter.isReloading;
-            bool needsAmmo = shooter != null && shooter.currentAmmo < shooter.EffectiveMaxAmmo;
-
-            if (!isFiring) keys.Add("LMB: Shoot");
-            if (shield != null && !isShieldActive) keys.Add("MMB: Shield");
-            if (shooter != null && !isReloading && needsAmmo) keys.Add("R: Reload");
-
-            return keys;
-        }
-
         private Transform _aureoleRoot;
         private Vector3 _aureoleBaseOffset = new Vector3(0, 2.4f, 0);
 
@@ -424,13 +385,11 @@ namespace Runtime.Scripts.Hud
         readonly RectTransform[] _fill = new RectTransform[4];
         readonly TextMeshProUGUI[] _barTxt = new TextMeshProUGUI[4];
         readonly float[] _lastF = new float[4];
-        TextMeshProUGUI _keysL, _keysR, _statsTxt;
+        TextMeshProUGUI _statsTxt;
         Image _plate;
         Image _scopeRing;
         static Sprite s_scope, s_ring;
         float _uiTick;
-        readonly System.Collections.Generic.List<string> _kd = new System.Collections.Generic.List<string>(4);
-        readonly System.Collections.Generic.List<string> _ka = new System.Collections.Generic.List<string>(4);
 
         // Botones de panel (metalicos, punto rubi). Stats se abre aqui; el resto notifica por evento.
         static readonly string[] PanelKey = { "inventory", "craft", "stats", "missions" };
@@ -541,19 +500,8 @@ namespace Runtime.Scripts.Hud
                 _barTxt[i] = t;
             }
 
-            // Teclas disponibles, sobre el tablero (izquierda: movimiento, derecha: combate)
-            var keyCol = new Color(0.95f, 0.95f, 0.5f);
-            _keysL = Txt(_uiRoot.transform, 22, keyCol, TextAlignmentOptions.BottomLeft, FontStyles.Bold);
-            var r = _keysL.rectTransform;
-            r.anchorMin = new Vector2(0.29f, 0f); r.anchorMax = new Vector2(0.5f, 0f); r.pivot = new Vector2(0f, 0f);
-            r.sizeDelta = new Vector2(0f, 30f); r.anchoredPosition = new Vector2(0f, 112f);
-            _keysR = Txt(_uiRoot.transform, 22, keyCol, TextAlignmentOptions.BottomRight, FontStyles.Bold);
-            r = _keysR.rectTransform;
-            r.anchorMin = new Vector2(0.5f, 0f); r.anchorMax = new Vector2(0.71f, 0f); r.pivot = new Vector2(1f, 0f);
-            r.sizeDelta = new Vector2(0f, 30f); r.anchoredPosition = new Vector2(0f, 112f);
-
             // Mira telescopica (tecla 1): placa metalica; el aro verde indica que esta activa. Clic = alternar (solo con un menu abierto).
-            r = Rnd(Img(_uiRoot.transform, new Color(0.02f, 0.03f, 0.03f)));
+            var r = Rnd(Img(_uiRoot.transform, new Color(0.02f, 0.03f, 0.03f)));
             _plate = r.GetComponent<Image>();
             r.anchorMin = r.anchorMax = r.pivot = new Vector2(1f, 0f);
             r.sizeDelta = new Vector2(80f, 80f);
@@ -640,9 +588,6 @@ namespace Runtime.Scripts.Hud
                 Bar(3, val, max, str);
             }
             else Bar(3, 0f, 1f, "N/A");
-
-            _keysL.text = string.Join("   ", GetDynamicDefenseKeys());
-            _keysR.text = string.Join("   ", GetDynamicAttackKeys());
         }
 
         void Bar(int i, float val, float max, string str)
