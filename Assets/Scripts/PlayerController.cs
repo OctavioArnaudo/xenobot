@@ -89,6 +89,8 @@ namespace Runtime.Scripts.Player
         [Tooltip("Apuntando (clic derecho): mas cerca y mas enfocado.")] public Vector3 shoulderAimOffset = new Vector3(1.0f, 0.25f, 0f);
         public float shoulderAimDistance = 2.2f;
         public float shoulderAimFOV = 50f;
+        [Range(0f, 1f), Tooltip("Intensidad del zoom al apuntar SIN mira telescopica: 0 = sin zoom, 1 = distancia/FOV/offset de apuntado completos.")] public float aimZoomStrength = 0.3f;
+        [Tooltip("Velocidad de la transicion al apuntar sin mira telescopica (menor = mas suave).")] public float aimZoomSpeed = 5f;
         [Range(0.2f, 1f)] public float aimMoveSpeedMultiplier = 0.6f;
         [Tooltip("Alterna mira comun / telescopica. Apuntar siempre es clic derecho.")] public Key scopeToggleKey = Key.Digit1;
         public bool scopeMode; // false = mira comun, true = telescopica
@@ -742,11 +744,15 @@ namespace Runtime.Scripts.Player
 
             if (_vcamCache == null) SetupCamera();
 
-            float targetFOV = scope ? aimFOV : aim ? shoulderAimFOV : normalFOV;
+            // Apuntado comun: mezcla suave entre camara normal y de apuntado (la telescopica sigue yendo al 100 %).
+            float az = aim && !scope ? aimZoomStrength : 0f;
+            float zs = scope ? 10f : aimZoomSpeed;
+            float normalDist = shoulderDistance * ZoomController.Factor;
+            float targetFOV = scope ? aimFOV : Mathf.Lerp(normalFOV, shoulderAimFOV, az);
 
             if (_vcamCache != null)
             {
-                _vcamCache.Lens.FieldOfView = Mathf.Lerp(_vcamCache.Lens.FieldOfView, targetFOV, Time.deltaTime * 10f);
+                _vcamCache.Lens.FieldOfView = Mathf.Lerp(_vcamCache.Lens.FieldOfView, targetFOV, Time.deltaTime * zs);
 
                 if (_vcam3rdPerson == null)
                 {
@@ -755,18 +761,18 @@ namespace Runtime.Scripts.Player
 
                 if (_vcam3rdPerson != null)
                 {
-                    float targetDistance = scope ? aimCameraDistance : aim ? shoulderAimDistance : shoulderDistance * ZoomController.Factor;
-                    Vector3 targetShoulderOffset = scope ? aimShoulderOffset : aim ? shoulderAimOffset : shoulderOffset;
+                    float targetDistance = scope ? aimCameraDistance : Mathf.Lerp(normalDist, shoulderAimDistance, az);
+                    Vector3 targetShoulderOffset = scope ? aimShoulderOffset : Vector3.Lerp(shoulderOffset, shoulderAimOffset, az);
                     _vcam3rdPerson.CameraSide = 1f; // hombro derecho de la camara: el personaje queda a la izquierda
 
-                    _vcam3rdPerson.CameraDistance = Mathf.Lerp(_vcam3rdPerson.CameraDistance, targetDistance, Time.deltaTime * 10f);
-                    _vcam3rdPerson.ShoulderOffset = Vector3.Lerp(_vcam3rdPerson.ShoulderOffset, targetShoulderOffset, Time.deltaTime * 10f);
+                    _vcam3rdPerson.CameraDistance = Mathf.Lerp(_vcam3rdPerson.CameraDistance, targetDistance, Time.deltaTime * zs);
+                    _vcam3rdPerson.ShoulderOffset = Vector3.Lerp(_vcam3rdPerson.ShoulderOffset, targetShoulderOffset, Time.deltaTime * zs);
                 }
             }
 
             if (_mainCamera != null && _mainCamera.TryGetComponent<Camera>(out var camComp))
             {
-                camComp.fieldOfView = Mathf.Lerp(camComp.fieldOfView, targetFOV, Time.deltaTime * 10f);
+                camComp.fieldOfView = Mathf.Lerp(camComp.fieldOfView, targetFOV, Time.deltaTime * zs);
             }
 
             // --- LÓGICA DE GANCHO (MANTENER APUNTADO + PULSAR G) ---

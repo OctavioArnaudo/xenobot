@@ -399,12 +399,14 @@ MonoBehaviour:
   aimShoulderOffset: {x: 0.55, y: 0.05, z: 0.8}
   defaultShoulderOffset: {x: 0.35, y: 0, z: 0}
   toggleAim: 0
-  shoulderOffset: {x: 2, y: 0.3, z: 0}
+  shoulderOffset: {x: 3, y: 0.3, z: 0}
   shoulderDistance: 4
   shoulderAimOffset: {x: 2, y: 0.25, z: 0}
   shoulderAimDistance: 2.5
   shoulderAimFOV: 50
   aimMoveSpeedMultiplier: 0.6
+  scopeToggleKey: 41
+  scopeMode: 0
   hookProjectilePrefab: {fileID: 987970283401832635, guid: 4acfa825610b469479174c24059b6bdd, type: 3}
   hookMuzzle: {fileID: 2129362248708108617}
   Grounded: 1
@@ -627,6 +629,7 @@ MonoBehaviour:
   padding: 20
   titleH: 65
   qtyFontSize: 14
+  uiScale: 2
   cornerRadius: 15
   panelColor: {r: 0.05, g: 0.05, b: 0.05, a: 0.95}
   accentColor: {r: 1, g: 0.85, b: 0, a: 1}
@@ -908,6 +911,7 @@ MonoBehaviour:
   panelHeight: 550
   titleH: 65
   padding: 20
+  uiScale: 2
   cornerRadius: 15
   panelColor: {r: 0.05, g: 0.05, b: 0.05, a: 0.95}
   accentColor: {r: 1, g: 0.85, b: 0, a: 1}
