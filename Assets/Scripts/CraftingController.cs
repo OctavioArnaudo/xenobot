@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Runtime.Scripts.Trades;
 using Runtime.Scripts.Inventory;
-using Runtime.Scripts.Missions;
+using Runtime.Scripts.Narrative;
 using Runtime.Scripts.Items;
 using Runtime.Scripts.Singleton;
 
@@ -469,7 +469,7 @@ namespace Runtime.Scripts.Crafting
                     int requiredAmount = inReq.GetMinRequiredAmount();
                     if (requiredAmount <= 0) continue;
 
-                    int qtyInBag = MissionController.GetItemQuantityInBag(bag, inReq.item);
+                    int qtyInBag = StoryManager.Qty(bag, inReq.item);
                     if (qtyInBag < requiredAmount) return false;
                 }
                 return true;
@@ -530,12 +530,6 @@ namespace Runtime.Scripts.Crafting
             RecordCompletedTrade(recipe);
 
             InventoryController.MarkCountDirty();
-
-            // Actualizar misiones para verificar si este crafteo completa una misión activa
-            if (MissionController.Instance != null)
-            {
-                MissionController.Instance.UpdateMissionFlow();
-            }
         }
         #endregion
 
@@ -554,7 +548,8 @@ namespace Runtime.Scripts.Crafting
             _infoSty = Sty(16, FontStyle.Italic, TextAnchor.MiddleLeft, new Color(0.8f, 0.8f, 0.8f));
             _qtySty = Sty(14, FontStyle.Bold, TextAnchor.LowerRight, accentColor);
 
-            _minSty = new GUIStyle(_infoSty) {
+            _minSty = new GUIStyle(_infoSty)
+            {
                 alignment = TextAnchor.MiddleCenter,
                 fontStyle = FontStyle.Bold,
                 fontSize = 18
