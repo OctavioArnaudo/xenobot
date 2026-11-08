@@ -303,7 +303,7 @@ namespace Runtime.Scripts.Narrative
 
         int Cur => Mathf.Min(_seen / 2, pairs.Count - 1);
 
-        void Counter() => _counter.text = $"LLAVES  {(_seen + 1) / 2}/{pairs.Count}";
+        void Counter() => _counter.text = $"OBJETOS CLAVE  {(_seen + 1) / 2}/{pairs.Count}";
 
         void Finale()
         {
@@ -524,6 +524,12 @@ namespace Runtime.Scripts.Narrative
         }
 
         // ---------- Panel de misión (J): línea de tiempo de capítulos ----------
+
+        public void ToggleMissions()
+        {
+            if (_misOpen) Panel(false);
+            else if (!_logging && !_dlgOpen && pairs.Count > 0) Panel(true);
+        }
 
         void Panel(bool on)
         {
@@ -877,11 +883,11 @@ namespace Runtime.Scripts.Narrative
 
             // HUD: contador (abajo-izquierda), objetivos (arriba-izquierda), aviso de E
             var hud = NewCanvas("StoryHud", 91).transform;
-            var cb = MenuGate.Rnd(Box(hud, Dark, new Vector2(240, 56)));
-            Anchor(cb, Vector2.zero, new Vector2(30f, 122f));
-            _counter = Txt(cb.transform, 30, TextAlignmentOptions.Center);
+            var cb = MenuGate.Rnd(Box(hud, Dark, new Vector2(270, 42)));
+            Anchor(cb, Vector2.zero, new Vector2(30f, 116f));
+            _counter = Txt(cb.transform, 22, TextAlignmentOptions.Center);
             Fill(_counter.gameObject, 4);
-            _counter.text = $"LLAVES  0/{pairs.Count}";
+            _counter.text = $"OBJETOS CLAVE  0/{pairs.Count}";
 
             _prompt = Txt(hud, 30, TextAlignmentOptions.Center);
             Anchor(_prompt.gameObject, new Vector2(0.5f, 0f), new Vector2(0f, 110f));

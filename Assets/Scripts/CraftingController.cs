@@ -202,6 +202,8 @@ namespace Runtime.Scripts.Crafting
             }
         }
 
+        public static void Toggle() { var c = LocalInstance ?? Object.FindFirstObjectByType<CraftingController>(); if (c != null) c.ToggleCraftingUI(); }
+
         private void ToggleCraftingUI()
         {
             var allControllers = Object.FindObjectsByType<CraftingController>(FindObjectsSortMode.None);
@@ -289,8 +291,11 @@ namespace Runtime.Scripts.Crafting
         #endregion
 
         #region UI Rendering
+        InventoryController _otherInv; float _otherT;
+
         private void OnGUI()
         {
+            if (!_stylesReady) EnsureStyles(); // precarga de estilos y texturas
             if (_open)
             {
                 EnsureStyles();
@@ -311,7 +316,7 @@ namespace Runtime.Scripts.Crafting
         // Marco metalico redondeado + pantalla negra.
         private void Frame(Rect r, float m)
         {
-            GUI.DrawTexture(r, MenuGate.Metal(Mathf.Max(8, (int)(r.width / 2f)), Mathf.Max(8, (int)(r.height / 2f))));
+            GUI.DrawTexture(r, InventoryController.PanelTex);
             GUI.DrawTexture(new Rect(r.x + m, r.y + m, r.width - 2f * m, r.height - 2f * m), Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f,
                 new Color(0.01f, 0.03f, 0.02f), 0f, Mathf.Min(10f * Kc, (r.height - 2f * m) / 2f));
         }
@@ -330,16 +335,22 @@ namespace Runtime.Scripts.Crafting
             float totalW = sw * 2f + cw + gap * 2f;
             float xStart = (Screen.width - totalW) / 2f, y0 = (Screen.height - ph) / 2f;
 
-            var allInvs = Object.FindObjectsByType<InventoryController>(FindObjectsSortMode.None);
             var myInv = InventoryController.LocalInstance;
-            var otherInvs = allInvs.Where(x => x != myInv).ToList();
+            if (Time.unscaledTime >= _otherT) // busqueda 1 vez por segundo, no por evento de OnGUI
+            {
+                _otherT = Time.unscaledTime + 1f;
+                _otherInv = null;
+                foreach (var x in Object.FindObjectsByType<InventoryController>(FindObjectsSortMode.None))
+                    if (x != null && x != myInv) { _otherInv = x; break; }
+            }
+            var other = _otherInv;
 
             if (myInv != null) myInv.DrawInventoryUI(new Rect(xStart, y0, sw, ph), "MI INVENTARIO", k);
 
             DrawCraftingPanel(new Rect(xStart + sw + gap, y0, cw, ph), k);
 
             Rect right = new Rect(xStart + sw + cw + 2f * gap, y0, sw, ph);
-            if (otherInvs.Count > 0) otherInvs[0].DrawInventoryUI(right, "INVENTARIO COMPAÑERO", k);
+            if (other != null) other.DrawInventoryUI(right, "INVENTARIO COMPAÑERO", k);
             else
             {
                 Frame(right, 16f * k);
@@ -395,13 +406,13 @@ namespace Runtime.Scripts.Crafting
                 GUI.Label(new Rect(0, y, dw, 26f * k), "REQUIERE:", _infoSty); y += 30f * k;
                 if (recipe.inputs != null)
                     foreach (var q in recipe.inputs)
-                        if (q != null && q.item != null) y = Line(q.item, q.useRange ? $"x{q.minAmount}-{q.maxAmount}" : $"x{q.amount}", y, sl, dw, k);
+                        if (q != null && q.item != null) y = Line(q.item, q.useRange ? $"x{q.minAmount}-{q.maxAmount}" : InventoryController.QtyStr(q.amount), y, sl, dw, k);
 
                 GUI.Label(new Rect(dw / 2f - 15f * k, y - 5f * k, 30f * k, 28f * k), "↓", _titleSty); y += 28f * k;
                 GUI.Label(new Rect(0, y, dw, 26f * k), "OBTIENES:", _infoSty); y += 30f * k;
                 if (recipe.outputs != null)
                     foreach (var q in recipe.outputs)
-                        if (q != null && q.item != null) y = Line(q.item, q.useRange ? $"x{q.minAmount}-{q.maxAmount}" : $"x{q.amount}", y, sl, dw, k);
+                        if (q != null && q.item != null) y = Line(q.item, q.useRange ? $"x{q.minAmount}-{q.maxAmount}" : InventoryController.QtyStr(q.amount), y, sl, dw, k);
 
                 y += 10f * k;
                 Rect btnR = new Rect(0, y, dw, 50f * k);

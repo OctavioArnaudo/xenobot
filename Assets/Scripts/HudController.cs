@@ -15,6 +15,9 @@ using Runtime.Scripts.Player;
 using Runtime.Scripts.Levels;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Settings;
+using Runtime.Scripts.Inventory;
+using Runtime.Scripts.Crafting;
+using Runtime.Scripts.Narrative;
 using static Runtime.Scripts.Gate.MenuGate;
 
 namespace Runtime.Scripts.Hud
@@ -115,7 +118,7 @@ namespace Runtime.Scripts.Hud
 
         private System.Collections.Generic.List<string> GetDynamicDefenseKeys()
         {
-            var keys = new System.Collections.Generic.List<string>();
+            var keys = _kd; keys.Clear();
             var pc = GetPlayer();
             var prop = GetPropulsion();
 
@@ -135,7 +138,7 @@ namespace Runtime.Scripts.Hud
 
         private System.Collections.Generic.List<string> GetDynamicAttackKeys()
         {
-            var keys = new System.Collections.Generic.List<string>();
+            var keys = _ka; keys.Clear();
             var pc = GetPlayer();
             var shooter = GetShooter();
             var shield = GetShield();
@@ -426,6 +429,24 @@ namespace Runtime.Scripts.Hud
         Image _scopeRing;
         static Sprite s_scope, s_ring;
         float _uiTick;
+        readonly System.Collections.Generic.List<string> _kd = new System.Collections.Generic.List<string>(4);
+        readonly System.Collections.Generic.List<string> _ka = new System.Collections.Generic.List<string>(4);
+
+        // Botones de panel (metalicos, punto rubi). Stats se abre aqui; el resto notifica por evento.
+        static readonly string[] PanelKey = { "inventory", "craft", "stats", "missions" };
+        static readonly string[] PanelLbl = { "INV", "CRAFT", "K", "J" };
+        static readonly Color Ruby = new Color(0.85f, 0.04f, 0.14f);
+
+        void OpenPanel(string k)
+        {
+            switch (k)
+            {
+                case "inventory": InventoryController.Toggle(); break;
+                case "craft": CraftingController.Toggle(); break;
+                case "stats": SetStats(!_statsPanel.activeSelf); break;
+                default: if (StoryManager.Instance != null) StoryManager.Instance.ToggleMissions(); break; // J lo gestiona StoryManager
+            }
+        }
 
         public override void OnDestroy()
         {
@@ -548,6 +569,35 @@ namespace Runtime.Scripts.Hud
             var ic = Img(r, new Color(0.8f, 0.9f, 0.8f));
             ic.GetComponent<Image>().sprite = ScopeSprite();
             Mid(ic, 48f);
+
+            // Indicador de la tecla 1 junto al icono de mira
+            var one = Txt(r, 22, Amber, TextAlignmentOptions.Center, FontStyles.Bold);
+            one.text = "1";
+            one.raycastTarget = false;
+            one.rectTransform.anchorMin = one.rectTransform.anchorMax = one.rectTransform.pivot = new Vector2(0f, 1f);
+            one.rectTransform.sizeDelta = new Vector2(24f, 24f);
+            one.rectTransform.anchoredPosition = new Vector2(4f, -2f);
+
+            // 4 botones metalicos redondos con punto rubi: inventario, crafteo, stats (K), misiones (J)
+            for (int i = 0; i < 4; i++)
+            {
+                string key = PanelKey[i];
+                var b = Rnd(Img(_uiRoot.transform, new Color(0.62f, 0.64f, 0.66f)));
+                b.anchorMin = b.anchorMax = b.pivot = new Vector2(1f, 0f);
+                b.sizeDelta = new Vector2(56f, 56f);
+                b.anchoredPosition = new Vector2(-126f - (3 - i) * 68f, 134f);
+                var bt = b.gameObject.AddComponent<Button>();
+                bt.transition = Selectable.Transition.None;
+                bt.onClick.AddListener(() => OpenPanel(key));
+                Mid(Rnd(Img(b, new Color(0.3f, 0.32f, 0.34f))), 44f);
+                Mid(Rnd(Img(b, Ruby)), 16f);
+                var l = Txt(b, 16, Amber, TextAlignmentOptions.Center, FontStyles.Bold);
+                l.text = PanelLbl[i];
+                l.raycastTarget = false;
+                Fit(l.rectTransform, 0f, 1f, 1f, 1f);
+                l.rectTransform.offsetMin = new Vector2(0f, 2f);
+                l.rectTransform.offsetMax = new Vector2(0f, 22f);
+            }
 
             // Panel de stats (K): visor
             _statsPanel = Term(_uiRoot.transform, new Vector2(760f, 420f), "STATS", out _statsTxt).gameObject;

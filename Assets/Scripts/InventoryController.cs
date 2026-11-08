@@ -278,6 +278,18 @@ namespace Runtime.Scripts.Inventory
             }
         }
 
+        // Precarga unica: el marco metalico se genera una sola vez y lo comparten inventario y crafteo (antes se regeneraba en cada evento de OnGUI).
+        static Texture2D s_panelTex;
+        public static Texture2D PanelTex => s_panelTex != null ? s_panelTex : (s_panelTex = MenuGate.Metal(512, 400));
+        static readonly string[] s_qty = new string[1000];
+        public static string QtyStr(int q) => q < 0 || q >= 1000 ? "x" + q : (s_qty[q] ?? (s_qty[q] = "x" + q));
+
+        // Cache del tamano de titulo y de la lista de claves: sin CalcSize, sin cambios de fuente y sin ToArray por evento.
+        string _fsTitle; float _fsWidth; int _fsVal;
+        int _btnFs = -1;
+
+        public static void Toggle() { var i = LocalInstance; if (i != null) i.SetOpen(!i._open); }
+
         private void OnGate(string k) { if (k == "inventory") SetOpen(false); }
 
         private void SetOpen(bool open)
@@ -294,7 +306,9 @@ namespace Runtime.Scripts.Inventory
 
         private void OnGUI()
         {
-            if (!CanExecuteLocalLogic || !_open) return;
+            if (!CanExecuteLocalLogic) return;
+            if (!_stylesReady) EnsureStyles(); // precarga de estilos fuera del primer abrir
+            if (!_open) return;
             if (CraftingController.Instance != null && CraftingController.Instance.IsUIOpen) return;
 
             EnsureStyles();
@@ -321,27 +335,34 @@ namespace Runtime.Scripts.Inventory
         {
             EnsureStyles();
             float k = scale > 0f ? scale : K, cs = cellSize * k, pad = padding * k, th = titleH * k, m = 16f * k;
-            GUI.DrawTexture(panel, MenuGate.Metal(Mathf.Max(8, (int)(panel.width / 2f)), Mathf.Max(8, (int)(panel.height / 2f))));
+            GUI.DrawTexture(panel, PanelTex);
             GUI.DrawTexture(new Rect(panel.x + m, panel.y + m, panel.width - 2f * m, panel.height - 2f * m), Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, new Color(0.01f, 0.03f, 0.02f), 0f, 10f * k);
-            int fs = (int)(32 * k);
-            _titleSty.wordWrap = false;
-            _titleSty.fontSize = fs;
-            while (fs > 12 && _titleSty.CalcSize(new GUIContent(title)).x > panel.width - 130f * k) _titleSty.fontSize = --fs; // el titulo siempre entra en una linea
-            _btnSty.fontSize = (int)(10 * k);
+            if (!ReferenceEquals(_fsTitle, title) || !Mathf.Approximately(_fsWidth, panel.width))
+            {
+                int fs = (int)(32 * k);
+                _titleSty.wordWrap = false;
+                _titleSty.fontSize = fs;
+                var gc = new GUIContent(title);
+                while (fs > 12 && _titleSty.CalcSize(gc).x > panel.width - 130f * k) _titleSty.fontSize = --fs; // el titulo siempre entra en una linea
+                _fsTitle = title; _fsWidth = panel.width; _fsVal = _titleSty.fontSize;
+            }
+            else if (_titleSty.fontSize != _fsVal) _titleSty.fontSize = _fsVal;
+            int bf = (int)(10 * k);
+            if (bf != _btnFs) { _btnFs = bf; _btnSty.fontSize = bf; }
             GUI.Label(new Rect(panel.x, panel.y + 10f * k, panel.width, th), title, _titleSty);
             if (GUI.Button(new Rect(panel.xMax - 56f * k, panel.y + 22f * k, 35f * k, 35f * k), "X", _btnSty)) SetOpen(false);
 
             int cols = Mathf.Max(1, (int)((panel.width - 2f * pad) / (cs + 10f * k)));
             int i = 0;
-            foreach (var key in _localKeys.ToArray())
+            for (int n = 0; n < _localKeys.Count; n++)
             {
-                if (!_localBag.TryGetValue(key, out var slot)) continue;
+                if (!_localBag.TryGetValue(_localKeys[n], out var slot)) continue;
                 Rect cell = new Rect(panel.x + pad + (i % cols) * (cs + 10f * k), panel.y + th + (i / cols) * (cs + 40f * k), cs, cs);
 
                 bool isOver = cell.Contains(Event.current.mousePosition);
                 GUI.DrawTexture(cell, isOver ? _texSelected : _texNormal);
                 if (slot.def.itemSprite != null) GUI.DrawTexture(new Rect(cell.x + 10f * k, cell.y + 10f * k, cell.width - 20f * k, cell.height - 20f * k), slot.def.itemSprite.texture);
-                GUI.Label(cell, "x" + slot.qty, _qtySty);
+                GUI.Label(cell, QtyStr(slot.qty), _qtySty);
 
                 Rect btnArea = new Rect(cell.x, cell.yMax + 2f * k, cell.width, 35f * k);
                 int hash = slot.def.GetHashCode();
