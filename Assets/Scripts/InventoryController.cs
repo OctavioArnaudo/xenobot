@@ -317,12 +317,17 @@ namespace Runtime.Scripts.Inventory
 
         float K => Mathf.Min(uiScale, (Screen.height - 40f) / panelHeight, (Screen.width - 40f) / panelWidth);
 
-        public void DrawInventoryUI(Rect panel, string title)
+        public void DrawInventoryUI(Rect panel, string title, float scale = 0f)
         {
             EnsureStyles();
-            float k = K, cs = cellSize * k, pad = padding * k, th = titleH * k, m = 16f * k;
-            GUI.DrawTexture(panel, _texPanel);
+            float k = scale > 0f ? scale : K, cs = cellSize * k, pad = padding * k, th = titleH * k, m = 16f * k;
+            GUI.DrawTexture(panel, MenuGate.Metal(Mathf.Max(8, (int)(panel.width / 2f)), Mathf.Max(8, (int)(panel.height / 2f))));
             GUI.DrawTexture(new Rect(panel.x + m, panel.y + m, panel.width - 2f * m, panel.height - 2f * m), Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, new Color(0.01f, 0.03f, 0.02f), 0f, 10f * k);
+            int fs = (int)(32 * k);
+            _titleSty.wordWrap = false;
+            _titleSty.fontSize = fs;
+            while (fs > 12 && _titleSty.CalcSize(new GUIContent(title)).x > panel.width - 130f * k) _titleSty.fontSize = --fs; // el titulo siempre entra en una linea
+            _btnSty.fontSize = (int)(10 * k);
             GUI.Label(new Rect(panel.x, panel.y + 10f * k, panel.width, th), title, _titleSty);
             if (GUI.Button(new Rect(panel.xMax - 56f * k, panel.y + 22f * k, 35f * k, 35f * k), "X", _btnSty)) SetOpen(false);
 
@@ -353,7 +358,7 @@ namespace Runtime.Scripts.Inventory
                 if (isOver && Event.current.type == EventType.MouseDown && Event.current.button == 0) { _draggedItem = slot.def; Event.current.Use(); }
                 i++;
             }
-            if (_localKeys.Count == 0) GUI.Label(new Rect(panel.x, panel.y + th, panel.width, panel.height - th), "Inventario Vac�o", _emptySty);
+            if (_localKeys.Count == 0) GUI.Label(new Rect(panel.x, panel.y + th, panel.width, panel.height - th), "Inventario Vacío", _emptySty);
         }
 
         private void EnsureStyles()
