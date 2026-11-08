@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Runtime.Scripts.Gate;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Runtime.Scripts.Items;
@@ -278,11 +279,12 @@ namespace Runtime.Scripts.Inventory
 
         private void SetOpen(bool open)
         {
+            if (open && !MenuGate.TryOpen("inventory")) return; // otro menú abierto
+            if (!open && _open) MenuGate.Close("inventory");
             _open = open;
-            // Keep PlayerInput enabled to maintain mouse focus,
-            // Combat scripts now block themselves via Cursor.visible check
-            Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
-            Cursor.visible = open;
+            bool free = open || MenuGate.Busy; // no bloquear el cursor si otro menú sigue abierto
+            Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = free;
         }
 
         private void OnGUI()

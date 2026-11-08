@@ -206,6 +206,7 @@ namespace Runtime.Scripts.Player
         private float _animationBlend;
         private float _targetRotation = 0.0f;
         private Vector3 _moveDir = Vector3.forward;
+        private bool _gameCursor;
         private float _rotationVelocity;
         private float _verticalVelocity;
         private float _terminalVelocity = 53.0f;
@@ -390,6 +391,7 @@ namespace Runtime.Scripts.Player
         {
             if (IsOwner || !IsNetworkActive)
             {
+                _gameCursor = false;
                 SetupCamera();
                 TeleportToSceneSpawn(scene.name);
 #if ENABLE_INPUT_SYSTEM
@@ -490,6 +492,9 @@ namespace Runtime.Scripts.Player
 #if ENABLE_INPUT_SYSTEM
             if (_fireAction == null) RefreshInputActions();
             UpdateInputState();
+            // Convencion del proyecto: menu abierto = cursor libre (inventario, crafting, stats, panel J). Sin entrada al jugador.
+            if (Cursor.lockState == CursorLockMode.Locked) _gameCursor = true;
+            if (_gameCursor && Cursor.visible) ClearInput();
 #endif
 
             HandleAimingAndCombat();
@@ -712,6 +717,16 @@ namespace Runtime.Scripts.Player
                     }
                 }
             }
+        }
+
+        // Menú abierto: el jugador no recibe ninguna entrada (la gravedad y el resto del juego siguen).
+        private void ClearInput()
+        {
+            move = Vector2.zero;
+            look = Vector2.zero;
+            jump = jumpHeld = _isJumpHeld = sprint = false;
+            fire = fireHeld = fireReleased = aim = scope = hook = crouch = reload = false;
+            switchWeapon = selectWeapon = 0;
         }
 
         private void HandleAimingAndCombat()

@@ -1,4 +1,5 @@
 using UnityEngine;
+using Runtime.Scripts.Gate;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Unity.Collections;
@@ -221,6 +222,7 @@ namespace Runtime.Scripts.Crafting
 
         public void SetOpen(bool open)
         {
+            if (open && !MenuGate.TryOpen("crafting")) return; // otro menú abierto
             if (open)
             {
                 var allControllers = Object.FindObjectsByType<CraftingController>(FindObjectsSortMode.None);
@@ -233,9 +235,11 @@ namespace Runtime.Scripts.Crafting
                 }
             }
 
+            if (!open && _open) MenuGate.Close("crafting");
             _open = open;
-            Cursor.lockState = open ? CursorLockMode.None : CursorLockMode.Locked;
-            Cursor.visible = open;
+            bool free = open || MenuGate.Busy;
+            Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = free;
             if (!open) _selectedRecipeIndex = -1;
         }
 

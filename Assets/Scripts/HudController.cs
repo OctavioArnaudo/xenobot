@@ -1,4 +1,5 @@
 using UnityEngine;
+using Runtime.Scripts.Gate;
 using Unity.Netcode;
 using UnityEngine.SceneManagement;
 using Unity.Collections;
@@ -451,8 +452,16 @@ namespace Runtime.Scripts.Hud
 
             if (Keyboard.current != null && Keyboard.current.kKey.wasPressedThisFrame)
             {
-                _statsPanel.SetActive(!_statsPanel.activeSelf);
-                RefreshStats();
+                bool open = !_statsPanel.activeSelf;
+                if (!open || MenuGate.TryOpen("stats")) // abrir solo si no hay otro menú
+                {
+                    if (!open) MenuGate.Close("stats");
+                    _statsPanel.SetActive(open);
+                    bool free = open || MenuGate.Busy; // cursor libre = jugador bloqueado
+                    Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
+                    Cursor.visible = free;
+                    RefreshStats();
+                }
             }
 
             if (Time.unscaledTime < _uiTick) return;

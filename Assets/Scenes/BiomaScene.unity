@@ -785,7 +785,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CameraZoom
   ShowTopMostFoldoutHeaderGroup: 1
-  minFactor: 0.7
+  minFactor: 3
   maxFactor: 3
   step: 0.1
   smoothSpeed: 500
@@ -3614,7 +3614,7 @@ PrefabInstance:
       objectReference: {fileID: 1985963753}
     - target: {fileID: 830272394044043518, guid: 978a949ea03f7504089a6e3b3979ece0, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1026837398155314119, guid: 978a949ea03f7504089a6e3b3979ece0, type: 3}
       propertyPath: m_Name
@@ -3702,7 +3702,7 @@ PrefabInstance:
       objectReference: {fileID: 1985963753}
     - target: {fileID: 4661166826523363101, guid: 978a949ea03f7504089a6e3b3979ece0, type: 3}
       propertyPath: m_Enabled
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5469187915129670640, guid: 978a949ea03f7504089a6e3b3979ece0, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'

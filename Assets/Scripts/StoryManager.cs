@@ -13,6 +13,7 @@ using Runtime.Scripts.Crafting;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Items;
 using Runtime.Scripts.Missions;
+using Runtime.Scripts.Gate;
 
 namespace Runtime.Scripts.Narrative
 {
@@ -193,7 +194,7 @@ namespace Runtime.Scripts.Narrative
             bool busy = _dlgOpen || _logging || _misOpen; // la E que cierra un diálogo no abre nada
 
             if (_dlgOpen && kb != null && (e || kb.spaceKey.wasPressedThisFrame)) Next();
-            if (!_logging && !_dlgOpen && !_misOpen && _q.Count > 0) { var d = _q.Dequeue(); Open(d.who, d.lines); }
+            if (!_logging && !_dlgOpen && !_misOpen && _q.Count > 0 && MenuGate.TryOpen("dialog")) { var d = _q.Dequeue(); Open(d.who, d.lines); }
             if (!_misOpen && kb != null && kb.jKey.wasPressedThisFrame && !_logging && !_dlgOpen && pairs.Count > 0) Panel(true);
             if (_misOpen) PanelInput();
 
@@ -425,6 +426,7 @@ namespace Runtime.Scripts.Narrative
             if (++_i < _lines.Length) { Render(); return; }
             _dlgOpen = false;
             _dlg.SetActive(false);
+            MenuGate.Close("dialog");
             Free(false);
         }
 
@@ -526,6 +528,8 @@ namespace Runtime.Scripts.Narrative
         void Panel(bool on)
         {
             if (_mis == null || on == _misOpen) return;
+            if (on && !MenuGate.TryOpen("mission")) return; // otro menú abierto
+            if (!on) MenuGate.Close("mission");
             _misOpen = on;
             _mis.SetActive(on);
             Free(on);
@@ -805,8 +809,9 @@ namespace Runtime.Scripts.Narrative
         // Máquina de escribir sin asignaciones por carácter: un único texto y maxVisibleCharacters.
         IEnumerator Log(string[] lines, Action done, float charDelay, float lineDelay, float hold)
         {
-            _logging = true;
             Panel(false);
+            while (!MenuGate.TryOpen("story")) yield return null; // espera a que se cierre cualquier menú
+            _logging = true;
             Free(true);
             _txt.text = string.Join("\n", lines);
             _txt.maxVisibleCharacters = 0;
@@ -837,6 +842,7 @@ namespace Runtime.Scripts.Narrative
 
             _logBox.SetActive(false);
             _logging = false;
+            MenuGate.Close("story");
             Free(false);
             done?.Invoke();
         }

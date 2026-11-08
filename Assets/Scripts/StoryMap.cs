@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using Runtime.Scripts.Inventory;
+using Runtime.Scripts.Gate;
 
 namespace Runtime.Scripts.Narrative
 {
@@ -34,7 +35,7 @@ namespace Runtime.Scripts.Narrative
             var kb = Keyboard.current;
             var sm = StoryManager.Instance;
             var inv = InventoryController.LocalInstance;
-            if (kb != null && kb.mKey.wasPressedThisFrame && (_open || (sm != null && !sm.IsBusy && inv != null))) Toggle(!_open);
+            if (kb != null && kb.mKey.wasPressedThisFrame && (_open || (sm != null && !sm.IsBusy && inv != null && MenuGate.TryOpen("map")))) Toggle(!_open);
             if (!_open) return;
             if (sm == null || inv == null) { Toggle(false); return; }
 
@@ -57,6 +58,7 @@ namespace Runtime.Scripts.Narrative
         void Toggle(bool on)
         {
             _open = on;
+            if (!on) MenuGate.Close("map");
             if (on) Fit();
             _root.SetActive(on);
             _shown = false; // fuerza refrescar la marca del objetivo al abrir
