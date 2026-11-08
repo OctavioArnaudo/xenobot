@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using Runtime.Scripts.Singleton;
 using Runtime.Scripts.Settings;
 using Runtime.Scripts.Levels;
+using Runtime.Scripts.Gate;
 
 
 
@@ -30,6 +31,8 @@ namespace Runtime.Scripts.Pause
 
         private GameObject _canvasRoot;
         private bool _isPaused = false;
+        private SettingsMenu _settings;
+        private bool _inSettings;
 
         protected override void Awake()
         {
@@ -45,6 +48,17 @@ namespace Runtime.Scripts.Pause
         private void Update()
         {
             bool escapePressed = Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+            // Ajustes superpuesto: Esc (o su botón de volver) lo cierra y regresa a la pausa; nunca reanuda el juego por debajo.
+            if (_inSettings)
+            {
+                if (_settings != null) { if (escapePressed) _settings.ReturnToMenu(); return; }
+                _inSettings = false;
+                if (pauseMenuPanel != null) pauseMenuPanel.SetActive(true);
+                if (_canvasRoot != null) _canvasRoot.SetActive(true);
+                return;
+            }
+            // Con inventario/crafting/stats/mapa abiertos, Esc solo los cierra: la pausa no se abre encima.
+            if (escapePressed && !_isPaused && (MenuGate.EscConsumed || MenuGate.HasClosableMenu)) escapePressed = false;
 
             if (escapePressed)
             {
@@ -58,6 +72,7 @@ namespace Runtime.Scripts.Pause
             if (_isPaused) return;
 
             _isPaused = true;
+            MenuGate.Take("pause"); // mientras está en pausa no se abre ningún otro menú
             Time.timeScale = 0f;
 
             if (pauseMenuPanel != null)
@@ -78,6 +93,7 @@ namespace Runtime.Scripts.Pause
             if (!_isPaused) return;
 
             _isPaused = false;
+            MenuGate.Close("pause");
             Time.timeScale = 1f;
 
             if (pauseMenuPanel != null)
@@ -98,8 +114,9 @@ namespace Runtime.Scripts.Pause
         {
             // En lugar de cargar escena, activamos el modo superposición (Overlay)
             // para no destruir el estado de red ni los prefabs del jugador.
-            var settings = gameObject.AddComponent<SettingsMenu>();
-            settings.IsOverlayMode = true;
+            _settings = gameObject.AddComponent<SettingsMenu>();
+            _settings.IsOverlayMode = true;
+            _inSettings = true;
 
             // Ocultamos el menú de pausa actual para que no estorbe
             if (pauseMenuPanel != null) pauseMenuPanel.SetActive(false);

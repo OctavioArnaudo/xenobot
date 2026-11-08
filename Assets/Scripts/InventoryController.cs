@@ -277,10 +277,14 @@ namespace Runtime.Scripts.Inventory
             }
         }
 
+        private void OnGate(string k) { if (k == "inventory") SetOpen(false); }
+
         private void SetOpen(bool open)
         {
             if (open && !MenuGate.TryOpen("inventory")) return; // otro menú abierto
             if (!open && _open) MenuGate.Close("inventory");
+            MenuGate.CloseRequested -= OnGate;
+            if (open) MenuGate.CloseRequested += OnGate;
             _open = open;
             bool free = open || MenuGate.Busy; // no bloquear el cursor si otro menú sigue abierto
             Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;

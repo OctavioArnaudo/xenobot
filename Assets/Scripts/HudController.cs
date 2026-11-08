@@ -452,22 +452,28 @@ namespace Runtime.Scripts.Hud
 
             if (Keyboard.current != null && Keyboard.current.kKey.wasPressedThisFrame)
             {
-                bool open = !_statsPanel.activeSelf;
-                if (!open || MenuGate.TryOpen("stats")) // abrir solo si no hay otro menú
-                {
-                    if (!open) MenuGate.Close("stats");
-                    _statsPanel.SetActive(open);
-                    bool free = open || MenuGate.Busy; // cursor libre = jugador bloqueado
-                    Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
-                    Cursor.visible = free;
-                    RefreshStats();
-                }
+                SetStats(!_statsPanel.activeSelf);
             }
 
             if (Time.unscaledTime < _uiTick) return;
             _uiTick = Time.unscaledTime + 0.1f;
             RefreshBars();
             if (_statsPanel.activeSelf) RefreshStats();
+        }
+
+        void OnGate(string k) { if (k == "stats" && _statsPanel != null && _statsPanel.activeSelf) SetStats(false); }
+
+        // Un solo menú a la vez; Esc lo cierra (MenuGate). Cursor libre = jugador bloqueado.
+        void SetStats(bool open)
+        {
+            if (open && !MenuGate.TryOpen("stats")) return;
+            MenuGate.CloseRequested -= OnGate;
+            if (open) MenuGate.CloseRequested += OnGate; else MenuGate.Close("stats");
+            _statsPanel.SetActive(open);
+            bool free = open || MenuGate.Busy;
+            Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = free;
+            RefreshStats();
         }
 
         void BuildHud()

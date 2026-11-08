@@ -55,10 +55,14 @@ namespace Runtime.Scripts.Narrative
             _goalImg.color = new Color(Goal.r, Goal.g, Goal.b, 0.6f + 0.4f * p);
         }
 
+        void OnGate(string k) { if (k == "map" && _open) Toggle(false); }
+
         void Toggle(bool on)
         {
             _open = on;
             if (!on) MenuGate.Close("map");
+            MenuGate.CloseRequested -= OnGate;
+            if (on) MenuGate.CloseRequested += OnGate;
             if (on) Fit();
             _root.SetActive(on);
             _shown = false; // fuerza refrescar la marca del objetivo al abrir

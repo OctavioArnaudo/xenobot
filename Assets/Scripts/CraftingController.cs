@@ -220,6 +220,8 @@ namespace Runtime.Scripts.Crafting
             }
         }
 
+        private void OnGate(string k) { if (k == "crafting" && _open) SetOpen(false); }
+
         public void SetOpen(bool open)
         {
             if (open && !MenuGate.TryOpen("crafting")) return; // otro menú abierto
@@ -236,6 +238,8 @@ namespace Runtime.Scripts.Crafting
             }
 
             if (!open && _open) MenuGate.Close("crafting");
+            MenuGate.CloseRequested -= OnGate;
+            if (open) MenuGate.CloseRequested += OnGate;
             _open = open;
             bool free = open || MenuGate.Busy;
             Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
