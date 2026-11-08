@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -7,6 +7,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.UI;
 using Runtime.Scripts.Crafting;
 using Runtime.Scripts.Inventory;
@@ -16,7 +17,7 @@ using Runtime.Scripts.Missions;
 namespace Runtime.Scripts.Narrative
 {
     /// <summary>
-    /// Historia + di·logos + tutoriales en un solo componente.
+    /// Historia + di√°logos + tutoriales en un solo componente.
     /// Paso entero: 2i = falta la llave i, 2i+1 = falta abrir su terminal. Con red es una NetworkVariable.
     /// Todo se detecta por distancia al jugador local (sin colliders ni Find). UI creada una vez y reutilizada.
     /// </summary>
@@ -27,11 +28,11 @@ namespace Runtime.Scripts.Narrative
         {
             [Tooltip("Objeto de la llave. Se recoge al acercarse y se oculta.")] public GameObject key;
             [Tooltip("Punto de la terminal donde se pulsa E.")] public Transform terminal;
-            [Tooltip("Texto al recoger la llave. VacÌo = por defecto.")][TextArea] public string keyText;
-            [Tooltip("Texto al abrir la terminal. VacÌo = por defecto.")][TextArea] public string openText;
-            [Tooltip("Objetivo mostrado (J) mientras falta la llave. VacÌo = por defecto.")] public string keyGoal;
-            [Tooltip("Objetivo mostrado (J) mientras falta abrir la terminal. VacÌo = por defecto.")] public string openGoal;
-            [Tooltip("Al abrirse esta terminal, en todos los clientes (tambiÈn al entrar tarde).")] public UnityEvent onOpen;
+            [Tooltip("Texto al recoger la llave. Vac√≠o = por defecto.")][TextArea] public string keyText;
+            [Tooltip("Texto al abrir la terminal. Vac√≠o = por defecto.")][TextArea] public string openText;
+            [Tooltip("Objetivo mostrado (J) mientras falta la llave. Vac√≠o = por defecto.")] public string keyGoal;
+            [Tooltip("Objetivo mostrado (J) mientras falta abrir la terminal. Vac√≠o = por defecto.")] public string openGoal;
+            [Tooltip("Al abrirse esta terminal, en todos los clientes (tambi√©n al entrar tarde).")] public UnityEvent onOpen;
         }
 
         [Serializable]
@@ -40,7 +41,7 @@ namespace Runtime.Scripts.Narrative
             public string id;
             public string speaker;
             [TextArea(2, 5)] public string[] lines;
-            [Tooltip("Zona de activaciÛn. VacÌo = solo se lanza con Say(id).")] public Transform at;
+            [Tooltip("Zona de activaci√≥n. Vac√≠o = solo se lanza con Say(id).")] public Transform at;
             public float radius = 3f;
             [Tooltip("Se abre al entrar en la zona. Si no, hay que pulsar E.")] public bool auto = true;
             public bool once = true;
@@ -52,7 +53,7 @@ namespace Runtime.Scripts.Narrative
         {
             public MissionData mission;
             [Tooltip("Aparece al llegar a este paso de la historia.")] public int fromStep;
-            [Tooltip("Solo para misiones sin Ìtems ni recetas: se completan al llegar aquÌ.")] public Transform at;
+            [Tooltip("Solo para misiones sin √≠tems ni recetas: se completan al llegar aqu√≠.")] public Transform at;
             public float radius = 3f;
             [NonSerialized] public bool on, done;
         }
@@ -62,7 +63,7 @@ namespace Runtime.Scripts.Narrative
         public List<Tutorial> tutorials = new List<Tutorial>();
         public float keyRadius = 1.5f;
         public float terminalRadius = 3f;
-        [Tooltip("Al abrirse cualquier terminal, con su n˙mero (1, 2, 3...).")] public UnityEvent<int> onAnyOpen;
+        [Tooltip("Al abrirse cualquier terminal, con su n√∫mero (1, 2, 3...).")] public UnityEvent<int> onAnyOpen;
         public UnityEvent onEnd;
         public bool debug;
 
@@ -74,19 +75,19 @@ namespace Runtime.Scripts.Narrative
         static readonly string[] Texts =
         {
             "Chip de mapa integrado. La ruta marca una cerradura sellada: la puerta 1.",
-            "Puerta 1 abierta. Dentro hay una m·scara de acceso.",
-            "M·scara acoplada. El mapa marca otra cerradura: la puerta 2.",
+            "Puerta 1 abierta. Dentro hay una m√°scara de acceso.",
+            "M√°scara acoplada. El mapa marca otra cerradura: la puerta 2.",
             "Puerta 2 abierta. Una consola guarda un chip de memoria.",
             "Fragmentos recuperados: 'restituir la especie'. Una tercera cerradura espera: la puerta 3.",
-            "Puerta 3 abierta. El complejo se bifurca en m·s sectores.",
-            "Segundo chip: fui construido para restituir a la humanidad tras el cataclismo atÛmico. La puerta 4 debe abrirse.",
-            "Puerta 4 abierta. Hay m·s equipo de acceso guardado.",
-            "Segunda m·scara asegurada. El sector de embriones es la puerta 5.",
-            "Puerta 5 abierta. Una c·mara criogÈnica sigue activa.",
-            "EmbriÛn asegurado. Debo llevarlo al laboratorio: la puerta 6.",
+            "Puerta 3 abierta. El complejo se bifurca en m√°s sectores.",
+            "Segundo chip: fui construido para restituir a la humanidad tras el cataclismo at√≥mico. La puerta 4 debe abrirse.",
+            "Puerta 4 abierta. Hay m√°s equipo de acceso guardado.",
+            "Segunda m√°scara asegurada. El sector de embriones es la puerta 5.",
+            "Puerta 5 abierta. Una c√°mara criog√©nica sigue activa.",
+            "Embri√≥n asegurado. Debo llevarlo al laboratorio: la puerta 6.",
             "Laboratorio operativo. Sus sectores internos exigen una llave propia.",
             "Llave del laboratorio obtenida. La puerta 7 responde a ella.",
-            "Puerta 7 abierta. Detecto un depÛsito de combustible.",
+            "Puerta 7 abierta. Detecto un dep√≥sito de combustible.",
             "Combustible cargado. La nave espera tras la puerta 8.",
             ""
         };
@@ -98,51 +99,71 @@ namespace Runtime.Scripts.Narrative
             "> ERROR: falla de memoria, sectores corruptos",
             "> sistema de emergencia iniciado",
             "> ERROR: mapa no encontrado",
-            "> buscando mÛdulo de navegaciÛn...",
-            "> seÒal de datos detectada en las inmediaciones",
-            "> restableciendo locomociÛn",
+            "> buscando m√≥dulo de navegaci√≥n...",
+            "> se√±al de datos detectada en las inmediaciones",
+            "> restableciendo locomoci√≥n",
         };
 
         static readonly string[] Final =
         {
-            "> ALERTA: falla de contenciÛn en incubadora",
-            "> cascada de fallos en c·maras de gestaciÛn",
+            "> ALERTA: falla de contenci√≥n en incubadora",
+            "> cascada de fallos en c√°maras de gestaci√≥n",
             "> embriones viables: 12... 7... 3... 1",
-            "> protocolo de evacuaciÛn: despegue inmediato",
-            "> cargando embriÛn superviviente",
+            "> protocolo de evacuaci√≥n: despegue inmediato",
+            "> cargando embri√≥n superviviente",
             "> despegue confirmado",
-            "> an·lisis genÈtico del embriÛn... completo",
+            "> an√°lisis gen√©tico del embri√≥n... completo",
             "> coincidencia con genoma humano: 97,3 %",
-            "> el 2,7 % restante no figura en ning˙n registro",
-            "> reclasificando propÛsito...",
+            "> el 2,7 % restante no figura en ning√∫n registro",
+            "> reclasificando prop√≥sito...",
         };
 
         static readonly string[] Denied = { "Acceso denegado. Falta algo por recuperar." };
 
         static readonly Color Green = new Color(0.25f, 1f, 0.4f);
         static readonly Color Dark = new Color(0.02f, 0.16f, 0.06f, 0.96f);
+        static readonly Color Gold = new Color(1f, 0.85f, 0.2f);
+        static readonly Color Dim = new Color(0.08f, 0.3f, 0.12f);
+        static readonly string IntroText = string.Join("\n", Intro), FinalText = string.Join("\n", Final);
 
         NetworkVariable<int> _net = new NetworkVariable<int>();
-        int _local, _seen, _i;
+        int _local, _seen, _i, _sel;
         bool[] _had;
-        bool _ready, _logging, _blocked, _fin, _dlgOpen, _goalOn = true;
-        float _t0 = -1f, _poll, _tut;
+        bool _ready, _logging, _blocked, _fin, _dlgOpen, _misOpen, _drag;
+        float _t0 = -1f, _poll, _tut, _wheel, _scroll, _tgt, _max;
         string _want, _who;
         string[] _lines;
         Dialog _talk;
         readonly Queue<(string who, string[] lines)> _q = new Queue<(string, string[])>();
         readonly List<Tutorial> _active = new List<Tutorial>();
         readonly StringBuilder _sb = new StringBuilder(256);
-        GameObject _logBox, _dlg, _goal;
-        TextMeshProUGUI _txt, _dlgTxt, _goalTxt, _counter, _prompt;
+        GameObject _logBox, _dlg, _mis;
+        TextMeshProUGUI _txt, _dlgTxt, _detail, _foot, _counter, _prompt;
+        RectTransform _track, _fill, _view, _detailRt, _barTrack, _bar;
+        readonly List<Node> _nodes = new List<Node>(); // pool de c√≠rculos: se crean una vez y se reutilizan
+        List<string>[] _hist;                          // historial narrativo por cap√≠tulo
+        static Sprite s_disc;
+
+        class Node { public RectTransform rt; public Image halo, disc; public TextMeshProUGUI num; public float scale = 1f; }
+
+        // Teclas/botones que el panel lee directamente de los eventos de entrada (el resto del juego no las ve mientras est√° abierto).
+        const int KJ = 1, KLeft = 2, KA = 4, KRight = 8, KD = 16, KEsc = 32, KBack = 64, BLeft = 128, BRight = 256, KUp = 512, KDown = 1024, KW = 2048, KS = 4096;
+        const float ViewH = 270f, ScrollSpeed = 900f, WheelStep = 170f, BarW = 30f;
+        int _prev, _hit;
+        Vector2 _mpos;
 
         int Step => IsSpawned ? _net.Value : _local;
         int Last => pairs.Count * 2;
 
-        void Awake() => Instance = this;
+        void Awake()
+        {
+            Instance = this;
+            InputSystem.onEvent += OnInput;
+        }
 
         public override void OnDestroy()
         {
+            InputSystem.onEvent -= OnInput;
             if (Instance == this) Instance = null;
             base.OnDestroy();
         }
@@ -156,14 +177,15 @@ namespace Runtime.Scripts.Narrative
 
             var kb = Keyboard.current;
             bool e = kb != null && kb.eKey.wasPressedThisFrame;
-            bool busy = _dlgOpen || _logging; // la E que cierra un di·logo no abre nada
+            bool busy = _dlgOpen || _logging || _misOpen; // la E que cierra un di√°logo no abre nada
 
             if (_dlgOpen && kb != null && (e || kb.spaceKey.wasPressedThisFrame)) Next();
-            if (!_logging && !_dlgOpen && _q.Count > 0) { var d = _q.Dequeue(); Open(d.who, d.lines); }
-            if (kb != null && kb.jKey.wasPressedThisFrame) { _goalOn = !_goalOn; Goal(); }
+            if (!_logging && !_dlgOpen && !_misOpen && _q.Count > 0) { var d = _q.Dequeue(); Open(d.who, d.lines); }
+            if (!_misOpen && kb != null && kb.jKey.wasPressedThisFrame && !_logging && !_dlgOpen && pairs.Count > 0) Panel(true);
+            if (_misOpen) PanelInput();
 
             var inv = InventoryController.LocalInstance;
-            if (e && !busy && !_dlgOpen && !_logging && inv != null) Interact(inv.transform.position);
+            if (e && !busy && !_dlgOpen && !_logging && !_misOpen && inv != null) Interact(inv.transform.position);
 
             float now = Time.unscaledTime;
             if (now >= _poll)
@@ -208,6 +230,8 @@ namespace Runtime.Scripts.Narrative
             if (waited < 0.75f || (netPending && waited < 5f)) return; // tope 5 s: si no spawnea, seguimos en local
 
             _ready = true;
+            _hist = new List<string>[pairs.Count];
+            for (int i = 0; i < _hist.Length; i++) _hist[i] = new List<string>();
             _had = new bool[pairs.Count];
             for (int i = 0; i < _had.Length; i++) _had[i] = pairs[i].key != null;
             _seen = Step;
@@ -216,7 +240,10 @@ namespace Runtime.Scripts.Narrative
             Counter();
             if (Last > 0 && _seen >= Last) Finale();
             else if (_seen == 0)
-                StartCoroutine(Log(Intro, () => Enq("Sistemas mÌnimos operativos. Sigo la firma de datos m·s cercana."), 0.02f, 0.35f, 1.5f));
+            {
+                Note(0, IntroText);
+                StartCoroutine(Log(Intro, () => Line(0, "Sistemas m√≠nimos operativos. Sigo la firma de datos m√°s cercana.", true), 0.02f, 0.35f, 1.5f));
+            }
             Goal();
         }
 
@@ -238,15 +265,29 @@ namespace Runtime.Scripts.Narrative
             bool key = s % 2 == 1;
             if (key) { if (p.key != null) p.key.SetActive(false); }
             else { p.onOpen?.Invoke(); onAnyOpen?.Invoke(s / 2); }
-            if (!announce) return;
-            if (s >= Last) { Finale(); return; }
 
             string t = key ? p.keyText : p.openText;
             if (string.IsNullOrEmpty(t)) t = s - 1 < Texts.Length ? Texts[s - 1] : "";
-            if (t.Length > 0) Enq(t);
-            if (s == 5) Enq("FASE II: la memoria vuelve, pero con lagunas. Debo reunir lo que falta.");
-            if (s == 15) Enq("FASE III: tengo lo necesario. Es hora de huir.");
+            int ch = (s - 1) / 2;
+            Line(ch, t, announce); // siempre al historial; al di√°logo solo si announce
+            if (s == 5) Line(ch, "FASE II: la memoria vuelve, pero con lagunas. Debo reunir lo que falta.", announce);
+            if (s == 15) Line(ch, "FASE III: tengo lo necesario. Es hora de huir.", announce);
+            if (announce && s >= Last) Finale();
         }
+
+        void Line(int ch, string t, bool say)
+        {
+            if (t.Length == 0) return;
+            Note(ch, t);
+            if (say) Enq(t);
+        }
+
+        void Note(int ch, string t)
+        {
+            if (_hist != null && ch >= 0 && ch < _hist.Length) _hist[ch].Add(t);
+        }
+
+        int Cur => Mathf.Min(_seen / 2, pairs.Count - 1);
 
         void Counter() => _counter.text = $"LLAVES  {(_seen + 1) / 2}/{pairs.Count}";
 
@@ -254,7 +295,15 @@ namespace Runtime.Scripts.Narrative
         {
             if (_fin) return;
             _fin = true;
-            StartCoroutine(Log(Final, () => onEnd?.Invoke(), 0.03f, 0.6f, 3f));
+            StartCoroutine(FinalRun());
+        }
+
+        // El final espera a que se lea el √∫ltimo texto pendiente.
+        IEnumerator FinalRun()
+        {
+            while (_q.Count > 0 || _dlgOpen) yield return null;
+            Note(pairs.Count - 1, FinalText);
+            yield return Log(Final, () => onEnd?.Invoke(), 0.03f, 0.6f, 3f);
         }
 
         // Cualquier cliente puede avanzar; el servidor solo acepta si el paso sigue siendo el mismo.
@@ -270,7 +319,7 @@ namespace Runtime.Scripts.Narrative
             if (_net.Value == from) _net.Value++;
         }
 
-        // 10 Hz: recoger llave, zonas de di·logo y aviso de E.
+        // 10 Hz: recoger llave, zonas de di√°logo y aviso de E.
         void Poll(InventoryController inv)
         {
             Vector3 p = inv.transform.position;
@@ -283,10 +332,10 @@ namespace Runtime.Scripts.Narrative
                 term = s % 2 == 1 && s < Last && Near(pairs[(s - 1) / 2].terminal, p, terminalRadius);
                 Talks(p);
             }
-            Prompt(_logging || _dlgOpen ? null : term ? PTerm : _talk != null ? PTalk : null);
+            Prompt(_logging || _dlgOpen || _misOpen ? null : term ? PTerm : _talk != null ? PTalk : null);
         }
 
-        // Llave recogida: te acercas, o su propio script la ocultÛ/destruyÛ antes de que llegaras.
+        // Llave recogida: te acercas, o su propio script la ocult√≥/destruy√≥ antes de que llegaras.
         bool Taken(int k, Vector3 p)
         {
             var g = pairs[k].key;
@@ -302,7 +351,7 @@ namespace Runtime.Scripts.Narrative
             if (w != null) _prompt.text = w;
         }
 
-        // E: abre la terminal que toca, o el di·logo al alcance.
+        // E: abre la terminal que toca, o el di√°logo al alcance.
         void Interact(Vector3 p)
         {
             int s = Step;
@@ -317,19 +366,20 @@ namespace Runtime.Scripts.Narrative
             if (_talk != null && !(_talk.once && _talk.used) && Near(_talk.at, p, _talk.radius)) { Say(_talk); _talk = null; }
         }
 
-        // ---------- Di·logos ----------
+        // ---------- Di√°logos ----------
 
-        /// <summary>Encola un di·logo por id (usable desde UnityEvents).</summary>
+        /// <summary>Encola un di√°logo por id (usable desde UnityEvents).</summary>
         public void Say(string id)
         {
             foreach (var d in dialogs) if (d.id == id) { Say(d); return; }
-            Debug.LogWarning($"[Story] Di·logo '{id}' no encontrado.");
+            Debug.LogWarning($"[Story] Di√°logo '{id}' no encontrado.");
         }
 
         void Say(Dialog d)
         {
             if (d.lines == null || d.lines.Length == 0) return;
             d.used = true;
+            foreach (var l in d.lines) Note(Cur, string.IsNullOrEmpty(d.speaker) ? l : "<b>" + d.speaker + "</b>: " + l);
             _q.Enqueue((d.speaker, d.lines));
         }
 
@@ -353,7 +403,7 @@ namespace Runtime.Scripts.Narrative
         {
             _who = who; _lines = lines; _i = 0; _dlgOpen = true;
             _dlg.SetActive(true);
-            Mouse(true);
+            Free(true);
             Render();
         }
 
@@ -362,12 +412,12 @@ namespace Runtime.Scripts.Narrative
             if (++_i < _lines.Length) { Render(); return; }
             _dlgOpen = false;
             _dlg.SetActive(false);
-            Mouse(false);
+            Free(false);
         }
 
         void Render() => _dlgTxt.text = string.IsNullOrEmpty(_who) ? _lines[_i] : _who + "\n" + _lines[_i];
 
-        static void Mouse(bool free)
+        static void Free(bool free)
         {
             Cursor.visible = free;
             Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
@@ -375,7 +425,7 @@ namespace Runtime.Scripts.Narrative
 
         // ---------- Tutoriales / secundarias ----------
 
-        /// <summary>AÒade una misiÛn al panel de objetivos en tiempo de ejecuciÛn.</summary>
+        /// <summary>A√±ade una misi√≥n al panel de objetivos en tiempo de ejecuci√≥n.</summary>
         public void AddMission(MissionData m)
         {
             if (m == null) return;
@@ -384,7 +434,7 @@ namespace Runtime.Scripts.Narrative
             Goal();
         }
 
-        /// <summary>Marca como completada una misiÛn ya aÒadida.</summary>
+        /// <summary>Marca como completada una misi√≥n ya a√±adida.</summary>
         public void Complete(MissionData m)
         {
             foreach (var t in _active) if (t.mission == m) { t.done = true; Goal(); return; }
@@ -458,42 +508,277 @@ namespace Runtime.Scripts.Narrative
             return n;
         }
 
-        // Panel de objetivos (J): se reescribe solo cuando algo cambia, sin crear strings.
+        // ---------- Panel de misi√≥n (J): l√≠nea de tiempo de cap√≠tulos ----------
+
+        void Panel(bool on)
+        {
+            if (_mis == null || on == _misOpen) return;
+            _misOpen = on;
+            _mis.SetActive(on);
+            Free(on);
+            _hit = 0;
+            if (on)
+            {
+                _sel = -1;
+                _scroll = _tgt = _wheel = 0f;
+                _drag = false;
+                _prev = ~0; // lo que ya estaba pulsado al abrir no cuenta como pulsaci√≥n nueva
+                if (Mouse.current != null) _mpos = Mouse.current.position.ReadValue();
+                // Suelta teclas/botones que estuvieran pulsados: el jugador no sigue andando ni disparando.
+                if (Keyboard.current != null) InputSystem.ResetDevice(Keyboard.current);
+                if (Mouse.current != null) InputSystem.ResetDevice(Mouse.current);
+                foreach (var nd in _nodes) { nd.scale = 1f; nd.rt.localScale = Vector3.one; }
+                _detail.alpha = 0f;
+                _detail.enabled = false;
+            }
+            Goal();
+        }
+
+        // Mientras el panel est√° abierto, teclado y rat√≥n se descartan para TODO el juego (combate, inventario, paneles)
+        // y solo se leen aqu√≠. No toca Time.timeScale: el juego (y la red) siguen corriendo.
+        void OnInput(InputEventPtr e, InputDevice d)
+        {
+            if (!_misOpen || !(e.IsA<StateEvent>() || e.IsA<DeltaStateEvent>())) return;
+            if (d is Keyboard k)
+            {
+                Edge(k.jKey, e, KJ); Edge(k.leftArrowKey, e, KLeft); Edge(k.aKey, e, KA);
+                Edge(k.rightArrowKey, e, KRight); Edge(k.dKey, e, KD);
+                Edge(k.escapeKey, e, KEsc); Edge(k.backspaceKey, e, KBack);
+                Edge(k.upArrowKey, e, KUp); Edge(k.downArrowKey, e, KDown);
+                Edge(k.wKey, e, KW); Edge(k.sKey, e, KS);
+            }
+            else if (d is Mouse m)
+            {
+                if (m.position.ReadValueFromEvent(e, out Vector2 pos)) _mpos = pos;
+                if (m.scroll.ReadValueFromEvent(e, out Vector2 sc)) _wheel += sc.y;
+                Edge(m.leftButton, e, BLeft); Edge(m.rightButton, e, BRight);
+            }
+            else return;
+            e.handled = true;
+        }
+
+        void Edge(InputControl<float> c, InputEventPtr e, int bit)
+        {
+            if (!c.ReadValueFromEvent(e, out float v)) return;
+            bool down = v > 0.5f;
+            if (down && (_prev & bit) == 0) _hit |= bit;
+            _prev = down ? _prev | bit : _prev & ~bit;
+        }
+
+        void PanelInput()
+        {
+            int h = _hit;
+            _hit = 0;
+            int now = Mathf.Min(_seen / 2, pairs.Count - 1);
+            if ((h & KJ) != 0) { Panel(false); return; }
+            if ((h & (KEsc | KBack | BRight)) != 0) { if (_sel >= 0) Pick(-1); else { Panel(false); return; } }
+            if ((h & (KLeft | KA)) != 0) Pick(_sel < 0 ? now : _sel - 1);
+            if ((h & (KRight | KD)) != 0) Pick(_sel < 0 ? now : _sel + 1);
+            if ((h & BLeft) != 0)
+            {
+                if (_sel >= 0 && _barTrack.gameObject.activeSelf && RectTransformUtility.RectangleContainsScreenPoint(_barTrack, _mpos, null)) _drag = true;
+                else
+                {
+                    int i = Hit(_mpos);
+                    if (i >= 0) Pick(i == _sel ? -1 : i); // clic en el elegido = volver
+                }
+            }
+            Scroll(h);
+            Animate();
+        }
+
+        // Rueda, flechas/W/S y arrastre de la barra.
+        void Scroll(int h)
+        {
+            if (_sel < 0 || _max <= 0f) { _wheel = 0f; return; }
+            float dt = Time.unscaledDeltaTime;
+            if (_wheel != 0f)
+            {
+                _tgt -= Mathf.Sign(_wheel) * Mathf.Max(1f, Mathf.Abs(_wheel) / 120f) * WheelStep;
+                _wheel = 0f;
+            }
+            if ((_prev & (KUp | KW)) != 0) _tgt -= ScrollSpeed * dt;
+            if ((_prev & (KDown | KS)) != 0) _tgt += ScrollSpeed * dt;
+            if ((_prev & BLeft) == 0) _drag = false;
+            if (_drag && RectTransformUtility.ScreenPointToLocalPointInRectangle(_barTrack, _mpos, null, out Vector2 lp))
+            {
+                var r = _barTrack.rect;
+                float hh = _bar.sizeDelta.y;
+                _scroll = _tgt = Mathf.InverseLerp(r.yMax - hh * 0.5f, r.yMin + hh * 0.5f, lp.y) * _max;
+            }
+            _tgt = Mathf.Clamp(_tgt, 0f, _max);
+            float k = 1f - Mathf.Exp(-16f * dt); // desplazamiento suave hacia el objetivo
+            float n = Mathf.Abs(_tgt - _scroll) < 0.5f ? _tgt : Mathf.Lerp(_scroll, _tgt, k);
+            Fit(false, n - _scroll);
+        }
+
+        // C√≠rculo bajo el puntero (el de centro m√°s cercano si se solapan al agrandarse).
+        int Hit(Vector2 pos)
+        {
+            int best = -1;
+            float bd = float.MaxValue;
+            for (int i = 0; i < pairs.Count && i < _nodes.Count; i++)
+            {
+                var rt = _nodes[i].rt;
+                if (!RectTransformUtility.RectangleContainsScreenPoint(rt, pos, null)) continue;
+                float d = (RectTransformUtility.WorldToScreenPoint(null, rt.position) - pos).sqrMagnitude;
+                if (d < bd) { bd = d; best = i; }
+            }
+            return best;
+        }
+
+        void Pick(int i)
+        {
+            int s = i < 0 ? -1 : Mathf.Clamp(i, 0, pairs.Count - 1);
+            if (s != _sel) _scroll = _tgt = 0f;
+            _sel = s;
+            Goal();
+        }
+
+        // Movimiento suave: el c√≠rculo elegido crece, el resto vuelve a su tama√±o; el historial aparece con fundido.
+        // Solo toca la UI mientras algo se est√° moviendo.
+        void Animate()
+        {
+            float k = 1f - Mathf.Exp(-14f * Time.unscaledDeltaTime);
+            for (int i = 0; i < pairs.Count && i < _nodes.Count; i++)
+            {
+                var nd = _nodes[i];
+                float t = i == _sel ? 1.6f : RectTransformUtility.RectangleContainsScreenPoint(nd.rt, _mpos, null) ? 1.2f : 1f;
+                if (nd.scale == t) continue;
+                nd.scale = Mathf.Abs(nd.scale - t) < 0.002f ? t : Mathf.Lerp(nd.scale, t, k);
+                nd.rt.localScale = new Vector3(nd.scale, nd.scale, 1f);
+            }
+            float a = _sel >= 0 ? 1f : 0f;
+            if (_detail.alpha != a)
+            {
+                _detail.alpha = Mathf.Abs(_detail.alpha - a) < 0.004f ? a : Mathf.Lerp(_detail.alpha, a, k);
+                bool vis = _detail.alpha > 0.01f;
+                if (_detail.enabled != vis) _detail.enabled = vis;
+            }
+        }
+
+        // Ajusta el alto del texto, limita el scroll y coloca el tirador. remeasure = el texto cambi√≥.
+        void Fit(bool remeasure, float delta = 0f)
+        {
+            if (_sel < 0) { if (_barTrack.gameObject.activeSelf) _barTrack.gameObject.SetActive(false); return; }
+            if (remeasure)
+            {
+                _detail.ForceMeshUpdate();
+                float h = _detail.preferredHeight;
+                _detailRt.sizeDelta = new Vector2(0f, h);
+                _max = Mathf.Max(0f, h - ViewH);
+            }
+            _scroll = Mathf.Clamp(_scroll + delta, 0f, _max);
+            _detailRt.anchoredPosition = new Vector2(0f, _scroll);
+            bool on = _max > 0f;
+            if (_barTrack.gameObject.activeSelf != on) _barTrack.gameObject.SetActive(on);
+            if (!on) return;
+            float hh = Mathf.Max(32f, ViewH * ViewH / (ViewH + _max));
+            _bar.sizeDelta = new Vector2(0f, hh);
+            _bar.anchoredPosition = new Vector2(0f, -(_scroll / _max) * (ViewH - hh));
+        }
+
+        // Se redibuja solo si el panel est√° abierto y algo cambia. Sin objetos nuevos: reutiliza el pool y un StringBuilder.
         void Goal()
         {
-            if (_goal == null) return;
-            bool show = _goalOn && _ready && !_logging;
-            if (_goal.activeSelf != show) _goal.SetActive(show);
-            if (!show) return;
+            if (!_misOpen || _hist == null) return;
+            int n = pairs.Count, now = _seen / 2;
+            Nodes(n);
+            for (int i = 0; i < n; i++)
+            {
+                var nd = _nodes[i];
+                bool done = _seen >= 2 * i + 2, cur = now == i;
+                nd.rt.anchorMin = nd.rt.anchorMax = new Vector2(n > 1 ? i / (float)(n - 1) : 0.5f, 0.5f);
+                nd.rt.anchoredPosition = Vector2.zero;
+                nd.halo.enabled = i == _sel;
+                nd.disc.color = done ? Green : cur ? Gold : Dim;
+                nd.num.color = done || cur ? Dark : Green;
+            }
+            _fill.anchorMax = new Vector2(_seen >= Last ? 1f : n > 1 ? Mathf.Min(now, n - 1) / (float)(n - 1) : 0f, 0.5f);
 
-            _sb.Clear().Append("<b>OBJETIVO</b>\n");
-            int s = _seen;
-            if (s >= Last) _sb.Append('ó');
+            // Historial completo del cap√≠tulo elegido (se recorre con scroll)
+            if (_sel >= 0)
+            {
+                _sb.Clear().Append("<b>CAP√çTULO ").Append(_sel + 1).Append("</b>\n");
+                if (_sel > now) _sb.Append("\nCap√≠tulo bloqueado.");
+                else
+                {
+                    var h = _hist[_sel];
+                    if (h.Count == 0) _sb.Append("\nSin registros.");
+                    for (int i = 0; i < h.Count; i++) _sb.Append("\n‚Ä¢ ").Append(h[i]);
+                }
+                _detail.SetText(_sb);
+            }
+            Fit(true);
+
+            // Objetivo actual + secundarias
+            _sb.Clear().Append("<b>OBJETIVO</b>  ");
+            if (_seen >= Last) _sb.Append('‚Äî');
             else
             {
-                var p = pairs[s / 2];
-                string g = s % 2 == 0 ? p.keyGoal : p.openGoal;
+                var p = pairs[now];
+                string g = _seen % 2 == 0 ? p.keyGoal : p.openGoal;
                 if (!string.IsNullOrEmpty(g)) _sb.Append(g);
-                else _sb.Append(s % 2 == 0 ? "Recuperar la llave " : "Abrir la puerta ").Append(s / 2 + 1);
+                else _sb.Append(_seen % 2 == 0 ? "Recuperar la llave " : "Abrir la puerta ").Append(now + 1);
             }
-
-            int n = 0;
+            int c = 0;
             foreach (var t in _active)
             {
-                if (t.done || n == 3) continue;
-                _sb.Append(n++ == 0 ? "\n\n<b>SECUNDARIAS</b>\nï " : "\nï ").Append(t.mission.title).Append(": ").Append(t.mission.description);
+                if (t.done || c == 2) continue;
+                _sb.Append(c++ == 0 ? "\n<b>SECUNDARIAS</b>  " : "   ¬∑   ").Append(t.mission.title);
             }
-            _goalTxt.SetText(_sb);
+            _foot.SetText(_sb);
+        }
+
+        // Pool de c√≠rculos: crece solo si faltan; los sobrantes se desactivan, nunca se destruyen.
+        void Nodes(int n)
+        {
+            while (_nodes.Count < n)
+            {
+                var halo = Box(_track, Color.white, new Vector2(64, 64)).GetComponent<Image>();
+                halo.sprite = Disc();
+                var disc = Box(halo.transform, Green, Vector2.zero).GetComponent<Image>();
+                disc.sprite = Disc();
+                Fill(disc.gameObject, 6);
+                var num = Txt(disc.transform, 26, TextAlignmentOptions.Center);
+                Fill(num.gameObject, 0);
+                num.text = (_nodes.Count + 1).ToString();
+                _nodes.Add(new Node { rt = halo.rectTransform, halo = halo, disc = disc, num = num });
+            }
+            for (int i = 0; i < _nodes.Count; i++)
+            {
+                var g = _nodes[i].rt.gameObject;
+                if (g.activeSelf != i < n) g.SetActive(i < n);
+            }
+        }
+
+        // Un √∫nico sprite circular generado por c√≥digo, compartido por todos los c√≠rculos (un solo batch).
+        static Sprite Disc()
+        {
+            if (s_disc != null) return s_disc;
+            const int N = 64;
+            var tex = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            var px = new Color32[N * N];
+            float c = (N - 1) * 0.5f, r = N * 0.5f;
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    float d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c));
+                    px[y * N + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(r - d) * 255f));
+                }
+            tex.SetPixels32(px);
+            tex.Apply(false, true);
+            return s_disc = Sprite.Create(tex, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), 100f);
         }
 
         // ---------- Input / consola ----------
 
-        // Bloquea el input del jugador mientras hay consola, di·logo o espera inicial.
+        // Bloquea el input del jugador mientras hay consola, di√°logo o espera inicial.
         void Block()
         {
             var inv = InventoryController.LocalInstance;
             if (inv == null) return;
-            bool want = (!_ready && _t0 >= 0f) || _logging || _dlgOpen;
+            bool want = (!_ready && _t0 >= 0f) || _logging || _dlgOpen || _misOpen;
             if (want == _blocked) return;
             _blocked = want;
             var pi = inv.GetComponent<PlayerInput>();
@@ -504,12 +789,12 @@ namespace Runtime.Scripts.Narrative
         static bool Fast() =>
             Keyboard.current != null && (Keyboard.current.eKey.isPressed || Keyboard.current.spaceKey.isPressed);
 
-        // M·quina de escribir sin asignaciones por car·cter: un ˙nico texto y maxVisibleCharacters.
+        // M√°quina de escribir sin asignaciones por car√°cter: un √∫nico texto y maxVisibleCharacters.
         IEnumerator Log(string[] lines, Action done, float charDelay, float lineDelay, float hold)
         {
             _logging = true;
-            Goal();
-            Mouse(true);
+            Panel(false);
+            Free(true);
             _txt.text = string.Join("\n", lines);
             _txt.maxVisibleCharacters = 0;
             _logBox.SetActive(true);
@@ -521,7 +806,7 @@ namespace Runtime.Scripts.Narrative
                 float acc = 0f;
                 while (shown < end)
                 {
-                    if (Fast()) shown = end; // E/Espacio: resto de la lÌnea al instante
+                    if (Fast()) shown = end; // E/Espacio: resto de la l√≠nea al instante
                     else
                     {
                         acc += Time.unscaledDeltaTime;
@@ -531,7 +816,7 @@ namespace Runtime.Scripts.Narrative
                     _txt.maxVisibleCharacters = shown;
                     yield return null;
                 }
-                _txt.maxVisibleCharacters = ++shown; // salto de lÌnea
+                _txt.maxVisibleCharacters = ++shown; // salto de l√≠nea
                 float wait = Fast() ? 0.04f : lineDelay;
                 for (float w = 0f; w < wait; w += Time.unscaledDeltaTime) yield return null;
             }
@@ -539,8 +824,7 @@ namespace Runtime.Scripts.Narrative
 
             _logBox.SetActive(false);
             _logging = false;
-            Mouse(false);
-            Goal();
+            Free(false);
             done?.Invoke();
         }
 
@@ -548,7 +832,7 @@ namespace Runtime.Scripts.Narrative
 
         void Build()
         {
-            // Overlay: consola (inicio/final) y di·logo
+            // Overlay: consola (inicio/final) y di√°logo
             var ui = NewCanvas("StoryUI", 500).transform;
             _logBox = Box(ui, Green, new Vector2(800, 380));
             _txt = Txt(Box(_logBox.transform, Dark, new Vector2(792, 372)).transform, 22, TextAlignmentOptions.TopLeft);
@@ -575,16 +859,82 @@ namespace Runtime.Scripts.Narrative
             Fill(_counter.gameObject, 4);
             _counter.text = $"LLAVES  0/{pairs.Count}";
 
-            _goal = Box(hud, Green, new Vector2(460, 230));
-            Anchor(_goal, new Vector2(0f, 1f), new Vector2(8f, -8f));
-            _goalTxt = Txt(Box(_goal.transform, Dark, new Vector2(452, 222)).transform, 22, TextAlignmentOptions.TopLeft);
-            Fill(_goalTxt.gameObject, 12);
-            _goal.SetActive(false);
-
             _prompt = Txt(hud, 30, TextAlignmentOptions.Center);
             Anchor(_prompt.gameObject, new Vector2(0.5f, 0f), new Vector2(0f, 110f));
             _prompt.rectTransform.sizeDelta = new Vector2(600f, 50f);
             _prompt.gameObject.SetActive(false);
+
+            // Panel de misi√≥n (se abre con J): canvas propio para no recalcular el resto de la UI
+            var mc = NewCanvas("StoryMission", 450).transform;
+            _mis = Box(mc, Green, new Vector2(1100, 600));
+            var mi = Box(_mis.transform, Dark, new Vector2(1092, 592)).transform;
+
+            var title = Txt(mi, 30, TextAlignmentOptions.Left);
+            title.text = "REGISTRO DE MISI√ìN   <size=50%>[J] cerrar  ¬∑  clic o ‚Üê/‚Üí cap√≠tulo  ¬∑  rueda o ‚Üë/‚Üì leer  ¬∑  Esc o clic derecho: volver</size>";
+            Band(title.gameObject, 14, 44, 40);
+
+            var tg = new GameObject("track", typeof(RectTransform));
+            tg.transform.SetParent(mi, false);
+            _track = Band(tg, 70, 140, 70);
+            Bar(_track, Dim, 1f);
+            _fill = Bar(_track, Green, 0f);
+            Nodes(pairs.Count);
+
+            // Visor del historial: texto grande a tama√±o fijo dentro de una m√°scara + scrollbar
+            var vg = new GameObject("view", typeof(RectTransform), typeof(RectMask2D));
+            vg.transform.SetParent(mi, false);
+            _view = Band(vg, 225, ViewH, 40);
+            _view.sizeDelta = new Vector2(-128f, ViewH);
+            _view.anchoredPosition = new Vector2(-24f, -225f);
+
+            _detail = Txt(_view, 30, TextAlignmentOptions.TopLeft);
+            _detail.color = Color.white;
+            _detail.alpha = 0f;
+            _detail.enabled = false;
+            _detailRt = _detail.rectTransform;
+            _detailRt.anchorMin = new Vector2(0f, 1f);
+            _detailRt.anchorMax = new Vector2(1f, 1f);
+            _detailRt.pivot = new Vector2(0f, 1f);
+            _detailRt.anchoredPosition = Vector2.zero;
+            _detailRt.sizeDelta = Vector2.zero;
+
+            _barTrack = Box(mi, Dim, new Vector2(BarW, ViewH)).GetComponent<RectTransform>();
+            _barTrack.anchorMin = _barTrack.anchorMax = _barTrack.pivot = new Vector2(1f, 1f);
+            _barTrack.anchoredPosition = new Vector2(-40f, -225f);
+            _bar = Box(_barTrack, Green, new Vector2(0f, 40f)).GetComponent<RectTransform>();
+            _bar.anchorMin = new Vector2(0f, 1f);
+            _bar.anchorMax = new Vector2(1f, 1f);
+            _bar.pivot = new Vector2(0.5f, 1f);
+            _bar.anchoredPosition = Vector2.zero;
+            _barTrack.gameObject.SetActive(false);
+
+            _foot = Txt(mi, 20, TextAlignmentOptions.TopLeft);
+            _foot.enableAutoSizing = true;
+            _foot.fontSizeMin = 12;
+            _foot.fontSizeMax = 20;
+            _foot.overflowMode = TextOverflowModes.Truncate;
+            Band(_foot.gameObject, 512, 70, 40);
+            _mis.SetActive(false);
+        }
+
+        static RectTransform Band(GameObject g, float top, float h, float pad)
+        {
+            var r = g.GetComponent<RectTransform>();
+            r.anchorMin = new Vector2(0f, 1f);
+            r.anchorMax = new Vector2(1f, 1f);
+            r.pivot = new Vector2(0.5f, 1f);
+            r.anchoredPosition = new Vector2(0f, -top);
+            r.sizeDelta = new Vector2(-2f * pad, h);
+            return r;
+        }
+
+        static RectTransform Bar(Transform parent, Color c, float x1)
+        {
+            var r = Box(parent, c, new Vector2(0f, 6f)).GetComponent<RectTransform>();
+            r.anchorMin = new Vector2(0f, 0.5f);
+            r.anchorMax = new Vector2(x1, 0.5f);
+            r.anchoredPosition = Vector2.zero;
+            return r;
         }
 
         static GameObject NewCanvas(string name, int order)
@@ -639,7 +989,7 @@ namespace Runtime.Scripts.Narrative
             r.offsetMax = new Vector2(-m, -m);
         }
 
-        // Al seleccionar el objeto: verde = terminal, amarillo = llave, cian = di·logo, magenta = tutorial.
+        // Al seleccionar el objeto: verde = terminal, amarillo = llave, cian = di√°logo, magenta = tutorial.
         void OnDrawGizmosSelected()
         {
             foreach (var p in pairs)
