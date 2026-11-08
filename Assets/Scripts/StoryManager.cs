@@ -69,6 +69,19 @@ namespace Runtime.Scripts.Narrative
 
         public static StoryManager Instance { get; private set; }
         public bool IsDialogOpen => _dlgOpen;
+        public bool IsBusy => _dlgOpen || _logging || _misOpen;
+
+        /// <summary>Lo que el jugador debe alcanzar ahora: la llave (si ya está en escena) o la terminal. Null al terminar.</summary>
+        public Transform Objective
+        {
+            get
+            {
+                if (!_ready || pairs.Count == 0 || _seen >= Last) return null;
+                var p = pairs[_seen / 2];
+                if (_seen % 2 == 0 && p.key != null && p.key.activeInHierarchy) return p.key.transform;
+                return p.terminal;
+            }
+        }
 
         const string Sys = "SISTEMA", PTerm = "[E] Acceder a la terminal", PTalk = "[E] Hablar";
 
@@ -233,7 +246,7 @@ namespace Runtime.Scripts.Narrative
             _hist = new List<string>[pairs.Count];
             for (int i = 0; i < _hist.Length; i++) _hist[i] = new List<string>();
             _had = new bool[pairs.Count];
-            for (int i = 0; i < _had.Length; i++) _had[i] = pairs[i].key != null;
+            for (int i = 0; i < _had.Length; i++) _had[i] = pairs[i].key != null && pairs[i].key.activeInHierarchy;
             _seen = Step;
             if (debug) Debug.Log($"[Story] Listo. Paso {_seen} de {Last}.");
             for (int i = 1; i <= _seen; i++) Apply(i, false);
@@ -339,8 +352,8 @@ namespace Runtime.Scripts.Narrative
         bool Taken(int k, Vector3 p)
         {
             var g = pairs[k].key;
-            if (!_had[k]) return false;
-            return g == null || !g.activeInHierarchy || Near(g.transform, p, keyRadius);
+            if (g != null && g.activeInHierarchy) { _had[k] = true; return Near(g.transform, p, keyRadius); }
+            return _had[k]; // ya estuvo en escena y desapareció (otro script la recogió/ocultó/destruyó)
         }
 
         void Prompt(string w)
