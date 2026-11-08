@@ -50,7 +50,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: b1f6432d0f559d546ad0f12692ed2b50, type: 3}
       propertyPath: m_Name
-      value: TreeRender
+      value: TreePrefab
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -88,10 +88,10 @@ LODGroup:
     - renderer: {fileID: 4783797003786528296}
     - renderer: {fileID: 7317672176017992797}
     - renderer: {fileID: 8360093392033787338}
-  - screenRelativeHeight: 0.3
+  - screenRelativeHeight: 0.052921366
     fadeTransitionWidth: 0
     renderers: []
-  - screenRelativeHeight: 0.1
+  - screenRelativeHeight: 0.0035448805
     fadeTransitionWidth: 0
     renderers: []
   m_Enabled: 1

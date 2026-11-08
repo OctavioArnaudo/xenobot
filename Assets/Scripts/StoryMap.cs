@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using Runtime.Scripts.Inventory;
@@ -7,18 +7,17 @@ using Runtime.Scripts.Gate;
 namespace Runtime.Scripts.Narrative
 {
     /// <summary>
-    /// Mapa (M). Solo dos marcas: el objetivo del StoryManager (parpadea) y el jugador (flecha con su dirección).
-    /// Texturas y sprites se dibujan por código una sola vez y se comparten (pool estático); la UI se crea una vez.
+    /// Mapa (M). Solo dos marcas: el objetivo del StoryManager (parpadea) y el jugador (flecha con su direcciï¿½n).
+    /// Texturas y sprites se dibujan por cï¿½digo una sola vez y se comparten (pool estï¿½tico); la UI se crea una vez.
     /// </summary>
     public class StoryMap : MonoBehaviour
     {
-        [Tooltip("Vacío = se calcula solo (terreno o escena) la primera vez que se abre.")] public Bounds worldBounds;
+        [Tooltip("Vacï¿½o = se calcula solo (terreno o escena) la primera vez que se abre.")] public Bounds worldBounds;
         public float size = 640f;
 
-        const int N = 384, Cell = 96, S = 64;
+        const int S = 64;
         const float Pad = 28f;
         static readonly Color Me = new Color(0.45f, 0.95f, 1f), Goal = new Color(0.25f, 1f, 0.4f);
-        static Texture2D s_panel;
         static Sprite s_disc, s_arrow;
 
         GameObject _root;
@@ -70,7 +69,7 @@ namespace Runtime.Scripts.Narrative
             _halo.gameObject.SetActive(false);
         }
 
-        // Tamaño total del mapa: terreno(s) activo(s); si no hay, todos los renderers de la escena. Se calcula una sola vez.
+        // Tamaï¿½o total del mapa: terreno(s) activo(s); si no hay, todos los renderers de la escena. Se calcula una sola vez.
         void Fit()
         {
             if (worldBounds.size == Vector3.zero)
@@ -110,12 +109,7 @@ namespace Runtime.Scripts.Narrative
             cs.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             cs.referenceResolution = new Vector2(1920, 1080);
 
-            var pg = new GameObject("panel", typeof(RawImage));
-            pg.transform.SetParent(_root.transform, false);
-            var ri = pg.GetComponent<RawImage>();
-            ri.texture = Panel();
-            ri.raycastTarget = false;
-            ri.rectTransform.sizeDelta = new Vector2(size, size);
+            var pg = MenuGate.Panel(_root.transform, new Vector2(size, size), 0.6f).gameObject;
 
             _haloImg = Mark(pg.transform, Disc(), 40f, Goal);
             _goalImg = Mark(pg.transform, Disc(), 18f, Goal);
@@ -138,54 +132,7 @@ namespace Runtime.Scripts.Narrative
             return im;
         }
 
-        // ---------- Texturas dibujadas por código (se generan una vez y se comparten) ----------
-
-        static Texture2D Panel()
-        {
-            if (s_panel != null) return s_panel;
-            var px = new Color32[N * N];
-            var rustA = new Color(0.33f, 0.15f, 0.06f);
-            var rustB = new Color(0.62f, 0.30f, 0.09f);
-            for (int y = 0; y < N; y++)
-                for (int x = 0; x < N; x++)
-                {
-                    float fx = x, fy = y;
-                    // metal base: variación suave + cepillado horizontal + grano fino
-                    float m = 0.30f + 0.14f * (F(fx / 60f, fy / 60f, 1) - 0.5f) + 0.07f * (V(fx * 0.015f, fy * 1.2f, 5) - 0.5f) + 0.05f * (H(x, y, 3) - 0.5f);
-
-                    // costuras entre placas
-                    int lx = x % Cell, ly = y % Cell;
-                    bool seam = lx < 4 || ly < 4;
-                    if (lx < 2 || ly < 2) m *= 0.45f; else if (seam) m *= 1.18f;
-
-                    // remaches en las esquinas de cada placa
-                    for (int k = 0; k < 4; k++)
-                    {
-                        float cx = (k & 1) == 0 ? 12f : Cell - 12f, cy = (k & 2) == 0 ? 12f : Cell - 12f;
-                        float dx = lx - cx, dy = ly - cy, d = Mathf.Sqrt(dx * dx + dy * dy);
-                        if (d < 4.5f) m = 0.5f + 0.18f * (1f - d / 4.5f) - 0.08f * (dx + dy) / 4.5f;
-                        else if (d < 6f) m *= 0.6f;
-                    }
-
-                    // marco biselado
-                    int e = Mathf.Min(Mathf.Min(x, y), Mathf.Min(N - 1 - x, N - 1 - y));
-                    if (e < 5) m *= 0.5f; else if (e < 9) m *= 1.2f;
-                    float edge = 1f - Mathf.Clamp01(e / 70f);
-
-                    // óxido: manchas grandes + detalle, más en bordes y costuras
-                    float rr = F(fx / 55f, fy / 55f, 21) + 0.2f * (F(fx / 12f, fy / 12f, 33) - 0.5f) + 0.3f * edge + (seam ? 0.08f : 0f);
-                    float mask = Smooth(0.55f, 0.72f, rr) * 0.9f;
-                    var rust = Color.Lerp(rustA, rustB, F(fx / 7f, fy / 7f, 44)) * (0.8f + 0.4f * H(x, y, 9));
-                    var col = Color.Lerp(new Color(m, m * 1.02f, m * 1.05f), rust, mask);
-
-                    col *= (0.8f + 0.2f * Smooth(0f, 1f, Mathf.Clamp01(e / 90f))) * 0.92f; // viñeta: las marcas destacan
-                    px[y * N + x] = new Color32((byte)(Mathf.Clamp01(col.r) * 255f), (byte)(Mathf.Clamp01(col.g) * 255f), (byte)(Mathf.Clamp01(col.b) * 255f), 255);
-                }
-            s_panel = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
-            s_panel.SetPixels32(px);
-            s_panel.Apply(false, true);
-            return s_panel;
-        }
+        // ---------- Texturas dibujadas por cï¿½digo (se generan una vez y se comparten) ----------
 
         static Sprite Disc()
         {
@@ -237,33 +184,5 @@ namespace Runtime.Scripts.Narrative
 
         static float Sg(Vector2 p1, Vector2 p2, Vector2 p3) => (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
 
-        static float Smooth(float a, float b, float x)
-        {
-            float t = Mathf.Clamp01((x - a) / (b - a));
-            return t * t * (3f - 2f * t);
-        }
-
-        // Ruido de valor determinista (sin Perlin de Unity: no depende de nada externo).
-        static float H(int x, int y, int s)
-        {
-            unchecked
-            {
-                uint h = (uint)(x * 374761393 + y * 668265263 + s * 1274126177);
-                h = (h ^ (h >> 13)) * 1274126177u;
-                return ((h ^ (h >> 16)) & 0xFFFF) / 65535f;
-            }
-        }
-
-        static float V(float x, float y, int s)
-        {
-            int xi = Mathf.FloorToInt(x), yi = Mathf.FloorToInt(y);
-            float fx = x - xi, fy = y - yi;
-            fx = fx * fx * (3f - 2f * fx);
-            fy = fy * fy * (3f - 2f * fy);
-            return Mathf.Lerp(Mathf.Lerp(H(xi, yi, s), H(xi + 1, yi, s), fx), Mathf.Lerp(H(xi, yi + 1, s), H(xi + 1, yi + 1, s), fx), fy);
-        }
-
-        static float F(float x, float y, int s) =>
-            (V(x, y, s) * 0.5f + V(x * 2f, y * 2f, s + 1) * 0.25f + V(x * 4f, y * 4f, s + 2) * 0.125f + V(x * 8f, y * 8f, s + 3) * 0.0625f) / 0.9375f;
     }
 }

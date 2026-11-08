@@ -135,7 +135,7 @@ namespace Runtime.Scripts.Narrative
         static readonly string[] Denied = { "Acceso denegado. Falta algo por recuperar." };
 
         static readonly Color Green = new Color(0.25f, 1f, 0.4f);
-        static readonly Color Dark = new Color(0.02f, 0.16f, 0.06f, 0.96f);
+        static readonly Color Dark = new Color(0.01f, 0.03f, 0.02f, 1f);
         static readonly Color Gold = new Color(1f, 0.85f, 0.2f);
         static readonly Color Dim = new Color(0.08f, 0.3f, 0.12f);
         static readonly string IntroText = string.Join("\n", Intro), FinalText = string.Join("\n", Final);
@@ -853,17 +853,22 @@ namespace Runtime.Scripts.Narrative
         {
             // Overlay: consola (inicio/final) y diálogo
             var ui = NewCanvas("StoryUI", 500).transform;
-            _logBox = Box(ui, Green, new Vector2(800, 380));
-            _txt = Txt(Box(_logBox.transform, Dark, new Vector2(792, 372)).transform, 22, TextAlignmentOptions.TopLeft);
+            _logBox = MenuGate.Panel(ui, new Vector2(800, 380), 0.5f).gameObject;
+            _txt = Txt(MenuGate.Rnd(Box(_logBox.transform, Dark, new Vector2(760, 340))).transform, 22, TextAlignmentOptions.TopLeft);
             Fill(_txt.gameObject, 24);
             _logBox.SetActive(false);
 
-            _dlg = Box(ui, Green, new Vector2(640, 170));
+            _dlg = MenuGate.Panel(ui, new Vector2(720, 200), 0.5f).gameObject;
             Anchor(_dlg, new Vector2(0.5f, 0f), new Vector2(0f, 190f));
-            var di = Box(_dlg.transform, Dark, new Vector2(632, 162)).transform;
+            var di = MenuGate.Rnd(Box(_dlg.transform, Dark, new Vector2(688, 168))).transform;
             _dlgTxt = Txt(di, 24, TextAlignmentOptions.TopLeft);
             _dlgTxt.color = Color.white;
-            Fill(_dlgTxt.gameObject, 16);
+            Fill(_dlgTxt.gameObject, 18);
+            _dlgTxt.rectTransform.offsetMin = new Vector2(18f, 30f); // deja sitio al aviso [E]
+            _dlgTxt.enableAutoSizing = true;
+            _dlgTxt.fontSizeMin = 12;
+            _dlgTxt.fontSizeMax = 24;
+            _dlgTxt.overflowMode = TextOverflowModes.Truncate;
             var hint = Txt(di, 14, TextAlignmentOptions.BottomRight);
             hint.text = "[E] Continuar";
             hint.color = new Color(Green.r, Green.g, Green.b, 0.55f);
@@ -872,9 +877,9 @@ namespace Runtime.Scripts.Narrative
 
             // HUD: contador (abajo-izquierda), objetivos (arriba-izquierda), aviso de E
             var hud = NewCanvas("StoryHud", 91).transform;
-            var cb = Box(hud, Green, new Vector2(240, 56));
-            Anchor(cb, Vector2.zero, new Vector2(8f, 104f));
-            _counter = Txt(Box(cb.transform, Dark, new Vector2(232, 48)).transform, 30, TextAlignmentOptions.Center);
+            var cb = MenuGate.Rnd(Box(hud, Dark, new Vector2(240, 56)));
+            Anchor(cb, Vector2.zero, new Vector2(30f, 122f));
+            _counter = Txt(cb.transform, 30, TextAlignmentOptions.Center);
             Fill(_counter.gameObject, 4);
             _counter.text = $"LLAVES  0/{pairs.Count}";
 
@@ -885,8 +890,8 @@ namespace Runtime.Scripts.Narrative
 
             // Panel de misión (se abre con J): canvas propio para no recalcular el resto de la UI
             var mc = NewCanvas("StoryMission", 450).transform;
-            _mis = Box(mc, Green, new Vector2(1100, 600));
-            var mi = Box(_mis.transform, Dark, new Vector2(1092, 592)).transform;
+            _mis = MenuGate.Panel(mc, new Vector2(1100, 600), 0.5f).gameObject;
+            var mi = MenuGate.Rnd(Box(_mis.transform, Dark, new Vector2(1068, 576))).transform;
 
             var title = Txt(mi, 30, TextAlignmentOptions.Left);
             title.text = "REGISTRO DE MISIÓN   <size=50%>[J] cerrar  ·  clic o ←/→ capítulo  ·  rueda o ↑/↓ leer  ·  Esc o clic derecho: volver</size>";
@@ -932,7 +937,7 @@ namespace Runtime.Scripts.Narrative
             _foot.fontSizeMin = 12;
             _foot.fontSizeMax = 20;
             _foot.overflowMode = TextOverflowModes.Truncate;
-            Band(_foot.gameObject, 512, 70, 40);
+            Band(_foot.gameObject, 500, 70, 40);
             _mis.SetActive(false);
         }
 

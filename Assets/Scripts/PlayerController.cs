@@ -19,6 +19,7 @@ using Runtime.Scripts.Hook;
 using Runtime.Scripts.Defeat;
 using Runtime.Scripts.Keys;
 using Runtime.Scripts.Zoom;
+using Runtime.Scripts.Gate;
 
 namespace Runtime.Scripts.Player
 {
@@ -89,7 +90,9 @@ namespace Runtime.Scripts.Player
         public float shoulderAimDistance = 2.2f;
         public float shoulderAimFOV = 50f;
         [Range(0.2f, 1f)] public float aimMoveSpeedMultiplier = 0.6f;
-        // aimFOV / aimCameraDistance / aimShoulderOffset ahora son la mira telescopica (clic central).
+        [Tooltip("Alterna mira comun / telescopica. Apuntar siempre es clic derecho.")] public Key scopeToggleKey = Key.Digit1;
+        public bool scopeMode; // false = mira comun, true = telescopica
+        // aimFOV / aimCameraDistance / aimShoulderOffset ahora son la mira telescopica (alternable con scopeToggleKey, por defecto 1).
 
         [Header("Hook Settings")]
         public GameObject hookProjectilePrefab;
@@ -676,20 +679,19 @@ namespace Runtime.Scripts.Player
                                        (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame);
             bool aimIsHeld = (_aimAction != null && _aimAction.IsPressed()) ||
                              (Mouse.current != null && Mouse.current.rightButton.isPressed);
-            // Clic central (boton 2) -> mira telescopica
-            bool scopePressed = Mouse.current != null && Mouse.current.middleButton.wasPressedThisFrame;
-            bool scopeHeld = Mouse.current != null && Mouse.current.middleButton.isPressed;
+            // Tecla 1: alterna mira comun / telescopica (solo con el cursor bloqueado, es decir, sin menus). El clic derecho siempre apunta.
+            if (Keyboard.current != null && Cursor.lockState == CursorLockMode.Locked && Keyboard.current[scopeToggleKey].wasPressedThisFrame)
+                scopeMode = !scopeMode;
 
             if (toggleAim)
             {
-                if (scopePressed) { scope = !scope; aim = scope; }
-                else if (aimPressedThisFrame) { scope = false; aim = !aim; }
+                if (aimPressedThisFrame) aim = !aim;
             }
             else
             {
-                scope = scopeHeld;
-                aim = aimIsHeld || scopeHeld;
+                aim = aimIsHeld;
             }
+            scope = aim && scopeMode;
 
             // Tecla G -> Disparar Gancho
             bool hookActionPressed = _hookAction != null && _hookAction.WasPressedThisFrame();
@@ -710,7 +712,9 @@ namespace Runtime.Scripts.Player
             {
                 for (int i = 1; i <= 9; i++)
                 {
-                    if (Keyboard.current[Key.Digit1 + (i - 1)].wasPressedThisFrame)
+                    var wk = Key.Digit1 + (i - 1);
+                    if (wk == scopeToggleKey) continue; // reservada para la mira telescopica
+                    if (Keyboard.current[wk].wasPressedThisFrame)
                     {
                         selectWeapon = i;
                         break;
@@ -869,7 +873,8 @@ namespace Runtime.Scripts.Player
 
         private void OnApplicationFocus(bool hasFocus)
         {
-            if (CanExecuteLocalLogic) SetCursorState(cursorLocked);
+            // Con un menu o la pausa abiertos no se re-bloquea el cursor al recuperar el foco (clics en los botones).
+            if (CanExecuteLocalLogic && !MenuGate.Busy) SetCursorState(cursorLocked);
         }
 
         private void SetCursorState(bool newState)

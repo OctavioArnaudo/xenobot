@@ -23,12 +23,6 @@ namespace Runtime.Scripts.Pause
         [Header("UI Panel (Optional - Auto-built if null)")]
         [SerializeField] private GameObject pauseMenuPanel;
 
-        [Header("Cyberpunk Theme Colors")]
-        public Color panelColor = new Color(0.04f, 0.08f, 0.12f, 0.92f);
-        public Color neonCyan = new Color(0f, 1f, 0.95f, 1f);
-        public Color neonMagenta = new Color(1f, 0f, 0.45f, 1f);
-        public Color neonYellow = new Color(1f, 0.85f, 0f, 1f);
-
         private GameObject _canvasRoot;
         private bool _isPaused = false;
         private SettingsMenu _settings;
@@ -81,7 +75,7 @@ namespace Runtime.Scripts.Pause
             }
             else
             {
-                BuildCyberpunkUI();
+                BuildUI();
             }
 
             Cursor.visible = true;
@@ -134,136 +128,32 @@ namespace Runtime.Scripts.Pause
             SceneManager.LoadScene(!string.IsNullOrEmpty(levelsScene) ? levelsScene : mainSceneName);
         }
 
-        private void BuildCyberpunkUI()
+        private void BuildUI()
         {
             if (_canvasRoot != null) Destroy(_canvasRoot);
 
-            _canvasRoot = new GameObject("EscapeMenu_Canvas");
-            Canvas canvas = _canvasRoot.AddComponent<Canvas>();
+            _canvasRoot = new GameObject("EscapeMenu_Canvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+            var canvas = _canvasRoot.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.sortingOrder = 2000;
-
-            var scaler = _canvasRoot.AddComponent<CanvasScaler>();
+            var scaler = _canvasRoot.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
 
-            _canvasRoot.AddComponent<GraphicRaycaster>();
+            var dim = MenuGate.Img(_canvasRoot.transform, new Color(0f, 0f, 0f, 0.8f));
+            MenuGate.Fit(dim, 0f, 0f, 1f, 1f);
+            dim.GetComponent<Image>().raycastTarget = true;
 
-            // Dark Translucent Background
-            GameObject bg = new GameObject("Background", typeof(RectTransform));
-            bg.transform.SetParent(_canvasRoot.transform, false);
-            var bgImg = bg.AddComponent<Image>();
-            bgImg.color = new Color(0.01f, 0.02f, 0.05f, 0.88f);
-            var bgRt = bg.GetComponent<RectTransform>();
-            bgRt.anchorMin = Vector2.zero;
-            bgRt.anchorMax = Vector2.one;
+            string player = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player");
+            float t = LevelsMenu.lastSessionTime;
+            var term = MenuGate.Term(_canvasRoot.transform, new Vector2(640f, 560f), "PAUSED", out var body);
+            body.fontSize = 28;
+            body.text = $"PLAYER<pos=35%>{player}\nSCENE<pos=35%>{SceneManager.GetActiveScene().name}\nTIMER<pos=35%>{Mathf.FloorToInt(t / 60):00}:{Mathf.FloorToInt(t % 60):00}";
 
-            // Main Cyberpunk Panel
-            GameObject panel = new GameObject("Panel", typeof(RectTransform));
-            panel.transform.SetParent(_canvasRoot.transform, false);
-            var pImg = panel.AddComponent<Image>();
-            pImg.color = panelColor;
-            var pRt = panel.GetComponent<RectTransform>();
-            pRt.sizeDelta = new Vector2(850, 750);
-            var outline = panel.AddComponent<Outline>();
-            outline.effectColor = neonCyan;
-            outline.effectDistance = new Vector2(3, 3);
-
-            // Cyberpunk Corner Brackets / Symbols
-            CreateDecoration("[// SYS_TACTICAL]", panel.transform, new Vector2(-280, 320), 22, neonCyan);
-            CreateDecoration("[OVERRIDE_ACTIVE]", panel.transform, new Vector2(280, 320), 22, neonMagenta);
-            CreateDecoration("///", panel.transform, new Vector2(-360, 260), 30, neonYellow);
-            CreateDecoration("///", panel.transform, new Vector2(360, 260), 30, neonYellow);
-
-            // Title
-            GameObject title = new GameObject("Title", typeof(RectTransform));
-            title.transform.SetParent(panel.transform, false);
-            var tTxt = title.AddComponent<TextMeshProUGUI>();
-            tTxt.text = "PAUSED";
-            tTxt.fontSize = 72;
-            tTxt.alignment = TextAlignmentOptions.Center;
-            tTxt.fontStyle = FontStyles.Bold;
-            tTxt.color = Color.white;
-            var tRt = title.GetComponent<RectTransform>();
-            tRt.anchoredPosition = new Vector2(0, 250);
-            tRt.sizeDelta = new Vector2(750, 90);
-
-            // Subtitle
-            GameObject sub = new GameObject("Subtitle", typeof(RectTransform));
-            sub.transform.SetParent(panel.transform, false);
-            var sTxt = sub.AddComponent<TextMeshProUGUI>();
-            sTxt.text = "TACTICAL OVERRIDE";
-            sTxt.fontSize = 24;
-            sTxt.alignment = TextAlignmentOptions.Center;
-            sTxt.color = neonCyan;
-            var sRt = sub.GetComponent<RectTransform>();
-            sRt.anchoredPosition = new Vector2(0, 185);
-            sRt.sizeDelta = new Vector2(750, 40);
-
-            // Session Stats Info
-            string playerName = PlayerPrefs.GetString(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.UserName), "Player");
-            string currentScene = SceneManager.GetActiveScene().name;
-            float timeTaken = LevelsMenu.lastSessionTime;
-            string timeStr = string.Format("{0:00}:{1:00}", Mathf.FloorToInt(timeTaken / 60), Mathf.FloorToInt(timeTaken % 60));
-
-            GameObject stats = new GameObject("Stats", typeof(RectTransform));
-            stats.transform.SetParent(panel.transform, false);
-            var stTxt = stats.AddComponent<TextMeshProUGUI>();
-            stTxt.text = $"PLAYER: <color=#00FFFF>{playerName}</color>   |   SCENE: <color=#FFE600>{currentScene}</color>   |   TIMER: <color=#FF007F>{timeStr}</color>";
-            stTxt.fontSize = 22;
-            stTxt.alignment = TextAlignmentOptions.Center;
-            stTxt.color = Color.white;
-            var stRt = stats.GetComponent<RectTransform>();
-            stRt.anchoredPosition = new Vector2(0, 135);
-            stRt.sizeDelta = new Vector2(750, 40);
-
-            // Cyber Buttons
-            CreateCyberButton("ResumeButton", panel.transform, "RESUME", new Vector2(0, 40), neonCyan, ResumeGame);
-            CreateCyberButton("SettingsButton", panel.transform, "SETTINGS", new Vector2(0, -40), neonYellow, OpenSettings);
-            CreateCyberButton("QuitButton", panel.transform, "ABORT", new Vector2(0, -120), neonMagenta, QuitSessionOrMatch);
-        }
-
-        private void CreateCyberButton(string name, Transform parent, string label, Vector2 pos, Color accent, UnityEngine.Events.UnityAction onClick)
-        {
-            GameObject btn = new GameObject(name, typeof(RectTransform));
-            btn.transform.SetParent(parent, false);
-            var img = btn.AddComponent<Image>();
-            img.color = new Color(0.08f, 0.12f, 0.18f, 0.95f);
-            var bBtn = btn.AddComponent<Button>();
-            bBtn.onClick.AddListener(onClick);
-            var bRt = btn.GetComponent<RectTransform>();
-            bRt.anchoredPosition = pos;
-            bRt.sizeDelta = new Vector2(450, 65);
-            var outline = btn.AddComponent<Outline>();
-            outline.effectColor = accent;
-            outline.effectDistance = new Vector2(2, 2);
-
-            GameObject txtGo = new GameObject("Text", typeof(RectTransform));
-            txtGo.transform.SetParent(btn.transform, false);
-            var txt = txtGo.AddComponent<TextMeshProUGUI>();
-            txt.text = label;
-            txt.fontSize = 26;
-            txt.alignment = TextAlignmentOptions.Center;
-            txt.fontStyle = FontStyles.Bold;
-            txt.color = Color.white;
-            var txtRt = txtGo.GetComponent<RectTransform>();
-            txtRt.anchorMin = Vector2.zero;
-            txtRt.anchorMax = Vector2.one;
-            txtRt.sizeDelta = Vector2.zero;
-        }
-
-        private void CreateDecoration(string sym, Transform parent, Vector2 pos, float size, Color color)
-        {
-            GameObject dec = new GameObject("Deco", typeof(RectTransform));
-            dec.transform.SetParent(parent, false);
-            var txt = dec.AddComponent<TextMeshProUGUI>();
-            txt.text = sym;
-            txt.fontSize = size;
-            txt.alignment = TextAlignmentOptions.Center;
-            txt.color = color;
-            var rt = dec.GetComponent<RectTransform>();
-            rt.anchoredPosition = pos;
-            rt.sizeDelta = new Vector2(250, 50);
+            var sz = new Vector2(400f, 64f);
+            MenuGate.Btn(term, "RESUME", sz, ResumeGame).anchoredPosition = new Vector2(0f, 10f);
+            MenuGate.Btn(term, "SETTINGS", sz, OpenSettings).anchoredPosition = new Vector2(0f, -80f);
+            MenuGate.Btn(term, "ABORT", sz, QuitSessionOrMatch).anchoredPosition = new Vector2(0f, -170f);
         }
     }
 }

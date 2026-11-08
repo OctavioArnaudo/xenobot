@@ -15,6 +15,7 @@ using Runtime.Scripts.Player;
 using Runtime.Scripts.Levels;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Settings;
+using static Runtime.Scripts.Gate.MenuGate;
 
 namespace Runtime.Scripts.Hud
 {
@@ -409,19 +410,21 @@ namespace Runtime.Scripts.Hud
         }
 
         // ---------------- HUD (uGUI) ----------------
-        // Se construye una sola vez. Después solo se actualizan los valores (10 veces por segundo)
-        // y el panel de stats se activa o desactiva con K.
-        static readonly Color Ochre = new Color(0.8f, 0.47f, 0.13f);
+        // Tablero de instrumentos metalico con 4 lamparas de vidrio. Se construye una sola vez; los valores se refrescan 10 veces por segundo.
         static readonly Color[] BarCol =
         {
-            new Color(0.9f, 0.1f, 0.1f), new Color(0f, 0.9f, 0.9f), new Color(1f, 0.8f, 0.1f), new Color(0.7f, 0.3f, 1f)
+            new Color(1f, 0.15f, 0.1f), new Color(0.1f, 0.9f, 1f), new Color(1f, 0.8f, 0.1f), new Color(0.7f, 0.3f, 1f)
         };
+        static readonly string[] BarName = { "HP", "JET", "AMMO", "SHIELD" };
 
         GameObject _uiRoot, _statsPanel;
         readonly RectTransform[] _fill = new RectTransform[4];
         readonly TextMeshProUGUI[] _barTxt = new TextMeshProUGUI[4];
         readonly float[] _lastF = new float[4];
         TextMeshProUGUI _keysL, _keysR, _statsTxt;
+        Image _plate;
+        Image _scopeRing;
+        static Sprite s_scope, s_ring;
         float _uiTick;
 
         public override void OnDestroy()
@@ -434,7 +437,7 @@ namespace Runtime.Scripts.Hud
         {
             if (!CanExecuteLocalLogic) return;
 
-            // Tiempo de sesión (lo usan las pantallas de victoria y derrota): cada 0,5 s
+            // Tiempo de sesion (lo usan las pantallas de victoria y derrota): cada 0,5 s
             if (Time.time - _lastTimeUpdate > 0.5f)
             {
                 _lastTimeUpdate = Time.time;
@@ -458,12 +461,15 @@ namespace Runtime.Scripts.Hud
             if (Time.unscaledTime < _uiTick) return;
             _uiTick = Time.unscaledTime + 0.1f;
             RefreshBars();
+            _plate.raycastTarget = MenuGate.Busy; // el icono de mira solo es clicable con un menu abierto
+            var pcs = GetPlayer();
+            if (pcs != null && _scopeRing.gameObject.activeSelf != pcs.scopeMode) _scopeRing.gameObject.SetActive(pcs.scopeMode);
             if (_statsPanel.activeSelf) RefreshStats();
         }
 
         void OnGate(string k) { if (k == "stats" && _statsPanel != null && _statsPanel.activeSelf) SetStats(false); }
 
-        // Un solo menú a la vez; Esc lo cierra (MenuGate). Cursor libre = jugador bloqueado.
+        // Un solo menu a la vez; Esc lo cierra (MenuGate). Cursor libre = jugador bloqueado.
         void SetStats(bool open)
         {
             if (open && !MenuGate.TryOpen("stats")) return;
@@ -478,7 +484,7 @@ namespace Runtime.Scripts.Hud
 
         void BuildHud()
         {
-            _uiRoot = new GameObject("HudCanvas", typeof(Canvas), typeof(CanvasScaler));
+            _uiRoot = new GameObject("HudCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
             var c = _uiRoot.GetComponent<Canvas>();
             c.renderMode = RenderMode.ScreenSpaceOverlay;
             c.sortingOrder = 90;
@@ -486,47 +492,66 @@ namespace Runtime.Scripts.Hud
             cs.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             cs.referenceResolution = new Vector2(1920, 1080);
 
-            // 4 barras a lo largo del borde inferior: HP, JET, AMMO, SHIELD
+            // Tablero inferior: HP, JET, AMMO, SHIELD
+            var dash = Dash(_uiRoot.transform);
+            var bars = Img(dash, Color.clear);
+            bars.anchorMin = Vector2.zero;
+            bars.anchorMax = new Vector2(1f, 0f);
+            bars.pivot = new Vector2(0.5f, 0f);
+            bars.sizeDelta = new Vector2(0f, 104f);
+            bars.anchoredPosition = Vector2.zero;
             for (int i = 0; i < 4; i++)
             {
-                var cell = Img(_uiRoot.transform, new Color(0.08f, 0.08f, 0.08f, 0.85f));
-                cell.anchorMin = new Vector2(i * 0.25f, 0f);
-                cell.anchorMax = new Vector2((i + 1) * 0.25f, 0f);
-                cell.pivot = new Vector2(0.5f, 0f);
-                cell.sizeDelta = new Vector2(-6f, 64f);
-                cell.anchoredPosition = Vector2.zero;
-                _fill[i] = Img(cell, BarCol[i]);
-                Fit(_fill[i], 0f, 0f, 1f, 1f);
-                var t = Txt(cell, 30, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
+                var cell = Img(bars, Color.clear);
+                Fit(cell, i * 0.25f, 0f, (i + 1) * 0.25f, 1f);
+                var lab = Txt(cell, 20, Amber, TextAlignmentOptions.TopLeft, FontStyles.Bold);
+                lab.text = BarName[i];
+                Fit(lab.rectTransform, 0f, 1f, 1f, 1f);
+                lab.rectTransform.offsetMin = new Vector2(24f, -36f);
+                lab.rectTransform.offsetMax = new Vector2(-24f, -8f);
+                var slot = Lamp(cell, BarCol[i], out _fill[i]);
+                Fit(slot, 0f, 0f, 1f, 1f);
+                slot.offsetMin = new Vector2(24f, 14f);
+                slot.offsetMax = new Vector2(-24f, -40f);
+                var t = Txt(slot, 28, Color.white, TextAlignmentOptions.Center, FontStyles.Bold);
+                t.outlineWidth = 0.25f;
+                t.outlineColor = Color.black;
                 Fit(t.rectTransform, 0f, 0f, 1f, 1f);
                 _barTxt[i] = t;
             }
 
-            // Teclas disponibles, encima de las barras (izquierda: movimiento, derecha: combate)
+            // Teclas disponibles, sobre el tablero (izquierda: movimiento, derecha: combate)
             var keyCol = new Color(0.95f, 0.95f, 0.5f);
             _keysL = Txt(_uiRoot.transform, 22, keyCol, TextAlignmentOptions.BottomLeft, FontStyles.Bold);
             var r = _keysL.rectTransform;
-            r.anchorMin = new Vector2(0f, 0f); r.anchorMax = new Vector2(0.5f, 0f); r.pivot = new Vector2(0f, 0f);
-            r.sizeDelta = new Vector2(-16f, 30f); r.anchoredPosition = new Vector2(8f, 68f);
+            r.anchorMin = new Vector2(0.29f, 0f); r.anchorMax = new Vector2(0.5f, 0f); r.pivot = new Vector2(0f, 0f);
+            r.sizeDelta = new Vector2(0f, 30f); r.anchoredPosition = new Vector2(0f, 112f);
             _keysR = Txt(_uiRoot.transform, 22, keyCol, TextAlignmentOptions.BottomRight, FontStyles.Bold);
             r = _keysR.rectTransform;
-            r.anchorMin = new Vector2(0.5f, 0f); r.anchorMax = new Vector2(1f, 0f); r.pivot = new Vector2(1f, 0f);
-            r.sizeDelta = new Vector2(-16f, 30f); r.anchoredPosition = new Vector2(-8f, 68f);
+            r.anchorMin = new Vector2(0.5f, 0f); r.anchorMax = new Vector2(0.71f, 0f); r.pivot = new Vector2(1f, 0f);
+            r.sizeDelta = new Vector2(0f, 30f); r.anchoredPosition = new Vector2(0f, 112f);
 
-            // Panel de stats: grande, centrado, ocre (K)
-            var pr = Img(_uiRoot.transform, new Color(0f, 0f, 0f, 0.92f));
-            var ol = pr.gameObject.AddComponent<Outline>();
-            ol.effectColor = Ochre;
-            ol.effectDistance = new Vector2(5f, 5f);
-            pr.anchorMin = pr.anchorMax = pr.pivot = new Vector2(0.5f, 0.5f);
-            pr.anchoredPosition = Vector2.zero;
-            pr.sizeDelta = new Vector2(900f, 500f);
-            var title = Txt(pr, 56, Ochre, TextAlignmentOptions.Center, FontStyles.Bold);
-            title.text = "STATS";
-            Fit(title.rectTransform, 0f, 0.8f, 1f, 1f);
-            _statsTxt = Txt(pr, 40, Color.white, TextAlignmentOptions.TopLeft, FontStyles.Normal);
-            Fit(_statsTxt.rectTransform, 0.1f, 0.05f, 0.9f, 0.8f);
-            _statsPanel = pr.gameObject;
+            // Mira telescopica (tecla 1): placa metalica; el aro verde indica que esta activa. Clic = alternar (solo con un menu abierto).
+            r = Rnd(Img(_uiRoot.transform, new Color(0.02f, 0.03f, 0.03f)));
+            _plate = r.GetComponent<Image>();
+            r.anchorMin = r.anchorMax = r.pivot = new Vector2(1f, 0f);
+            r.sizeDelta = new Vector2(80f, 80f);
+            r.anchoredPosition = new Vector2(-30f, 122f);
+            var btn = _plate.gameObject.AddComponent<Button>();
+            btn.transition = Selectable.Transition.None;
+            btn.onClick.AddListener(() => { var p = GetPlayer(); if (p != null) p.scopeMode = !p.scopeMode; });
+            var ring = Img(r, Green);
+            _scopeRing = ring.GetComponent<Image>();
+            _scopeRing.sprite = RingSprite();
+            Mid(ring, 70f);
+            ring.gameObject.SetActive(false);
+            var ic = Img(r, new Color(0.8f, 0.9f, 0.8f));
+            ic.GetComponent<Image>().sprite = ScopeSprite();
+            Mid(ic, 48f);
+
+            // Panel de stats (K): visor
+            _statsPanel = Term(_uiRoot.transform, new Vector2(760f, 420f), "STATS", out _statsTxt).gameObject;
+            _statsTxt.fontSize = 36;
             _statsPanel.SetActive(false);
         }
 
@@ -536,16 +561,16 @@ namespace Runtime.Scripts.Hud
             var shooter = GetShooter();
             var shield = GetShield();
 
-            Bar(0, "HP", m_PlayerHealth.EffectiveCurrentHealth, m_PlayerHealth.EffectiveMaxHealth,
+            Bar(0, m_PlayerHealth.EffectiveCurrentHealth, m_PlayerHealth.EffectiveMaxHealth,
                 $"{m_PlayerHealth.EffectiveCurrentHealth}/{m_PlayerHealth.EffectiveMaxHealth}");
 
-            if (prop != null && prop.MaxJetpack > 0) Bar(1, "JET", prop.JetpackFuel, prop.MaxJetpack, $"{prop.JetpackFuel:F0}/{prop.MaxJetpack:F0}");
-            else Bar(1, "JET", 0f, 1f, "N/A");
+            if (prop != null && prop.MaxJetpack > 0) Bar(1, prop.JetpackFuel, prop.MaxJetpack, $"{prop.JetpackFuel:F0}/{prop.MaxJetpack:F0}");
+            else Bar(1, 0f, 1f, "N/A");
 
             if (shooter != null)
-                Bar(2, "AMMO", shooter.currentAmmo, shooter.EffectiveMaxAmmo,
+                Bar(2, shooter.currentAmmo, shooter.EffectiveMaxAmmo,
                     shooter.isReloading ? "RELOADING" : $"{shooter.currentAmmo}/{shooter.EffectiveMaxAmmo}");
-            else Bar(2, "AMMO", 0f, 1f, "NO WEAPON");
+            else Bar(2, 0f, 1f, "NO WEAPON");
 
             if (shield != null)
             {
@@ -562,15 +587,15 @@ namespace Runtime.Scripts.Hud
                     val = 0f;
                     str = "LOCKED";
                 }
-                Bar(3, "SHIELD", val, max, str);
+                Bar(3, val, max, str);
             }
-            else Bar(3, "SHIELD", 0f, 1f, "N/A");
+            else Bar(3, 0f, 1f, "N/A");
 
             _keysL.text = string.Join("   ", GetDynamicDefenseKeys());
             _keysR.text = string.Join("   ", GetDynamicAttackKeys());
         }
 
-        void Bar(int i, string name, float val, float max, string str)
+        void Bar(int i, float val, float max, string str)
         {
             float f = Mathf.Clamp01(val / (max > 0f ? max : 1f));
             if (!Mathf.Approximately(f, _lastF[i]))
@@ -578,7 +603,7 @@ namespace Runtime.Scripts.Hud
                 _lastF[i] = f;
                 _fill[i].anchorMax = new Vector2(f, 1f);
             }
-            _barTxt[i].text = name + "  " + str;
+            _barTxt[i].text = str;
         }
 
         void RefreshStats()
@@ -586,35 +611,43 @@ namespace Runtime.Scripts.Hud
             _statsTxt.text = $"TIME<pos=45%>{_cachedTimeStr}\nATK<pos=45%>{Attack:F0}\nDEF<pos=45%>{Defense:F0}\nLVL<pos=45%>{Level}\nEXP<pos=45%>{Exp:F0} / {ExpToLevelUp:F0}";
         }
 
-        static RectTransform Img(Transform parent, Color col)
+        // Sprites dibujados por codigo, una sola vez y compartidos.
+        static Sprite ScopeSprite()
         {
-            var g = new GameObject("i", typeof(Image));
-            g.transform.SetParent(parent, false);
-            var im = g.GetComponent<Image>();
-            im.color = col;
-            im.raycastTarget = false;
-            return g.GetComponent<RectTransform>();
+            if (s_scope != null) return s_scope;
+            return s_scope = Draw((x, y) =>
+            {
+                float dx = Mathf.Abs(x - 31.5f), dy = Mathf.Abs(y - 31.5f), d = Mathf.Sqrt(dx * dx + dy * dy);
+                float a = Band(d, 17f, 21f);
+                a = Mathf.Max(a, Mathf.Clamp01(2f - dx) * Band(dy, 6f, 28f));
+                a = Mathf.Max(a, Mathf.Clamp01(2f - dy) * Band(dx, 6f, 28f));
+                return Mathf.Max(a, Mathf.Clamp01(2.5f - d));
+            });
         }
 
-        static TextMeshProUGUI Txt(Transform parent, int size, Color col, TextAlignmentOptions align, FontStyles style)
+        static Sprite RingSprite()
         {
-            var g = new GameObject("t", typeof(TextMeshProUGUI));
-            g.transform.SetParent(parent, false);
-            var t = g.GetComponent<TextMeshProUGUI>();
-            t.fontSize = size;
-            t.color = col;
-            t.alignment = align;
-            t.fontStyle = style;
-            t.textWrappingMode = TextWrappingModes.NoWrap;
-            t.raycastTarget = false;
-            return t;
+            if (s_ring != null) return s_ring;
+            return s_ring = Draw((x, y) =>
+            {
+                float dx = x - 31.5f, dy = y - 31.5f;
+                return Band(Mathf.Sqrt(dx * dx + dy * dy), 27f, 31.5f);
+            });
         }
 
-        static void Fit(RectTransform r, float x0, float y0, float x1, float y1)
+        static float Band(float v, float a, float b) => Mathf.Clamp01(Mathf.Min(v - a, b - v) + 0.5f);
+
+        static Sprite Draw(System.Func<int, int, float> alpha)
         {
-            r.anchorMin = new Vector2(x0, y0);
-            r.anchorMax = new Vector2(x1, y1);
-            r.offsetMin = r.offsetMax = Vector2.zero;
+            const int N = 64;
+            var px = new Color32[N * N];
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                    px[y * N + x] = new Color32(255, 255, 255, (byte)(Mathf.Clamp01(alpha(x, y)) * 255f));
+            var t = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            t.SetPixels32(px);
+            t.Apply(false, true);
+            return Sprite.Create(t, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), 100f);
         }
     }
 }

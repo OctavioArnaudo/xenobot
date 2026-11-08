@@ -1,4 +1,8 @@
-using System;
+ï»¿using System;
+using System.Collections.Generic;
+using UnityEngine.Events;
+using UnityEngine.UI;
+using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
@@ -7,9 +11,10 @@ using UnityEngine.SceneManagement;
 namespace Runtime.Scripts.Gate
 {
     /// <summary>
-    /// Un solo menú a la vez + Esc unificado.
-    /// Cada menú pide paso con TryOpen("clave"), se suscribe a CloseRequested mientras está abierto y libera con Close("clave").
-    /// Con inventario, crafting, stats o mapa abiertos, Esc se consume (el menú de pausa no lo ve) y cierra ese menú.
+    /// Un solo menï¿½ a la vez + Esc unificado.
+    /// Cada menï¿½ pide paso con TryOpen("clave"), se suscribe a CloseRequested mientras estï¿½ abierto y libera con Close("clave").
+    /// Tambien es el skin unico de UI (metal, lamparas de vidrio, visor verde): Panel, Term, Btn, Lamp, Img, Txt, Fit, Mid.
+    /// Con inventario, crafting, stats o mapa abiertos, Esc se consume (el menï¿½ de pausa no lo ve) y cierra ese menï¿½.
     /// </summary>
     public static class MenuGate
     {
@@ -17,18 +22,18 @@ namespace Runtime.Scripts.Gate
         static bool _esc, _escDown;
         static int _escFrame = -1;
 
-        /// <summary>Esc pulsado con un menú abierto: recibe la clave del menú que debe cerrarse.</summary>
+        /// <summary>Esc pulsado con un menï¿½ abierto: recibe la clave del menï¿½ que debe cerrarse.</summary>
         public static event Action<string> CloseRequested;
 
         public static bool Busy => _owner != null;
 
-        /// <summary>Hay un menú que Esc debe cerrar (inventario, crafting, stats, mapa).</summary>
+        /// <summary>Hay un menï¿½ que Esc debe cerrar (inventario, crafting, stats, mapa).</summary>
         public static bool HasClosableMenu => EscCloses;
 
-        /// <summary>Esc ya se usó este frame para cerrar un menú.</summary>
+        /// <summary>Esc ya se usï¿½ este frame para cerrar un menï¿½.</summary>
         public static bool EscConsumed => _escFrame == Time.frameCount;
 
-        /// <summary>Toma el control sin pedir permiso (menú de pausa: va por encima de todo).</summary>
+        /// <summary>Toma el control sin pedir permiso (menï¿½ de pausa: va por encima de todo).</summary>
         public static void Take(string key) => _owner = key;
 
         public static bool TryOpen(string key)
@@ -43,8 +48,8 @@ namespace Runtime.Scripts.Gate
             if (_owner == key) _owner = null;
         }
 
-        // Diálogos, consolas y el panel J gestionan su propio Esc (o ninguno): no se consume.
-        static bool EscCloses => _owner != null && _owner != "dialog" && _owner != "story" && _owner != "mission";
+        // Solo estos menï¿½s se cierran con Esc. Pausa, diï¿½logos, consolas y panel J gestionan su propio Esc.
+        static bool EscCloses => _owner == "inventory" || _owner == "crafting" || _owner == "stats" || _owner == "map";
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void Init()
@@ -72,7 +77,7 @@ namespace Runtime.Scripts.Gate
             CloseRequested = null;
         }
 
-        // Se descarta la pulsación de Esc para todo el juego (incluido el menú de pausa) y se cierra el menú en Update.
+        // Se descarta la pulsaciï¿½n de Esc para todo el juego (incluido el menï¿½ de pausa) y se cierra el menï¿½ en Update.
         static void OnInput(InputEventPtr e, InputDevice d)
         {
             if (!(d is Keyboard k) || !(e.IsA<StateEvent>() || e.IsA<DeltaStateEvent>())) return;
@@ -84,6 +89,268 @@ namespace Runtime.Scripts.Gate
             _esc = true;
             e.handled = true;
         }
+
+        public static readonly Color Green = new Color(0.2f, 1f, 0.35f), Amber = new Color(0.85f, 0.75f, 0.55f);
+        static readonly Dictionary<Vector2Int, Texture2D> s_metal = new Dictionary<Vector2Int, Texture2D>();
+        static Sprite s_glass;
+
+        // ---------- Piezas ----------
+
+        /// <summary>Placa metalica. res = resolucion de la textura respecto al tamano.</summary>
+        public static RawImage Panel(Transform p, Vector2 size, float res = 1f)
+        {
+            var g = new GameObject("p", typeof(RawImage));
+            g.transform.SetParent(p, false);
+            var r = g.GetComponent<RawImage>();
+            r.texture = Metal(Mathf.Max(8, (int)(size.x * res)), Mathf.Max(8, (int)(size.y * res)));
+            r.raycastTarget = false;
+            r.rectTransform.sizeDelta = size;
+            return r;
+        }
+
+        /// <summary>Visor: marco metalico + titulo + pantalla negra con texto verde (body).</summary>
+        public static RectTransform Term(Transform p, Vector2 size, string title, out TextMeshProUGUI body)
+        {
+            var m = Panel(p, size, 0.5f).rectTransform;
+            var t = Txt(m, 30, Amber, TextAlignmentOptions.Center, FontStyles.Bold);
+            t.text = title;
+            Fit(t.rectTransform, 0f, 1f, 1f, 1f);
+            t.rectTransform.offsetMin = new Vector2(0f, -46f);
+            t.rectTransform.offsetMax = new Vector2(0f, -4f);
+            var s = Rnd(Img(m, new Color(0.01f, 0.03f, 0.02f)));
+            Fit(s, 0f, 0f, 1f, 1f);
+            s.offsetMin = new Vector2(22f, 22f);
+            s.offsetMax = new Vector2(-22f, -52f);
+            s.gameObject.AddComponent<Outline>().effectColor = Color.black;
+            body = Txt(s, 34, Green, TextAlignmentOptions.TopLeft, FontStyles.Normal);
+            Fit(body.rectTransform, 0f, 0f, 1f, 1f, 16f);
+            return m;
+        }
+
+        /// <summary>Boton: placa metalica (se ilumina al pasar) con pantallita verde.</summary>
+        public static RectTransform Btn(Transform p, string label, Vector2 size, UnityAction click)
+        {
+            var m = Panel(p, size, 0.5f);
+            m.raycastTarget = true;
+            var b = m.gameObject.AddComponent<Button>();
+            b.targetGraphic = m;
+            b.onClick.AddListener(click);
+            var cb = b.colors;
+            cb.normalColor = cb.selectedColor = new Color(0.75f, 0.75f, 0.75f);
+            cb.highlightedColor = Color.white;
+            cb.pressedColor = new Color(0.5f, 0.5f, 0.5f);
+            b.colors = cb;
+            var s = Rnd(Img(m.rectTransform, new Color(0.01f, 0.03f, 0.02f)));
+            Fit(s, 0f, 0f, 1f, 1f, 8f);
+            var t = Txt(s, 28, Green, TextAlignmentOptions.Center, FontStyles.Bold);
+            Fit(t.rectTransform, 0f, 0f, 1f, 1f);
+            t.text = label;
+            return m.rectTransform;
+        }
+
+        /// <summary>Lampara de vidrio: ranura hundida + vidrio apagado + vidrio encendido (fill, se recorta con anchorMax.x) + brillo.</summary>
+        public static RectTransform Lamp(Transform p, Color c, out RectTransform fill)
+        {
+            var slot = Rnd(Img(p, new Color(0.02f, 0.03f, 0.03f)), 6);
+            slot.gameObject.AddComponent<Outline>().effectColor = new Color(0f, 0f, 0f, 0.9f);
+            var off = Img(slot, new Color(c.r * 0.18f, c.g * 0.18f, c.b * 0.18f, 1f));
+            off.GetComponent<Image>().sprite = Glass();
+            Fit(off, 0f, 0f, 1f, 1f, 3f);
+            fill = Img(slot, c);
+            fill.GetComponent<Image>().sprite = Glass();
+            Fit(fill, 0f, 0f, 1f, 1f, 3f);
+            Fit(Img(slot, new Color(1f, 1f, 1f, 0.14f)), 0f, 0.55f, 1f, 1f, 4f);
+            return slot;
+        }
+
+        // ---------- Utilidades uGUI ----------
+
+        public static RectTransform Img(Transform parent, Color col)
+        {
+            var g = new GameObject("i", typeof(Image));
+            g.transform.SetParent(parent, false);
+            var im = g.GetComponent<Image>();
+            im.color = col;
+            im.raycastTarget = false;
+            return g.GetComponent<RectTransform>();
+        }
+
+        public static TextMeshProUGUI Txt(Transform parent, int size, Color col, TextAlignmentOptions align, FontStyles style)
+        {
+            var g = new GameObject("t", typeof(TextMeshProUGUI));
+            g.transform.SetParent(parent, false);
+            var t = g.GetComponent<TextMeshProUGUI>();
+            t.fontSize = size;
+            t.color = col;
+            t.alignment = align;
+            t.fontStyle = style;
+            t.textWrappingMode = TextWrappingModes.NoWrap;
+            t.raycastTarget = false;
+            return t;
+        }
+
+        public static void Fit(RectTransform r, float x0, float y0, float x1, float y1, float pad = 0f)
+        {
+            r.anchorMin = new Vector2(x0, y0);
+            r.anchorMax = new Vector2(x1, y1);
+            r.offsetMin = new Vector2(pad, pad);
+            r.offsetMax = new Vector2(-pad, -pad);
+        }
+
+        public static void Mid(RectTransform r, float s)
+        {
+            r.anchorMin = r.anchorMax = new Vector2(0.5f, 0.5f);
+            r.anchoredPosition = Vector2.zero;
+            r.sizeDelta = new Vector2(s, s);
+        }
+
+        // ---------- Texturas por codigo (una vez, compartidas) ----------
+
+        static Sprite Glass()
+        {
+            if (s_glass != null) return s_glass;
+            var t = new Texture2D(2, 32, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            for (int y = 0; y < 32; y++)
+            {
+                float u = (y + 0.5f) / 32f, k = (u - 0.7f) / 0.08f;
+                float v = Mathf.Clamp01(0.45f + 0.55f * Mathf.Sin(u * Mathf.PI) + 0.3f * Mathf.Exp(-k * k));
+                t.SetPixel(0, y, new Color(v, v, v, 1f));
+                t.SetPixel(1, y, new Color(v, v, v, 1f));
+            }
+            t.Apply(false, true);
+            return s_glass = Sprite.Create(t, new Rect(0, 0, 2, 32), new Vector2(0.5f, 0.5f), 100f);
+        }
+
+        public const int Radius = 14; // esquinas redondeadas (px de textura; en pantalla ~2x)
+
+        static readonly Dictionary<int, Sprite> s_round = new Dictionary<int, Sprite>();
+
+        /// <summary>Sprite 9-slice redondeado (usar con Image.Type.Sliced).</summary>
+        public static Sprite Round(int R = 12)
+        {
+            if (s_round.TryGetValue(R, out var sp) && sp != null) return sp;
+            int N = R * 2 + 4;
+            var t = new Texture2D(N, N, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            for (int y = 0; y < N; y++)
+                for (int x = 0; x < N; x++)
+                {
+                    float cx = Mathf.Clamp(x, R, N - 1 - R), cy = Mathf.Clamp(y, R, N - 1 - R);
+                    float d = Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy));
+                    t.SetPixel(x, y, new Color(1f, 1f, 1f, Mathf.Clamp01(R - d + 0.5f)));
+                }
+            t.Apply(false, true);
+            return s_round[R] = Sprite.Create(t, new Rect(0, 0, N, N), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(R, R, R, R));
+        }
+
+        public static RectTransform Rnd(RectTransform r, int rad = 12)
+        {
+            var im = r.GetComponent<Image>();
+            im.sprite = Round(rad);
+            im.type = Image.Type.Sliced;
+            return r;
+        }
+
+        public static GameObject Rnd(GameObject g) { Rnd(g.GetComponent<RectTransform>()); return g; }
+
+        /// <summary>Tablero inferior: borde superior curvo (grueso en los costados, estrecho al centro). 1920x224 en el centro 104 de alto.</summary>
+        public static RectTransform Dash(Transform p)
+        {
+            var g = new GameObject("p", typeof(RawImage));
+            g.transform.SetParent(p, false);
+            var r = g.GetComponent<RawImage>();
+            r.texture = Gen(960, 112, true);
+            r.raycastTarget = false;
+            var rt = r.rectTransform;
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = new Vector2(1f, 0f);
+            rt.pivot = new Vector2(0.5f, 0f);
+            rt.sizeDelta = new Vector2(0f, 224f);
+            rt.anchoredPosition = Vector2.zero;
+            return rt;
+        }
+
+        public static Texture2D Metal(int w, int h) => Gen(w, h, false);
+
+        static float Top(int x, int w) => 52f + 60f * Smooth(0.35f, 0.85f, Mathf.Abs(2f * x / (w - 1) - 1f));
+
+        static Texture2D Gen(int w, int h, bool dash)
+        {
+            var key = new Vector2Int(w, dash ? -h : h);
+            if (s_metal.TryGetValue(key, out var c) && c != null) return c;
+            const int Cell = 96;
+            int rr = Mathf.Min(Radius, Mathf.Min(w, h) / 4);
+            var px = new Color32[w * h];
+            var rustA = new Color(0.33f, 0.15f, 0.06f);
+            var rustB = new Color(0.62f, 0.30f, 0.09f);
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    float top = dash ? Top(x, w) : h;
+                    float qx = Mathf.Clamp(x, rr, w - 1 - rr);
+                    float qy = (dash ? Top((int)qx, w) : h) - 1f - rr;
+                    float ey = y > qy ? y - qy : (!dash && y < rr ? rr - y : 0f);
+                    float e = Mathf.Min(Mathf.Min(Mathf.Min(x, w - 1 - x), Mathf.Min(y, top - 1f - y)), rr - Mathf.Sqrt((x - qx) * (x - qx) + ey * ey));
+                    if (e < -0.5f) continue;
+
+                    float fx = x, fy = y;
+                    float m = 0.30f + 0.14f * (F(fx / 60f, fy / 60f, 1) - 0.5f) + 0.07f * (V(fx * 0.015f, fy * 1.2f, 5) - 0.5f) + 0.05f * (H(x, y, 3) - 0.5f);
+
+                    int lx = x % Cell, ly = y % Cell;
+                    bool seam = lx < 4 || ly < 4;
+                    if (lx < 2 || ly < 2) m *= 0.45f; else if (seam) m *= 1.18f;
+
+                    for (int k = 0; k < 4; k++)
+                    {
+                        float cx = (k & 1) == 0 ? 12f : Cell - 12f, cy = (k & 2) == 0 ? 12f : Cell - 12f;
+                        float dx = lx - cx, dy = ly - cy, d = Mathf.Sqrt(dx * dx + dy * dy);
+                        if (d < 4.5f) m = 0.5f + 0.18f * (1f - d / 4.5f) - 0.08f * (dx + dy) / 4.5f;
+                        else if (d < 6f) m *= 0.6f;
+                    }
+
+                    if (e < 5f) m *= 0.5f; else if (e < 9f) m *= 1.2f;
+                    float edge = 1f - Mathf.Clamp01(e / 70f);
+
+                    float rr2 = F(fx / 55f, fy / 55f, 21) + 0.2f * (F(fx / 12f, fy / 12f, 33) - 0.5f) + 0.3f * edge + (seam ? 0.08f : 0f);
+                    float mask = Smooth(0.55f, 0.72f, rr2) * 0.9f;
+                    var rust = Color.Lerp(rustA, rustB, F(fx / 7f, fy / 7f, 44)) * (0.8f + 0.4f * H(x, y, 9));
+                    var col = Color.Lerp(new Color(m, m * 1.02f, m * 1.05f), rust, mask);
+
+                    col *= (0.8f + 0.2f * Smooth(0f, 1f, Mathf.Clamp01(e / 90f))) * 0.92f;
+                    px[y * w + x] = new Color32((byte)(Mathf.Clamp01(col.r) * 255f), (byte)(Mathf.Clamp01(col.g) * 255f), (byte)(Mathf.Clamp01(col.b) * 255f), (byte)(Mathf.Clamp01(e + 0.5f) * 255f));
+                }
+            var t = new Texture2D(w, h, TextureFormat.RGBA32, false) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            t.SetPixels32(px);
+            t.Apply(false, true);
+            return s_metal[key] = t;
+        }
+
+        static float Smooth(float a, float b, float x)
+        {
+            float t = Mathf.Clamp01((x - a) / (b - a));
+            return t * t * (3f - 2f * t);
+        }
+
+        static float H(int x, int y, int s)
+        {
+            unchecked
+            {
+                uint h = (uint)(x * 374761393 + y * 668265263 + s * 1274126177);
+                h = (h ^ (h >> 13)) * 1274126177u;
+                return ((h ^ (h >> 16)) & 0xFFFF) / 65535f;
+            }
+        }
+
+        static float V(float x, float y, int s)
+        {
+            int xi = Mathf.FloorToInt(x), yi = Mathf.FloorToInt(y);
+            float fx = x - xi, fy = y - yi;
+            fx = fx * fx * (3f - 2f * fx);
+            fy = fy * fy * (3f - 2f * fy);
+            return Mathf.Lerp(Mathf.Lerp(H(xi, yi, s), H(xi + 1, yi, s), fx), Mathf.Lerp(H(xi, yi + 1, s), H(xi + 1, yi + 1, s), fx), fy);
+        }
+
+        static float F(float x, float y, int s) =>
+            (V(x, y, s) * 0.5f + V(x * 2f, y * 2f, s + 1) * 0.25f + V(x * 4f, y * 4f, s + 2) * 0.125f + V(x * 8f, y * 8f, s + 3) * 0.0625f) / 0.9375f;
 
         [DefaultExecutionOrder(-1000)]
         sealed class Runner : MonoBehaviour

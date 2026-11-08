@@ -59,6 +59,7 @@ namespace Runtime.Scripts.Inventory
         public int padding = 20;
         public int titleH = 65;
         public int qtyFontSize = 14;
+        [Tooltip("Escala de todo el inventario (se limita para que quepa en pantalla).")] public float uiScale = 2f;
         public int cornerRadius = 15;
         public Color panelColor = new Color(0.05f, 0.05f, 0.05f, 0.95f);
         public Color accentColor = new Color(1f, 0.85f, 0f, 1f);
@@ -297,13 +298,14 @@ namespace Runtime.Scripts.Inventory
             if (CraftingController.Instance != null && CraftingController.Instance.IsUIOpen) return;
 
             EnsureStyles();
-            Rect panelRect = new Rect((Screen.width - panelWidth) / 2f, (Screen.height - panelHeight) / 2f, panelWidth, panelHeight);
+            float pw = panelWidth * K, ph = panelHeight * K;
+            Rect panelRect = new Rect((Screen.width - pw) / 2f, (Screen.height - ph) / 2f, pw, ph);
             DrawInventoryUI(panelRect, "MI INVENTARIO");
 
             if (_draggedItem != null)
             {
                 Vector2 mousePos = Event.current.mousePosition;
-                Rect dragRect = new Rect(mousePos.x - cellSize / 2, mousePos.y - cellSize / 2, cellSize, cellSize);
+                Rect dragRect = new Rect(mousePos.x - cellSize * K / 2, mousePos.y - cellSize * K / 2, cellSize * K, cellSize * K);
                 if (_draggedItem.itemSprite != null) GUI.DrawTexture(dragRect, _draggedItem.itemSprite.texture);
                 if (Event.current.type == EventType.MouseUp)
                 {
@@ -313,66 +315,58 @@ namespace Runtime.Scripts.Inventory
             }
         }
 
+        float K => Mathf.Min(uiScale, (Screen.height - 40f) / panelHeight, (Screen.width - 40f) / panelWidth);
+
         public void DrawInventoryUI(Rect panel, string title)
         {
             EnsureStyles();
+            float k = K, cs = cellSize * k, pad = padding * k, th = titleH * k, m = 16f * k;
             GUI.DrawTexture(panel, _texPanel);
-            GUI.Label(new Rect(panel.x, panel.y + 10, panel.width, titleH), title, _titleSty);
-            if (GUI.Button(new Rect(panel.xMax - 50, panel.y + 15, 35, 35), "X", _btnSty)) SetOpen(false);
+            GUI.DrawTexture(new Rect(panel.x + m, panel.y + m, panel.width - 2f * m, panel.height - 2f * m), Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, new Color(0.01f, 0.03f, 0.02f), 0f, 10f * k);
+            GUI.Label(new Rect(panel.x, panel.y + 10f * k, panel.width, th), title, _titleSty);
+            if (GUI.Button(new Rect(panel.xMax - 56f * k, panel.y + 22f * k, 35f * k, 35f * k), "X", _btnSty)) SetOpen(false);
 
-            // Cálculo dinámico de columnas para que quepan en el ancho del panel recibido
-            int effectiveColumns = Mathf.Max(1, (int)((panel.width - (padding * 2)) / (cellSize + 10)));
-
+            int cols = Mathf.Max(1, (int)((panel.width - 2f * pad) / (cs + 10f * k)));
             int i = 0;
             foreach (var key in _localKeys.ToArray())
             {
                 if (!_localBag.TryGetValue(key, out var slot)) continue;
-                Rect cell = new Rect(panel.x + padding + (i % effectiveColumns) * (cellSize + 10),
-                                     panel.y + titleH + (i / effectiveColumns) * (cellSize + 40), cellSize, cellSize);
+                Rect cell = new Rect(panel.x + pad + (i % cols) * (cs + 10f * k), panel.y + th + (i / cols) * (cs + 40f * k), cs, cs);
 
                 bool isOver = cell.Contains(Event.current.mousePosition);
                 GUI.DrawTexture(cell, isOver ? _texSelected : _texNormal);
-                if (slot.def.itemSprite != null) GUI.DrawTexture(new Rect(cell.x + 10, cell.y + 10, cell.width - 20, cell.height - 20), slot.def.itemSprite.texture);
+                if (slot.def.itemSprite != null) GUI.DrawTexture(new Rect(cell.x + 10f * k, cell.y + 10f * k, cell.width - 20f * k, cell.height - 20f * k), slot.def.itemSprite.texture);
                 GUI.Label(cell, "x" + slot.qty, _qtySty);
 
-                Rect btnArea = new Rect(cell.x, cell.yMax + 2, cell.width, 35);
+                Rect btnArea = new Rect(cell.x, cell.yMax + 2f * k, cell.width, 35f * k);
                 int hash = slot.def.GetHashCode();
                 bool isEquipped = _equippedInstances.ContainsKey(hash);
-                string actionText = isEquipped ? "QUIT" : "USE";
+                bool canShowUse = isEquipped ? slot.def.isQuitable : slot.def.isUsable;
 
-                // Botón dinámico USE/QUIT y DROP según las 4 acciones de ItemsData
-                bool canShowUse = isEquipped ? slot.def.isQuitable : (slot.def.isUsable);
-
-                if (canShowUse)
-                {
-                    if (GUI.Button(new Rect(btnArea.x, btnArea.y, btnArea.width * 0.5f, 30), actionText, _btnSty)) UseItem(slot.def);
-                }
-
+                if (canShowUse && GUI.Button(new Rect(btnArea.x, btnArea.y, btnArea.width * 0.5f, 30f * k), isEquipped ? "QUIT" : "USE", _btnSty)) UseItem(slot.def);
                 if (slot.def.isDropable)
                 {
-                    float dropBtnWidth = canShowUse ? btnArea.width * 0.5f : btnArea.width;
-                    float dropBtnX = canShowUse ? btnArea.x + btnArea.width * 0.5f : btnArea.x;
-
-                    if (GUI.Button(new Rect(dropBtnX, btnArea.y, dropBtnWidth, 30), "DROP", _btnSty)) DropItem(slot.def);
+                    float w = canShowUse ? btnArea.width * 0.5f : btnArea.width, x = canShowUse ? btnArea.x + btnArea.width * 0.5f : btnArea.x;
+                    if (GUI.Button(new Rect(x, btnArea.y, w, 30f * k), "DROP", _btnSty)) DropItem(slot.def);
                 }
 
                 if (isOver && Event.current.type == EventType.MouseDown && Event.current.button == 0) { _draggedItem = slot.def; Event.current.Use(); }
                 i++;
             }
-            if (_localKeys.Count == 0) GUI.Label(new Rect(panel.x, panel.y + titleH, panel.width, panel.height - titleH), "Inventario Vacío", _emptySty);
+            if (_localKeys.Count == 0) GUI.Label(new Rect(panel.x, panel.y + th, panel.width, panel.height - th), "Inventario Vac�o", _emptySty);
         }
 
         private void EnsureStyles()
         {
             if (_stylesReady) return;
-            _texNormal = MakeRoundedTex(64, 8, new Color(1f, 1f, 1f, 0.08f), Color.clear, 0);
-            _texSelected = MakeRoundedTex(64, 8, new Color(1f, 1f, 1f, 0.15f), accentColor, 2);
-            _texPanel = MakeRoundedTex(64, cornerRadius, panelColor, Color.clear, 0);
-            _titleSty = Sty(32, FontStyle.Bold, TextAnchor.MiddleCenter, Color.white);
-            _qtySty = Sty(qtyFontSize, FontStyle.Bold, TextAnchor.LowerRight, accentColor);
-            _emptySty = Sty(18, FontStyle.Normal, TextAnchor.MiddleCenter, new Color(1, 1, 1, 0.5f));
-            _btnSty = new GUIStyle(GUI.skin.button) { fontSize = 10, fontStyle = FontStyle.Bold };
-            _btnSty.normal.textColor = Color.white;
+            _texNormal = MakeRoundedTex(64, 8, new Color(0.03f, 0.12f, 0.05f), Color.clear, 0);
+            _texSelected = MakeRoundedTex(64, 8, new Color(0.05f, 0.2f, 0.08f), MenuGate.Green, 2);
+            _texPanel = MenuGate.Metal(350, 275);
+            _titleSty = Sty((int)(32 * K), FontStyle.Bold, TextAnchor.MiddleCenter, MenuGate.Green);
+            _qtySty = Sty((int)(qtyFontSize * K), FontStyle.Bold, TextAnchor.LowerRight, MenuGate.Green);
+            _emptySty = Sty((int)(18 * K), FontStyle.Normal, TextAnchor.MiddleCenter, new Color(0.2f, 1f, 0.35f, 0.5f));
+            _btnSty = new GUIStyle(GUI.skin.button) { fontSize = (int)(10 * K), fontStyle = FontStyle.Bold };
+            _btnSty.normal.textColor = _btnSty.hover.textColor = MenuGate.Green;
             _stylesReady = true;
         }
 

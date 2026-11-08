@@ -4454,6 +4454,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4486184058619454347, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+      propertyPath: m_Color.b
+      value: 0.56078434
+      objectReference: {fileID: 0}
+    - target: {fileID: 4486184058619454347, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+      propertyPath: m_Color.g
+      value: 0.5803922
+      objectReference: {fileID: 0}
     - target: {fileID: 5877786229517758287, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
       propertyPath: m_Name
       value: PortalsPrefab
@@ -6213,6 +6221,10 @@ PrefabInstance:
     - target: {fileID: 5304597487900754382, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
       propertyPath: m_Name
       value: TerrainsPrefab
+      objectReference: {fileID: 0}
+    - target: {fileID: 5592888805684219072, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeBillboardDistance
+      value: 1975
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
