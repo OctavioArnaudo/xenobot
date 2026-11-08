@@ -1583,7 +1583,7 @@ Transform:
   m_GameObject: {fileID: 877571563}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -407, y: 326, z: -1004}
+  m_LocalPosition: {x: -388, y: 284, z: -998}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1773,17 +1773,41 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 1
           m_CallState: 2
+        - m_Target: {fileID: 1844357079}
+          m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+          m_MethodName: SetActive
+          m_Mode: 6
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 1
+          m_CallState: 2
   - key: {fileID: 1408411318}
     terminal: {fileID: 389148614}
     keyText: El futuro de la raza humana depende de estos embriones
-    openText: Fallo el sistema de regriferacion! solo restan 2 hembriones, debes
-      apresurarte a buscar el combustible necesario para encencer la nave!
+    openText: Fallo el sistema de regriferacion! solo restan 2 hembriones, debo apresurarme
+      a buscar el combustible necesario para encencer la nave!
     keyGoal: 
     openGoal: 
     onOpen:
       m_PersistentCalls:
         m_Calls:
         - m_Target: {fileID: 1468774466}
+          m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+          m_MethodName: SetActive
+          m_Mode: 6
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 1
+          m_CallState: 2
+        - m_Target: {fileID: 1114723306}
           m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
           m_MethodName: SetActive
           m_Mode: 6
@@ -1984,6 +2008,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 996628916}
   m_SourcePrefab: {fileID: 100100000, guid: 012d63212fd1fe646b661cb8446c7bd4, type: 3}
+--- !u!1 &1114723306 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 6737479684883254475, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+  m_PrefabInstance: {fileID: 2554176228583297983}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1156372151 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5930239309434990320, guid: ee119661cce5a7241920c5c799ea193e, type: 3}
@@ -2859,6 +2888,11 @@ Transform:
 GameObject:
   m_CorrespondingSourceObject: {fileID: 750727577342477267, guid: 5f5e8d5bbb3007b42a0eadcb10b0e234, type: 3}
   m_PrefabInstance: {fileID: 2064475818}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1844357079 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2352664485037930873, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+  m_PrefabInstance: {fileID: 2554176228583297983}
   m_PrefabAsset: {fileID: 0}
 --- !u!4 &1875493268 stripped
 Transform:
@@ -4355,6 +4389,26 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1577091800}
     m_Modifications:
+    - target: {fileID: 616313499041792251, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 172.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 616313499041792251, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -21.07
+      objectReference: {fileID: 0}
+    - target: {fileID: 616313499041792251, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -833.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 864849516176197268, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -20.35
+      objectReference: {fileID: 0}
+    - target: {fileID: 2352664485037930873, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2691019300354731380, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -4399,6 +4453,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: PortalsPrefab
       objectReference: {fileID: 0}
+    - target: {fileID: 6737479684883254475, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6916577897815648489, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
       propertyPath: m_IsActive
       value: 0
@@ -4410,6 +4468,18 @@ PrefabInstance:
     - target: {fileID: 7599422357672900749, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
       propertyPath: m_Color.g
       value: 0.5803922
+      objectReference: {fileID: 0}
+    - target: {fileID: 8153364688988910374, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -967
+      objectReference: {fileID: 0}
+    - target: {fileID: 8153364688988910374, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -106.58
+      objectReference: {fileID: 0}
+    - target: {fileID: 8153364688988910374, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1215
       objectReference: {fileID: 0}
     - target: {fileID: 8479033645860287817, guid: 8e6a4f469f388d641a200f79cebbba53, type: 3}
       propertyPath: m_LocalPosition.x
