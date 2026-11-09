@@ -8,8 +8,6 @@ using Runtime.Scripts.Settings;
 using Runtime.Scripts.Levels;
 using Runtime.Scripts.Gate;
 
-
-
 namespace Runtime.Scripts.Pause
 {
     public class PauseMenu : CSingletonMB<PauseMenu>
@@ -20,7 +18,7 @@ namespace Runtime.Scripts.Pause
         public string mainSceneName = "MainScene";
         public string levelsScene = "LevelsScene";
 
-        [Header("UI Panel (Optional - Auto-built if null)")]
+        [Header("UI Panel")]
         [SerializeField] private GameObject pauseMenuPanel;
 
         private GameObject _canvasRoot;

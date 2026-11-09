@@ -47,9 +47,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.BalanceManager
   persistAcrossScenes: 1
   destroyDuplicates: 1
-  difficultyLevel: 1
-  aggroMultiplier: 1
-  growthFactor: 2
   userSpawnPoints:
   - pointTransform: {fileID: 0}
     playerTypeToSpawn: 0
@@ -181,6 +178,21 @@ MonoBehaviour:
     customPrefab: {fileID: 0}
   - pointTransform: {fileID: 0}
     categoryToSpawn: 1
+    customPrefab: {fileID: 0}
+  - pointTransform: {fileID: 0}
+    categoryToSpawn: 2
+    customPrefab: {fileID: 0}
+  - pointTransform: {fileID: 0}
+    categoryToSpawn: 2
+    customPrefab: {fileID: 0}
+  - pointTransform: {fileID: 0}
+    categoryToSpawn: 2
+    customPrefab: {fileID: 0}
+  - pointTransform: {fileID: 0}
+    categoryToSpawn: 2
+    customPrefab: {fileID: 0}
+  - pointTransform: {fileID: 0}
+    categoryToSpawn: 2
     customPrefab: {fileID: 0}
   propSpawnPoints: []
   userPlayerPrefab: {fileID: 0}
