@@ -228,6 +228,180 @@ static class TerrainTools
         }
     }
 
+    // 5) Pinta TODOS los terrenos con 4 capas (pasto, barro oscuro, tierra, tierra seca clara) según altura,
+    //    pendiente y curvatura: valles/bajos oscuros, crestas claras, laderas de tierra. Continuo entre planchas.
+    //    Las texturas se generan una vez en Assets/Textures/TerrainPaint (puedes reemplazarlas por las tuyas).
+    const float CavGain = 10f;                    // sensibilidad a valles/crestas
+    const float SlopeMin = 18f, SlopeMax = 42f;   // grados: de pasto a tierra de ladera
+
+    [MenuItem("Tools/Terrain/5 Paint Terrain (todos)")]
+    static void Paint()
+    {
+        var layers = Layers();
+        var ts = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+        int n = ts.Length;
+        var H = new float[n][,];
+        float lo = float.MaxValue, hi = float.MinValue;
+        for (int i = 0; i < n; i++)
+        {
+            var td = ts[i].terrainData;
+            int r = td.heightmapResolution, st = Mathf.Max(1, r / 64);
+            H[i] = td.GetHeights(0, 0, r, r);
+            for (int y = 0; y < r; y += st)
+                for (int x = 0; x < r; x += st)
+                {
+                    float wy = ts[i].transform.position.y + H[i][y, x] * td.size.y;
+                    lo = Mathf.Min(lo, wy); hi = Mathf.Max(hi, wy);
+                }
+        }
+
+        const float D = 2f;
+        for (int i = 0; i < n; i++)
+        {
+            var t = ts[i]; var td = t.terrainData; var A = H[i];
+            EditorUtility.DisplayProgressBar("Pintando terreno", t.name, (float)i / n);
+            Undo.RegisterCompleteObjectUndo(td, "Paint Terrain");
+            td.terrainLayers = layers;
+
+            int res = td.alphamapResolution;
+            var map = new float[res, res, 4];
+            Vector3 p = t.transform.position, sz = td.size;
+            float eu = D / sz.x, ev = D / sz.z;
+            for (int y = 0; y < res; y++)
+                for (int x = 0; x < res; x++)
+                {
+                    float u = (x + 0.5f) / res, v = (y + 0.5f) / res;
+                    float h = Sample(A, u, v), hl = Sample(A, u - eu, v), hr = Sample(A, u + eu, v),
+                          hd = Sample(A, u, v - ev), hu = Sample(A, u, v + ev);
+                    float gx = (hr - hl) * sz.y / (2f * D), gz = (hu - hd) * sz.y / (2f * D);
+                    float slope = Mathf.Atan(Mathf.Sqrt(gx * gx + gz * gz)) * Mathf.Rad2Deg;
+                    float cav = Mathf.Clamp((hl + hr + hd + hu - 4f * h) * sz.y / (D * D) * CavGain, -1f, 1f);
+
+                    float wx = p.x + u * sz.x, wz = p.z + v * sz.z;
+                    float hn = Mathf.InverseLerp(lo, hi, p.y + h * sz.y);
+                    float n1 = Mathf.PerlinNoise(wx * 0.012f + 17f, wz * 0.012f), n2 = Mathf.PerlinNoise(wx * 0.06f, wz * 0.06f + 31f);
+                    float sl = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(SlopeMin, SlopeMax, slope));
+                    float valley = Mathf.Clamp01(cav), ridge = Mathf.Clamp01(-cav);
+
+                    float grass = (1f - sl) * (0.25f + n1) * (1f - 0.8f * valley) * (1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.7f, 1f, hn)));
+                    float mud = valley * 1.4f + Mathf.Pow(1f - hn, 3f) * n2 * 1.2f;
+                    float dirt = 0.15f + sl * 1.5f + n2 * 0.2f;
+                    float dry = ridge * 1.4f + Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.6f, 1f, hn)) * (0.5f + n1);
+
+                    grass = Mathf.Pow(grass, 1.5f); mud = Mathf.Pow(mud, 1.5f); dirt = Mathf.Pow(dirt, 1.5f); dry = Mathf.Pow(dry, 1.5f);
+                    float sum = grass + mud + dirt + dry + 1e-5f;
+                    map[y, x, 0] = grass / sum; map[y, x, 1] = mud / sum; map[y, x, 2] = dirt / sum; map[y, x, 3] = dry / sum;
+                }
+            td.SetAlphamaps(0, 0, map);
+        }
+        EditorUtility.ClearProgressBar();
+        UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+        Debug.Log($"[Terrain] Pintados {n} terrenos. Altura mundial {lo:F0}..{hi:F0}.");
+    }
+
+    static TerrainLayer[] Layers()
+    {
+        const string dir = "Assets/Textures/TerrainPaint";
+        Directory.CreateDirectory(dir);
+        var defs = new (string name, Color dark, Color light, float crack, float streak, float grain)[]
+        {
+            ("Grass", new Color(.07f, .17f, .04f), new Color(.42f, .58f, .17f), 0f, .6f, .35f),
+            ("Mud",   new Color(.05f, .03f, .02f), new Color(.20f, .12f, .08f), .7f, 0f, .30f),
+            ("Dirt",  new Color(.30f, .16f, .08f), new Color(.60f, .36f, .19f), 0f, 0f, .55f),
+            ("Dry",   new Color(.58f, .45f, .30f), new Color(.88f, .74f, .54f), .2f, 0f, .35f),
+        };
+        var res = new TerrainLayer[defs.Length];
+        for (int i = 0; i < defs.Length; i++)
+        {
+            var d = defs[i];
+            string lp = $"{dir}/{d.name}.terrainlayer";
+            var layer = AssetDatabase.LoadAssetAtPath<TerrainLayer>(lp);
+            if (layer == null)
+            {
+                Gen(dir, d.name, d.dark, d.light, d.crack, d.streak, d.grain);
+                layer = new TerrainLayer
+                {
+                    diffuseTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{dir}/{d.name}_D.png"),
+                    normalMapTexture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{dir}/{d.name}_N.png"),
+                    tileSize = new Vector2(12f, 12f),
+                    normalScale = 1.3f,
+                    smoothness = 0f
+                };
+                AssetDatabase.CreateAsset(layer, lp);
+            }
+            res[i] = layer;
+        }
+        AssetDatabase.SaveAssets();
+        return res;
+    }
+
+    // Textura tileable procedural (albedo + normal derivada del relieve).
+    static void Gen(string dir, string name, Color c0, Color c1, float crack, float streak, float grain)
+    {
+        const int S = 512;
+        var h = new float[S, S];
+        var col = new Color[S * S];
+        for (int y = 0; y < S; y++)
+            for (int x = 0; x < S; x++)
+            {
+                float u = x / (float)S, v = y / (float)S;
+                float t = Fbm(u, v, 3, 3, 4);
+                float st = streak > 0f ? Fbm(u, v, 32, 2, 3) : 0.5f;
+                float g = Fbm(u, v, 96, 96, 2);
+                float cr = crack > 0f ? Mathf.Pow(1f - Mathf.Abs(2f * Fbm(u, v, 5, 5, 3) - 1f), 14f) : 0f;
+                Color c = Color.Lerp(c0, c1, Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.25f, 0.75f, t)));
+                float shade = 1f + (g - 0.5f) * grain + (st - 0.5f) * streak - cr * crack;
+                col[y * S + x] = new Color(c.r * shade, c.g * shade, c.b * shade, 0.08f);
+                h[x, y] = t * 0.6f + g * 0.25f + (streak > 0f ? st * 0.15f : 0f) - cr * crack * 0.4f;
+            }
+        Save($"{dir}/{name}_D.png", col, S, false);
+
+        var nm = new Color[S * S];
+        for (int y = 0; y < S; y++)
+            for (int x = 0; x < S; x++)
+            {
+                float dx = h[(x + 1) % S, y] - h[(x - 1 + S) % S, y], dy = h[x, (y + 1) % S] - h[x, (y - 1 + S) % S];
+                Vector3 nv = new Vector3(-dx * 6f, -dy * 6f, 1f).normalized;
+                nm[y * S + x] = new Color(nv.x * 0.5f + 0.5f, nv.y * 0.5f + 0.5f, nv.z * 0.5f + 0.5f, 1f);
+            }
+        Save($"{dir}/{name}_N.png", nm, S, true);
+    }
+
+    static void Save(string path, Color[] px, int S, bool normal)
+    {
+        var tex = new Texture2D(S, S, TextureFormat.RGBA32, false);
+        tex.SetPixels(px);
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+        AssetDatabase.ImportAsset(path);
+        var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+        imp.wrapMode = TextureWrapMode.Repeat;
+        imp.anisoLevel = 8;
+        if (normal) imp.textureType = TextureImporterType.NormalMap;
+        imp.SaveAndReimport();
+    }
+
+    // Ruido de valor periódico (tileable); px/py = período por eje.
+    static int Mod(int a, int m) => ((a % m) + m) % m;
+    static float Hash(int x, int y)
+    {
+        unchecked { int h = x * 374761393 + y * 668265263; h = (h ^ (h >> 13)) * 1274126177; return ((h ^ (h >> 16)) & 0xffff) / 65535f; }
+    }
+    static float VN(float x, float y, int px, int py)
+    {
+        int x0 = Mathf.FloorToInt(x), y0 = Mathf.FloorToInt(y);
+        float fx = x - x0, fy = y - y0;
+        fx = fx * fx * (3f - 2f * fx); fy = fy * fy * (3f - 2f * fy);
+        int xa = Mod(x0, px), xb = Mod(x0 + 1, px), ya = Mod(y0, py), yb = Mod(y0 + 1, py);
+        return Mathf.Lerp(Mathf.Lerp(Hash(xa, ya), Hash(xb, ya), fx), Mathf.Lerp(Hash(xa, yb), Hash(xb, yb), fx), fy);
+    }
+    static float Fbm(float u, float v, int px, int py, int oct)
+    {
+        float sum = 0f, a = 0.5f, tot = 0f;
+        for (int o = 0; o < oct; o++) { sum += a * VN(u * px, v * py, px, py); tot += a; a *= 0.5f; px *= 2; py *= 2; }
+        return sum / tot;
+    }
+
     static Texture2D GrassTex()
     {
         const string path = "Assets/Textures/Grass.png";
