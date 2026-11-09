@@ -1,4 +1,5 @@
 // Poner en una carpeta "Editor" (Assets/Editor/TerrainTools.cs). Menú: Tools/Terrain
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -20,12 +21,16 @@ static class TerrainTools
         {
             Undo.RecordObject(t, "Fix Tree Distance");
             t.drawTreesAndFoliage = true;
-            t.treeDistance = 5000f;
+            t.treeDistance = 900f;
             t.treeBillboardDistance = 250f;
             t.treeCrossFadeLength = 20f;
             t.treeMaximumFullLODCount = 150;
-            t.detailObjectDistance = 150f;
-            t.detailObjectDensity = 1f;
+            t.detailObjectDistance = 70f;
+            t.detailObjectDensity = 0.5f;
+            t.basemapDistance = 120f;
+            t.heightmapPixelError = 8f;
+            t.drawInstanced = true;
+            t.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
             EditorUtility.SetDirty(t);
 
             var td = t.terrainData;
@@ -400,6 +405,587 @@ static class TerrainTools
         float sum = 0f, a = 0.5f, tot = 0f;
         for (int o = 0; o < oct; o++) { sum += a * VN(u * px, v * py, px, py); tot += a; a *= 0.5f; px *= 2; py *= 2; }
         return sum / tot;
+    }
+
+    // 6) Rellena TODOS los terrenos con pinos oscuros, deformes e intrincados (4 variantes, tamaño aleatorio, en
+    //    manchas de bosque) y agrega un segundo pasto: yuyos finos. Reemplaza los árboles actuales.
+    //    Mallas y prefabs se generan una vez en Assets/Prefabs/ForestFast (borra esa carpeta para regenerarlos).
+    const float TreeSpacing = 10f;   // metros entre árboles (menos = más denso)
+    const float MaxTreeSlope = 30f;  // no crecen en pendientes mayores
+    const float ClearRadius = 2.5f;  // evita árboles dentro de edificios u objetos con collider
+
+    [MenuItem("Tools/Terrain/6 Fill Forest + Weeds (todos)")]
+    static void Forest()
+    {
+        var protos = Pines();
+        var ts = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+        Physics.SyncTransforms();
+        var buf = new Collider[8];
+        int total = 0;
+        WorldSpan(ts, out float lo, out float hi);
+
+        for (int i = 0; i < ts.Length; i++)
+        {
+            var t = ts[i]; var td = t.terrainData;
+            EditorUtility.DisplayProgressBar("Bosque", t.name, (float)i / ts.Length);
+            Undo.RegisterCompleteObjectUndo(td, "Forest");
+            td.treePrototypes = protos;
+
+            var list = new List<TreeInstance>();
+            var rnd = new System.Random(1234 + i);
+            Vector3 p = t.transform.position, sz = td.size;
+            for (float z = 0; z < sz.z; z += TreeSpacing)
+                for (float x = 0; x < sz.x; x += TreeSpacing)
+                {
+                    float lx = x + ((float)rnd.NextDouble() - 0.5f) * TreeSpacing * 0.9f;
+                    float lz = z + ((float)rnd.NextDouble() - 0.5f) * TreeSpacing * 0.9f;
+                    if (lx < 0 || lz < 0 || lx > sz.x || lz > sz.z) continue;
+                    float u = lx / sz.x, v = lz / sz.z, wx = p.x + lx, wz = p.z + lz;
+
+                    float patch = Mathf.PerlinNoise(wx * 0.008f + 5f, wz * 0.008f + 9f);
+                    if ((float)rnd.NextDouble() > Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.38f, 0.62f, patch))) continue;
+                    if (td.GetSteepness(u, v) > MaxTreeSlope) continue;
+                    if (Blocked(new Vector3(wx, p.y + td.GetInterpolatedHeight(u, v) + 2f, wz), buf)) continue;
+
+                    float a = (float)rnd.NextDouble(), b = (float)rnd.NextDouble();
+                    float size = Mathf.Lerp(0.6f, 1.7f, a * a);
+                    list.Add(new TreeInstance
+                    {
+                        position = new Vector3(u, 0f, v),
+                        prototypeIndex = rnd.Next(Normal),
+                        heightScale = size,
+                        widthScale = size * Mathf.Lerp(0.8f, 1.25f, b),
+                        rotation = (float)rnd.NextDouble() * Mathf.PI * 2f,
+                        color = new Color32(255, 255, 255, 255),
+                        lightmapColor = new Color32(255, 255, 255, 255)
+                    });
+                }
+            list.AddRange(Giants(t, i, lo, hi, buf));
+            td.SetTreeInstances(list.ToArray(), true);
+            total += list.Count;
+        }
+
+        AddWeeds(ts);
+        EditorUtility.ClearProgressBar();
+        UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+        Debug.Log($"[Terrain] Bosque: {total} pinos en {ts.Length} terrenos + yuyos finos.");
+    }
+
+    // 7) Cambia solo los prefabs de pino por la version liviana (LOD0/1/2, sin sombras lejanas) y aplica los
+    //    ajustes de 1. Mantiene los arboles actuales y agrega pinos gigantes (5x) solo en lo bajo.
+    [MenuItem("Tools/Terrain/7 Optimize Pines (mantiene arboles)")]
+    static void Optimize()
+    {
+        var protos = Pines();
+        var ts = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+        WorldSpan(ts, out float lo, out float hi);
+        Physics.SyncTransforms();
+        var buf = new Collider[8];
+        int n = 0;
+        for (int i = 0; i < ts.Length; i++)
+        {
+            var td = ts[i].terrainData;
+            Undo.RegisterCompleteObjectUndo(td, "Optimize Pines");
+            var keep = td.treeInstances.Where(x => x.prototypeIndex < Normal).ToList();
+            td.treePrototypes = protos;
+            var g = Giants(ts[i], i, lo, hi, buf);
+            keep.AddRange(g); n += g.Count;
+            td.SetTreeInstances(keep.ToArray(), true);
+        }
+        Debug.Log($"[Terrain] {n} pinos gigantes agregados.");
+        Fix();
+    }
+
+    // ---- Pinos gigantes: prototipo 4, escala ~5x, solo en el tramo mas bajo del relieve. ----
+    const int Normal = 4;                              // prototipos 0-3 = pinos, 4 = gigante
+    const float GiantSpacing = 35f, GiantLow = 0.3f;   // GiantLow: fraccion de altura mundial donde nacen
+
+    static void WorldSpan(Terrain[] ts, out float lo, out float hi)
+    {
+        lo = float.MaxValue; hi = float.MinValue;
+        foreach (var t in ts)
+            for (int y = 0; y <= 32; y++)
+                for (int x = 0; x <= 32; x++)
+                {
+                    float h = t.transform.position.y + t.terrainData.GetInterpolatedHeight(x / 32f, y / 32f);
+                    lo = Mathf.Min(lo, h); hi = Mathf.Max(hi, h);
+                }
+    }
+
+    static List<TreeInstance> Giants(Terrain t, int seed, float lo, float hi, Collider[] buf)
+    {
+        var td = t.terrainData; var list = new List<TreeInstance>();
+        var rnd = new System.Random(4321 + seed);
+        Vector3 p = t.transform.position, sz = td.size;
+        for (float z = 0; z < sz.z; z += GiantSpacing)
+            for (float x = 0; x < sz.x; x += GiantSpacing)
+            {
+                float lx = x + ((float)rnd.NextDouble() - 0.5f) * GiantSpacing * 0.9f;
+                float lz = z + ((float)rnd.NextDouble() - 0.5f) * GiantSpacing * 0.9f;
+                if (lx < 0 || lz < 0 || lx > sz.x || lz > sz.z) continue;
+                float u = lx / sz.x, v = lz / sz.z, wx = p.x + lx, wz = p.z + lz, y = p.y + td.GetInterpolatedHeight(u, v);
+                if (Mathf.InverseLerp(lo, hi, y) > GiantLow || td.GetSteepness(u, v) > MaxTreeSlope) continue;
+                if (Mathf.PerlinNoise(wx * 0.01f + 40f, wz * 0.01f) < 0.4f) continue;
+                if (Blocked(new Vector3(wx, y + 2f, wz), buf)) continue;
+                float s = Rf(rnd, 4.5f, 5.5f);
+                list.Add(new TreeInstance
+                {
+                    position = new Vector3(u, 0f, v),
+                    prototypeIndex = Normal,
+                    heightScale = s,
+                    widthScale = s * Rf(rnd, 0.6f, 0.8f),
+                    rotation = (float)rnd.NextDouble() * Mathf.PI * 2f,
+                    color = new Color32(255, 255, 255, 255),
+                    lightmapColor = new Color32(255, 255, 255, 255)
+                });
+            }
+        return list;
+    }
+
+    // 8) Cráteres de bombas: manchones oscuros pintados en el alphamap (capa Mud, sin costo extra), sin arboles ni
+    //    pasto adentro, y una columna de humo permanente por cada uno. El humo es UNA malla estatica horneada
+    //    (54 vertices, sin particulas, sin CPU): se ve desde lejos como cola inclinada por el viento.
+    //    Ejecutar despues de 5/6/7 (esos pisan la pintura y los arboles). Re-ejecutar regenera los cráteres.
+    const int CraterCount = 12;
+    const float CraterGap = 200f, WindYaw = 70f;   // separacion minima (m) y direccion del viento (grados)
+    const string BombDir = "Assets/Prefabs/Bombs";
+
+    [MenuItem("Tools/Terrain/8 Bomb Craters + Smoke (todos)")]
+    static void Craters()
+    {
+        var ts = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+        if (ts.Length == 0 || ts[0].terrainData.alphamapLayers < 2) { Debug.LogWarning("[Terrain] Primero ejecuta 5 Paint Terrain."); return; }
+        Physics.SyncTransforms();
+        var buf = new Collider[8];
+        var rnd = new System.Random(777);
+        var old = GameObject.Find("BombSmoke");
+        if (old != null) Undo.DestroyObjectImmediate(old);
+        var root = new GameObject("BombSmoke");
+        Undo.RegisterCreatedObjectUndo(root, "Craters");
+        var mesh = SmokeMesh(); var mat = SmokeMat();
+        var done = new List<Vector3>();
+
+        for (int tries = 0; tries < 500 && done.Count < CraterCount; tries++)
+        {
+            var t = ts[rnd.Next(ts.Length)]; var td = t.terrainData;
+            Vector3 p = t.transform.position, sz = td.size;
+            float R = Rf(rnd, 7f, 16f);
+            float lx = Rf(rnd, R, sz.x - R), lz = Rf(rnd, R, sz.z - R), u = lx / sz.x, v = lz / sz.z;
+            var pos = new Vector3(p.x + lx, p.y + td.GetInterpolatedHeight(u, v), p.z + lz);
+            if (td.GetSteepness(u, v) > 25f || done.Exists(d => (d - pos).sqrMagnitude < CraterGap * CraterGap)) continue;
+            if (Blocked(pos + Vector3.up * 2f, buf)) continue;
+            done.Add(pos);
+            Scorch(t, u, v, R);
+
+            var go = new GameObject("Smoke" + done.Count);
+            go.transform.SetParent(root.transform);
+            go.transform.SetPositionAndRotation(pos, Quaternion.Euler(0f, WindYaw + Rf(rnd, -15f, 15f), 0f));
+            go.transform.localScale = Vector3.one * Rf(rnd, 260f, 460f);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var r = go.AddComponent<MeshRenderer>();
+            r.sharedMaterial = mat;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            r.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+            r.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+        }
+        UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+        Debug.Log($"[Terrain] {done.Count} cráteres con humo. La camara 'far' debe alcanzar la distancia a la que quieras ver las columnas.");
+    }
+
+    static bool Box(Vector3 sz, int res, float cx, float cz, float r, out int x0, out int y0, out int w, out int h)
+    {
+        x0 = Mathf.Max(0, Mathf.FloorToInt((cx - r) / sz.x * res)); y0 = Mathf.Max(0, Mathf.FloorToInt((cz - r) / sz.z * res));
+        w = Mathf.Min(res, Mathf.CeilToInt((cx + r) / sz.x * res)) - x0; h = Mathf.Min(res, Mathf.CeilToInt((cz + r) / sz.z * res)) - y0;
+        return w > 0 && h > 0;
+    }
+
+    static void Scorch(Terrain t, float u, float v, float R)
+    {
+        var td = t.terrainData; Vector3 sz = td.size, p = t.transform.position;
+        Undo.RegisterCompleteObjectUndo(td, "Crater");
+        float cx = u * sz.x, cz = v * sz.z;
+
+        var keep = td.treeInstances.Where(i =>
+        {
+            float ex = (i.position.x - u) * sz.x, ez = (i.position.z - v) * sz.z;
+            return ex * ex + ez * ez > R * R * 1.5f;
+        }).ToArray();
+        if (keep.Length != td.treeInstanceCount) td.SetTreeInstances(keep, true);
+
+        int ar = td.alphamapWidth;
+        if (Box(sz, ar, cx, cz, R * 1.4f, out int x0, out int y0, out int w, out int h))
+        {
+            var m = td.GetAlphamaps(x0, y0, w, h); int L = m.GetLength(2);
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                {
+                    float dx = (x0 + x + 0.5f) / ar * sz.x - cx, dz = (y0 + y + 0.5f) / ar * sz.z - cz;
+                    float edge = R * (0.75f + 0.5f * Mathf.PerlinNoise((p.x + cx + dx) * 0.15f, (p.z + cz + dz) * 0.15f));
+                    float k = Mathf.Clamp01((1f - Mathf.Sqrt(dx * dx + dz * dz) / edge) * 3f);
+                    if (k <= 0f) continue;
+                    for (int l = 0; l < L; l++) m[y, x, l] *= 1f - k;
+                    m[y, x, 1] += k;   // capa 1 = Mud (la mas oscura)
+                }
+            td.SetAlphamaps(x0, y0, m);
+        }
+
+        int dr = td.detailWidth, np = td.detailPrototypes.Length;
+        if (Box(sz, dr, cx, cz, R * 1.1f, out x0, out y0, out w, out h))
+            for (int l = 0; l < np; l++)
+            {
+                var d = td.GetDetailLayer(x0, y0, w, h, l);
+                for (int y = 0; y < h; y++)
+                    for (int x = 0; x < w; x++)
+                    {
+                        float dx = (x0 + x + 0.5f) / dr * sz.x - cx, dz = (y0 + y + 0.5f) / dr * sz.z - cz;
+                        if (dx * dx + dz * dz < R * R * 1.2f) d[y, x] = 0;
+                    }
+                td.SetDetailLayer(x0, y0, l, d);
+            }
+    }
+
+    // Columna de humo de altura 1: 3 planos cruzados, 8 segmentos, inclinada y ensanchada hacia arriba.
+    // El degradado (gris oscuro -> claro, opaco -> transparente) va en el color de vertice.
+    static Mesh SmokeMesh()
+    {
+        const string path = BombDir + "/Smoke.asset";
+        var m = AssetDatabase.LoadAssetAtPath<Mesh>(path);
+        if (m != null) return m;
+        Directory.CreateDirectory(BombDir);
+        const int S = 8;
+        var vt = new List<Vector3>(); var cl = new List<Color>(); var uv = new List<Vector2>(); var tr = new List<int>();
+        for (int pl = 0; pl < 3; pl++)
+        {
+            float a = Mathf.PI * pl / 3f;
+            var d = new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a));
+            int b = vt.Count;
+            for (int i = 0; i <= S; i++)
+            {
+                float y = (float)i / S, hw = 0.03f + 0.15f * y, g = 0.12f + 0.32f * y;
+                float al = Mathf.Min(1f, y * 8f) * Mathf.Sqrt(1f - y) * 0.9f;
+                var c = new Vector3(0.35f * y * y + 0.03f * Mathf.Sin(y * 9f + pl), y, 0.03f * Mathf.Sin(y * 7f));
+                vt.Add(c - d * hw); vt.Add(c + d * hw);
+                cl.Add(new Color(g, g, g, al)); cl.Add(new Color(g, g, g, al));
+                uv.Add(new Vector2(0f, y)); uv.Add(new Vector2(1f, y));
+            }
+            for (int i = 0; i < S; i++) { int k = b + i * 2; tr.AddRange(new[] { k, k + 2, k + 1, k + 1, k + 2, k + 3 }); }
+        }
+        m = new Mesh { name = "Smoke" };
+        m.SetVertices(vt); m.SetColors(cl); m.SetUVs(0, uv); m.SetTriangles(tr, 0);
+        m.RecalculateBounds();
+        AssetDatabase.CreateAsset(m, path);
+        return m;
+    }
+
+    static Material SmokeMat()
+    {
+        const string path = BombDir + "/Smoke.mat", tp = BombDir + "/Smoke_D.png";
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m != null) return m;
+        Directory.CreateDirectory(BombDir);
+        const int S = 128;
+        var px = new Color[S * S];
+        for (int y = 0; y < S; y++)
+            for (int x = 0; x < S; x++)
+            {
+                float u = x / (float)S, v = y / (float)S;
+                float e = Mathf.SmoothStep(0f, 1f, (1f - Mathf.Abs(2f * u - 1f)) * 1.6f);
+                px[y * S + x] = new Color(1f, 1f, 1f, Mathf.Clamp01(e * Fbm(u, v, 3, 6, 3) * 1.4f));
+            }
+        Save(tp, px, S, false);
+        // Sprites/Default: sin luz, mezcla alfa, funciona igual en URP y built-in, soporta instancing.
+        m = new Material(Shader.Find("Sprites/Default")) { mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(tp), enableInstancing = true };
+        AssetDatabase.CreateAsset(m, path);
+        return m;
+    }
+
+    static bool Blocked(Vector3 c, Collider[] buf)
+    {
+        int k = Physics.OverlapSphereNonAlloc(c, ClearRadius, buf, ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < k; i++) if (!(buf[i] is TerrainCollider)) return true;
+        return false;
+    }
+
+    // Segundo tipo de pasto: yuyos finos y altos, en manchas distintas al pasto base (se conserva el existente).
+    static void AddWeeds(Terrain[] ts)
+    {
+        var tex = WeedTex();
+        foreach (var t in ts)
+        {
+            var td = t.terrainData;
+            Undo.RegisterCompleteObjectUndo(td, "Weeds");
+            int n = td.detailWidth;
+            var old = td.detailPrototypes;
+            int idx = System.Array.FindIndex(old, d => d.prototypeTexture == tex);
+            if (idx < 0)
+            {
+                var keep = new int[old.Length][,];
+                for (int i = 0; i < old.Length; i++) keep[i] = td.GetDetailLayer(0, 0, n, n, i);
+                var np = new List<DetailPrototype>(old)
+                {
+                    new DetailPrototype
+                    {
+                        prototypeTexture = tex,
+                        renderMode = DetailRenderMode.GrassBillboard,
+                        healthyColor = new Color(0.62f, 0.66f, 0.30f),
+                        dryColor = new Color(0.74f, 0.60f, 0.28f),
+                        minWidth = 0.6f, maxWidth = 1.1f, minHeight = 1.2f, maxHeight = 2.4f, noiseSpread = 8f
+                    }
+                };
+                idx = old.Length;
+                td.detailPrototypes = np.ToArray();
+                for (int i = 0; i < old.Length; i++) td.SetDetailLayer(0, 0, i, keep[i]);
+            }
+
+            var w = new int[n, n];
+            Vector3 p = t.transform.position, sz = td.size;
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float u = (x + 0.5f) / n, v = (y + 0.5f) / n;
+                    float nz = Mathf.PerlinNoise((p.x + u * sz.x) * 0.05f + 3f, (p.z + v * sz.z) * 0.05f + 8f);
+                    if (nz < 0.42f || td.GetSteepness(u, v) > 40f) continue;
+                    w[y, x] = Mathf.RoundToInt(Mathf.Clamp01((nz - 0.4f) * 3.5f) * 10f);
+                }
+            td.SetDetailLayer(0, 0, idx, w);
+        }
+    }
+
+    static Texture2D WeedTex()
+    {
+        const string path = "Assets/Textures/Weeds.png";
+        var existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        if (existing != null) return existing;
+
+        const int S = 64;
+        var px = new Color[S * S];
+        var rnd = new System.Random(7);
+        for (int b = 0; b < 14; b++)
+        {
+            float cx = 3f + b * 4.3f, h = 34 + rnd.Next(28), lean = ((float)rnd.NextDouble() - 0.5f) * 16f;
+            for (int y = 0; y < h; y++)
+            {
+                float f = y / h, w = (1f - f) * 0.9f + 0.35f, xc = cx + lean * f * f;
+                var col = Color.Lerp(new Color(0.25f, 0.30f, 0.10f), new Color(0.80f, 0.85f, 0.45f), f);
+                for (int x = Mathf.RoundToInt(xc - w); x <= Mathf.RoundToInt(xc + w); x++)
+                    if (x >= 0 && x < S) px[y * S + x] = col;
+            }
+        }
+        var tex = new Texture2D(S, S, TextureFormat.RGBA32, false);
+        tex.SetPixels(px);
+        Directory.CreateDirectory("Assets/Textures");
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+        AssetDatabase.ImportAsset(path);
+        var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+        imp.alphaIsTransparency = true;
+        imp.wrapMode = TextureWrapMode.Clamp;
+        imp.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+
+    // ---- Pinos procedurales: tronco torcido + copas en estrella irregulares y caídas + ramas finas. LOD0/LOD1. ----
+    static TreePrototype[] Pines()
+    {
+        const string dir = "Assets/Prefabs/ForestFast";
+        Directory.CreateDirectory(dir);
+        var bark = Mat(dir, "Bark", new Color(0.09f, 0.06f, 0.045f));
+        var needles = Mat(dir, "Needles", new Color(0.035f, 0.10f, 0.055f));
+        var res = new TreePrototype[Normal + 1];
+        for (int v = 0; v < res.Length; v++)
+        {
+            string pp = $"{dir}/Pine{v}.prefab";
+            var go = AssetDatabase.LoadAssetAtPath<GameObject>(pp);
+            if (go == null)
+            {
+                var root = new GameObject($"Pine{v}");
+                var r0 = Part(root, "LOD0", Build(v, 0), dir, bark, needles);
+                var r1 = Part(root, "LOD1", Build(v, 1), dir, bark, needles);
+                var r2 = Part(root, "LOD2", Build(v, 2), dir, bark, needles);
+                var g = root.AddComponent<LODGroup>();
+                float k = v == Normal ? 3.3f : 1f;   // el gigante cambia de LOD a la misma distancia que un pino normal
+                g.SetLODs(new[] { new LOD(0.15f * k, new[] { r0 }), new LOD(0.04f * k, new[] { r1 }), new LOD(0.012f, new[] { r2 }) });
+                g.RecalculateBounds();
+                go = PrefabUtility.SaveAsPrefabAsset(root, pp);
+                Object.DestroyImmediate(root);
+            }
+            res[v] = new TreePrototype { prefab = go };
+        }
+        AssetDatabase.SaveAssets();
+        return res;
+    }
+
+    static Material Mat(string dir, string name, Color c)
+    {
+        string path = $"{dir}/{name}.mat";
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m != null) return m;
+        m = new Material(Shader.Find("Universal Render Pipeline/Simple Lit") ?? Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+        m.color = c;
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
+        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0.08f);
+        if (m.HasProperty("_SpecColor")) m.SetColor("_SpecColor", Color.black);
+        m.enableInstancing = true;
+        AssetDatabase.CreateAsset(m, path);
+        return m;
+    }
+
+    static Renderer Part(GameObject root, string n, Mesh mesh, string dir, Material bark, Material needles)
+    {
+        mesh.name = $"{root.name}_{n}";
+        AssetDatabase.CreateAsset(mesh, $"{dir}/{mesh.name}.asset");
+        var c = new GameObject(n);
+        c.transform.SetParent(root.transform, false);
+        c.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var r = c.AddComponent<MeshRenderer>();
+        bool near = n == "LOD0";   // lejos: 1 material, sin sombras, sin probes
+        r.sharedMaterials = near ? new[] { bark, needles } : new[] { needles };
+        r.shadowCastingMode = near ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
+        r.receiveShadows = near;
+        r.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+        r.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+        return r;
+    }
+
+    static float Rf(System.Random r, float a, float b) => a + (float)r.NextDouble() * (b - a);
+
+    static Vector3 PointAt(Vector3[] pts, float f)
+    {
+        float x = f * (pts.Length - 1);
+        int i = Mathf.Min((int)x, pts.Length - 2);
+        return Vector3.Lerp(pts[i], pts[i + 1], x - i);
+    }
+
+    static Mesh Build(int variant, int lod)
+    {
+        var rt = new System.Random(900 + variant * 17);   // tronco y copas: idénticos en LOD0 y LOD1
+        var rb = new System.Random(500 + variant * 31);   // ramas finas: solo LOD0
+        float H = Rf(rt, 8f, 15f), amp = Rf(rt, 0.4f, 1.1f), lean = Rf(rt, -1.4f, 1.4f);
+        float p1 = Rf(rt, 0f, 6.28f), p2 = Rf(rt, 0f, 6.28f), r0 = Rf(rt, 0.26f, 0.45f);
+        const int N = 10;
+        int sides = lod == 0 ? 6 : 3;
+
+        var pts = new Vector3[N + 1]; var rad = new float[N + 1];
+        for (int k = 0; k <= N; k++)
+        {
+            float f = (float)k / N, w = (0.25f + f) * 0.5f * amp;
+            pts[k] = new Vector3(Mathf.Sin(f * 6f + p1) * w + lean * f * f, f * H, Mathf.Sin(f * 5f + p2) * w);
+            rad[k] = r0 * (1f - f * 0.93f) + 0.02f;
+        }
+
+        var vB = new List<Vector3>(); var tB = new List<int>();
+        var vF = new List<Vector3>(); var tF = new List<int>();
+        bool one = lod > 0;   // LOD1/2: un solo submesh = 1 draw call
+        if (lod < 2)
+        {
+            int m = lod == 0 ? N + 1 : 5;   // LOD1: solo la base del tronco (lo demas lo tapa la copa)
+            Tube(one ? vF : vB, one ? tF : tB, pts.Take(m).ToArray(), rad.Take(m).ToArray(), sides);
+        }
+
+        int tiers = lod == 2 ? 0 : rt.Next(8, 12);
+        for (int ti = 0; ti < tiers; ti++)
+        {
+            float f = Mathf.Lerp(0.26f, 0.97f, (ti + (float)rt.NextDouble() * 0.6f) / tiers);
+            float size = Mathf.Lerp(2.6f, 0.35f, f) * Rf(rt, 0.7f, 1.35f) * H / 11f;
+            Vector3 c = PointAt(pts, f);
+            int spokes = rt.Next(5, 8), cnt = spokes * 2;
+            var q = Quaternion.Euler(Rf(rt, -14f, 14f), Rf(rt, 0f, 360f), Rf(rt, -14f, 14f));
+            float droop = size * Rf(rt, 0.25f, 0.6f);
+
+            var ring = new Vector3[cnt];
+            for (int s = 0; s < cnt; s++)
+            {
+                bool tip = s % 2 == 0;
+                float ang = Mathf.PI * 2f * s / cnt + Rf(rt, -0.15f, 0.15f);
+                float rr = tip ? size * Rf(rt, 0.5f, 1.4f) : size * 0.38f * Rf(rt, 0.7f, 1.2f);
+                float dy = tip ? -droop * Rf(rt, 0.6f, 1.3f) : -droop * 0.3f;
+                ring[s] = c + q * new Vector3(Mathf.Cos(ang) * rr, dy, Mathf.Sin(ang) * rr);
+            }
+            Vector3 apex = c + q * new Vector3(0f, size * 0.22f, 0f);
+
+            // Dos caras con vértices separados: iluminadas bien desde arriba y desde abajo.
+            if (lod == 1 && ti % 2 == 1) continue;   // LOD1: la mitad de los pisos
+            int a0 = vF.Count;
+            vF.Add(apex); vF.AddRange(ring);
+            vF.Add(apex); vF.AddRange(ring);
+            int b0 = a0 + cnt + 1;
+            for (int s = 0; s < cnt; s++)
+            {
+                int s1 = (s + 1) % cnt;
+                tF.AddRange(new[] { a0, a0 + 1 + s, a0 + 1 + s1 });
+                tF.AddRange(new[] { b0, b0 + 1 + s1, b0 + 1 + s });
+            }
+        }
+
+        if (lod == 2)   // LOD2: cono de 5 lados (10 triangulos)
+        {
+            Vector3 bs = PointAt(pts, 0.2f);
+            vF.Add(pts[N]); vF.Add(bs);
+            for (int s = 0; s < 5; s++)
+                vF.Add(bs + new Vector3(Mathf.Cos(Mathf.PI * 2f * s / 5f), 0f, Mathf.Sin(Mathf.PI * 2f * s / 5f)) * (2.2f * H / 11f));
+            for (int s = 0; s < 5; s++)
+            {
+                int a = 2 + s, b = 2 + (s + 1) % 5;
+                tF.AddRange(new[] { 0, b, a, 1, a, b });
+            }
+        }
+
+        if (lod == 0)
+        {
+            int nb = rb.Next(5, 10);
+            for (int bi = 0; bi < nb; bi++)
+            {
+                Vector3 s0 = PointAt(pts, Rf(rb, 0.18f, 0.8f));
+                float yaw = Rf(rb, 0f, 6.28f), len = Rf(rb, 1.2f, 3.2f) * H / 11f;
+                var dir = new Vector3(Mathf.Cos(yaw), Rf(rb, -0.2f, 0.5f), Mathf.Sin(yaw)).normalized;
+                Vector3 side = Vector3.Cross(dir, Vector3.up);
+                var bp = new Vector3[4]; var br = new float[4];
+                for (int k = 0; k < 4; k++)
+                {
+                    float g = k / 3f;
+                    bp[k] = s0 + dir * len * g + Vector3.down * len * 0.25f * g * g + side * Mathf.Sin(g * 4f + bi) * len * 0.1f;
+                    br[k] = Mathf.Lerp(0.07f, 0.01f, g);
+                }
+                Tube(vB, tB, bp, br, 3);
+            }
+        }
+
+        var mesh = new Mesh();
+        var all = new List<Vector3>(vB);
+        all.AddRange(vF);
+        int off = vB.Count;
+        for (int i = 0; i < tF.Count; i++) tF[i] += off;
+        mesh.SetVertices(all);
+        mesh.subMeshCount = one ? 1 : 2;
+        if (one) mesh.SetTriangles(tF, 0);
+        else { mesh.SetTriangles(tB, 0); mesh.SetTriangles(tF, 1); }
+        mesh.RecalculateNormals();
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    // Tubo de sección poligonal siguiendo una curva (tronco y ramas).
+    static void Tube(List<Vector3> v, List<int> t, Vector3[] pts, float[] rad, int sides)
+    {
+        int b = v.Count, n = pts.Length;
+        for (int k = 0; k < n; k++)
+        {
+            Vector3 tan = (pts[Mathf.Min(k + 1, n - 1)] - pts[Mathf.Max(k - 1, 0)]).normalized;
+            Vector3 a = Vector3.Cross(tan, Mathf.Abs(tan.y) > 0.9f ? Vector3.right : Vector3.up).normalized;
+            Vector3 c = Vector3.Cross(tan, a);
+            for (int s = 0; s < sides; s++)
+            {
+                float ang = Mathf.PI * 2f * s / sides;
+                v.Add(pts[k] + (a * Mathf.Cos(ang) + c * Mathf.Sin(ang)) * rad[k]);
+            }
+        }
+        for (int k = 0; k < n - 1; k++)
+            for (int s = 0; s < sides; s++)
+            {
+                int i0 = b + k * sides + s, i1 = b + k * sides + (s + 1) % sides, i2 = i0 + sides, i3 = i1 + sides;
+                t.AddRange(new[] { i0, i1, i2, i1, i3, i2 });
+            }
     }
 
     static Texture2D GrassTex()
