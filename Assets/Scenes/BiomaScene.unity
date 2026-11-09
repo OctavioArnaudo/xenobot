@@ -1642,6 +1642,10 @@ PrefabInstance:
       propertyPath: crosshairUI
       value: 
       objectReference: {fileID: 461756448}
+    - target: {fileID: 4889432586557793886, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -5.012096
+      objectReference: {fileID: 0}
     - target: {fileID: 6229371320334411257, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: Projectile
       value: 
@@ -6195,6 +6199,54 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 54749420851887565, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_GroupingID
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 54749420851887565, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeCrossFadeLength
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 54749420851887565, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_DetailObjectDistance
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 54749420851887565, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeBillboardDistance
+      value: 250
+      objectReference: {fileID: 0}
+    - target: {fileID: 54749420851887565, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeMaximumFullLODCount
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 175960861074451373, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_GroupingID
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 175960861074451373, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeCrossFadeLength
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 175960861074451373, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_DetailObjectDistance
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 175960861074451373, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeBillboardDistance
+      value: 250
+      objectReference: {fileID: 0}
+    - target: {fileID: 175960861074451373, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeMaximumFullLODCount
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 664368170976054371, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -3308.813
+      objectReference: {fileID: 0}
+    - target: {fileID: 664368170976054371, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 752.47034
+      objectReference: {fileID: 0}
     - target: {fileID: 1578898144103786700, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
       propertyPath: m_LocalPosition.x
       value: 383.81296
@@ -6235,13 +6287,201 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1759301026346197325, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_GroupingID
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1759301026346197325, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeCrossFadeLength
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 1759301026346197325, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_DetailObjectDistance
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 1759301026346197325, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeBillboardDistance
+      value: 250
+      objectReference: {fileID: 0}
+    - target: {fileID: 1759301026346197325, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeMaximumFullLODCount
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 2532579689387500600, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1308.813
+      objectReference: {fileID: 0}
+    - target: {fileID: 2532579689387500600, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -247.52963
+      objectReference: {fileID: 0}
+    - target: {fileID: 3646547533919359156, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_GroupingID
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3646547533919359156, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeCrossFadeLength
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 3646547533919359156, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_DetailObjectDistance
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 3646547533919359156, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeBillboardDistance
+      value: 250
+      objectReference: {fileID: 0}
+    - target: {fileID: 3646547533919359156, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeMaximumFullLODCount
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 3976949298978623715, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -3308.813
+      objectReference: {fileID: 0}
+    - target: {fileID: 4383935126055104519, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1308.813
+      objectReference: {fileID: 0}
+    - target: {fileID: 4383935126055104519, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 752.47034
+      objectReference: {fileID: 0}
     - target: {fileID: 5304597487900754382, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
       propertyPath: m_Name
       value: TerrainsPrefab
       objectReference: {fileID: 0}
     - target: {fileID: 5592888805684219072, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_GroupingID
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5592888805684219072, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeCrossFadeLength
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 5592888805684219072, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_DetailObjectDistance
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 5592888805684219072, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
       propertyPath: m_TreeBillboardDistance
-      value: 1975
+      value: 250
+      objectReference: {fileID: 0}
+    - target: {fileID: 5592888805684219072, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeMaximumFullLODCount
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 5719294378193223235, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_GroupingID
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5719294378193223235, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeCrossFadeLength
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 5719294378193223235, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_DetailObjectDistance
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 5719294378193223235, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeBillboardDistance
+      value: 250
+      objectReference: {fileID: 0}
+    - target: {fileID: 5719294378193223235, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeMaximumFullLODCount
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 6328900349495954335, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_GroupingID
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6328900349495954335, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeCrossFadeLength
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 6328900349495954335, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_DetailObjectDistance
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 6328900349495954335, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeBillboardDistance
+      value: 250
+      objectReference: {fileID: 0}
+    - target: {fileID: 6328900349495954335, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeMaximumFullLODCount
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 6861150088964828543, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -2308.813
+      objectReference: {fileID: 0}
+    - target: {fileID: 6861150088964828543, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -247.52963
+      objectReference: {fileID: 0}
+    - target: {fileID: 8642771268056844700, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_GroupingID
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8642771268056844700, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeCrossFadeLength
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 8642771268056844700, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_DetailObjectDistance
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 8642771268056844700, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeBillboardDistance
+      value: 250
+      objectReference: {fileID: 0}
+    - target: {fileID: 8642771268056844700, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeMaximumFullLODCount
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 8768291478429477972, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -2308.813
+      objectReference: {fileID: 0}
+    - target: {fileID: 8768291478429477972, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 752.47034
+      objectReference: {fileID: 0}
+    - target: {fileID: 8811584900328239027, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -2308.813
+      objectReference: {fileID: 0}
+    - target: {fileID: 8811584900328239027, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -1247.5297
+      objectReference: {fileID: 0}
+    - target: {fileID: 9101831042873441506, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_GroupingID
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9101831042873441506, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeCrossFadeLength
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 9101831042873441506, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_DetailObjectDistance
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 9101831042873441506, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeBillboardDistance
+      value: 250
+      objectReference: {fileID: 0}
+    - target: {fileID: 9101831042873441506, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_TreeMaximumFullLODCount
+      value: 150
+      objectReference: {fileID: 0}
+    - target: {fileID: 9123035209499933477, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1308.813
+      objectReference: {fileID: 0}
+    - target: {fileID: 9123035209499933477, guid: 8cdc99c4c341d1c49ab9c887f0b82dfc, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -1247.5297
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
