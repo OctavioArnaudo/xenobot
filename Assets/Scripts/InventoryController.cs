@@ -132,6 +132,14 @@ namespace Runtime.Scripts.Inventory
                 _localBag[key] = (data, slot.quantity);
                 if (!_localKeys.Contains(key)) _localKeys.Add(key);
             }
+            else Debug.LogWarning($"[Inventory] El objeto con hash {slot.itemHash} esta en la bolsa pero no se encontro su ItemsData (asset fuera de Resources?)");
+        }
+
+        /// <summary>Registra el asset en la base local para que el slot se pueda mostrar aunque no este en Resources.</summary>
+        public void RegisterItem(ItemsData d)
+        {
+            EnsureDatabase();
+            if (d != null && !itemsDatabase.Contains(d)) itemsDatabase.Add(d);
         }
 
         public ItemsData GetItemsDataByHash(int hash)

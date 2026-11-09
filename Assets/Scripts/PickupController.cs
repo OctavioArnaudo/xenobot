@@ -228,12 +228,18 @@ namespace Runtime.Scripts.Pickup
             if (_taken || Time.time < _spawnTime + PICKUP_DELAY) return;
 
             Transform root = other.transform.root;
-            InventoryController inv = root.GetComponentInChildren<InventoryController>();
-            bool isPlayer = root.CompareTag("Player") || other.CompareTag("Player") || inv != null;
+            // Busca el inventario desde el collider hacia arriba y luego desde la raiz; si el collider es del jugador pero cuelga de otra raiz, usa el local.
+            InventoryController inv = other.GetComponentInParent<InventoryController>() ?? root.GetComponentInChildren<InventoryController>();
+            bool tagged = root.CompareTag("Player") || other.CompareTag("Player");
+            if (inv == null && tagged) inv = InventoryController.LocalInstance;
+            bool isPlayer = tagged || inv != null;
 
             if (isPlayer)
             {
                 ResolveItemsDataIfNeeded();
+
+                // Sin inventario no se consume el objeto: se reintenta en el siguiente contacto (OnTriggerStay).
+                if (inv == null && item != null && item.isPickable) return;
 
                 _taken = true;
                 foreach (var col in GetComponents<Collider>()) col.enabled = false;
@@ -242,6 +248,8 @@ namespace Runtime.Scripts.Pickup
                 else ProcessPickupLocal(inv, root.gameObject);
             }
         }
+
+        void OnTriggerStay(Collider other) => OnTriggerEnter(other);
 
         private void ResolveItemsDataIfNeeded()
         {
@@ -324,26 +332,26 @@ namespace Runtime.Scripts.Pickup
 
         private void ApplyReward(InventoryController inv, GameObject player)
         {
-            var sc = GetComponent<SpawnController>();
-            if (sc != null && !sc.HasTriggeredDeath)
-            {
-                sc.TriggerDeath();
-                if (this == null) return;
-            }
-
             ResolveItemsDataIfNeeded();
 
             if (item != null && inv != null && item.isPickable)
             {
+                inv.RegisterItem(item); // garantiza que el inventario conozca el asset aunque no este en Resources
                 int hash = item.GetHashCode();
                 if (IsNetworkActive) inv.AddItemServerRpc(hash, 1);
                 else inv.InternalAddItem(hash, 1);
             }
             else
             {
+                if (item == null || inv == null || !item.isPickable)
+                    Debug.LogWarning($"[Pickup] '{name}' no se guardo en el inventario: item={(item != null)}, inventario={(inv != null)}, isPickable={(item != null && item.isPickable)}", this);
                 var pickupActions = GetComponentsInChildren<IItemPickupAction>(true);
                 foreach (var act in pickupActions) act.OnPickupItem(player);
             }
+
+            // Despues de entregar la recompensa: el SpawnController puede reciclar/ocultar este objeto.
+            var sc = GetComponent<SpawnController>();
+            if (sc != null && !sc.HasTriggeredDeath) sc.TriggerDeath();
         }
 
         [ClientRpc]
