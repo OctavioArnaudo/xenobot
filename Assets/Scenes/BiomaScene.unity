@@ -15,18 +15,18 @@ RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
   m_Fog: 1
-  m_FogColor: {r: 1, g: 0.20392157, b: 0, a: 1}
-  m_FogMode: 2
-  m_FogDensity: 0
+  m_FogColor: {r: 0.49699998, g: 0.23449998, b: 0.22749996, a: 0.7}
+  m_FogMode: 3
+  m_FogDensity: 0.0053
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 1, g: 1, b: 1, a: 1}
-  m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
-  m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
+  m_AmbientSkyColor: {r: 0.41999993, g: 0.21999994, b: 0.45, a: 1}
+  m_AmbientEquatorColor: {r: 0.6, g: 0.27, b: 0.11999996, a: 0.6}
+  m_AmbientGroundColor: {r: 0.079999946, g: 0.049999967, b: 0.09999994, a: 1}
   m_AmbientIntensity: 1
-  m_AmbientMode: 3
+  m_AmbientMode: 1
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: ab8d977cb7928b241b494b72a6cb1e01, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -37,7 +37,7 @@ RenderSettings:
   m_ReflectionBounces: 1
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
-  m_Sun: {fileID: 0}
+  m_Sun: {fileID: 246131405}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -342,19 +342,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2998812291098823668, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.8754261
+      value: -0.17348292
       objectReference: {fileID: 0}
     - target: {fileID: 2998812291098823668, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0.40821788
+      value: -0.007574428
       objectReference: {fileID: 0}
     - target: {fileID: 2998812291098823668, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0.23456968
+      value: 0.98387045
       objectReference: {fileID: 0}
     - target: {fileID: 2998812291098823668, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0.10938163
+      value: -0.04295671
       objectReference: {fileID: 0}
     - target: {fileID: 2998812291098823668, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -370,11 +370,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9216406571028143025, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_Color.b
-      value: 0.56078434
+      value: 0.29999995
       objectReference: {fileID: 0}
     - target: {fileID: 9216406571028143025, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_Color.g
-      value: 0.5803922
+      value: 0.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 9216406571028143025, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9216406571028143025, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
+      propertyPath: m_Intensity
+      value: 0.32
       objectReference: {fileID: 0}
     - target: {fileID: 9216406571028143025, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_CookieSize2D.x
@@ -390,14 +398,19 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 527752399312837133, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 246131403}
+      addedObject: {fileID: 246131407}
   m_SourcePrefab: {fileID: 100100000, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
 --- !u!1 &246131402 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 527752399312837133, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
   m_PrefabInstance: {fileID: 246131401}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &246131403
+--- !u!108 &246131405 stripped
+Light:
+  m_CorrespondingSourceObject: {fileID: 9216406571028143025, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
+  m_PrefabInstance: {fileID: 246131401}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &246131407
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -406,17 +419,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 246131402}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a2745b9620eca9f4d8fe721d37791c52, type: 3}
+  m_Script: {fileID: 11500000, guid: ea33eecefc90ae8498a843e7549f6d9e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DayNightCycle
-  persistAcrossScenes: 1
-  destroyDuplicates: 1
-  dayDurationSeconds: 20
-  startHour: 8
-  maxSunIntensity: 1.2
-  controlAmbientLight: 0
-  dayAmbient: {r: 0.8962264, g: 0.41006586, b: 0.4192109, a: 1}
-  nightAmbient: {r: 0.05, g: 0.05, b: 0.15, a: 1}
+  m_EditorClassIdentifier: Assembly-CSharp::TwilightSky
+  sky: {fileID: 2100000, guid: ab8d977cb7928b241b494b72a6cb1e01, type: 2}
+  elevation: 5
+  azimuth: 200
+  intensity: 0.32
+  fogAmount: 0.0053
 --- !u!1 &251256926 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7490054857060402934, guid: e4645a5e4545f96449a1233565b56076, type: 3}
@@ -722,7 +732,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3355534328688976972, guid: 06d8cbbc1c6505d43b957c55395f9b52, type: 3}
       propertyPath: m_ClearFlags
-      value: 2
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3355534328688976972, guid: 06d8cbbc1c6505d43b957c55395f9b52, type: 3}
       propertyPath: field of view
@@ -5184,7 +5194,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: SkyPrefab
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5550520090894872384, guid: 672480683c63ecc4aa5e544d4ea20deb, type: 3}
+    - {fileID: 5652693524345595015, guid: 672480683c63ecc4aa5e544d4ea20deb, type: 3}
+    - {fileID: 5796400187798116643, guid: 672480683c63ecc4aa5e544d4ea20deb, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
