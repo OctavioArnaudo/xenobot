@@ -17,7 +17,7 @@ RenderSettings:
   m_Fog: 1
   m_FogColor: {r: 0.49699998, g: 0.23449998, b: 0.22749996, a: 0.7}
   m_FogMode: 3
-  m_FogDensity: 0.0053
+  m_FogDensity: 0
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
   m_AmbientSkyColor: {r: 0.41999993, g: 0.21999994, b: 0.45, a: 1}
@@ -342,19 +342,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2998812291098823668, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -0.17348292
+      value: -0.9329438
       objectReference: {fileID: 0}
     - target: {fileID: 2998812291098823668, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.007574428
+      value: -0.18472786
       objectReference: {fileID: 0}
     - target: {fileID: 2998812291098823668, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0.98387045
+      value: 0.30313188
       objectReference: {fileID: 0}
     - target: {fileID: 2998812291098823668, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0.04295671
+      value: -0.06002173
       objectReference: {fileID: 0}
     - target: {fileID: 2998812291098823668, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -382,7 +382,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9216406571028143025, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_Intensity
-      value: 0.32
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 9216406571028143025, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       propertyPath: m_CookieSize2D.x
@@ -423,10 +423,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TwilightSky
   sky: {fileID: 2100000, guid: ab8d977cb7928b241b494b72a6cb1e01, type: 2}
-  elevation: 5
-  azimuth: 200
-  intensity: 0.32
-  fogAmount: 0.0053
+  elevation: 22.4
+  azimuth: 324
+  intensity: 2
+  fogAmount: 0
 --- !u!1 &251256926 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7490054857060402934, guid: e4645a5e4545f96449a1233565b56076, type: 3}
