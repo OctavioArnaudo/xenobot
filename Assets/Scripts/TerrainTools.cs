@@ -497,8 +497,8 @@ static class TerrainTools
     }
 
     // ---- Pinos gigantes: prototipo 4, escala ~5x, solo en el tramo mas bajo del relieve. ----
-    const int Normal = 4;                              // prototipos 0-3 = pinos, 4 = gigante
-    const float GiantSpacing = 35f, GiantLow = 0.3f;   // GiantLow: fraccion de altura mundial donde nacen
+    const int Normal = 4;                              // prototipos 0-3 = pinos, 4 = gigante (5x), 5 = coloso (15x)
+    const float GiantSpacing = 35f, ColossusSpacing = 120f, GiantLow = 0.3f;   // GiantLow: fraccion de altura mundial donde nacen
 
     static void WorldSpan(Terrain[] ts, out float lo, out float hi)
     {
@@ -514,26 +514,33 @@ static class TerrainTools
 
     static List<TreeInstance> Giants(Terrain t, int seed, float lo, float hi, Collider[] buf)
     {
+        var l = Tall(t, seed, lo, hi, buf, Normal, GiantSpacing, 5f, 0.7f);
+        l.AddRange(Tall(t, seed, lo, hi, buf, Normal + 1, ColossusSpacing, 15f, 0.5f));
+        return l;
+    }
+
+    static List<TreeInstance> Tall(Terrain t, int seed, float lo, float hi, Collider[] buf, int proto, float sp, float scale, float slim)
+    {
         var td = t.terrainData; var list = new List<TreeInstance>();
-        var rnd = new System.Random(4321 + seed);
+        var rnd = new System.Random(proto * 1000 + seed);
         Vector3 p = t.transform.position, sz = td.size;
-        for (float z = 0; z < sz.z; z += GiantSpacing)
-            for (float x = 0; x < sz.x; x += GiantSpacing)
+        for (float z = 0; z < sz.z; z += sp)
+            for (float x = 0; x < sz.x; x += sp)
             {
-                float lx = x + ((float)rnd.NextDouble() - 0.5f) * GiantSpacing * 0.9f;
-                float lz = z + ((float)rnd.NextDouble() - 0.5f) * GiantSpacing * 0.9f;
+                float lx = x + ((float)rnd.NextDouble() - 0.5f) * sp * 0.9f;
+                float lz = z + ((float)rnd.NextDouble() - 0.5f) * sp * 0.9f;
                 if (lx < 0 || lz < 0 || lx > sz.x || lz > sz.z) continue;
                 float u = lx / sz.x, v = lz / sz.z, wx = p.x + lx, wz = p.z + lz, y = p.y + td.GetInterpolatedHeight(u, v);
                 if (Mathf.InverseLerp(lo, hi, y) > GiantLow || td.GetSteepness(u, v) > MaxTreeSlope) continue;
                 if (Mathf.PerlinNoise(wx * 0.01f + 40f, wz * 0.01f) < 0.4f) continue;
                 if (Blocked(new Vector3(wx, y + 2f, wz), buf)) continue;
-                float s = Rf(rnd, 4.5f, 5.5f);
+                float s = Rf(rnd, scale * 0.9f, scale * 1.1f);
                 list.Add(new TreeInstance
                 {
                     position = new Vector3(u, 0f, v),
-                    prototypeIndex = Normal,
+                    prototypeIndex = proto,
                     heightScale = s,
-                    widthScale = s * Rf(rnd, 0.6f, 0.8f),
+                    widthScale = s * Rf(rnd, slim - 0.1f, slim + 0.1f),
                     rotation = (float)rnd.NextDouble() * Mathf.PI * 2f,
                     color = new Color32(255, 255, 255, 255),
                     lightmapColor = new Color32(255, 255, 255, 255)
@@ -700,6 +707,92 @@ static class TerrainTools
         return m;
     }
 
+    // 9) Pasto alto y muy denso en las zonas bajas: tercer detalle (billboards, sin mallas). Se suma al pasto existente.
+    //    Ejecutar antes de 8 (los cráteres lo borran dentro de su radio).
+    [MenuItem("Tools/Terrain/9 Fill Tall Grass (zonas bajas)")]
+    static void TallGrass()
+    {
+        var ts = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+        WorldSpan(ts, out float lo, out float hi);
+        var tex = TallGrassTex();
+        foreach (var t in ts)
+        {
+            var td = t.terrainData;
+            Undo.RegisterCompleteObjectUndo(td, "Tall Grass");
+            int n = td.detailWidth;
+            var old = td.detailPrototypes;
+            int idx = System.Array.FindIndex(old, d => d.prototypeTexture == tex);
+            if (idx < 0)
+            {
+                var keep = new int[old.Length][,];
+                for (int i = 0; i < old.Length; i++) keep[i] = td.GetDetailLayer(0, 0, n, n, i);
+                var np = new List<DetailPrototype>(old)
+                {
+                    new DetailPrototype
+                    {
+                        prototypeTexture = tex,
+                        renderMode = DetailRenderMode.GrassBillboard,
+                        healthyColor = new Color(0.40f, 0.50f, 0.20f),
+                        dryColor = new Color(0.70f, 0.60f, 0.30f),
+                        minWidth = 1.2f, maxWidth = 2f, minHeight = 2.5f, maxHeight = 4f, noiseSpread = 10f
+                    }
+                };
+                idx = old.Length;
+                td.detailPrototypes = np.ToArray();
+                for (int i = 0; i < old.Length; i++) td.SetDetailLayer(0, 0, i, keep[i]);
+            }
+
+            var w = new int[n, n];
+            Vector3 p = t.transform.position, sz = td.size;
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float u = (x + 0.5f) / n, v = (y + 0.5f) / n;
+                    float hn = Mathf.InverseLerp(lo, hi, p.y + td.GetInterpolatedHeight(u, v));
+                    float low = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.15f, 0.4f, hn));
+                    if (low <= 0f || td.GetSteepness(u, v) > 35f) continue;
+                    float nz = Mathf.PerlinNoise((p.x + u * sz.x) * 0.03f + 11f, (p.z + v * sz.z) * 0.03f + 2f);
+                    w[y, x] = Mathf.RoundToInt(low * Mathf.Clamp01((nz - 0.2f) * 3f) * 16f);
+                }
+            td.SetDetailLayer(0, 0, idx, w);
+        }
+        UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+        Debug.Log("[Terrain] Pasto alto en zonas bajas.");
+    }
+
+    static Texture2D TallGrassTex()
+    {
+        const string path = "Assets/Textures/TallGrass.png";
+        var existing = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+        if (existing != null) return existing;
+
+        const int S = 64;
+        var px = new Color[S * S];
+        var rnd = new System.Random(11);
+        for (int b = 0; b < 12; b++)
+        {
+            float cx = 3f + b * 5f, h = 40 + rnd.Next(24), lean = ((float)rnd.NextDouble() - 0.5f) * 10f;
+            for (int y = 0; y < h; y++)
+            {
+                float f = y / h, w = (1f - f) * 1.1f + 0.3f, xc = cx + lean * f * f;
+                var col = Color.Lerp(new Color(0.18f, 0.26f, 0.08f), new Color(0.70f, 0.78f, 0.36f), f);
+                for (int x = Mathf.RoundToInt(xc - w); x <= Mathf.RoundToInt(xc + w); x++)
+                    if (x >= 0 && x < S) px[y * S + x] = col;
+            }
+        }
+        var tex = new Texture2D(S, S, TextureFormat.RGBA32, false);
+        tex.SetPixels(px);
+        Directory.CreateDirectory("Assets/Textures");
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+        AssetDatabase.ImportAsset(path);
+        var imp = (TextureImporter)AssetImporter.GetAtPath(path);
+        imp.alphaIsTransparency = true;
+        imp.wrapMode = TextureWrapMode.Clamp;
+        imp.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+    }
+
     static bool Blocked(Vector3 c, Collider[] buf)
     {
         int k = Physics.OverlapSphereNonAlloc(c, ClearRadius, buf, ~0, QueryTriggerInteraction.Ignore);
@@ -792,7 +885,7 @@ static class TerrainTools
         Directory.CreateDirectory(dir);
         var bark = Mat(dir, "Bark", new Color(0.09f, 0.06f, 0.045f));
         var needles = Mat(dir, "Needles", new Color(0.035f, 0.10f, 0.055f));
-        var res = new TreePrototype[Normal + 1];
+        var res = new TreePrototype[Normal + 2];
         for (int v = 0; v < res.Length; v++)
         {
             string pp = $"{dir}/Pine{v}.prefab";
@@ -804,7 +897,7 @@ static class TerrainTools
                 var r1 = Part(root, "LOD1", Build(v, 1), dir, bark, needles);
                 var r2 = Part(root, "LOD2", Build(v, 2), dir, bark, needles);
                 var g = root.AddComponent<LODGroup>();
-                float k = v == Normal ? 3.3f : 1f;   // el gigante cambia de LOD a la misma distancia que un pino normal
+                float k = v == Normal ? 3.3f : v > Normal ? 9f : 1f;   // el gigante cambia de LOD a la misma distancia que un pino normal
                 g.SetLODs(new[] { new LOD(0.15f * k, new[] { r0 }), new LOD(0.04f * k, new[] { r1 }), new LOD(0.012f, new[] { r2 }) });
                 g.RecalculateBounds();
                 go = PrefabUtility.SaveAsPrefabAsset(root, pp);

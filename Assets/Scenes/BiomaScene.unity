@@ -489,6 +489,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 527752399312837133, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
       insertIndex: -1
       addedObject: {fileID: 246131407}
+    - targetCorrespondingSourceObject: {fileID: 527752399312837133, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 246131410}
   m_SourcePrefab: {fileID: 100100000, guid: 145589a0230479b4b9e7d637db0a273d, type: 3}
 --- !u!1 &246131402 stripped
 GameObject:
@@ -517,6 +520,23 @@ MonoBehaviour:
   azimuth: 324
   intensity: 2
   fogAmount: 0
+--- !u!114 &246131410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 246131402}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa789a506b724d94a8eeb9ac38bb72d4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SkyCycle
+  shader: {fileID: 4800000, guid: 859a22c320a467249b74e2b91bddb2c7, type: 3}
+  period: 1200
+  sun: {fileID: 0}
+  unlit:
+  - {fileID: 2100000, guid: 80a4a62c614535f42b958bc444d42054, type: 2}
 --- !u!1 &251256926 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7490054857060402934, guid: e4645a5e4545f96449a1233565b56076, type: 3}
