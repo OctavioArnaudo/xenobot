@@ -33,7 +33,9 @@ namespace Runtime.Scripts.Pickup
         private bool _taken;
         private float _spawnTime;
         private bool _grounded = false;
-        private string _lastDisplayedText;
+        private ItemsData _lastItem;
+        private Rigidbody _rb;
+        private static ParticleSystem _fx;
         private const float PICKUP_DELAY = 0.2f;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
@@ -96,6 +98,7 @@ namespace Runtime.Scripts.Pickup
         {
             _spawnTime = Time.time;
             CreateMasterTrigger();
+            _rb = GetComponent<Rigidbody>();
         }
 
         private void CreateMasterTrigger()
@@ -134,13 +137,9 @@ namespace Runtime.Scripts.Pickup
             _timer += Time.deltaTime;
             transform.localRotation = Quaternion.Euler(0, _timer * rotationSpeed, 0);
 
-            string currentName = GetItemDisplayName();
-            if (_lastDisplayedText != currentName)
-            {
-                UpdateFloatingName();
-            }
+            if (_lastItem != item) UpdateFloatingName();
 
-            if (TryGetComponent<Rigidbody>(out var rb) && !rb.isKinematic)
+            if (_rb != null && !_rb.isKinematic)
             {
                 _startPos = transform.position;
             }
@@ -182,7 +181,7 @@ namespace Runtime.Scripts.Pickup
                 tmp.text = displayName;
             }
 
-            _lastDisplayedText = displayName;
+            _lastItem = item;
         }
 
         private string GetItemDisplayName()
@@ -234,19 +233,22 @@ namespace Runtime.Scripts.Pickup
             if (inv == null && tagged) inv = InventoryController.LocalInstance;
             bool isPlayer = tagged || inv != null;
 
-            if (isPlayer)
-            {
-                ResolveItemsDataIfNeeded();
+            if (!isPlayer) return;
 
-                // Sin inventario no se consume el objeto: se reintenta en el siguiente contacto (OnTriggerStay).
-                if (inv == null && item != null && item.isPickable) return;
+            ResolveItemsDataIfNeeded();
 
-                _taken = true;
-                foreach (var col in GetComponents<Collider>()) col.enabled = false;
+            // Nunca se consume sin inventario ni sin dato: se reintenta en OnTriggerStay.
+            if (inv == null) return;
+            if (item == null && GetComponentInChildren<IItemPickupAction>(true) == null) return;
 
-                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening) ProcessPickupAuthoritative(inv, root.gameObject);
-                else ProcessPickupLocal(inv, root.gameObject);
-            }
+            // El asset debe conocerse en ESTE cliente, o el slot replicado no se puede mostrar.
+            if (item != null) InventoryController.LocalInstance?.RegisterItem(item);
+
+            _taken = true;
+            foreach (var col in GetComponents<Collider>()) col.enabled = false;
+
+            if (IsNetworkActive) ProcessPickupAuthoritative(inv, root.gameObject);
+            else ProcessPickupLocal(inv, root.gameObject);
         }
 
         void OnTriggerStay(Collider other) => OnTriggerEnter(other);
@@ -273,17 +275,8 @@ namespace Runtime.Scripts.Pickup
 
         private void ProcessPickupAuthoritative(InventoryController inv, GameObject player)
         {
-            _taken = true;
-            gameObject.SetActive(false);
-
-            if (IsServer)
-            {
-                ExecutePickup(inv, player);
-            }
-            else if (IsSpawned)
-            {
-                RequestPickupServerRpc();
-            }
+            if (IsServer) ExecutePickup(inv, player);
+            else RequestPickupServerRpc();
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -294,8 +287,16 @@ namespace Runtime.Scripts.Pickup
             {
                 var playerObj = client.PlayerObject.gameObject;
                 var inv = playerObj.GetComponentInChildren<InventoryController>();
-                ExecutePickup(inv, playerObj);
+                if (inv != null) { ExecutePickup(inv, playerObj); return; }
             }
+            RejectPickupClientRpc();
+        }
+
+        [ClientRpc]
+        private void RejectPickupClientRpc()
+        {
+            _taken = false;
+            foreach (var col in GetComponents<Collider>()) col.enabled = true;
         }
 
         private void ExecutePickup(InventoryController inv, GameObject player)
@@ -357,43 +358,47 @@ namespace Runtime.Scripts.Pickup
         [ClientRpc]
         private void SpawnPickupEffectClientRpc() => SpawnHardcodedEffect();
 
+        // Un solo ParticleSystem reutilizado: sin alloc ni Material por recogida.
         private void SpawnHardcodedEffect()
         {
-            GameObject go = new GameObject("PickupEffect");
-            go.transform.position = transform.position;
-            ParticleSystem ps = go.AddComponent<ParticleSystem>();
+            if (_fx == null) _fx = CreateFx();
+            _fx.Emit(new ParticleSystem.EmitParams
+            {
+                position = transform.position,
+                startColor = item != null ? Color.yellow : Color.cyan,
+                applyShapeToPosition = true
+            }, 20);
+        }
+
+        private static ParticleSystem CreateFx()
+        {
+            var go = new GameObject("PickupFx");
+            DontDestroyOnLoad(go);
+            var ps = go.AddComponent<ParticleSystem>();
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
 
             var main = ps.main;
             main.loop = false;
-            main.duration = 0.5f;
+            main.playOnAwake = false;
             main.startLifetime = 0.5f;
             main.startSpeed = 5f;
             main.startSize = 0.2f;
-            main.startColor = (item != null) ? Color.yellow : Color.cyan;
-            main.stopAction = ParticleSystemStopAction.Destroy;
+            main.maxParticles = 256;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
 
-            var emission = ps.emission;
-            emission.rateOverTime = 0;
-            emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0, 20) });
+            var em = ps.emission; em.enabled = false;
+            var sh = ps.shape; sh.shapeType = ParticleSystemShapeType.Sphere; sh.radius = 0.1f;
 
-            var shape = ps.shape;
-            shape.shapeType = ParticleSystemShapeType.Sphere;
-            shape.radius = 0.1f;
-
-            var renderer = go.GetComponent<ParticleSystemRenderer>();
             Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Particles/Standard Unlit");
-            if (shader != null) renderer.material = new Material(shader);
+            if (shader != null) go.GetComponent<ParticleSystemRenderer>().sharedMaterial = new Material(shader);
 
             ps.Play();
-            Destroy(go, 2.0f);
+            return ps;
         }
 
         public override void OnDestroy()
         {
             base.OnDestroy();
-            ActiveCount--;
-            InventoryController.MarkCountDirty();
         }
     }
 }

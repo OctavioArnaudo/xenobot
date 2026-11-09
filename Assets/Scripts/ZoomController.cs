@@ -17,9 +17,9 @@ namespace Runtime.Scripts.Zoom
         [Tooltip("Cambio del factor por cada click de rueda.")] public float step = 0.1f;
         public float smoothSpeed = 10f;
 
-        float _target = 1f;
+        float _target;
 
-        void Start() => Factor = _target = 1f;
+        void Awake() => Factor = _target = minFactor;
 
         void Update()
         {

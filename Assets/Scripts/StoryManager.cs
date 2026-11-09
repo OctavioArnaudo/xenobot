@@ -353,8 +353,8 @@ namespace Runtime.Scripts.Narrative
         bool Taken(int k, Vector3 p)
         {
             var g = pairs[k].key;
-            if (g != null && g.activeInHierarchy) { _had[k] = true; return Near(g.transform, p, keyRadius); }
-            return _had[k]; // ya estuvo en escena y desapareció (otro script la recogió/ocultó/destruyó)
+            if (g != null && g.activeInHierarchy) { _had[k] = true; return false; }
+            return _had[k]; // solo cuenta cuando el pickup la ocultó, o sea después de sumarla al inventario
         }
 
         void Prompt(string w)
