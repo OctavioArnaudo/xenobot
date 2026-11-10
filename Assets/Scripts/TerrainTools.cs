@@ -1113,4 +1113,102 @@ static class TerrainTools
         imp.SaveAndReimport();
         return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
     }
+
+    // 10) HERRAMIENTA: selecciona objetos en la Hierarchy y ejecuta el menu. Les pone chapas de metal futurista
+    //     oxidado y les agrega collider solido (MeshCollider; si ya tenian uno en trigger, lo vuelve solido).
+    //     La textura y el material se generan una vez en Assets/Textures/RustMetal (borra la carpeta para regenerarlos).
+    const string MetalDir = "Assets/Textures/RustMetal";
+
+    [MenuItem("Tools/Terrain/10 Rusty Metal + Collider (seleccion)")]
+    static void MetalSelection()
+    {
+        var sel = Selection.gameObjects;
+        if (sel.Length == 0) { Debug.LogWarning("[Metal] Selecciona objetos en la Hierarchy."); return; }
+        var mat = MetalMat();
+        int nr = 0, nc = 0;
+        foreach (var go in sel)
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+            {
+                if (!(r is MeshRenderer) && !(r is SkinnedMeshRenderer)) continue;
+                Undo.RecordObject(r, "Rusty Metal");
+                var ms = new Material[Mathf.Max(1, r.sharedMaterials.Length)];
+                for (int i = 0; i < ms.Length; i++) ms[i] = mat;
+                r.sharedMaterials = ms; nr++;
+                var mf = r.GetComponent<MeshFilter>();
+                if (r.TryGetComponent<Collider>(out var col))
+                {
+                    if (col.isTrigger) { Undo.RecordObject(col, "Solid Collider"); col.isTrigger = false; nc++; }
+                }
+                else if (mf != null && mf.sharedMesh != null)
+                {
+                    var mc = Undo.AddComponent<MeshCollider>(r.gameObject);
+                    mc.sharedMesh = mf.sharedMesh;
+                    mc.convex = r.GetComponentInParent<Rigidbody>() != null;
+                    nc++;
+                }
+                EditorUtility.SetDirty(r);
+            }
+        UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+        Debug.Log($"[Metal] {nr} renderers pintados, {nc} colliders solidos.");
+    }
+
+    static Material MetalMat()
+    {
+        const string path = MetalDir + "/RustMetal.mat", dp = MetalDir + "/RustMetal_D.png", np = MetalDir + "/RustMetal_N.png";
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m != null) return m;
+        Directory.CreateDirectory(MetalDir);
+        MetalTex(dp, np);
+        m = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+        var alb = AssetDatabase.LoadAssetAtPath<Texture2D>(dp);
+        if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", alb);
+        if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", alb);
+        m.SetTexture("_BumpMap", AssetDatabase.LoadAssetAtPath<Texture2D>(np));
+        m.EnableKeyword("_NORMALMAP");
+        if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0.8f);
+        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0.4f);
+        if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", 0.4f);
+        m.mainTextureScale = new Vector2(2f, 2f);
+        AssetDatabase.CreateAsset(m, path);
+        return m;
+    }
+
+    // Chapas 4x4 con costuras, remaches, oxido en manchas/bordes y algunos paneles con tinte cian. Tileable.
+    static void MetalTex(string dp, string np)
+    {
+        const int S = 512, P = 128;
+        var col = new Color[S * S];
+        var nm = new Color[S * S];
+        var h = new float[S, S];
+        for (int y = 0; y < S; y++)
+            for (int x = 0; x < S; x++)
+            {
+                float u = x / (float)S, v = y / (float)S;
+                int px = x % P, py = y % P;
+                int ax = Mathf.Min(px, P - 1 - px), ay = Mathf.Min(py, P - 1 - py), e = Mathf.Min(ax, ay);
+                float seam = e < 3 ? 1f : (e < 6 ? 0.4f : 0f);
+                float rivet = Vector2.Distance(new Vector2(ax, ay), new Vector2(14f, 14f)) < 4f ? 1f : 0f;
+                float pv = Hash(x / P, y / P);
+
+                Color steel = Color.Lerp(new Color(0.30f, 0.34f, 0.38f), new Color(0.17f, 0.19f, 0.22f), pv);
+                if (pv > 0.85f) steel = Color.Lerp(steel, new Color(0.10f, 0.45f, 0.50f), 0.35f);
+                steel *= 1f + (Fbm(u, v, 64, 64, 2) - 0.5f) * 0.3f;
+
+                float rust = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.45f, 0.7f, Fbm(u, v, 6, 6, 4) + (e < 14 ? 0.2f : 0f)));
+                Color rc = Color.Lerp(new Color(0.30f, 0.12f, 0.05f), new Color(0.55f, 0.25f, 0.08f), Fbm(u, v, 24, 24, 2));
+                Color c = Color.Lerp(steel, rc, rust) * (1f - seam * 0.65f);
+                c.a = 1f;
+                col[y * S + x] = c;
+                h[x, y] = 0.5f - seam * 0.35f + rivet * 0.3f + (Fbm(u, v, 48, 48, 3) - 0.5f) * 0.15f * (1f + rust * 2f);
+            }
+        for (int y = 0; y < S; y++)
+            for (int x = 0; x < S; x++)
+            {
+                float dx = h[(x + 1) % S, y] - h[(x - 1 + S) % S, y], dy = h[x, (y + 1) % S] - h[x, (y - 1 + S) % S];
+                Vector3 nv = new Vector3(-dx * 6f, -dy * 6f, 1f).normalized;
+                nm[y * S + x] = new Color(nv.x * 0.5f + 0.5f, nv.y * 0.5f + 0.5f, nv.z * 0.5f + 0.5f, 1f);
+            }
+        Save(dp, col, S, false);
+        Save(np, nm, S, true);
+    }
 }
