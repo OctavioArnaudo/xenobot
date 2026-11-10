@@ -238,6 +238,42 @@ namespace Runtime.Scripts.Narrative
             return false;
         }
 
+        // ---------- Guardado (JSON; solo el host/local escribe) ----------
+
+        [Serializable] class SaveData { public int step; public Vector3 pos; public string[] items; }   // items: "nombre|cantidad" (el hash de un asset cambia entre sesiones)
+        static string SavePath => System.IO.Path.Combine(Application.persistentDataPath, "save.json");
+
+        void Load()
+        {
+            if (!System.IO.File.Exists(SavePath) || (IsSpawned && !IsServer)) return;
+            var d = JsonUtility.FromJson<SaveData>(System.IO.File.ReadAllText(SavePath));
+            if (IsSpawned) { if (_net.Value == 0) _net.Value = d.step; } else _local = d.step;
+            var inv = InventoryController.LocalInstance;
+            SceneDoor.Move(inv.transform, d.pos, Quaternion.identity);
+            if (d.items == null) return;
+            foreach (var it in d.items)
+            {
+                int c = it.LastIndexOf('|');
+                var def = inv.GetItemsDataByCode(it.Substring(0, c));
+                if (def != null && int.TryParse(it.Substring(c + 1), out int q)) inv.InternalAddItem(def.GetHashCode(), q);
+            }
+        }
+
+        /// <summary>Guarda paso y posición (dentro de un interior guarda la puerta de entrada). Se llama sola al avanzar, al cruzar puertas y al salir.</summary>
+        public void Save()
+        {
+            var inv = InventoryController.LocalInstance;
+            if (!_ready || inv == null || (IsSpawned && !IsServer)) return;
+            var d = new SaveData { step = Step, pos = SceneDoor.Inside ? SceneDoor.BackPos : inv.transform.position };
+            var bag = InventoryController.GetBag();
+            d.items = new string[bag.Count];
+            int n = 0;
+            foreach (var kv in bag) d.items[n++] = kv.Key + "|" + kv.Value.qty;
+            System.IO.File.WriteAllText(SavePath, JsonUtility.ToJson(d));
+        }
+
+        void OnApplicationQuit() => Save();
+
         // ---------- Historia ----------
 
         void Boot()
@@ -254,6 +290,7 @@ namespace Runtime.Scripts.Narrative
             for (int i = 0; i < _hist.Length; i++) _hist[i] = new List<string>();
             _had = new bool[pairs.Count];
             for (int i = 0; i < _had.Length; i++) _had[i] = pairs[i].key != null && pairs[i].key.activeInHierarchy;
+            Load();
             _seen = Step;
             if (debug) Debug.Log($"[Story] Listo. Paso {_seen} de {Last}.");
             for (int i = 1; i <= _seen; i++) Apply(i, false);
@@ -292,6 +329,7 @@ namespace Runtime.Scripts.Narrative
             Line(ch, t, announce); // siempre al historial; al diálogo solo si announce
             if (s == 5) Line(ch, "FASE II: la memoria vuelve, pero con lagunas. Debo reunir lo que falta.", announce);
             if (s == 15) Line(ch, "FASE III: tengo lo necesario. Es hora de huir.", announce);
+            if (announce) Save();
             if (announce && s >= Last) Finale();
         }
 

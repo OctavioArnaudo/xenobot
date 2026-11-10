@@ -1405,16 +1405,9 @@ static class TerrainTools
         return m;
     }
 
-    // 12) INTERIOR DE LABORATORIO + PUERTAS ENTRE ESCENAS (requiere SceneDoor.cs FUERA de la carpeta Editor).
-    //     Selecciona UN edificio del bioma y ejecuta el menu:
-    //     - Crea (o reutiliza) el grupo "Door_<lab>": "Trigger" (caja visible, se mueve/escala con Move/Scale) y
-    //       "ReturnPoint" (donde reaparece el jugador al salir). Ubicalos a ojo en la entrada de tu modelo.
-    //     - Crea la escena Assets/Scenes/Interiors/<Lab>_Interior.unity y el prefab en Assets/Prefabs/Interiors, con
-    //       2 salas circulares unidas por 2 tuneles curvos con costillas en arco, entrada al sur, luces y el trigger
-    //       "Exit" (muevelo a ojo en la puerta del interior).
-    //     - El interior queda lejos del mundo (InteriorOffset) y la escena se agrega a Build Settings.
-    //     En juego: un solo jugador y una sola camara; el interior se carga en modo aditivo al entrar y se descarga al salir.
-    const string InteriorDir = "Assets/Prefabs/Interiors", InteriorScenes = "Assets/Scenes/Interiors";
+    // 12) INTERIOR DE LABORATORIO en la MISMA escena (requiere SceneDoor.cs FUERA de la carpeta Editor).
+    //     Ver el menu mas abajo. El interior queda lejos del mundo (InteriorOffset, +300 m en X por laboratorio).
+    const string InteriorDir = "Assets/Prefabs/Interiors";
     static readonly Vector3 InteriorOffset = new Vector3(0f, 2000f, 0f);
     static readonly List<Vector3> IV = new List<Vector3>();
     static readonly List<Vector2> IU = new List<Vector2>();
@@ -1429,38 +1422,29 @@ static class TerrainTools
     [MenuItem("Tools/Terrain/12 Lab Interior (seleccion)", true)]
     static bool LabOk() => Selection.activeGameObject != null && !EditorUtility.IsPersistent(Selection.activeGameObject);
 
+    // 12) Interior de laboratorio en la MISMA escena: raiz "<Lab>_Interior" a InteriorOffset (+300 m en X por cada laboratorio).
+    //     Selecciona UN edificio. Crea/reutiliza "Door_<lab>" (Trigger + ReturnPoint), genera 2 salas + 2 tuneles y el trigger "Exit".
+    //     Si ya existe "<Lab>_Interior" no regenera (borralo antes). Guarda la escena despues.
     [MenuItem("Tools/Terrain/12 Lab Interior (seleccion)")]
     static void LabInterior()
     {
         var lab = Selection.activeGameObject;
         string labName = lab.name;
+        string id = string.Concat(labName.Split(Path.GetInvalidFileNameChars())).Replace(' ', '_') + "_Interior";
+        if (GameObject.Find(id) != null) { Debug.LogWarning($"[Interior] '{id}' ya existe. Borralo para regenerarlo (perderias lo que pusiste dentro)."); return; }
+
         lab.GetComponentsInChildren(IR);
         Bounds bd = default; bool has = false;
         foreach (var r in IR) { if (!has) { bd = r.bounds; has = true; } else bd.Encapsulate(r.bounds); }
-        // Sala A (entrada, al sur) y sala B, circulares de radio R, unidas por 2 tuneles curvos en arco.
         float R = has ? Mathf.Clamp(Mathf.Min(bd.extents.x, bd.extents.z) * 0.5f, 8f, 14f) : 10f, D = 2f * R + 13f;
         const float T = 0.4f;
         const int M = 64;
+        Directory.CreateDirectory(InteriorDir);
 
-        Directory.CreateDirectory(InteriorDir); Directory.CreateDirectory(InteriorScenes);
-        AssetDatabase.Refresh();
-        string nm = string.Concat(labName.Split(Path.GetInvalidFileNameChars())).Replace(' ', '_') + "_Interior";
-        string pp = AssetDatabase.GenerateUniqueAssetPath($"{InteriorDir}/{nm}.prefab"), id = Path.GetFileNameWithoutExtension(pp);
-        string sp = AssetDatabase.GenerateUniqueAssetPath($"{InteriorScenes}/{id}.unity"), sn = Path.GetFileNameWithoutExtension(sp);
-
-        // Puerta de entrada en el edificio (escena exterior): se crea una vez, luego solo se actualiza la escena destino.
         var dg = GameObject.Find("Door_" + labName);
         var door = dg != null ? dg.GetComponentInChildren<SceneDoor>(true) : null;
         if (door == null) door = MakeDoor(lab, bd, has);
-        door.scene = sn;
-        EditorUtility.SetDirty(door);
-        var origin = lab.scene;
-        string originName = origin.name;
-        ESM.MarkSceneDirty(origin);
-        if (!ESM.SaveCurrentModifiedScenesIfUserWantsTo()) return;
-        if (origin.isDirty) Debug.LogWarning($"[Interior] La puerta de '{labName}' no se guardo en la escena exterior: guardala para conservar el trigger.");
 
-        // Contornos circulares con aberturas: entrada al sur de A y 2 bocas de tunel en A (norte) y B (sur).
         var rA = new Vector2[M]; var rB = new Vector2[M]; var gA = new bool[M]; var gB = new bool[M];
         var off = new Vector2(0f, D);
         for (int i = 0; i < M; i++)
@@ -1481,41 +1465,37 @@ static class TerrainTools
         Wall(rB, gB, true, TH, T);
         var lamps = new Vector3[2];
         for (int k = 0; k < 2; k++) { TunnelPath(k * 2f - 1f, R, D); Tunnel(false); lamps[k] = TP[NS / 2] + Vector3.up * 3f; }
-        var walls = Bake($"{InteriorDir}/{id}_Walls.asset");
+        var walls = Bake(AssetDatabase.GenerateUniqueAssetPath($"{InteriorDir}/{id}_Walls.asset"));
 
         Disc(rA, Vector2.zero);
         Disc(rB, off);
         for (int k = 0; k < 2; k++) { TunnelPath(k * 2f - 1f, R, D); Tunnel(true); }
-        var slab = Bake($"{InteriorDir}/{id}_Slab.asset");
+        var slab = Bake(AssetDatabase.GenerateUniqueAssetPath($"{InteriorDir}/{id}_Slab.asset"));
 
-        var scene = ESM.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Single);
+        int n = Object.FindObjectsByType<SceneDoor>(FindObjectsSortMode.None).Count(d => d.exit);
         var root = new GameObject(id);
-        root.transform.position = InteriorOffset;
+        Undo.RegisterCreatedObjectUndo(root, "Lab Interior");
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, lab.scene);
+        root.transform.position = InteriorOffset + Vector3.right * 300f * n;
         Part(root, "Walls", walls, MetalMat());
         Part(root, "Slab", slab, DeckMat());
-        Mark(root, "Entrance", new Vector3(0f, 0f, -R));
-        var spawn = Mark(root, "PlayerSpawn", new Vector3(0f, 1.2f, -R + 3f)).transform;   // 1.2 m sobre el piso: cae suave sin importar el pivote del jugador
+        var spawn = Mark(root, "PlayerSpawn", new Vector3(0f, 1.2f, -R + 3f)).transform;
 
-        // Trigger de salida: ubicalo/escalalo a ojo en la puerta del interior.
         var ex = Mark(root, "Exit", new Vector3(0f, 1.5f, -R + 0.4f));
         ex.transform.localScale = new Vector3(3f, 3f, 1f);
         ex.AddComponent<BoxCollider>().isTrigger = true;
-        var sd = ex.AddComponent<SceneDoor>(); sd.scene = sn; sd.exit = true; sd.point = spawn;
+        var sd = ex.AddComponent<SceneDoor>(); sd.exit = true; sd.point = spawn;
 
-        // Camara de prueba (solo al abrir/jugar esta escena sola; se apaga sola cuando se carga desde el bioma).
-        var cg = new GameObject("TestCamera");
-        cg.transform.position = spawn.position + Vector3.up * 0.5f;
-        cg.AddComponent<Camera>(); cg.AddComponent<AudioListener>();
-        sd.testCam = cg;
+        door.dest = spawn;
+        EditorUtility.SetDirty(door);
 
         Lamp(root, new Vector3(0f, TH - 0.8f, 0f), R * 1.6f);
         Lamp(root, new Vector3(0f, TH - 0.8f, D), R * 1.6f);
         foreach (var lp in lamps) Lamp(root, lp, 12f);
-        PrefabUtility.SaveAsPrefabAssetAndConnect(root, pp, InteractionMode.AutomatedAction);
-        ESM.SaveScene(scene, sp);
-        AddToBuild(sp);
         AssetDatabase.SaveAssets();
-        Debug.Log($"[Interior] '{labName}' -> escena {sp} + prefab {pp} (2 salas de radio {R:0.#} m). Abre '{originName}' y ubica 'Door_{labName}/Trigger' en la entrada del modelo.");
+        UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(lab.scene);
+        Selection.activeGameObject = root;
+        Debug.Log($"[Interior] '{id}' creado en esta escena a {root.transform.position} (2 salas de radio {R:0.#} m). Ubica 'Door_{labName}/Trigger' en la entrada del modelo y guarda la escena.");
     }
 
     static void Lamp(GameObject root, Vector3 pos, float range)
@@ -1622,14 +1602,6 @@ static class TerrainTools
         var d = tg.AddComponent<SceneDoor>();
         d.point = rp;
         return d;
-    }
-
-    static void AddToBuild(string path)
-    {
-        var l = EditorBuildSettings.scenes.ToList();
-        if (l.Any(s => s.path == path)) return;
-        l.Add(new EditorBuildSettingsScene(path, true));
-        EditorBuildSettings.scenes = l.ToArray();
     }
 
     static GameObject Mark(GameObject root, string n, Vector3 pos)
