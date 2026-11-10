@@ -275,6 +275,7 @@ namespace Runtime.Scripts.Inventory
         private void Update()
         {
             if (!CanExecuteLocalLogic) return;
+            if (!_panelBuilt) { _panelBuilt = true; CharacterPanel.Prebuild(this); } // se construye una vez, oculto
             if (Keyboard.current != null && (Keyboard.current.iKey.wasPressedThisFrame || Keyboard.current.tabKey.wasPressedThisFrame))
                 SetOpen(!_open);
 
@@ -296,6 +297,44 @@ namespace Runtime.Scripts.Inventory
         string _fsTitle; float _fsWidth; int _fsVal;
         int _btnFs = -1;
 
+        /// <summary>Slot n-esimo valido de la bolsa (para el panel de personaje).</summary>
+        public bool TryGetSlot(int index, out ItemsData def, out int qty, out bool equipped)
+        {
+            def = null; qty = 0; equipped = false;
+            int n = 0;
+            for (int k = 0; k < _localKeys.Count; k++)
+            {
+                if (!_localBag.TryGetValue(_localKeys[k], out var s)) continue;
+                if (n++ != index) continue;
+                def = s.def; qty = s.qty; equipped = _equippedInstances.ContainsKey(s.def.GetHashCode());
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>Skills que aportan los equipos puestos (mascaras y armas).</summary>
+        public void CollectEquipSkills(List<string> names, List<string> keys)
+        {
+            foreach (var kv in _equippedInstances)
+            {
+                var go = kv.Value;
+                if (go == null) continue;
+                var mask = go.GetComponentInChildren<MaskController>(true);
+                if (mask != null)
+                {
+                    var v = mask.EffectiveVisorType;
+                    names.Add(v == VisorType.VisorTermico ? "Visor termico" : v == VisorType.VisorEstadisticas ? "Visor de estadisticas" : "Visor de objetos");
+                    keys.Add("Mascara");
+                }
+                else if (go.GetComponentInChildren<WeaponController>(true) != null)
+                {
+                    var item = GetItemsDataByHash(kv.Key);
+                    names.Add("Arma: " + (item != null ? item.itemName : go.name));
+                    keys.Add("LMB");
+                }
+            }
+        }
+
         public static void Toggle() { var i = LocalInstance; if (i != null) i.SetOpen(!i._open); }
 
         private void OnGate(string k) { if (k == "inventory") SetOpen(false); }
@@ -307,34 +346,18 @@ namespace Runtime.Scripts.Inventory
             MenuGate.CloseRequested -= OnGate;
             if (open) MenuGate.CloseRequested += OnGate;
             _open = open;
+            CharacterPanel.Set(this, open); // panel multiple (inventario + modelo + stats + skills)
             bool free = open || MenuGate.Busy; // no bloquear el cursor si otro menú sigue abierto
             Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = free;
         }
 
+        private bool _panelBuilt;
+
         private void OnGUI()
         {
             if (!CanExecuteLocalLogic) return;
-            if (!_stylesReady) EnsureStyles(); // precarga de estilos fuera del primer abrir
-            if (!_open) return;
-            if (CraftingController.Instance != null && CraftingController.Instance.IsUIOpen) return;
-
-            EnsureStyles();
-            float pw = panelWidth * K, ph = panelHeight * K;
-            Rect panelRect = new Rect((Screen.width - pw) / 2f, (Screen.height - ph) / 2f, pw, ph);
-            DrawInventoryUI(panelRect, "MI INVENTARIO");
-
-            if (_draggedItem != null)
-            {
-                Vector2 mousePos = Event.current.mousePosition;
-                Rect dragRect = new Rect(mousePos.x - cellSize * K / 2, mousePos.y - cellSize * K / 2, cellSize * K, cellSize * K);
-                if (_draggedItem.itemSprite != null) GUI.DrawTexture(dragRect, _draggedItem.itemSprite.texture);
-                if (Event.current.type == EventType.MouseUp)
-                {
-                    if (!panelRect.Contains(mousePos)) DropItem(_draggedItem);
-                    _draggedItem = null;
-                }
-            }
+            if (!_stylesReady) EnsureStyles(); // estilos del inventario embebido en el crafteo
         }
 
         float K => Mathf.Min(uiScale, (Screen.height - 40f) / panelHeight, (Screen.width - 40f) / panelWidth);

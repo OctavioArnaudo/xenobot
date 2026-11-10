@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -466,9 +467,29 @@ namespace Runtime.Scripts.Gate
         static float F(float x, float y, int s) =>
             (V(x, y, s) * 0.5f + V(x * 2f, y * 2f, s + 1) * 0.25f + V(x * 4f, y * 4f, s + 2) * 0.125f + V(x * 8f, y * 8f, s + 3) * 0.0625f) / 0.9375f;
 
+        // Texturas que usa la UI: se generan una por frame al arrancar (detras del menu principal), nunca en mitad de la partida.
+        static readonly Vector2Int[] Warm =
+        {
+            new Vector2Int(128, 128),  // placa 9-slice compartida por todos los menus
+            new Vector2Int(512, 400),  // inventario / crafteo (IMGUI)
+            new Vector2Int(960, -112), // tablero HUD (negativo = dash)
+            new Vector2Int(380, 210),  // panel stats
+            new Vector2Int(400, 190), new Vector2Int(360, 100), new Vector2Int(550, 300) // historia: log, dialogo, misiones
+        };
+
         [DefaultExecutionOrder(-1000)]
         sealed class Runner : MonoBehaviour
         {
+            IEnumerator Start()
+            {
+                foreach (var v in Warm)
+                {
+                    yield return null;
+                    Gen(v.x, Mathf.Abs(v.y), v.y < 0);
+                }
+                yield return PanelSkin.WarmAll(); // marcos low-poly del panel de personaje
+            }
+
             void Update()
             {
                 if (!_esc) return;

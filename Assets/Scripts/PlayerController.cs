@@ -94,6 +94,8 @@ namespace Runtime.Scripts.Player
         [Range(0.2f, 1f)] public float aimMoveSpeedMultiplier = 0.6f;
         [Tooltip("Alterna mira comun / telescopica. Apuntar siempre es clic derecho.")] public Key scopeToggleKey = Key.Digit1;
         public bool scopeMode; // false = mira comun, true = telescopica
+        public bool HasMelee => _melee != null;                   // para la lista de skills del panel de personaje
+        public bool HasHook => hookProjectilePrefab != null;
         // aimFOV / aimCameraDistance / aimShoulderOffset ahora son la mira telescopica (alternable con scopeToggleKey, por defecto 1).
 
         [Header("Hook Settings")]

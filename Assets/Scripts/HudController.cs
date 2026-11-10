@@ -381,11 +381,10 @@ namespace Runtime.Scripts.Hud
         };
         static readonly string[] BarName = { "HP", "JET", "AMMO", "SHIELD" };
 
-        GameObject _uiRoot, _statsPanel;
+        GameObject _uiRoot;
         readonly RectTransform[] _fill = new RectTransform[4];
         readonly TextMeshProUGUI[] _barTxt = new TextMeshProUGUI[4];
         readonly float[] _lastF = new float[4];
-        TextMeshProUGUI _statsTxt;
         Image _plate;
         Image _scopeRing;
         static Sprite s_scope, s_ring;
@@ -402,7 +401,7 @@ namespace Runtime.Scripts.Hud
             {
                 case "inventory": InventoryController.Toggle(); break;
                 case "craft": CraftingController.Toggle(); break;
-                case "stats": SetStats(!_statsPanel.activeSelf); break;
+                case "stats": InventoryController.Toggle(); break; // K: panel de personaje (inventario + modelo + stats + skills)
                 default: if (StoryManager.Instance != null) StoryManager.Instance.ToggleMissions(); break; // J lo gestiona StoryManager
             }
         }
@@ -433,10 +432,7 @@ namespace Runtime.Scripts.Hud
             if (!_inBioma || m_PlayerHealth == null) return;
             if (_uiRoot == null) BuildHud();
 
-            if (Keyboard.current != null && Keyboard.current.kKey.wasPressedThisFrame)
-            {
-                SetStats(!_statsPanel.activeSelf);
-            }
+            if (Keyboard.current != null && Keyboard.current.kKey.wasPressedThisFrame) InventoryController.Toggle();
 
             if (Time.unscaledTime < _uiTick) return;
             _uiTick = Time.unscaledTime + 0.1f;
@@ -444,22 +440,6 @@ namespace Runtime.Scripts.Hud
             _plate.raycastTarget = MenuGate.Busy; // el icono de mira solo es clicable con un menu abierto
             var pcs = GetPlayer();
             if (pcs != null && _scopeRing.gameObject.activeSelf != pcs.scopeMode) _scopeRing.gameObject.SetActive(pcs.scopeMode);
-            if (_statsPanel.activeSelf) RefreshStats();
-        }
-
-        void OnGate(string k) { if (k == "stats" && _statsPanel != null && _statsPanel.activeSelf) SetStats(false); }
-
-        // Un solo menu a la vez; Esc lo cierra (MenuGate). Cursor libre = jugador bloqueado.
-        void SetStats(bool open)
-        {
-            if (open && !MenuGate.TryOpen("stats")) return;
-            MenuGate.CloseRequested -= OnGate;
-            if (open) MenuGate.CloseRequested += OnGate; else MenuGate.Close("stats");
-            _statsPanel.SetActive(open);
-            bool free = open || MenuGate.Busy;
-            Cursor.lockState = free ? CursorLockMode.None : CursorLockMode.Locked;
-            Cursor.visible = free;
-            RefreshStats();
         }
 
         void BuildHud()
@@ -546,11 +526,6 @@ namespace Runtime.Scripts.Hud
                 l.rectTransform.offsetMin = new Vector2(0f, 2f);
                 l.rectTransform.offsetMax = new Vector2(0f, 22f);
             }
-
-            // Panel de stats (K): visor
-            _statsPanel = Term(_uiRoot.transform, new Vector2(760f, 420f), "STATS", out _statsTxt).gameObject;
-            _statsTxt.fontSize = 36;
-            _statsPanel.SetActive(false);
         }
 
         void RefreshBars()
@@ -601,9 +576,30 @@ namespace Runtime.Scripts.Hud
             _barTxt[i].text = str;
         }
 
-        void RefreshStats()
+        // ---- Datos para el panel de personaje (CharacterPanel) ----
+        public float BarFraction(int i) => _lastF[i];
+        public string BarText(int i) => _barTxt[i] != null ? _barTxt[i].text : null;
+        public string TimeStr => _cachedTimeStr;
+
+        /// <summary>Skills base del jugador: disparo, recarga, cuerpo a cuerpo, escudo, gancho, sprint, jetpack y mira telescopica.</summary>
+        public void CollectSkills(System.Collections.Generic.List<string> names, System.Collections.Generic.List<string> keys)
         {
-            _statsTxt.text = $"TIME<pos=45%>{_cachedTimeStr}\nATK<pos=45%>{Attack:F0}\nDEF<pos=45%>{Defense:F0}\nLVL<pos=45%>{Level}\nEXP<pos=45%>{Exp:F0} / {ExpToLevelUp:F0}";
+            var pc = GetPlayer();
+            var shooter = GetShooter();
+            var shield = GetShield();
+            var prop = GetPropulsion();
+
+            if (shooter != null && (shooter.isUnlocked || shooter.Projectile != null))
+            {
+                names.Add(shooter.HoldToFire ? "Disparo continuo" : "Disparo"); keys.Add("LMB");
+                names.Add("Recarga"); keys.Add("R");
+            }
+            if (pc != null && pc.HasMelee) { names.Add("Cuerpo a cuerpo"); keys.Add("LMB"); }
+            if (shield != null && shield.isUnlocked) { names.Add("Escudo"); keys.Add("MMB"); }
+            if (pc != null && pc.HasHook) { names.Add("Gancho"); keys.Add("RMB+G"); }
+            names.Add("Sprint"); keys.Add("Shift");
+            if (prop != null && prop.MaxJetpack > 0) { names.Add("Jetpack"); keys.Add("Space/B"); }
+            names.Add(pc != null && pc.scopeMode ? "Mira telescopica (ON)" : "Mira telescopica"); keys.Add("1");
         }
 
         // Sprites dibujados por codigo, una sola vez y compartidos.
