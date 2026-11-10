@@ -72,6 +72,9 @@ namespace Runtime.Scripts.Narrative
         public bool IsDialogOpen => _dlgOpen;
         public bool IsBusy => _dlgOpen || _logging || _misOpen;
         public bool MissionOpen => _misOpen;
+        /// <summary>Hay historia nueva sin revisar en el historial (J). Empieza en true; se apaga al abrir el historial.</summary>
+        public bool Unread => _unread && pairs.Count > 0;
+        bool _unread = true;
         /// <summary>Panel de misiones (J): el RADAR (StoryMap) se anexa como hijo suyo.</summary>
         public Transform MissionPanel => _mis != null ? _mis.transform : null;
 
@@ -259,7 +262,7 @@ namespace Runtime.Scripts.Narrative
             else if (_seen == 0)
             {
                 Note(0, IntroText);
-                StartCoroutine(Log(Intro, () => Line(0, "Sistemas mínimos operativos. Sigo la firma de datos más cercana.", true), 0.02f, 0.35f, 1.5f));
+                Line(0, "Sistemas mínimos operativos. Sigo la firma de datos más cercana.", false); // el inicio va directo al historial (J), sin panel
             }
             Goal();
         }
@@ -301,7 +304,9 @@ namespace Runtime.Scripts.Narrative
 
         void Note(int ch, string t)
         {
-            if (_hist != null && ch >= 0 && ch < _hist.Length) _hist[ch].Add(t);
+            if (_hist == null || ch < 0 || ch >= _hist.Length) return;
+            _hist[ch].Add(t);
+            if (!_misOpen) _unread = true; // si el historial ya esta abierto, el jugador lo esta viendo
         }
 
         int Cur => Mathf.Min(_seen / 2, pairs.Count - 1);
@@ -540,6 +545,7 @@ namespace Runtime.Scripts.Narrative
             if (on && !MenuGate.TryOpen("mission")) return; // otro menú abierto
             if (!on) MenuGate.Close("mission");
             _misOpen = on;
+            if (on) _unread = false; // historial revisado: el boton J se apaga
             _mis.SetActive(on);
             Free(on);
             _hit = 0;

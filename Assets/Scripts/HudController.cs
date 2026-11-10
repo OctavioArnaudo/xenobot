@@ -387,7 +387,9 @@ namespace Runtime.Scripts.Hud
         readonly float[] _lastF = new float[4];
         Image _plate;
         Image _scopeRing;
-        static Sprite s_scope, s_ring;
+        Image _glow, _jDot; // aviso rojo del boton J: historia nueva sin leer
+        bool _lit;
+        static Sprite s_scope, s_ring, s_glow;
         float _uiTick;
 
         // Botones de panel (metalicos, punto rubi): TAB = inventario / personaje, J = misiones + radar.
@@ -427,6 +429,24 @@ namespace Runtime.Scripts.Hud
             if (_uiRoot == null) BuildHud();
 
             if (Keyboard.current != null && Keyboard.current.kKey.wasPressedThisFrame) InventoryController.Toggle();
+
+            // Boton J: brilla fuerte en rojo mientras haya historia nueva sin revisar (empieza encendido).
+            var story = StoryManager.Instance;
+            bool lit = story != null && story.Unread;
+            if (lit != _lit)
+            {
+                _lit = lit;
+                _glow.gameObject.SetActive(lit);
+                if (!lit) { _jDot.color = Ruby; _jDot.rectTransform.localScale = Vector3.one; }
+            }
+            if (_lit)
+            {
+                float p = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f);
+                _glow.color = new Color(1f, 0.05f, 0.03f, 0.6f + 0.4f * p);
+                _glow.rectTransform.localScale = Vector3.one * (0.9f + 0.35f * p);
+                _jDot.color = Color.Lerp(new Color(1f, 0.2f, 0.15f), new Color(1f, 0.9f, 0.85f), p);
+                _jDot.rectTransform.localScale = Vector3.one * (1.1f + 0.5f * p);
+            }
 
             if (Time.unscaledTime < _uiTick) return;
             _uiTick = Time.unscaledTime + 0.1f;
@@ -504,16 +524,31 @@ namespace Runtime.Scripts.Hud
             for (int i = 0; i < 2; i++)
             {
                 int id = i;
+                var pos = new Vector2(-126f - (1 - i) * 76f, 130f);
+                if (i == 1) // halo grande detras del boton J
+                {
+                    var hl = Img(_uiRoot.transform, new Color(1f, 0.05f, 0.03f, 0f));
+                    _glow = hl.GetComponent<Image>();
+                    _glow.sprite = GlowSprite();
+                    _glow.raycastTarget = false;
+                    hl.anchorMin = hl.anchorMax = new Vector2(1f, 0f);
+                    hl.pivot = new Vector2(0.5f, 0.5f);
+                    hl.sizeDelta = new Vector2(300f, 300f);
+                    hl.anchoredPosition = pos + new Vector2(-32f, 32f);
+                    hl.gameObject.SetActive(false);
+                }
                 var b = Rnd(Img(_uiRoot.transform, new Color(0.62f, 0.64f, 0.66f)));
                 b.GetComponent<Image>().raycastTarget = true;
                 b.anchorMin = b.anchorMax = b.pivot = new Vector2(1f, 0f);
                 b.sizeDelta = new Vector2(64f, 64f);
-                b.anchoredPosition = new Vector2(-126f - (1 - i) * 76f, 130f);
+                b.anchoredPosition = pos;
                 var bt = b.gameObject.AddComponent<Button>();
                 bt.transition = Selectable.Transition.None;
                 bt.onClick.AddListener(() => OpenPanel(id));
                 Mid(Rnd(Img(b, new Color(0.3f, 0.32f, 0.34f))), 50f);
-                Mid(Rnd(Img(b, Ruby)), 16f);
+                var dot = Rnd(Img(b, Ruby));
+                Mid(dot, 16f);
+                if (i == 1) _jDot = dot.GetComponent<Image>();
                 var l = Txt(b, 16, Amber, TextAlignmentOptions.Center, FontStyles.Bold);
                 l.text = PanelLbl[i];
                 l.raycastTarget = false;
@@ -618,6 +653,18 @@ namespace Runtime.Scripts.Hud
             {
                 float dx = x - 31.5f, dy = y - 31.5f;
                 return Band(Mathf.Sqrt(dx * dx + dy * dy), 27f, 31.5f);
+            });
+        }
+
+        // Resplandor radial suave (alfa cuadratica hacia el borde).
+        static Sprite GlowSprite()
+        {
+            if (s_glow != null) return s_glow;
+            return s_glow = Draw((x, y) =>
+            {
+                float dx = x - 31.5f, dy = y - 31.5f;
+                float a = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy) / 32f);
+                return a * a;
             });
         }
 

@@ -20,7 +20,8 @@ namespace Runtime.Scripts.Inventory
     public sealed class CharacterPanel : MonoBehaviour
     {
         const int Slots = 24, Cols = 4, Cell = 84, Step = 89, IconPx = 256, IconLayer = 30, Rows = 12, Layer = 31;           // Layer: capa libre usada solo por la vista previa
-        const float Fov = 28f, RotSpeed = 140f, Cw = 340f, Ch = 450f;
+        const float Fov = 28f, RotSpeed = 140f, Cw = 340f, Ch = 450f, SpinSpeed = 45f;
+        const int LiveRt = 384;
 
         static CharacterPanel s_inst;
 
@@ -77,7 +78,9 @@ namespace Runtime.Scripts.Inventory
         // iconos 3D: cada prefab se hornea UNA vez en un RenderTexture y se reutiliza
         readonly Dictionary<ItemsData, Texture> _icons = new Dictionary<ItemsData, Texture>();
         readonly List<RenderTexture> _rts = new List<RenderTexture>();
-        GameObject _rig, _box;
+        GameObject _rig, _box, _liveRoot, _live; // _live: modelo del objeto seleccionado, girando
+        Bounds _liveB;
+        RenderTexture _liveRt;
         Camera _ic;
         Light _il;
 
@@ -191,22 +194,20 @@ namespace Runtime.Scripts.Inventory
         void BuildCard(RectTransform grid)
         {
             _grid = grid;
-            _card = Rnd(Img(grid, new Color(0.04f, 0.16f, 0.07f, 1f)), 10);
+            _card = Frame(grid, PanelSkin.Kind.Card, new Vector2(0f, 1f), new Vector2(Cw, Ch)); // chapa oxidada + hueco negro
             _cardBg = _card.GetComponent<Image>();
             _cardBg.raycastTarget = true;
-            _card.anchorMin = _card.anchorMax = _card.pivot = new Vector2(0f, 1f);
-            _card.sizeDelta = new Vector2(Cw, Ch);
             _card.gameObject.AddComponent<Button>().transition = Selectable.Transition.None; // absorbe clics
 
             _cardIcon = RawIcon(_card);
-            Fit(_cardIcon.rectTransform, 0.02f, 0.26f, 0.98f, 0.985f);
+            Fit(_cardIcon.rectTransform, 0.09f, 0.29f, 0.91f, 0.91f); // cuadrado dentro del hueco
 
             var body = Blank(_card);
-            Fit(body, 0f, 0f, 1f, 0.26f);
+            Fit(body, 0.09f, 0.075f, 0.91f, 0.29f);
             _body = body.gameObject.AddComponent<CanvasGroup>();
 
             _cardName = Txt(body, 26, Amber, TextAlignmentOptions.Center, FontStyles.Bold);
-            Fit(_cardName.rectTransform, 0.03f, 0.6f, 0.97f, 1f);
+            Fit(_cardName.rectTransform, 0f, 0.52f, 1f, 1f);
 
             _useRt = Mini(body, "USE", out _useTxt, out _useBtn);
             _dropRt = Mini(body, "DROP", out var dt, out _dropBtn);
@@ -230,7 +231,9 @@ namespace Runtime.Scripts.Inventory
             _a = 0f;
             _tgt = 1f;
             _cardIcon.texture = s.icon.texture;
-            _cardIcon.enabled = s.icon.texture != null;
+            LiveStart(s.def);
+            if (_live != null) _cardIcon.texture = _liveRt;
+            _cardIcon.enabled = _cardIcon.texture != null;
             _card.gameObject.SetActive(true);
             FillCard(s);
             Anim();
@@ -238,7 +241,7 @@ namespace Runtime.Scripts.Inventory
 
         void Unpick() { if (_sel < 0) return; _sel = -1; _selDef = null; _tgt = 0f; } // se encoge de vuelta al slot
 
-        void Shut() { _sel = -1; _selDef = null; _a = _tgt = 0f; if (_card != null) _card.gameObject.SetActive(false); }
+        void Shut() { _sel = -1; _selDef = null; _a = _tgt = 0f; LiveStop(); if (_card != null) _card.gameObject.SetActive(false); }
 
         void FillCard(Slot s)
         {
@@ -249,8 +252,8 @@ namespace Runtime.Scripts.Inventory
             _useBtn.gameObject.SetActive(use);
             _dropBtn.gameObject.SetActive(drop);
             _useTxt.text = eq ? "QUIT" : "USE";
-            Fit(_useRt, 0.04f, 0.06f, drop ? 0.49f : 0.96f, 0.56f);
-            Fit(_dropRt, use ? 0.51f : 0.04f, 0.06f, 0.96f, 0.56f);
+            Fit(_useRt, 0f, 0.04f, drop ? 0.48f : 1f, 0.48f);
+            Fit(_dropRt, use ? 0.52f : 0f, 0.04f, 1f, 0.48f);
         }
 
         void Anim()
@@ -303,51 +306,95 @@ namespace Runtime.Scripts.Inventory
             _il.enabled = false; // solo se enciende durante el render del icono
         }
 
-        Texture Bake(ItemsData d)
+        // Instancia el prefab sin scripts, sin fisica y solo en la capa de iconos. La caja esta inactiva: no corre Awake/OnEnable.
+        GameObject Spawn(ItemsData d)
         {
-            if (d.itemPrefab == null) return null;
             if (_ic == null) MakeRig();
-
-            var go = Instantiate(d.itemPrefab, _box.transform); // caja inactiva: no corre Awake/OnEnable
+            var go = Instantiate(d.itemPrefab, _box.transform);
             go.SetActive(true);
             var mb = go.GetComponentsInChildren<MonoBehaviour>(true);
             for (int i = mb.Length - 1; i >= 0; i--) if (mb[i] != null) DestroyImmediate(mb[i]);
+            foreach (var col in go.GetComponentsInChildren<Collider>(true)) DestroyImmediate(col);
+            foreach (var rb in go.GetComponentsInChildren<Rigidbody>(true)) DestroyImmediate(rb);
             foreach (var tr in go.GetComponentsInChildren<Transform>(true)) tr.gameObject.layer = IconLayer;
             foreach (var r in go.GetComponentsInChildren<Renderer>(true))
                 if (!(r is MeshRenderer || r is SkinnedMeshRenderer)) r.enabled = false;
+            return go;
+        }
 
-            _box.SetActive(true);
+        static bool Measure(GameObject go, out Bounds b)
+        {
             bool any = false;
-            Bounds b = default;
+            b = default;
             foreach (var r in go.GetComponentsInChildren<Renderer>(false))
             {
                 if (!r.enabled) continue;
                 if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds);
             }
+            return any;
+        }
 
+        static RenderTexture NewRt(int px) => new RenderTexture(px, px, 16, RenderTextureFormat.ARGB32) { antiAliasing = 4, filterMode = FilterMode.Bilinear };
+
+        // Encuadra la esfera que envuelve al objeto y renderiza una vez en rt (la luz solo se enciende durante el render).
+        void Shot(Bounds b, RenderTexture rt)
+        {
+            float rad = Mathf.Max(b.extents.magnitude, 0.01f);
+            Vector3 dir = new Vector3(0.7f, 0.5f, -0.9f).normalized;
+            var ct = _ic.transform;
+            ct.SetPositionAndRotation(b.center + dir * rad * 4f, Quaternion.LookRotation(-dir));
+            _ic.orthographicSize = rad * 1.05f;
+            _ic.nearClipPlane = 0.01f;
+            _ic.farClipPlane = rad * 8f;
+            _il.transform.rotation = ct.rotation * Quaternion.Euler(30f, -25f, 0f);
+            _ic.targetTexture = rt;
+            _il.enabled = true;
+            _ic.Render();
+            _il.enabled = false;
+            _ic.targetTexture = null;
+        }
+
+        Texture Bake(ItemsData d)
+        {
+            if (d.itemPrefab == null) return null;
+            var go = Spawn(d);
+            _box.SetActive(true);
             RenderTexture rt = null;
-            if (any)
+            if (Measure(go, out var b))
             {
-                float rad = Mathf.Max(b.extents.magnitude, 0.01f);
-                Vector3 dir = new Vector3(0.7f, 0.5f, -0.9f).normalized;
-                var ct = _ic.transform;
-                ct.SetPositionAndRotation(b.center + dir * rad * 4f, Quaternion.LookRotation(-dir));
-                _ic.orthographicSize = rad * 1.05f;
-                _ic.nearClipPlane = 0.01f;
-                _ic.farClipPlane = rad * 8f;
-                _il.transform.rotation = ct.rotation * Quaternion.Euler(30f, -25f, 0f);
-
-                rt = new RenderTexture(IconPx, IconPx, 16, RenderTextureFormat.ARGB32) { antiAliasing = 4, filterMode = FilterMode.Bilinear };
-                _ic.targetTexture = rt;
-                _il.enabled = true;
-                _ic.Render();
-                _il.enabled = false;
-                _ic.targetTexture = null;
+                rt = NewRt(IconPx);
                 _rts.Add(rt);
+                Shot(b, rt);
             }
             DestroyImmediate(go);
             _box.SetActive(false);
             return rt;
+        }
+
+        // Modelo en vivo del objeto seleccionado: una sola instancia y un solo RenderTexture reutilizado; se destruye al cerrar la tarjeta.
+        void LiveStart(ItemsData d)
+        {
+            LiveStop();
+            if (d.itemPrefab == null) return;
+            var go = Spawn(d);
+            if (_liveRoot == null)
+            {
+                _liveRoot = new GameObject("Live");
+                _liveRoot.transform.SetParent(_rig.transform, false);
+                _liveRoot.transform.localPosition = new Vector3(100f, 0f, 0f); // lejos de la caja de iconos
+            }
+            go.transform.SetParent(_liveRoot.transform, false);
+            if (!Measure(go, out _liveB)) { DestroyImmediate(go); return; }
+            if (_liveRt == null) { _liveRt = NewRt(LiveRt); _rts.Add(_liveRt); }
+            _live = go;
+            Shot(_liveB, _liveRt);
+        }
+
+        void LiveStop()
+        {
+            if (_live == null) return;
+            DestroyImmediate(_live);
+            _live = null;
         }
 
         void BuildViewer(RectTransform lay)
@@ -576,7 +623,12 @@ namespace Runtime.Scripts.Inventory
             {
                 _a = Mathf.MoveTowards(_a, _tgt, dt * 8f);
                 Anim();
-                if (_a <= 0f) _card.gameObject.SetActive(false);
+                if (_a <= 0f) { _card.gameObject.SetActive(false); LiveStop(); }
+            }
+            if (_live != null)
+            {
+                _live.transform.RotateAround(_liveB.center, Vector3.up, SpinSpeed * dt);
+                Shot(_liveB, _liveRt);
             }
             if (_left != null && _left.Down) _angle += RotSpeed * dt;
             if (_right != null && _right.Down) _angle -= RotSpeed * dt;

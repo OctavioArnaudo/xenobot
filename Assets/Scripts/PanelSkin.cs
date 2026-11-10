@@ -10,11 +10,11 @@ namespace Runtime.Scripts.Gate
     /// </summary>
     public static class PanelSkin
     {
-        public enum Kind { Inventory, Viewer, Stats, Skills, Arrow }
+        public enum Kind { Inventory, Viewer, Stats, Skills, Arrow, Card }
 
         struct Def { public int w, h; public float cell; public int seed; public Vector2[] outer, inner; }
 
-        static readonly Sprite[] s_sprites = new Sprite[5];
+        static readonly Sprite[] s_sprites = new Sprite[6];
         static readonly Vector3 L = new Vector3(-0.5f, 0.55f, 0.67f).normalized;
         static readonly Vector2 L2 = new Vector2(-0.67f, 0.74f);
 
@@ -71,6 +71,16 @@ namespace Runtime.Scripts.Gate
                         seed = 53,
                         outer = P(0.02f, 0.97f, 0.5f, 1f, 1f, 0.96f, 1f, 0.5f, 0.98f, 0.04f, 0.5f, 0f, 0f, 0.03f, 0.01f, 0.5f),
                         inner = P(0.1f, 0.8f, 0.91f, 0.79f, 0.92f, 0.08f, 0.09f, 0.09f)
+                    };
+                case Kind.Card: // tarjeta del objeto seleccionado: misma chapa oxidada y hueco negro que el inventario
+                    return new Def
+                    {
+                        w = 204,
+                        h = 270,
+                        cell = 36f,
+                        seed = 89,
+                        outer = P(0.02f, 0.97f, 0.55f, 1f, 0.98f, 0.98f, 1f, 0.5f, 0.97f, 0.02f, 0.45f, 0f, 0.02f, 0.03f, 0f, 0.5f),
+                        inner = P(0.075f, 0.925f, 0.925f, 0.93f, 0.93f, 0.07f, 0.07f, 0.065f)
                     };
                 default: // flecha hacia la derecha (la izquierda es la misma con escala X negativa)
                     return new Def
