@@ -70,6 +70,7 @@ namespace Runtime.Scripts.Player
         public Optional<float> gravity;
         public float JumpTimeout = 0.50f;
         public float FallTimeout = 0.15f;
+        [Tooltip("Gravedad extra al caer (1 = igual que al subir). Sube = caida mas rapida y seca; la altura del salto no cambia.")] public float FallGravityMultiplier = 2f;
         #endregion
 
         #region Variables: Aiming & Combat UI
@@ -86,6 +87,7 @@ namespace Runtime.Scripts.Player
         [Header("Camara de hombro (clic derecho)")]
         [Tooltip("Camara normal: personaje levemente a la izquierda, mira central libre.")] public Vector3 shoulderOffset = new Vector3(0.9f, 0.3f, 0f);
         public float shoulderDistance = 3.8f;
+        [Tooltip("Sube la camara (se suma a la altura del hombro) para que la cabeza quede bajo la linea central de la pantalla. Sin efecto en la mira telescopica.")] public float cameraRise = 0.6f;
         [Tooltip("Apuntando (clic derecho): mas cerca y mas enfocado.")] public Vector3 shoulderAimOffset = new Vector3(1.0f, 0.25f, 0f);
         public float shoulderAimDistance = 2.2f;
         [Tooltip("Capas contra las que la camara choca (muros, terreno). Excluye las que no quieras.")] public LayerMask cameraCollision = ~0;
@@ -779,7 +781,7 @@ namespace Runtime.Scripts.Player
                 if (_vcam3rdPerson != null)
                 {
                     float targetDistance = scope ? aimCameraDistance : Mathf.Lerp(normalDist, shoulderAimDistance, az);
-                    Vector3 targetShoulderOffset = scope ? aimShoulderOffset : Vector3.Lerp(shoulderOffset, shoulderAimOffset, az);
+                    Vector3 targetShoulderOffset = scope ? aimShoulderOffset : Vector3.Lerp(shoulderOffset, shoulderAimOffset, az) + Vector3.up * cameraRise;
                     _vcam3rdPerson.CameraSide = 1f; // hombro derecho de la camara: el personaje queda a la izquierda
 
                     _vcam3rdPerson.CameraDistance = Mathf.Lerp(_vcam3rdPerson.CameraDistance, targetDistance, Time.deltaTime * zs);
@@ -1067,7 +1069,7 @@ namespace Runtime.Scripts.Player
             }
 
             if (_verticalVelocity > -_terminalVelocity)
-                _verticalVelocity += Gravity * Time.deltaTime;
+                _verticalVelocity += Gravity * (_verticalVelocity < 0f ? FallGravityMultiplier : 1f) * Time.deltaTime;
 
             jump = false;
         }

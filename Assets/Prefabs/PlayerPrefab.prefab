@@ -391,6 +391,7 @@ MonoBehaviour:
     value: 0
   JumpTimeout: 0.5
   FallTimeout: 0.15
+  FallGravityMultiplier: 2
   crosshairUI: {fileID: 0}
   aimFOV: 40
   normalFOV: 60
@@ -401,9 +402,15 @@ MonoBehaviour:
   toggleAim: 0
   shoulderOffset: {x: 3, y: 0.3, z: 0}
   shoulderDistance: 4
+  cameraRise: 3
   shoulderAimOffset: {x: 2, y: 0.25, z: 0}
   shoulderAimDistance: 2.5
+  cameraCollision:
+    serializedVersion: 2
+    m_Bits: 4294967295
   shoulderAimFOV: 50
+  aimZoomStrength: 0.3
+  aimZoomSpeed: 5
   aimMoveSpeedMultiplier: 0.6
   scopeToggleKey: 41
   scopeMode: 0
@@ -1028,7 +1035,8 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: -8
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 8394970026939628830, guid: 03bfb05934a1b3246810c1b29aec7bbc, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
