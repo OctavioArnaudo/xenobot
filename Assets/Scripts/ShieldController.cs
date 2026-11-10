@@ -11,6 +11,7 @@ using Runtime.Scripts.Hud;
 using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Pickup;
+using Runtime.Scripts.Player;
 
 namespace Runtime.Scripts.Shield
 {
@@ -427,10 +428,63 @@ namespace Runtime.Scripts.Shield
 
         private void LateUpdate()
         {
-            if (shieldVisualObject != null && (IsShieldActive || (!Application.isPlaying && previewInEditor)))
+            if (shieldVisualObject == null) return;
+            var t = shieldVisualObject.transform;
+
+            if (!Application.isPlaying)
             {
-                shieldVisualObject.transform.localPosition = generatorOffset;
+                if (previewInEditor)
+                {
+                    if (t.parent != transform) t.SetParent(transform, false);
+                    t.localPosition = generatorOffset;
+                    t.localRotation = Quaternion.identity;
+                    t.localScale = generatorScale;
+                }
+                return;
             }
+
+            // Los escudos-pickup del mundo conservan su comportamiento original.
+            if (GetComponentInParent<PickupController>() != null) return;
+
+            // En juego la esfera vive en el mundo y sigue al CUERPO VISIBLE (hueso de la cadera), no a objetos raiz.
+            if (t.parent != null) t.SetParent(null, true);
+
+            if (m_Owner == null)
+            {
+                var pc = GetComponentInParent<PlayerController>();
+                var cc0 = GetComponentInParent<CharacterController>();
+                m_Owner = pc != null ? pc.transform : (cc0 != null ? cc0.transform : transform.root);
+                var anim = m_Owner.GetComponentInChildren<Animator>(true);
+                if (anim != null && anim.isHuman)
+                {
+                    m_Hips = anim.GetBoneTransform(HumanBodyBones.Hips);
+                    m_Head = anim.GetBoneTransform(HumanBodyBones.Head);
+                    m_Foot = anim.GetBoneTransform(HumanBodyBones.LeftFoot);
+                }
+            }
+
+            Vector3 pos = m_Owner.position + generatorOffset;
+            float d = generatorScale.x;
+            var cc = m_Owner.GetComponent<CharacterController>();
+            if (cc != null) { pos = cc.bounds.center; d = Mathf.Max(d, cc.bounds.size.y * 1.3f); }
+            if (m_Hips != null) pos = m_Hips.position;
+            if (m_Head != null && m_Foot != null) d = Mathf.Max(d, (m_Head.position.y - m_Foot.position.y) * 1.6f);
+
+            t.SetPositionAndRotation(pos, Quaternion.identity);
+            t.localScale = Vector3.one * d;
+        }
+
+        private Transform m_Owner, m_Hips, m_Head, m_Foot;
+
+        private void OnDisable()
+        {
+            if (Application.isPlaying && shieldVisualObject != null) shieldVisualObject.SetActive(false);
+        }
+
+        public override void OnDestroy()
+        {
+            if (Application.isPlaying && shieldVisualObject != null) Destroy(shieldVisualObject);
+            base.OnDestroy();
         }
 
         #region Shield Bash Logic
@@ -713,17 +767,7 @@ namespace Runtime.Scripts.Shield
             RefreshReferences();
 
             Transform targetParent = transform;
-            if (m_Animator != null && m_Animator.isHuman)
-            {
-                Transform chestBone = m_Animator.GetBoneTransform(HumanBodyBones.Chest)
-                                   ?? m_Animator.GetBoneTransform(HumanBodyBones.Spine);
-                if (chestBone != null)
-                {
-                    targetParent = chestBone;
-                }
-            }
-
-            Transform existing = transform.Find("ShieldRender") ?? targetParent.Find("ShieldRender");
+            Transform existing = transform.root.GetComponentsInChildren<Transform>(true).FirstOrDefault(x => x.name == "ShieldRender");
             if (existing != null)
             {
                 shieldVisualObject = existing.gameObject;
