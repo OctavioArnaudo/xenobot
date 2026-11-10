@@ -88,6 +88,7 @@ namespace Runtime.Scripts.Player
         public float shoulderDistance = 3.8f;
         [Tooltip("Apuntando (clic derecho): mas cerca y mas enfocado.")] public Vector3 shoulderAimOffset = new Vector3(1.0f, 0.25f, 0f);
         public float shoulderAimDistance = 2.2f;
+        [Tooltip("Capas contra las que la camara choca (muros, terreno). Excluye las que no quieras.")] public LayerMask cameraCollision = ~0;
         public float shoulderAimFOV = 50f;
         [Range(0f, 1f), Tooltip("Intensidad del zoom al apuntar SIN mira telescopica: 0 = sin zoom, 1 = distancia/FOV/offset de apuntado completos.")] public float aimZoomStrength = 0.3f;
         [Tooltip("Velocidad de la transicion al apuntar sin mira telescopica (menor = mas suave).")] public float aimZoomSpeed = 5f;
@@ -567,6 +568,20 @@ namespace Runtime.Scripts.Player
 #endif
         }
 
+        // ThirdPersonFollow con colision activa: la camara se acerca al jugador en vez de atravesar muros (pasillos).
+        private Unity.Cinemachine.CinemachineThirdPersonFollow Tpf()
+        {
+            var f = _vcamCache.GetComponent<Unity.Cinemachine.CinemachineThirdPersonFollow>();
+            if (f == null) return null;
+            var o = f.AvoidObstacles;
+            o.Enabled = true;
+            o.CollisionFilter = cameraCollision;
+            o.CameraRadius = 0.3f;
+            o.IgnoreTag = "Player";
+            f.AvoidObstacles = o;
+            return f;
+        }
+
         private void SetupCamera()
         {
             _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
@@ -577,7 +592,7 @@ namespace Runtime.Scripts.Player
 
             if (_vcamCache != null)
             {
-                _vcam3rdPerson = _vcamCache.GetComponent<Unity.Cinemachine.CinemachineThirdPersonFollow>();
+                _vcam3rdPerson = Tpf();
 
                 if (CinemachineCameraTarget != null)
                 {
@@ -758,7 +773,7 @@ namespace Runtime.Scripts.Player
 
                 if (_vcam3rdPerson == null)
                 {
-                    _vcam3rdPerson = _vcamCache.GetComponent<Unity.Cinemachine.CinemachineThirdPersonFollow>();
+                    _vcam3rdPerson = Tpf();
                 }
 
                 if (_vcam3rdPerson != null)
