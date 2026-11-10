@@ -471,6 +471,7 @@ namespace Runtime.Scripts.Melee
             int mask = (targetLayers.value != 0) ? targetLayers.value : ~0;
 
             Collider[] hits = Physics.OverlapSphere(impactPosition, EffectiveSlamRadius, mask, QueryTriggerInteraction.Collide);
+            if (IsPlayerSide) HitBreakables(impactPosition, EffectiveSlamRadius, finalDamage);
 
             foreach (Collider hit in hits)
             {
@@ -495,6 +496,19 @@ namespace Runtime.Scripts.Melee
         {
             ExecuteGroundSlamDamageServer(impactPosition);
             PlaySlamEffects(impactPosition);
+        }
+
+        private bool IsPlayerSide => GetComponentInParent<EnemyController>() == null;
+
+        // Cristales y arboles (Smashable): ignora layers y triggers.
+        private static void HitBreakables(Vector3 center, float radius, float damage)
+        {
+            var seen = new HashSet<Smashable>();
+            foreach (var c in Physics.OverlapSphere(center, radius, ~0, QueryTriggerInteraction.Ignore))
+            {
+                var b = c.GetComponentInParent<Smashable>();
+                if (b != null && seen.Add(b)) b.Damage(damage);
+            }
         }
 
         private void RotateVisualsTowards(Vector3 targetPosition)
@@ -572,7 +586,7 @@ namespace Runtime.Scripts.Melee
                 ProcessHitTarget(hit, finalDamage, hitTargets);
             }
 
-            Team currentTeam = m_Health != null ? m_Health.EffectiveTeam : (CompareTag("Player") || transform.root.CompareTag("Player") ? Team.Player : Team.Enemy);
+            if (IsPlayerSide) HitBreakables(attackCenter, EffectiveAttackRange, finalDamage);
         }
 
         private void ProcessHitTarget(Collider hit, float finalDamage, HashSet<GameObject> processedTargets)

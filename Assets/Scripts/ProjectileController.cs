@@ -599,6 +599,9 @@ namespace Runtime.Scripts.Projectile
         {
             ProjectileType type = EffectiveType;
 
+            if (m_OwnerTeam != Team.Enemy && hitCollider != null)
+                hitCollider.GetComponentInParent<Smashable>()?.Damage(EffectiveDamage);
+
             switch (type)
             {
                 case ProjectileType.BalaExplosiva:
@@ -675,6 +678,7 @@ namespace Runtime.Scripts.Projectile
             Collider[] hits = Physics.OverlapSphere(transform.position, EffectiveExplosionRadius, ~0, QueryTriggerInteraction.Collide);
             foreach (var h in hits)
             {
+                if (m_OwnerTeam != Team.Enemy) h.GetComponentInParent<Smashable>()?.Damage(EffectiveDamage);
                 HealthController hc = h.GetComponentInParent<HealthController>() ?? h.GetComponent<HealthController>();
                 if (hc != null && hc.gameObject != m_Owner)
                 {

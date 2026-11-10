@@ -15,6 +15,9 @@ public class SkyCycle : MonoBehaviour
 
     Material mat, nightSky, daySky; bool isNight; Transform sky; Renderer rend; Camera cam; float next;
     float sunI, ambI, refI; Color sunC, fogC; Color[] unlitC;
+    UnityEngine.Rendering.SphericalHarmonicsL2 held; bool has; UnityEngine.Rendering.AmbientMode amb0;   // ultimo ambiente del dia
+    static readonly Vector3[] Dirs = { Vector3.up, Vector3.forward, Vector3.down };
+    static readonly Color[] Amb = new Color[3];
 
     void Start()
     {
@@ -37,7 +40,7 @@ public class SkyCycle : MonoBehaviour
         if (!sun) sun = RenderSettings.sun;
         if (!sun) foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None)) if (l.type == LightType.Directional) { sun = l; break; }
         if (sun) { sunI = sun.intensity; sunC = sun.color; }
-        ambI = RenderSettings.ambientIntensity; refI = RenderSettings.reflectionIntensity; fogC = RenderSettings.fogColor;
+        ambI = RenderSettings.ambientIntensity; refI = RenderSettings.reflectionIntensity; fogC = RenderSettings.fogColor; amb0 = RenderSettings.ambientMode;
         if (unlit == null) unlit = new Material[0];
         unlitC = new Color[unlit.Length];
         for (int i = 0; i < unlit.Length; i++) unlitC[i] = unlit[i].color;
@@ -50,17 +53,28 @@ public class SkyCycle : MonoBehaviour
         float e = 0.5f - 0.5f * Mathf.Cos(Time.time * Mathf.PI * 2f / period);
         float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((e - 0.25f) * 2f));   // 0 dia, 1 noche: tramos fijos largos y transiciones cortas
         bool night = t > 0.97f;
+        if (!night && t > 0.8f) { held = RenderSettings.ambientProbe; has = true; }   // guarda el ambiente del final del dia
         if (night != isNight)   // cambio real de skybox (el solape ya cubre el cielo, no se nota)
         {
             isNight = night;
             RenderSettings.skybox = night ? nightSky : daySky;
+            if (night && has && amb0 == UnityEngine.Rendering.AmbientMode.Skybox)   // la noche ilumina IGUAL que el punto mas bajo del dia
+            {
+                held.Evaluate(Dirs, Amb);
+                bool lin = QualitySettings.activeColorSpace == ColorSpace.Linear;
+                RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
+                RenderSettings.ambientSkyColor = lin ? Amb[0].gamma : Amb[0];
+                RenderSettings.ambientEquatorColor = lin ? Amb[1].gamma : Amb[1];
+                RenderSettings.ambientGroundColor = lin ? Amb[2].gamma : Amb[2];
+            }
+            else RenderSettings.ambientMode = amb0;
             DynamicGI.UpdateEnvironment();
         }
         mat.SetFloat("_Blend", t);
         rend.enabled = t > 0.002f && !night;   // de dia y de noche cerrada: costo cero
         if (sun) { sun.intensity = Mathf.Lerp(sunI, sunI * NightSun, t); sun.color = Color.Lerp(sunC, Moon, t); }
-        RenderSettings.ambientIntensity = night ? ambI : Mathf.Lerp(ambI, ambI * NightAmbient, t);   // de noche el ambiente ya sale del cielo nocturno
-        RenderSettings.reflectionIntensity = night ? refI : Mathf.Lerp(refI, refI * NightReflection, t);
+        RenderSettings.ambientIntensity = Mathf.Lerp(ambI, ambI * NightAmbient, t);   // continuo: sin salto al cambiar de skybox
+        RenderSettings.reflectionIntensity = Mathf.Lerp(refI, refI * NightReflection, t);
         RenderSettings.fogColor = Color.Lerp(fogC, FogNight, t);
         for (int i = 0; i < unlit.Length; i++) unlit[i].color = Color.Lerp(unlitC[i], UnlitNight, t);
     }
@@ -77,7 +91,7 @@ public class SkyCycle : MonoBehaviour
     void OnDestroy()
     {
         if (unlitC != null) for (int i = 0; i < unlit.Length; i++) unlit[i].color = unlitC[i];
-        if (isNight) RenderSettings.skybox = daySky;
+        if (isNight) { RenderSettings.skybox = daySky; RenderSettings.ambientMode = amb0; }
         if (sky) Destroy(sky.gameObject);
     }
 

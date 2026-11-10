@@ -794,6 +794,140 @@ static class TerrainTools
         return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
     }
 
+    // 13) Cuenco de bordes: eleva TODOS los bordes del mapa (union de los terrenos) con colinas irregulares que suben hacia
+    //     el limite. Si falta altura de terreno (size.y), la amplia reescalando las alturas. Ejecutar UNA vez, despues de 4 y
+    //     antes de 5/6/7/9. Crea el marcador "BorderHills" (borralo para poder volver a ejecutar; sumaria otra vez).
+    const float RimWidth = 140f, RimHeight = 60f;   // ancho medio (m) y altura media (m) de las colinas
+
+    [MenuItem("Tools/Terrain/13 Border Hills (todos)")]
+    static void BorderHills()
+    {
+        var ts = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+        if (ts.Length == 0) return;
+        if (GameObject.Find("BorderHills") != null) { Debug.LogWarning("[Terrain] Ya aplicado ('BorderHills'). Ctrl+Z o borra el marcador para repetir."); return; }
+        var m = MapRect(ts);
+        for (int i = 0; i < ts.Length; i++)
+        {
+            var td = ts[i].terrainData; Vector3 p = ts[i].transform.position, sz = td.size;
+            EditorUtility.DisplayProgressBar("Colinas de borde", ts[i].name, (float)i / ts.Length);
+            Undo.RegisterCompleteObjectUndo(td, "Border Hills");
+            int r = td.heightmapResolution;
+            var H = td.GetHeights(0, 0, r, r);
+            var add = new float[r, r];
+            float need = sz.y;
+            for (int y = 0; y < r; y++)
+                for (int x = 0; x < r; x++)
+                {
+                    float a = Rise(m, p.x + x / (r - 1f) * sz.x, p.z + y / (r - 1f) * sz.z);
+                    add[y, x] = a;
+                    need = Mathf.Max(need, H[y, x] * sz.y + a);
+                }
+            float ny = need > sz.y ? need * 1.02f : sz.y;
+            for (int y = 0; y < r; y++)
+                for (int x = 0; x < r; x++) H[y, x] = (H[y, x] * sz.y + add[y, x]) / ny;
+            if (ny != sz.y) td.size = new Vector3(sz.x, ny, sz.z);
+            td.SetHeights(0, 0, H);
+            td.SetTreeInstances(td.treeInstances, true);   // reasienta los arboles existentes
+        }
+        EditorUtility.ClearProgressBar();
+        var mk = new GameObject("BorderHills");
+        Undo.RegisterCreatedObjectUndo(mk, "Border Hills");
+        UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+        Debug.Log($"[Terrain] Colinas de borde sobre {ts.Length} terrenos. Mapa X {m.xMin:F0}..{m.xMax:F0}, Z {m.yMin:F0}..{m.yMax:F0}. Lo que estuviera a menos de ~{RimWidth:F0} m del limite queda enterrado.");
+    }
+
+    // 14) Corona de arboles en las colinas de 13: pinos densos hacia el borde, con gigantes y colosos que dan la impresion
+    //     de bosque que sigue mas alla del mapa. AGREGA a los arboles actuales (ejecutar despues de 6 o 7, que los borran).
+    //     Crea el marcador "BorderTrees" (borralo para repetir).
+    [MenuItem("Tools/Terrain/14 Border Trees (todos)")]
+    static void BorderTrees()
+    {
+        var ts = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+        if (ts.Length == 0) return;
+        if (GameObject.Find("BorderTrees") != null) { Debug.LogWarning("[Terrain] Ya aplicado ('BorderTrees'). Ctrl+Z o borra el marcador para repetir."); return; }
+        foreach (var t in ts)
+        {
+            var pr = t.terrainData.treePrototypes;
+            if (pr.Length < Normal + 2 || pr[Normal].prefab == null || pr[Normal].prefab.name != "Pine" + Normal)
+            { Debug.LogWarning("[Terrain] Faltan los pinos procedurales: ejecuta primero 6 o 7."); return; }
+        }
+        const float Sp = 5f;
+        var m = MapRect(ts);
+        int total = 0;
+        for (int i = 0; i < ts.Length; i++)
+        {
+            var t = ts[i]; var td = t.terrainData;
+            EditorUtility.DisplayProgressBar("Corona de arboles", t.name, (float)i / ts.Length);
+            Undo.RegisterCompleteObjectUndo(td, "Border Trees");
+            var list = new List<TreeInstance>(td.treeInstances);
+            int before = list.Count;
+            var rnd = new System.Random(4242 + i);
+            Vector3 p = t.transform.position, sz = td.size;
+            for (float z = 0; z < sz.z; z += Sp)
+                for (float x = 0; x < sz.x; x += Sp)
+                {
+                    float lx = x + ((float)rnd.NextDouble() - 0.5f) * Sp * 0.9f, lz = z + ((float)rnd.NextDouble() - 0.5f) * Sp * 0.9f;
+                    if (lx < 0 || lz < 0 || lx > sz.x || lz > sz.z) continue;
+                    float wx = p.x + lx, wz = p.z + lz, zone = RimW(wx, wz) * 0.65f;
+                    float d = EdgeDist(m, wx, wz);
+                    if (d > zone) continue;
+                    float k = 1f - d / zone;                                  // 1 en el borde, 0 en el limite interior
+                    if ((float)rnd.NextDouble() > 0.25f + 0.75f * k) continue;
+                    float u = lx / sz.x, v = lz / sz.z;
+                    if (td.GetSteepness(u, v) > 60f) continue;
+                    float roll = (float)rnd.NextDouble(), s, slim;
+                    int proto;
+                    if (roll < 0.04f * k) { proto = Normal + 1; s = Rf(rnd, 9f, 13f); slim = 0.5f; }
+                    else if (roll < 0.22f * k) { proto = Normal; s = Rf(rnd, 3.5f, 5.5f); slim = 0.7f; }
+                    else { proto = rnd.Next(Normal); s = Mathf.Lerp(1.4f, 2.8f, k) * Rf(rnd, 0.8f, 1.2f); slim = Rf(rnd, 0.8f, 1.25f); }
+                    list.Add(new TreeInstance
+                    {
+                        position = new Vector3(u, 0f, v),
+                        prototypeIndex = proto,
+                        heightScale = s,
+                        widthScale = s * slim,
+                        rotation = (float)rnd.NextDouble() * Mathf.PI * 2f,
+                        color = new Color32(255, 255, 255, 255),
+                        lightmapColor = new Color32(255, 255, 255, 255)
+                    });
+                }
+            td.SetTreeInstances(list.ToArray(), true);
+            total += list.Count - before;
+        }
+        EditorUtility.ClearProgressBar();
+        var mk = new GameObject("BorderTrees");
+        Undo.RegisterCreatedObjectUndo(mk, "Border Trees");
+        UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+        Debug.Log($"[Terrain] Corona: {total} arboles agregados en los bordes.");
+    }
+
+    static Rect MapRect(Terrain[] ts)
+    {
+        float x0 = float.MaxValue, z0 = float.MaxValue, x1 = float.MinValue, z1 = float.MinValue;
+        foreach (var t in ts)
+        {
+            Vector3 p = t.transform.position, s = t.terrainData.size;
+            x0 = Mathf.Min(x0, p.x); z0 = Mathf.Min(z0, p.z); x1 = Mathf.Max(x1, p.x + s.x); z1 = Mathf.Max(z1, p.z + s.z);
+        }
+        return Rect.MinMaxRect(x0, z0, x1, z1);   // yMin/yMax = Z
+    }
+
+    static float EdgeDist(Rect m, float x, float z) => Mathf.Min(Mathf.Min(x - m.xMin, m.xMax - x), Mathf.Min(z - m.yMin, m.yMax - z));
+
+    // Ancho local de la colina: varia a lo largo del borde.
+    static float RimW(float x, float z) => RimWidth * (0.6f + 0.8f * Mathf.PerlinNoise(x * 0.006f + 3f, z * 0.006f + 7f));
+
+    // Altura (m) agregada en un punto: cuenco que sube hacia el limite, con altura y rugosidad irregulares.
+    static float Rise(Rect m, float x, float z)
+    {
+        float d = EdgeDist(m, x, z);
+        if (d > RimWidth * 1.4f) return 0f;
+        float t = Mathf.Clamp01(1f - d / RimW(x, z));
+        if (t <= 0f) return 0f;
+        float n2 = Mathf.PerlinNoise(x * 0.02f + 11f, z * 0.02f + 5f), n3 = Mathf.PerlinNoise(x * 0.08f, z * 0.08f + 13f);
+        return (RimHeight * (0.55f + 0.9f * n2) * (0.85f + 0.3f * n3) + (n3 - 0.5f) * 8f) * Mathf.Pow(t, 1.5f);
+    }
+
     static bool Blocked(Vector3 c, Collider[] buf)
     {
         int k = Physics.OverlapSphereNonAlloc(c, ClearRadius, buf, ~0, QueryTriggerInteraction.Ignore);
@@ -1671,5 +1805,295 @@ static class TerrainTools
             if (i == 0 ? (!closed || gap[segs - 1]) : gap[i - 1]) Q(aO, aO + up, aS + up, aS);
             if (i == segs - 1 ? (!closed || gap[0]) : gap[i + 1]) Q(bS, bS + up, bO + up, bO);
         }
+    }
+
+    // 15) ASSET: consola de nave espacial (1-3 modulos). Cada ejecucion genera una variante distinta como
+    //     Assets/Prefabs/Consoles/Console_####.prefab: carcasa, pantallas, botones, teclados, interruptores,
+    //     monitor superior opcional y cables que caen por detras y serpentean por el piso.
+    //     UNA sola malla con un submesh por material (pantallas y botones emisivos) y un solo BoxCollider.
+    static List<CombineInstance>[] CI;
+    static Mesh CubeM;
+
+    static void Cb(int m, Matrix4x4 p, float x, float y, float z, float sx, float sy, float sz)
+    {
+        CI[m].Add(new CombineInstance { mesh = CubeM, transform = p * Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.identity, new Vector3(sx, sy, sz)) });
+    }
+
+    [MenuItem("Tools/Terrain/15 Console Panel (genera prefab)")]
+    static void ConsolePanel()
+    {
+        const string dir = "Assets/Prefabs/Consoles";
+        Directory.CreateDirectory(dir);
+        string[] nm = { "Body", "Dark", "Screen", "Red", "Amber", "Green", "Cyan", "Cable" };   // 2..6 = emisivos
+        Color[] cl = { Color.gray, new Color(.03f, .035f, .04f), new Color(.1f, .8f, .7f), new Color(1f, .1f, .1f), new Color(1f, .6f, 0f), new Color(.2f, 1f, .3f), new Color(.2f, .8f, 1f), new Color(.02f, .02f, .02f) };
+        var mats = new Material[nm.Length];
+        for (int i = 0; i < nm.Length; i++)
+        {
+            mats[i] = i == 0 ? MetalMat() : Mat(dir, nm[i], cl[i]);
+            if (i < 2 || i > 6 || !mats[i].HasProperty("_EmissionColor")) continue;
+            mats[i].EnableKeyword("_EMISSION");
+            mats[i].SetColor("_EmissionColor", cl[i] * 1.5f);
+            EditorUtility.SetDirty(mats[i]);
+        }
+
+        var rnd = new System.Random();
+        string name = "Console_" + rnd.Next(1000, 9999);
+        CubeM = Resources.GetBuiltinResource<Mesh>("Cube.fbx");
+        CI = new List<CombineInstance>[nm.Length];
+        for (int i = 0; i < nm.Length; i++) CI[i] = new List<CombineInstance>();
+
+        const float MW = 0.9f;                       // ancho por modulo; frente = +Z, cables hacia -Z
+        int n = rnd.Next(1, 4);
+        float W = n * MW, x0 = -W / 2f;
+        var I = Matrix4x4.identity;
+        Cb(0, I, 0, .45f, 0, W, .9f, .7f);
+        Cb(1, I, 0, .04f, .02f, W + .04f, .08f, .74f);
+
+        for (int k = 0; k < n; k++)
+        {
+            float cx = x0 + (k + .5f) * MW;
+            var D = Matrix4x4.TRS(new Vector3(cx, 1f, .05f), Quaternion.Euler(25f, 0f, 0f), Vector3.one);   // cubierta inclinada
+            Cb(1, D, 0, 0, 0, MW - .04f, .06f, .66f);
+            int kind = rnd.Next(3);
+            if (kind == 0)       // pantalla grande + fila de botones
+            {
+                Cb(1, D, 0, .035f, -.12f, .74f, .02f, .3f);
+                Cb(rnd.Next(2, 7), D, 0, .045f, -.12f, .68f, .02f, .24f);
+                for (int b = 0; b < 6; b++) Cb(rnd.Next(3, 7), D, -.3f + b * .12f, .05f, .22f, .06f, .04f, .06f);
+            }
+            else if (kind == 1)  // teclado 3x4 + tira de pantalla + botones laterales
+            {
+                Cb(1, D, 0, .035f, -.22f, .7f, .02f, .1f);
+                Cb(rnd.Next(2, 7), D, 0, .045f, -.22f, .64f, .02f, .06f);
+                for (int r = 0; r < 4; r++)
+                    for (int c = 0; c < 3; c++) Cb(1, D, -.22f + c * .1f, .06f, -.08f + r * .1f, .08f, .05f, .08f);
+                for (int b = 0; b < 4; b++) Cb(rnd.Next(3, 7), D, .22f, .05f, -.08f + b * .1f, .06f, .04f, .06f);
+            }
+            else                 // matriz de botones + interruptores
+            {
+                for (int r = 0; r < 4; r++)
+                    for (int c = 0; c < 6; c++) Cb(rnd.Next(4) == 0 ? 1 : rnd.Next(3, 7), D, -.3f + c * .12f, .05f, -.2f + r * .11f, .05f, .04f, .05f);
+                for (int b = 0; b < 5; b++) Cb(0, D, -.24f + b * .12f, .07f, .24f, .025f, .1f, .025f);
+            }
+            if (rnd.Next(2) == 0)  // monitor superior
+            {
+                var M = Matrix4x4.TRS(new Vector3(cx, 1.45f, -.15f), Quaternion.Euler(-10f, 0f, 0f), Vector3.one);
+                Cb(1, I, cx, 1.2f, -.22f, .1f, .2f, .1f);
+                Cb(1, M, 0, 0, 0, .8f, .5f, .06f);
+                Cb(rnd.Next(2, 7), M, 0, 0, .035f, .72f, .42f, .02f);
+            }
+        }
+
+        // Cables: nacen en la cara trasera, caen al piso y serpentean.
+        var v = new List<Vector3>(); var t = new List<int>();
+        int nc = rnd.Next(3, 7);
+        for (int k = 0; k < nc; k++)
+        {
+            Vector3 a = new Vector3(Rf(rnd, x0 + .1f, -x0 - .1f), Rf(rnd, .2f, .8f), -.35f);
+            Vector3 b = new Vector3(Rf(rnd, x0 - 2f, -x0 + 2f), .03f, -Rf(rnd, 1f, 3f));
+            var P = new Vector3[10]; var R = new float[10];
+            for (int i = 0; i < 10; i++)
+            {
+                float f = i / 9f;
+                P[i] = Vector3.Lerp(a, b, f);
+                P[i].y = Mathf.Lerp(a.y, .03f, Mathf.Sqrt(f));
+                P[i].x += Mathf.Sin(f * 6f + k) * .1f * f;
+                R[i] = .025f;
+            }
+            Tube(v, t, P, R, 5);
+        }
+        var cm = new Mesh();
+        cm.SetVertices(v); cm.SetTriangles(t, 0); cm.RecalculateNormals();
+        CI[7].Add(new CombineInstance { mesh = cm, transform = I });
+
+        var parts = new List<CombineInstance>(); var ms = new List<Material>();
+        for (int i = 0; i < nm.Length; i++)
+        {
+            if (CI[i].Count == 0) continue;
+            var mi = new Mesh();
+            mi.CombineMeshes(CI[i].ToArray(), true, true);
+            parts.Add(new CombineInstance { mesh = mi, transform = I });
+            ms.Add(mats[i]);
+        }
+        var mesh = new Mesh { name = name + "_Mesh" };
+        mesh.CombineMeshes(parts.ToArray(), false, false);
+        mesh.RecalculateBounds();
+        AssetDatabase.CreateAsset(mesh, $"{dir}/{name}_Mesh.asset");
+
+        var root = new GameObject(name);
+        root.AddComponent<MeshFilter>().sharedMesh = mesh;
+        root.AddComponent<MeshRenderer>().sharedMaterials = ms.ToArray();
+        var bc = root.AddComponent<BoxCollider>();
+        bc.center = new Vector3(0f, .6f, 0f); bc.size = new Vector3(W, 1.2f, .7f);
+        var go = PrefabUtility.SaveAsPrefabAsset(root, $"{dir}/{name}.prefab");
+        Object.DestroyImmediate(root);
+        AssetDatabase.SaveAssets();
+        Selection.activeObject = go;
+        EditorGUIUtility.PingObject(go);
+        Debug.Log($"[Console] {name}: {n} modulos, {nc} cables, en {dir}");
+    }
+
+    // 16) CRISTALES: racimos de puntas y estalagmitas PROCEDURALES (6 variantes de malla, sin FBX) de vidrio translucido y
+    //     luminoso (violeta, rojo, amarillo; la luz sale solo del material emisivo, sin Lights). Aparecen SOLO en laderas
+    //     inclinadas (>= CrystalMinSlope), sorteadas por todo el mapa, orientadas con la pendiente.
+    //     Requiere Crystal.cs fuera de Editor. Al romperse (Damage) sueltan gemas apilables.
+    //     ACUMULABLE: cada ejecucion AGREGA racimos nuevos (sin pisar los existentes); 17 borra todos.
+    //     CrystalScale = tamano de los racimos (4 = ~9-14 m de alto antes de la variacion por instancia).
+    const int CrystalSites = 400, CrystalVariants = 6;
+    const float CrystalMinSlope = 30f, CrystalScale = 4f;
+    const string CrDir = "Assets/Prefabs/CrystalsXL";
+
+    [MenuItem("Tools/Terrain/16 Crystals (laderas)")]
+    static void Crystals()
+    {
+        var ts = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
+        if (ts.Length == 0) return;
+        Directory.CreateDirectory(CrDir);
+        string[] nm = { "Violet", "Red", "Yellow" };
+        Color[] cl = { new Color(.6f, .1f, 1f), new Color(1f, .03f, .03f), new Color(1f, .85f, .02f) };
+        // Los assets se crean una sola vez y se reutilizan en las siguientes pasadas.
+        bool fresh = !File.Exists($"{CrDir}/Pick_Violet.prefab");
+        Mesh gem = null; var meshes = new Mesh[CrystalVariants];
+        if (fresh)
+        {
+            gem = Spikes($"{CrDir}/Gem.asset", 99, 1, .5f);
+            for (int i = 0; i < CrystalVariants; i++) meshes[i] = Spikes($"{CrDir}/Cluster{i}.asset", 10 + i, 5 + i % 5, (2.2f + i * .25f) * CrystalScale);
+        }
+        var pk = new GameObject[3]; var cr = new GameObject[3 * CrystalVariants];
+        for (int c = 0; c < 3; c++)
+        {
+            var m = fresh ? Glass(nm[c], cl[c]) : null;
+            pk[c] = fresh ? CrPrefab(gem, m, $"{CrDir}/Pick_{nm[c]}.prefab", c, null) : AssetDatabase.LoadAssetAtPath<GameObject>($"{CrDir}/Pick_{nm[c]}.prefab");
+            for (int k = 0; k < CrystalVariants; k++)
+                cr[c * CrystalVariants + k] = fresh ? CrPrefab(meshes[k], m, $"{CrDir}/Crystal_{nm[c]}_{k}.prefab", c, pk) : AssetDatabase.LoadAssetAtPath<GameObject>($"{CrDir}/Crystal_{nm[c]}_{k}.prefab");
+        }
+
+        var root = GameObject.Find("Crystals");
+        if (root == null) { root = new GameObject("Crystals"); Undo.RegisterCreatedObjectUndo(root, "Crystals"); }
+        Physics.SyncTransforms();
+        var sites = new List<Vector3>();
+        foreach (Transform ch in root.transform) sites.Add(ch.position);   // lo ya colocado cuenta para la separacion
+        var buf = new Collider[8]; var rnd = new System.Random();
+        int quota = CrystalSites / ts.Length + 1, total = 0;
+        foreach (var t in ts)
+        {
+            var td = t.terrainData; Vector3 p = t.transform.position, sz = td.size;
+            int got = 0;
+            for (int tries = 0; tries < quota * 80 && got < quota; tries++)
+            {
+                float u = Rf(rnd, 0f, 1f), v = Rf(rnd, 0f, 1f);
+                if (td.GetSteepness(u, v) < CrystalMinSlope) continue;
+                var c = new Vector3(p.x + u * sz.x, p.y + td.GetInterpolatedHeight(u, v), p.z + v * sz.z);
+                if (sites.Exists(s => (s - c).sqrMagnitude < 64f * CrystalScale * CrystalScale) || Blocked(c + Vector3.up * 2f, buf)) continue;
+                sites.Add(c); got++;
+                var up = Quaternion.FromToRotation(Vector3.up, Vector3.Slerp(Vector3.up, td.GetInterpolatedNormal(u, v), .6f));
+                int col = rnd.Next(3);
+                for (int j = rnd.Next(1, 4); j > 0; j--)
+                {
+                    float wx = c.x + Rf(rnd, -2.5f, 2.5f) * CrystalScale, wz = c.z + Rf(rnd, -2.5f, 2.5f) * CrystalScale;
+                    var g = (GameObject)PrefabUtility.InstantiatePrefab(cr[col * CrystalVariants + rnd.Next(CrystalVariants)], root.transform);
+                    g.transform.SetPositionAndRotation(new Vector3(wx, p.y + t.SampleHeight(new Vector3(wx, 0f, wz)) - .1f, wz), up * Quaternion.Euler(0f, Rf(rnd, 0f, 360f), 0f));
+                    g.transform.localScale = Vector3.one * Rf(rnd, .6f, 1.8f);
+                    total++;
+                }
+            }
+        }
+        UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+        Debug.Log($"[Crystals] +{total} racimos nuevos, {root.transform.childCount} en total (pendiente >= {CrystalMinSlope} grados). Si salen pocos, baja CrystalMinSlope; ejecuta de nuevo para sumar mas.");
+    }
+
+    // 17) Borra todos los cristales colocados por 16.
+    [MenuItem("Tools/Terrain/17 Clear Crystals")]
+    static void ClearCrystals()
+    {
+        var old = GameObject.Find("Crystals");
+        if (old == null) return;
+        Undo.DestroyObjectImmediate(old);
+        UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
+        Debug.Log("[Crystals] Borrados.");
+    }
+
+    // Vidrio: URP Lit transparente "premultiply" (la emision y el brillo no se atenuan con la transparencia).
+    static Material Glass(string n, Color c)
+    {
+        string path = $"{CrDir}/Glass{n}.mat";
+        var m = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+        m.SetColor("_BaseColor", new Color(c.r, c.g, c.b, .4f));
+        m.SetFloat("_Surface", 1f); m.SetFloat("_Blend", 1f); m.SetFloat("_Cull", 0f); m.SetFloat("_ZWrite", 0f);
+        m.SetFloat("_SrcBlend", 1f); m.SetFloat("_DstBlend", 10f); m.SetFloat("_SrcBlendAlpha", 1f); m.SetFloat("_DstBlendAlpha", 10f);
+        m.SetFloat("_Smoothness", 1f); m.SetFloat("_Metallic", 0f);
+        m.SetOverrideTag("RenderType", "Transparent");
+        m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); m.EnableKeyword("_ALPHAPREMULTIPLY_ON"); m.EnableKeyword("_EMISSION");
+        m.SetColor("_EmissionColor", c * 3f);
+        m.renderQueue = 3000;
+        AssetDatabase.CreateAsset(m, path);
+        return m;
+    }
+
+    static void Fc(List<Vector3> v, List<int> t, Vector3 a, Vector3 b, Vector3 c)
+    {
+        t.Add(v.Count); t.Add(v.Count + 1); t.Add(v.Count + 2);
+        v.Add(a); v.Add(b); v.Add(c);
+    }
+
+    // Racimo de n puntas facetadas (prisma de 5-7 lados que se afina hasta la punta), la primera es la mayor y central.
+    static Mesh Spikes(string path, int seed, int n, float hmax)
+    {
+        var r = new System.Random(seed);
+        var v = new List<Vector3>(); var t = new List<int>();
+        for (int i = 0; i < n; i++)
+        {
+            bool one = n == 1, main = i == 0;
+            float h = main ? hmax : Rf(r, .25f, .7f) * hmax, rad = .05f + h * Rf(r, .06f, .13f);
+            Vector2 o = main ? Vector2.zero : new Vector2(Rf(r, -1f, 1f), Rf(r, -1f, 1f)).normalized * Rf(r, .25f, .9f) * hmax / 2.5f;
+            var q = one ? Quaternion.identity : Quaternion.Euler(Rf(r, -32f, 32f), Rf(r, 0f, 360f), Rf(r, -32f, 32f));
+            var b = new Vector3(o.x, one ? 0f : -.08f * hmax, o.y);
+            int s = r.Next(5, 8);
+            var a = new Vector3[s]; var m = new Vector3[s];
+            for (int k = 0; k < s; k++)
+            {
+                float ang = Mathf.PI * 2f * k / s;
+                var d = new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang));
+                a[k] = b + q * (d * rad);
+                m[k] = b + q * (d * rad * .8f + Vector3.up * h * .72f);
+            }
+            Vector3 tip = b + q * new Vector3(rad * .2f, h, 0f);
+            for (int k = 0; k < s; k++)
+            {
+                int j = (k + 1) % s;
+                Fc(v, t, a[k], m[k], a[j]); Fc(v, t, a[j], m[k], m[j]); Fc(v, t, m[k], tip, m[j]);
+            }
+        }
+        var mesh = new Mesh { name = Path.GetFileNameWithoutExtension(path) };
+        mesh.SetVertices(v); mesh.SetTriangles(t, 0);
+        mesh.RecalculateNormals(); mesh.RecalculateBounds();
+        AssetDatabase.CreateAsset(mesh, path);
+        return mesh;
+    }
+
+    // drops == null -> gema recolectable con Rigidbody; si no -> racimo minable.
+    static GameObject CrPrefab(Mesh mesh, Material m, string path, int color, GameObject[] drops)
+    {
+        var root = new GameObject(Path.GetFileNameWithoutExtension(path));
+        root.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var r = root.AddComponent<MeshRenderer>();
+        r.sharedMaterial = m;
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        Bounds b = mesh.bounds;
+        if (drops == null)
+        {
+            root.AddComponent<Rigidbody>().mass = .1f;
+            var sc = root.AddComponent<SphereCollider>(); sc.center = b.center; sc.radius = b.extents.y;
+            root.AddComponent<CrystalPickup>().color = color;
+        }
+        else
+        {
+            var bc = root.AddComponent<BoxCollider>();
+            bc.center = b.center; bc.size = new Vector3(b.size.x * .7f, b.size.y, b.size.z * .7f);
+            var c = root.AddComponent<Crystal>(); c.color = color; c.drops = drops;
+        }
+        var go = PrefabUtility.SaveAsPrefabAsset(root, path);
+        Object.DestroyImmediate(root);
+        return go;
     }
 }
