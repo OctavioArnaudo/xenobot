@@ -1,16 +1,17 @@
-// Poner en una carpeta "Editor" (Assets/Editor/TerrainTools.cs). Menú: Tools/Terrain
+ï»¿// Poner en una carpeta "Editor" (Assets/Editor/TerrainTools.cs). Menu: Tools/Terrain
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+using ESM = UnityEditor.SceneManagement.EditorSceneManager;
 
 static class TerrainTools
 {
     static Terrain[] Selected() => Selection.GetFiltered<Terrain>(SelectionMode.Deep);
 
-    // 1) Todos los terrenos: distancias de dibujo + informe de por qué los árboles pueden no verse.
+    // 1) Todos los terrenos: distancias de dibujo + informe de por que los arboles pueden no verse.
     [MenuItem("Tools/Terrain/1 Fix Tree Distance + Report")]
     static void Fix()
     {
@@ -49,7 +50,7 @@ static class TerrainTools
         Debug.Log(sb.ToString());
     }
 
-    // 2) Borra TODOS los árboles de los terrenos seleccionados (seleccionar TerrainsPrefab sirve).
+    // 2) Borra TODOS los arboles de los terrenos seleccionados (seleccionar TerrainsPrefab sirve).
     [MenuItem("Tools/Terrain/2 Clear Trees (seleccion)")]
     static void ClearTrees()
     {
@@ -63,7 +64,7 @@ static class TerrainTools
         Debug.Log($"[Terrain] Arboles borrados en {ts.Length} terrenos.");
     }
 
-    // 3) Pasto automático por pendiente y ruido (textura de pasto generada una sola vez).
+    // 3) Pasto automatico por pendiente y ruido (textura de pasto generada una sola vez).
     [MenuItem("Tools/Terrain/3 Fill Grass (seleccion)")]
     static void Grass()
     {
@@ -107,13 +108,13 @@ static class TerrainTools
         EditorUtility.ClearProgressBar();
     }
 
-    // 4) Une los bordes de TODOS los terrenos de la escena (no depende de la selección).
-    //    Detecta vecinos por solapamiento (cualquier tamaño/resolución), alinea posiciones, iguala la altura
+    // 4) Une los bordes de TODOS los terrenos de la escena (no depende de la seleccion).
+    //    Detecta vecinos por solapamiento (cualquier tamano/resolucion), alinea posiciones, iguala la altura
     //    mundial del borde y suaviza una franja. Escribe un informe completo en la Console.
     [MenuItem("Tools/Terrain/4 Stitch Edges (todos)")]
     static void Stitch()
     {
-        const float MaxGap = 200f;       // hueco máximo entre terrenos que se sigue considerando vecino
+        const float MaxGap = 200f;       // hueco maximo entre terrenos que se sigue considerando vecino
         const int Band = 32, Passes = 3; // franja suavizada (muestras) y pasadas para esquinas
 
         var ts = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
@@ -147,7 +148,7 @@ static class TerrainTools
             if (right[i] < 0 && up[i] < 0 && left[i] < 0 && down[i] < 0) sb.AppendLine($"  SIN VECINOS: {Id(ts[i])} (a mas de {MaxGap}m o sin solape)");
         }
 
-        // 1) Posiciones exactas (solo si los tamaños coinciden), en orden de grilla.
+        // 1) Posiciones exactas (solo si los tamanos coinciden), en orden de grilla.
         foreach (int i in Enumerable.Range(0, n).OrderBy(k => ts[k].transform.position.z).ThenBy(k => ts[k].transform.position.x))
         {
             Vector3 a = ts[i].transform.position, s = ts[i].terrainData.size;
@@ -205,7 +206,7 @@ static class TerrainTools
     }
 
     // Lleva el borde de 'a' (side 0=derecha 1=izquierda 2=arriba 3=abajo) a la altura mundial media con 'b',
-    // y reparte el ajuste en una franja con caída suave.
+    // y reparte el ajuste en una franja con caida suave.
     static void Pull(Terrain a, float[,] A, Terrain b, float[,] B, int side, int band)
     {
         int ra = A.GetLength(0);
@@ -233,7 +234,7 @@ static class TerrainTools
         }
     }
 
-    // 5) Pinta TODOS los terrenos con 4 capas (pasto, barro oscuro, tierra, tierra seca clara) según altura,
+    // 5) Pinta TODOS los terrenos con 4 capas (pasto, barro oscuro, tierra, tierra seca clara) segun altura,
     //    pendiente y curvatura: valles/bajos oscuros, crestas claras, laderas de tierra. Continuo entre planchas.
     //    Las texturas se generan una vez en Assets/Textures/TerrainPaint (puedes reemplazarlas por las tuyas).
     const float CavGain = 10f;                    // sensibilidad a valles/crestas
@@ -386,7 +387,7 @@ static class TerrainTools
         imp.SaveAndReimport();
     }
 
-    // Ruido de valor periódico (tileable); px/py = período por eje.
+    // Ruido de valor periodico (tileable); px/py = periodo por eje.
     static int Mod(int a, int m) => ((a % m) + m) % m;
     static float Hash(int x, int y)
     {
@@ -407,12 +408,12 @@ static class TerrainTools
         return sum / tot;
     }
 
-    // 6) Rellena TODOS los terrenos con pinos oscuros, deformes e intrincados (4 variantes, tamaño aleatorio, en
-    //    manchas de bosque) y agrega un segundo pasto: yuyos finos. Reemplaza los árboles actuales.
+    // 6) Rellena TODOS los terrenos con pinos oscuros, deformes e intrincados (4 variantes, tamano aleatorio, en
+    //    manchas de bosque) y agrega un segundo pasto: yuyos finos. Reemplaza los arboles actuales.
     //    Mallas y prefabs se generan una vez en Assets/Prefabs/ForestFast (borra esa carpeta para regenerarlos).
-    const float TreeSpacing = 10f;   // metros entre árboles (menos = más denso)
+    const float TreeSpacing = 10f;   // metros entre arboles (menos = mas denso)
     const float MaxTreeSlope = 30f;  // no crecen en pendientes mayores
-    const float ClearRadius = 2.5f;  // evita árboles dentro de edificios u objetos con collider
+    const float ClearRadius = 2.5f;  // evita arboles dentro de edificios u objetos con collider
 
     [MenuItem("Tools/Terrain/6 Fill Forest + Weeds (todos)")]
     static void Forest()
@@ -549,10 +550,10 @@ static class TerrainTools
         return list;
     }
 
-    // 8) Cráteres de bombas: manchones oscuros pintados en el alphamap (capa Mud, sin costo extra), sin arboles ni
+    // 8) Crateres de bombas: manchones oscuros pintados en el alphamap (capa Mud, sin costo extra), sin arboles ni
     //    pasto adentro, y una columna de humo permanente por cada uno. El humo es UNA malla estatica horneada
     //    (54 vertices, sin particulas, sin CPU): se ve desde lejos como cola inclinada por el viento.
-    //    Ejecutar despues de 5/6/7 (esos pisan la pintura y los arboles). Re-ejecutar regenera los cráteres.
+    //    Ejecutar despues de 5/6/7 (esos pisan la pintura y los arboles). Re-ejecutar regenera los crateres.
     const int CraterCount = 12;
     const float CraterGap = 200f, WindYaw = 70f;   // separacion minima (m) y direccion del viento (grados)
     const string BombDir = "Assets/Prefabs/Bombs";
@@ -597,7 +598,7 @@ static class TerrainTools
             r.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
         }
         UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
-        Debug.Log($"[Terrain] {done.Count} cráteres con humo. La camara 'far' debe alcanzar la distancia a la que quieras ver las columnas.");
+        Debug.Log($"[Terrain] {done.Count} crateres con humo. La camara 'far' debe alcanzar la distancia a la que quieras ver las columnas.");
     }
 
     static bool Box(Vector3 sz, int res, float cx, float cz, float r, out int x0, out int y0, out int w, out int h)
@@ -708,7 +709,7 @@ static class TerrainTools
     }
 
     // 9) Pasto alto y muy denso en las zonas bajas: tercer detalle (billboards, sin mallas). Se suma al pasto existente.
-    //    Ejecutar antes de 8 (los cráteres lo borran dentro de su radio).
+    //    Ejecutar antes de 8 (los crateres lo borran dentro de su radio).
     [MenuItem("Tools/Terrain/9 Fill Tall Grass (zonas bajas)")]
     static void TallGrass()
     {
@@ -878,7 +879,7 @@ static class TerrainTools
         return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
     }
 
-    // ---- Pinos procedurales: tronco torcido + copas en estrella irregulares y caídas + ramas finas. LOD0/LOD1. ----
+    // ---- Pinos procedurales: tronco torcido + copas en estrella irregulares y caidas + ramas finas. LOD0/LOD1. ----
     static TreePrototype[] Pines()
     {
         const string dir = "Assets/Prefabs/ForestFast";
@@ -952,7 +953,7 @@ static class TerrainTools
 
     static Mesh Build(int variant, int lod)
     {
-        var rt = new System.Random(900 + variant * 17);   // tronco y copas: idénticos en LOD0 y LOD1
+        var rt = new System.Random(900 + variant * 17);   // tronco y copas: identicos en LOD0 y LOD1
         var rb = new System.Random(500 + variant * 31);   // ramas finas: solo LOD0
         float H = Rf(rt, 8f, 15f), amp = Rf(rt, 0.4f, 1.1f), lean = Rf(rt, -1.4f, 1.4f);
         float p1 = Rf(rt, 0f, 6.28f), p2 = Rf(rt, 0f, 6.28f), r0 = Rf(rt, 0.26f, 0.45f);
@@ -997,7 +998,7 @@ static class TerrainTools
             }
             Vector3 apex = c + q * new Vector3(0f, size * 0.22f, 0f);
 
-            // Dos caras con vértices separados: iluminadas bien desde arriba y desde abajo.
+            // Dos caras con vertices separados: iluminadas bien desde arriba y desde abajo.
             if (lod == 1 && ti % 2 == 1) continue;   // LOD1: la mitad de los pisos
             int a0 = vF.Count;
             vF.Add(apex); vF.AddRange(ring);
@@ -1058,7 +1059,7 @@ static class TerrainTools
         return mesh;
     }
 
-    // Tubo de sección poligonal siguiendo una curva (tronco y ramas).
+    // Tubo de seccion poligonal siguiendo una curva (tronco y ramas).
     static void Tube(List<Vector3> v, List<int> t, Vector3[] pts, float[] rad, int sides)
     {
         int b = v.Count, n = pts.Length;
@@ -1212,48 +1213,135 @@ static class TerrainTools
         Save(np, nm, S, true);
     }
 
-    // 11) ASSET: plataforma para base urbana futurista (losa de metal oxidado + cerco perimetral de malla de alambre
-    //     con una abertura en cada lado). Genera el prefab Assets/Prefabs/UrbanBase/UrbanBasePlatform.prefab, listo
-    //     para arrastrar a la escena. Todo con collider solido; las aberturas quedan libres.
-    const float BaseSize = 40f, BaseThick = 0.6f, FenceH = 3f, PanelW = 4f, GateW = 8f;
+    // 11) ASSET: plataforma OVALADA para base urbana futurista (losa de metal oxidado + cerco perimetral de malla de
+    //     alambre con 4 aberturas). Cada ejecucion genera una variante distinta (ovalo y deformacion al azar) como
+    //     Assets/Prefabs/UrbanBase/UrbanBase_####.prefab. Todo con collider solido; las aberturas quedan libres.
+    const float BaseThick = 0.6f, FenceH = 3f, PanelW = 4f;
 
     [MenuItem("Tools/Terrain/11 Urban Base Platform (genera prefab)")]
     static void UrbanBase()
     {
         const string dir = "Assets/Prefabs/UrbanBase";
         Directory.CreateDirectory(dir);
-        Material metal = MetalMat(), wire = WireMat(), deck = DeckMat();
-        var root = new GameObject("UrbanBasePlatform");
-        Blk(root.transform, "Platform", new Vector3(0, BaseThick / 2, 0), new Vector3(BaseSize, BaseThick, BaseSize), deck, true);
+        var rnd = new System.Random();
+        string name = "UrbanBase_" + rnd.Next(1000, 9999);
+        float rx = Rf(rnd, 20f, 25f), rz = Rf(rnd, 12f, 16f);
+        float a1 = Rf(rnd, 0.02f, 0.06f), a2 = Rf(rnd, 0.02f, 0.05f), p1 = Rf(rnd, 0f, 6.28f), p2 = Rf(rnd, 0f, 6.28f);
 
-        int n = Mathf.RoundToInt(BaseSize / PanelW);
-        float z = BaseSize / 2 - 0.15f, y = BaseThick + FenceH / 2;
-        for (int k = 0; k < 4; k++)
+        // Contorno oval con deformacion suave, remuestreado en tramos de ~PanelW.
+        const int D = 720;
+        var dense = new Vector2[D + 1];
+        var cum = new float[D + 1];
+        for (int i = 0; i <= D; i++)
         {
-            var side = new GameObject("Side" + k).transform;
-            side.SetParent(root.transform, false);
-            side.localRotation = Quaternion.Euler(0, 90 * k, 0);
-            for (int i = 0; i < n; i++)
-            {
-                bool panel = Mathf.Abs(-BaseSize / 2 + PanelW * (i + 0.5f)) >= GateW / 2;
-                bool prev = i > 0 && Mathf.Abs(-BaseSize / 2 + PanelW * (i - 0.5f)) >= GateW / 2;
-                float cx = -BaseSize / 2 + PanelW * (i + 0.5f), bx = -BaseSize / 2 + PanelW * i;
-                if (panel)
-                {
-                    Blk(side, "Wire", new Vector3(cx, y, z), new Vector3(PanelW, FenceH, 0.04f), wire, true);
-                    Blk(side, "Rail", new Vector3(cx, BaseThick + FenceH, z), new Vector3(PanelW, 0.1f, 0.1f), metal, false);
-                }
-                if (panel || prev)
-                    Blk(side, "Post", new Vector3(bx, y + 0.1f, z), new Vector3(0.18f, FenceH + 0.2f, 0.18f), metal, true);
-            }
+            float t = i * Mathf.PI * 2f / D, e = 1f + a1 * Mathf.Sin(2f * t + p1) + a2 * Mathf.Sin(3f * t + p2);
+            dense[i] = new Vector2(rx * e * Mathf.Cos(t), rz * e * Mathf.Sin(t));
+            if (i > 0) cum[i] = cum[i - 1] + Vector2.Distance(dense[i], dense[i - 1]);
         }
-        var go = PrefabUtility.SaveAsPrefabAsset(root, dir + "/UrbanBasePlatform.prefab");
+        int M = Mathf.Max(12, Mathf.RoundToInt(cum[D] / PanelW));
+        var S = new Vector2[M];
+        for (int j = 0, k = 0; j < M; j++)
+        {
+            float d = cum[D] * j / M;
+            while (cum[k + 1] < d) k++;
+            S[j] = Vector2.Lerp(dense[k], dense[k + 1], Mathf.InverseLerp(cum[k], cum[k + 1], d));
+        }
+
+        // Losa: tapa en abanico + pared lateral.
+        var vt = new List<Vector3> { new Vector3(0, BaseThick, 0) };
+        var uv = new List<Vector2> { Vector2.zero };
+        var tr = new List<int>();
+        for (int j = 0; j < M; j++) { vt.Add(new Vector3(S[j].x, BaseThick, S[j].y)); uv.Add(S[j] / 40f); }
+        for (int j = 0; j < M; j++) { tr.Add(0); tr.Add(1 + (j + 1) % M); tr.Add(1 + j); }
+        int b = vt.Count;
+        for (int j = 0; j <= M; j++)
+        {
+            var p = S[j % M];
+            float u = cum[D] * j / M / 40f;
+            vt.Add(new Vector3(p.x, BaseThick, p.y)); uv.Add(new Vector2(u, BaseThick / 40f));
+            vt.Add(new Vector3(p.x, 0f, p.y)); uv.Add(new Vector2(u, 0f));
+        }
+        for (int j = 0; j < M; j++)
+        {
+            int ti = b + 2 * j, bi = ti + 1, tn = ti + 2, bn = ti + 3;
+            tr.Add(bi); tr.Add(ti); tr.Add(tn);
+            tr.Add(bi); tr.Add(tn); tr.Add(bn);
+        }
+        var mesh = new Mesh { name = name + "_Mesh" };
+        mesh.SetVertices(vt);
+        mesh.SetUVs(0, uv);
+        mesh.SetTriangles(tr, 0);
+        mesh.RecalculateNormals();
+        mesh.RecalculateTangents();
+        mesh.RecalculateBounds();
+        AssetDatabase.CreateAsset(mesh, $"{dir}/{name}_Mesh.asset");
+
+        Material metal = MetalMat(), deck = DeckMat();
+        var root = new GameObject(name);
+        var pg = new GameObject("Platform");
+        pg.transform.SetParent(root.transform, false);
+        pg.AddComponent<MeshFilter>().sharedMesh = mesh;
+        pg.AddComponent<MeshRenderer>().sharedMaterial = deck;
+        pg.AddComponent<MeshCollider>().sharedMesh = mesh;
+
+        // Cerco siguiendo el contorno; 4 aberturas de 2 paneles (~8 m) repartidas con algo de azar.
+        var open = new bool[M];
+        for (int g = 0; g < 4; g++) { int s = (M * g / 4 + rnd.Next(-1, 2) + M) % M; open[s] = open[(s + 1) % M] = true; }
+        float y = BaseThick + FenceH / 2;
+        IV.Clear(); IU.Clear(); IT.Clear();
+        for (int i = 0; i < M; i++)
+        {
+            Vector2 A = Inset(S[i]), B = Inset(S[(i + 1) % M]);
+            if (!open[i])
+            {
+                Vector3 d = new Vector3(B.x - A.x, 0f, B.y - A.y), mid = new Vector3(A.x, 0f, A.y) + d * 0.5f;
+                var q = Quaternion.LookRotation(d);
+                var pc = new GameObject("WireCollider");
+                pc.transform.SetParent(root.transform, false);
+                pc.transform.SetLocalPositionAndRotation(mid + Vector3.up * y, q);
+                pc.transform.localScale = new Vector3(0.04f, FenceH, d.magnitude);
+                pc.AddComponent<BoxCollider>();
+                Lattice(new Vector3(A.x, BaseThick, A.y), new Vector3(B.x, BaseThick, B.y));
+                Blk(root.transform, "Rail", mid + Vector3.up * (BaseThick + FenceH), new Vector3(0.1f, 0.1f, d.magnitude), metal, false).transform.localRotation = q;
+            }
+            if (!open[i] || !open[(i + M - 1) % M])
+                Blk(root.transform, "Post", new Vector3(A.x, y + 0.1f, A.y), new Vector3(0.18f, FenceH + 0.2f, 0.18f), metal, true);
+        }
+        var fg = new GameObject("Fence");
+        fg.transform.SetParent(root.transform, false);
+        fg.AddComponent<MeshFilter>().sharedMesh = Bake($"{dir}/{name}_Fence.asset");
+        fg.AddComponent<MeshRenderer>().sharedMaterial = metal;
+        var go = PrefabUtility.SaveAsPrefabAsset(root, $"{dir}/{name}.prefab");
         Object.DestroyImmediate(root);
         AssetDatabase.SaveAssets();
         Selection.activeObject = go;
         EditorGUIUtility.PingObject(go);
-        Debug.Log("[UrbanBase] Prefab creado en " + dir);
+        Debug.Log($"[UrbanBase] {name}: oval {rx * 2:0}x{rz * 2:0} m, {M} paneles, en {dir}");
     }
+
+    // Enrejado como geometria real (barras finas visibles por ambos lados) en lugar de textura con alfa:
+    // se ve a cualquier distancia y todos los paneles salen en UNA sola malla (1 draw call).
+    static void Lattice(Vector3 a, Vector3 b)
+    {
+        const float step = 0.25f, w = 0.02f;
+        Vector3 d = b - a, up = Vector3.up * FenceH, o = Vector3.up * w;
+        float len = d.magnitude;
+        Vector3 dir = d / len, ow = dir * w;
+        for (float s = 0f; s <= len + 0.001f; s += step)
+        {
+            Vector3 p = a + dir * Mathf.Min(s, len);
+            Both(p - ow, p - ow + up, p + ow + up, p + ow);
+        }
+        for (float h = 0f; h <= FenceH + 0.001f; h += step)
+        {
+            Vector3 p = Vector3.up * Mathf.Min(h, FenceH);
+            Both(a + p - o, a + p + o, b + p + o, b + p - o);
+        }
+    }
+
+    static void Both(Vector3 a, Vector3 b, Vector3 c, Vector3 d) { Q(a, b, c, d); Q(d, c, b, a); }
+
+    static Vector2 Inset(Vector2 p) => p - p.normalized * 0.15f;
 
     static GameObject Blk(Transform p, string n, Vector3 pos, Vector3 size, Material m, bool col)
     {
@@ -1315,5 +1403,301 @@ static class TerrainTools
         m.mainTextureScale = new Vector2(4f, 3f);
         AssetDatabase.CreateAsset(m, path);
         return m;
+    }
+
+    // 12) INTERIOR DE LABORATORIO + PUERTAS ENTRE ESCENAS (requiere SceneDoor.cs FUERA de la carpeta Editor).
+    //     Selecciona UN edificio del bioma y ejecuta el menu:
+    //     - Crea (o reutiliza) el grupo "Door_<lab>": "Trigger" (caja visible, se mueve/escala con Move/Scale) y
+    //       "ReturnPoint" (donde reaparece el jugador al salir). Ubicalos a ojo en la entrada de tu modelo.
+    //     - Crea la escena Assets/Scenes/Interiors/<Lab>_Interior.unity y el prefab en Assets/Prefabs/Interiors, con
+    //       2 salas circulares unidas por 2 tuneles curvos con costillas en arco, entrada al sur, luces y el trigger
+    //       "Exit" (muevelo a ojo en la puerta del interior).
+    //     - El interior queda lejos del mundo (InteriorOffset) y la escena se agrega a Build Settings.
+    //     En juego: un solo jugador y una sola camara; el interior se carga en modo aditivo al entrar y se descarga al salir.
+    const string InteriorDir = "Assets/Prefabs/Interiors", InteriorScenes = "Assets/Scenes/Interiors";
+    static readonly Vector3 InteriorOffset = new Vector3(0f, 2000f, 0f);
+    static readonly List<Vector3> IV = new List<Vector3>();
+    static readonly List<Vector2> IU = new List<Vector2>();
+    static readonly List<int> IT = new List<int>();
+    static readonly List<Renderer> IR = new List<Renderer>();
+
+    // Tuneles: ancho 2*TW, alto TH (arco de radio TW arriba), NS tramos por tunel con costillas cada 4 tramos.
+    const int NS = 49, TK = 16;
+    const float TW = 2f, TH = 4.5f, RibIn = 0.3f, SB = 0.5f, CB = 0.866025f;   // SB/CB = seno/coseno de 30 grados
+    static readonly Vector3[] TP = new Vector3[NS + 1], TS = new Vector3[NS + 1];   // centro y lateral de cada seccion
+
+    [MenuItem("Tools/Terrain/12 Lab Interior (seleccion)", true)]
+    static bool LabOk() => Selection.activeGameObject != null && !EditorUtility.IsPersistent(Selection.activeGameObject);
+
+    [MenuItem("Tools/Terrain/12 Lab Interior (seleccion)")]
+    static void LabInterior()
+    {
+        var lab = Selection.activeGameObject;
+        string labName = lab.name;
+        lab.GetComponentsInChildren(IR);
+        Bounds bd = default; bool has = false;
+        foreach (var r in IR) { if (!has) { bd = r.bounds; has = true; } else bd.Encapsulate(r.bounds); }
+        // Sala A (entrada, al sur) y sala B, circulares de radio R, unidas por 2 tuneles curvos en arco.
+        float R = has ? Mathf.Clamp(Mathf.Min(bd.extents.x, bd.extents.z) * 0.5f, 8f, 14f) : 10f, D = 2f * R + 13f;
+        const float T = 0.4f;
+        const int M = 64;
+
+        Directory.CreateDirectory(InteriorDir); Directory.CreateDirectory(InteriorScenes);
+        AssetDatabase.Refresh();
+        string nm = string.Concat(labName.Split(Path.GetInvalidFileNameChars())).Replace(' ', '_') + "_Interior";
+        string pp = AssetDatabase.GenerateUniqueAssetPath($"{InteriorDir}/{nm}.prefab"), id = Path.GetFileNameWithoutExtension(pp);
+        string sp = AssetDatabase.GenerateUniqueAssetPath($"{InteriorScenes}/{id}.unity"), sn = Path.GetFileNameWithoutExtension(sp);
+
+        // Puerta de entrada en el edificio (escena exterior): se crea una vez, luego solo se actualiza la escena destino.
+        var dg = GameObject.Find("Door_" + labName);
+        var door = dg != null ? dg.GetComponentInChildren<SceneDoor>(true) : null;
+        if (door == null) door = MakeDoor(lab, bd, has);
+        door.scene = sn;
+        EditorUtility.SetDirty(door);
+        var origin = lab.scene;
+        string originName = origin.name;
+        ESM.MarkSceneDirty(origin);
+        if (!ESM.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        if (origin.isDirty) Debug.LogWarning($"[Interior] La puerta de '{labName}' no se guardo en la escena exterior: guardala para conservar el trigger.");
+
+        // Contornos circulares con aberturas: entrada al sur de A y 2 bocas de tunel en A (norte) y B (sur).
+        var rA = new Vector2[M]; var rB = new Vector2[M]; var gA = new bool[M]; var gB = new bool[M];
+        var off = new Vector2(0f, D);
+        for (int i = 0; i < M; i++)
+        {
+            float a = Mathf.PI * 2f * i / M;
+            rA[i] = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * R;
+            rB[i] = rA[i] + off;
+        }
+        Gap(rA, Vector2.zero, gA, new Vector2(0f, -1f), 1.5f);
+        for (int k = 0; k < 2; k++)
+        {
+            float s = k * 2f - 1f;
+            Gap(rA, Vector2.zero, gA, new Vector2(s * SB, CB), TW);
+            Gap(rB, off, gB, new Vector2(s * SB, -CB), TW);
+        }
+
+        Wall(rA, gA, true, TH, T);
+        Wall(rB, gB, true, TH, T);
+        var lamps = new Vector3[2];
+        for (int k = 0; k < 2; k++) { TunnelPath(k * 2f - 1f, R, D); Tunnel(false); lamps[k] = TP[NS / 2] + Vector3.up * 3f; }
+        var walls = Bake($"{InteriorDir}/{id}_Walls.asset");
+
+        Disc(rA, Vector2.zero);
+        Disc(rB, off);
+        for (int k = 0; k < 2; k++) { TunnelPath(k * 2f - 1f, R, D); Tunnel(true); }
+        var slab = Bake($"{InteriorDir}/{id}_Slab.asset");
+
+        var scene = ESM.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Single);
+        var root = new GameObject(id);
+        root.transform.position = InteriorOffset;
+        Part(root, "Walls", walls, MetalMat());
+        Part(root, "Slab", slab, DeckMat());
+        Mark(root, "Entrance", new Vector3(0f, 0f, -R));
+        var spawn = Mark(root, "PlayerSpawn", new Vector3(0f, 1.2f, -R + 3f)).transform;   // 1.2 m sobre el piso: cae suave sin importar el pivote del jugador
+
+        // Trigger de salida: ubicalo/escalalo a ojo en la puerta del interior.
+        var ex = Mark(root, "Exit", new Vector3(0f, 1.5f, -R + 0.4f));
+        ex.transform.localScale = new Vector3(3f, 3f, 1f);
+        ex.AddComponent<BoxCollider>().isTrigger = true;
+        var sd = ex.AddComponent<SceneDoor>(); sd.scene = sn; sd.exit = true; sd.point = spawn;
+
+        // Camara de prueba (solo al abrir/jugar esta escena sola; se apaga sola cuando se carga desde el bioma).
+        var cg = new GameObject("TestCamera");
+        cg.transform.position = spawn.position + Vector3.up * 0.5f;
+        cg.AddComponent<Camera>(); cg.AddComponent<AudioListener>();
+        sd.testCam = cg;
+
+        Lamp(root, new Vector3(0f, TH - 0.8f, 0f), R * 1.6f);
+        Lamp(root, new Vector3(0f, TH - 0.8f, D), R * 1.6f);
+        foreach (var lp in lamps) Lamp(root, lp, 12f);
+        PrefabUtility.SaveAsPrefabAssetAndConnect(root, pp, InteractionMode.AutomatedAction);
+        ESM.SaveScene(scene, sp);
+        AddToBuild(sp);
+        AssetDatabase.SaveAssets();
+        Debug.Log($"[Interior] '{labName}' -> escena {sp} + prefab {pp} (2 salas de radio {R:0.#} m). Abre '{originName}' y ubica 'Door_{labName}/Trigger' en la entrada del modelo.");
+    }
+
+    static void Lamp(GameObject root, Vector3 pos, float range)
+    {
+        var l = Mark(root, "Light", pos).AddComponent<Light>();
+        l.type = LightType.Point; l.range = range; l.intensity = 2f; l.color = new Color(0.75f, 0.9f, 1f); l.shadows = LightShadows.None;
+    }
+
+    // Marca como abertura los segmentos del contorno cuyos 2 vertices caen dentro de un pasillo de semiancho hw hacia la direccion d.
+    static void Gap(Vector2[] p, Vector2 c, bool[] gap, Vector2 d, float hw)
+    {
+        for (int i = 0; i < p.Length; i++)
+            if (In(p[i] - c, d, hw) && In(p[(i + 1) % p.Length] - c, d, hw)) gap[i] = true;
+    }
+
+    static bool In(Vector2 v, Vector2 d, float hw) => Vector2.Dot(v, d) > 0f && Mathf.Abs(v.x * d.y - v.y * d.x) <= hw;
+
+    // Sala circular: piso con espesor 0.5 m (colision segura) y techo de una cara.
+    static void Disc(Vector2[] r, Vector2 c2)
+    {
+        Vector3 c = new Vector3(c2.x, 0f, c2.y), up = Vector3.up * TH, dn = Vector3.down * 0.5f;
+        for (int i = 0; i < r.Length; i++)
+        {
+            Vector3 a = new Vector3(r[i].x, 0f, r[i].y), b = new Vector3(r[(i + 1) % r.Length].x, 0f, r[(i + 1) % r.Length].y);
+            T3(c, b, a);
+            T3(c + up, a + up, b + up);
+            T3(c + dn, a + dn, b + dn);
+            Q(a + dn, a, b, b + dn);
+        }
+    }
+
+    // Eje del tunel: curva de Bezier cubica que sale radialmente de A (30 grados al norte) y llega radialmente a B.
+    // s = -1/+1 (lado). Los extremos se hunden 0.25 m en el muro para que el marco quede embebido en su espesor.
+    static void TunnelPath(float s, float R, float D)
+    {
+        Vector2 d0 = new Vector2(s * SB, CB), d3 = new Vector2(s * SB, -CB);
+        Vector2 p0 = d0 * (R - 0.25f), p3 = new Vector2(0f, D) + d3 * (R - 0.25f);
+        float k = R * 0.65f;
+        Vector2 p1 = p0 + d0 * k, p2 = p3 + d3 * k;
+        for (int i = 0; i <= NS; i++)
+        {
+            float t = (float)i / NS, u = 1f - t;
+            Vector2 p = u * u * u * p0 + 3f * u * u * t * p1 + 3f * u * t * t * p2 + t * t * t * p3;
+            Vector2 d = (3f * u * u * (p1 - p0) + 6f * u * t * (p2 - p1) + 3f * t * t * (p3 - p2)).normalized;
+            TP[i] = new Vector3(p.x, 0f, p.y);
+            TS[i] = new Vector3(d.y, 0f, -d.x);
+        }
+    }
+
+    // Punto m del perfil en la seccion i. Perfil: pared izq, arco de radio r (centro a TH-TW), pared der.
+    // sq = true proyecta el arco al cuadrado exterior (para rellenar las esquinas del marco).
+    static Vector3 Sp(int i, int m, float r, bool sq)
+    {
+        Vector2 q;
+        if (m == 0) q = new Vector2(-r, 0f);
+        else if (m == TK + 2) q = new Vector2(r, 0f);
+        else
+        {
+            float f = Mathf.PI - (m - 1) * Mathf.PI / TK, c = Mathf.Cos(f), s = Mathf.Sin(f), k = sq ? r / Mathf.Max(Mathf.Abs(c), s) : r;
+            q = new Vector2(k * c, TH - TW + k * s);
+        }
+        return TP[i] + TS[i] * q.x + Vector3.up * q.y;
+    }
+
+    static float Rr(int s) => s % 4 == 0 ? TW - RibIn : TW;   // tramos con costilla: radio interior menor
+
+    // Anillo plano en la seccion i entre el perfil de radio a y el de radio b (b cuadrado si sq).
+    static void Rim(int i, float a, float b, bool sq)
+    {
+        for (int m = 0; m <= TK + 1; m++) Both(Sp(i, m, a, false), Sp(i, m + 1, a, false), Sp(i, m + 1, b, sq), Sp(i, m, b, sq));
+    }
+
+    // Tunel con costillas en arco (doble cara). floor = true genera solo el piso (va en la malla del piso).
+    static void Tunnel(bool floor)
+    {
+        for (int s = 0; s < NS; s++)
+        {
+            if (floor) { Both(Sp(s, 0, TW, false), Sp(s, TK + 2, TW, false), Sp(s + 1, TK + 2, TW, false), Sp(s + 1, 0, TW, false)); continue; }
+            float r = Rr(s);
+            for (int m = 0; m <= TK + 1; m++) Both(Sp(s, m, r, false), Sp(s, m + 1, r, false), Sp(s + 1, m + 1, r, false), Sp(s + 1, m, r, false));
+        }
+        if (floor) return;
+        for (int i = 1; i < NS; i++) if (Rr(i - 1) != Rr(i)) Rim(i, TW - RibIn, TW, false);
+        Rim(0, Rr(0), TW, true);
+        Rim(NS, Rr(NS - 1), TW, true);
+    }
+
+    // Trigger de entrada (escena exterior): grupo "Door_<lab>" en la raiz con "Trigger" (cubo unitario que se ubica y
+    // escala con las herramientas Move/Scale normales; se ve como caja translucida) y "ReturnPoint" (esfera + flecha).
+    static SceneDoor MakeDoor(GameObject lab, Bounds b, bool has)
+    {
+        Vector3 p = has ? new Vector3(b.center.x, b.min.y + 1.5f, b.min.z) : lab.transform.position + Vector3.up * 1.5f;
+        var g = new GameObject("Door_" + lab.name);
+        UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(g, lab.scene);
+        Undo.RegisterCreatedObjectUndo(g, "Interior Door");
+        var tg = new GameObject("Trigger");
+        tg.transform.SetParent(g.transform, false);
+        tg.transform.position = p;
+        tg.transform.localScale = new Vector3(3f, 3f, 1.5f);
+        tg.AddComponent<BoxCollider>().isTrigger = true;
+        var rp = new GameObject("ReturnPoint").transform;
+        rp.SetParent(g.transform, false);
+        rp.position = p + new Vector3(0f, -1.5f, -2.5f);
+        var d = tg.AddComponent<SceneDoor>();
+        d.point = rp;
+        return d;
+    }
+
+    static void AddToBuild(string path)
+    {
+        var l = EditorBuildSettings.scenes.ToList();
+        if (l.Any(s => s.path == path)) return;
+        l.Add(new EditorBuildSettingsScene(path, true));
+        EditorBuildSettings.scenes = l.ToArray();
+    }
+
+    static GameObject Mark(GameObject root, string n, Vector3 pos)
+    {
+        var g = new GameObject(n);
+        g.transform.SetParent(root.transform, false);
+        g.transform.localPosition = pos;
+        return g;
+    }
+
+    static void Part(GameObject root, string n, Mesh m, Material mat)
+    {
+        var g = Mark(root, n, Vector3.zero);
+        g.isStatic = true;
+        g.AddComponent<MeshFilter>().sharedMesh = m;
+        g.AddComponent<MeshRenderer>().sharedMaterial = mat;
+        g.AddComponent<MeshCollider>().sharedMesh = m;
+    }
+
+    static Mesh Bake(string path)
+    {
+        var m = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+        m.SetVertices(IV); m.SetUVs(0, IU); m.SetTriangles(IT, 0);
+        m.RecalculateNormals(); m.RecalculateTangents(); m.RecalculateBounds();
+        AssetDatabase.CreateAsset(m, path);
+        IV.Clear(); IU.Clear(); IT.Clear();
+        return m;
+    }
+
+    // Triangulo con vertices propios y UV por proyeccion de caja (1 tile cada 4 m).
+    static void T3(Vector3 a, Vector3 b, Vector3 c)
+    {
+        Vector3 n = Vector3.Cross(b - a, c - a).normalized;
+        bool flat = Mathf.Abs(n.y) > 0.5f;
+        Vector3 u = flat ? Vector3.right : new Vector3(-n.z, 0f, n.x), w = flat ? Vector3.forward : Vector3.up;
+        Uv(a, u, w); Uv(b, u, w); Uv(c, u, w);
+    }
+
+    static void Uv(Vector3 p, Vector3 u, Vector3 w)
+    {
+        IT.Add(IV.Count); IV.Add(p); IU.Add(new Vector2(Vector3.Dot(p, u), Vector3.Dot(p, w)) * 0.25f);
+    }
+
+    static void Q(Vector3 a, Vector3 b, Vector3 c, Vector3 d) { T3(a, b, c); T3(a, c, d); }
+
+    static Vector3 Side(Vector2[] p, int i, bool closed)
+    {
+        int n = p.Length, a = closed ? (i + n - 1) % n : Mathf.Max(i - 1, 0), b = closed ? (i + 1) % n : Mathf.Min(i + 1, n - 1);
+        return Vector3.Cross(Vector3.up, new Vector3(p[b].x - p[a].x, 0f, p[b].y - p[a].y)).normalized;
+    }
+
+    // Muro con espesor a lo largo de una polilinea (cerrada o abierta); gap[i] = segmento i sin muro (abertura).
+    static void Wall(Vector2[] p, bool[] gap, bool closed, float h, float t)
+    {
+        int n = p.Length, segs = closed ? n : n - 1;
+        Vector3 up = Vector3.up * h;
+        for (int i = 0; i < segs; i++)
+        {
+            if (gap[i]) continue;
+            int j = (i + 1) % n;
+            Vector3 pa = new Vector3(p[i].x, 0f, p[i].y), pb = new Vector3(p[j].x, 0f, p[j].y);
+            Vector3 sa = Side(p, i, closed) * t * 0.5f, sb = Side(p, j, closed) * t * 0.5f;
+            Vector3 aS = pa + sa, aO = pa - sa, bS = pb + sb, bO = pb - sb;
+            Q(aS, aS + up, bS + up, bS);
+            Q(bO, bO + up, aO + up, aO);
+            Q(aS + up, aO + up, bO + up, bS + up);
+            if (i == 0 ? (!closed || gap[segs - 1]) : gap[i - 1]) Q(aO, aO + up, aS + up, aS);
+            if (i == segs - 1 ? (!closed || gap[0]) : gap[i + 1]) Q(bS, bS + up, bO + up, bO);
+        }
     }
 }
