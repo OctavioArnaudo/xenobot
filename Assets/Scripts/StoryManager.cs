@@ -71,6 +71,9 @@ namespace Runtime.Scripts.Narrative
         public static StoryManager Instance { get; private set; }
         public bool IsDialogOpen => _dlgOpen;
         public bool IsBusy => _dlgOpen || _logging || _misOpen;
+        public bool MissionOpen => _misOpen;
+        /// <summary>Panel de misiones (J): el RADAR (StoryMap) se anexa como hijo suyo.</summary>
+        public Transform MissionPanel => _mis != null ? _mis.transform : null;
 
         /// <summary>Lo que el jugador debe alcanzar ahora: la llave (si ya está en escena) o la terminal. Null al terminar.</summary>
         public Transform Objective
@@ -897,6 +900,8 @@ namespace Runtime.Scripts.Narrative
             // Panel de misión (se abre con J): canvas propio para no recalcular el resto de la UI
             var mc = NewCanvas("StoryMission", 450).transform;
             _mis = MenuGate.Panel(mc, new Vector2(1100, 600), 0.5f).gameObject;
+            _mis.GetComponent<RectTransform>().anchoredPosition = new Vector2(-StoryMap.PanelW * 0.5f, 0f); // misiones + radar quedan centrados como un solo bloque
+            if (FindFirstObjectByType<StoryMap>() == null) gameObject.AddComponent<StoryMap>();
             var mi = MenuGate.Rnd(Box(_mis.transform, Dark, new Vector2(1068, 576))).transform;
 
             var title = Txt(mi, 30, TextAlignmentOptions.Left);

@@ -390,20 +390,14 @@ namespace Runtime.Scripts.Hud
         static Sprite s_scope, s_ring;
         float _uiTick;
 
-        // Botones de panel (metalicos, punto rubi). Stats se abre aqui; el resto notifica por evento.
-        static readonly string[] PanelKey = { "inventory", "craft", "stats", "missions" };
-        static readonly string[] PanelLbl = { "INV", "CRAFT", "K", "J" };
+        // Botones de panel (metalicos, punto rubi): TAB = inventario / personaje, J = misiones + radar.
+        static readonly string[] PanelLbl = { "TAB", "J" };
         static readonly Color Ruby = new Color(0.85f, 0.04f, 0.14f);
 
-        void OpenPanel(string k)
+        void OpenPanel(int i)
         {
-            switch (k)
-            {
-                case "inventory": InventoryController.Toggle(); break;
-                case "craft": CraftingController.Toggle(); break;
-                case "stats": InventoryController.Toggle(); break; // K: panel de personaje (inventario + modelo + stats + skills)
-                default: if (StoryManager.Instance != null) StoryManager.Instance.ToggleMissions(); break; // J lo gestiona StoryManager
-            }
+            if (i == 0) InventoryController.Toggle();
+            else if (StoryManager.Instance != null) StoryManager.Instance.ToggleMissions();
         }
 
         public override void OnDestroy()
@@ -506,25 +500,26 @@ namespace Runtime.Scripts.Hud
             one.rectTransform.sizeDelta = new Vector2(24f, 24f);
             one.rectTransform.anchoredPosition = new Vector2(4f, -2f);
 
-            // 4 botones metalicos redondos con punto rubi: inventario, crafteo, stats (K), misiones (J)
-            for (int i = 0; i < 4; i++)
+            // 2 botones metalicos redondos con punto rubi (TAB, J), en la misma fila que la placa de la mira, dentro del margen derecho
+            for (int i = 0; i < 2; i++)
             {
-                string key = PanelKey[i];
+                int id = i;
                 var b = Rnd(Img(_uiRoot.transform, new Color(0.62f, 0.64f, 0.66f)));
+                b.GetComponent<Image>().raycastTarget = true;
                 b.anchorMin = b.anchorMax = b.pivot = new Vector2(1f, 0f);
-                b.sizeDelta = new Vector2(56f, 56f);
-                b.anchoredPosition = new Vector2(-126f - (3 - i) * 68f, 134f);
+                b.sizeDelta = new Vector2(64f, 64f);
+                b.anchoredPosition = new Vector2(-126f - (1 - i) * 76f, 130f);
                 var bt = b.gameObject.AddComponent<Button>();
                 bt.transition = Selectable.Transition.None;
-                bt.onClick.AddListener(() => OpenPanel(key));
-                Mid(Rnd(Img(b, new Color(0.3f, 0.32f, 0.34f))), 44f);
+                bt.onClick.AddListener(() => OpenPanel(id));
+                Mid(Rnd(Img(b, new Color(0.3f, 0.32f, 0.34f))), 50f);
                 Mid(Rnd(Img(b, Ruby)), 16f);
                 var l = Txt(b, 16, Amber, TextAlignmentOptions.Center, FontStyles.Bold);
                 l.text = PanelLbl[i];
                 l.raycastTarget = false;
                 Fit(l.rectTransform, 0f, 1f, 1f, 1f);
-                l.rectTransform.offsetMin = new Vector2(0f, 2f);
-                l.rectTransform.offsetMax = new Vector2(0f, 22f);
+                l.rectTransform.offsetMin = new Vector2(0f, 4f);
+                l.rectTransform.offsetMax = new Vector2(0f, 24f);
             }
         }
 

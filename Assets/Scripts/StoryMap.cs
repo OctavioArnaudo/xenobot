@@ -1,5 +1,5 @@
-﻿using UnityEngine;
-using UnityEngine.InputSystem;
+﻿using TMPro;
+using UnityEngine;
 using UnityEngine.UI;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Gate;
@@ -7,36 +7,46 @@ using Runtime.Scripts.Gate;
 namespace Runtime.Scripts.Narrative
 {
     /// <summary>
-    /// Mapa (M). Solo dos marcas: el objetivo del StoryManager (parpadea) y el jugador (flecha con su direcci�n).
-    /// Texturas y sprites se dibujan por c�digo una sola vez y se comparten (pool est�tico); la UI se crea una vez.
+    /// RADAR. Panel anexado a la derecha del panel de misiones (J): se abre y se cierra con el.
+    /// Solo dos marcas: el objetivo del StoryManager (parpadea) y el jugador (flecha con su direccion).
+    /// Sprites dibujados por codigo una sola vez y compartidos; la UI se construye una vez y no hay Canvas propio.
     /// </summary>
     public class StoryMap : MonoBehaviour
     {
-        [Tooltip("Vac�o = se calcula solo (terreno o escena) la primera vez que se abre.")] public Bounds worldBounds;
-        public float size = 640f;
+        public const float PanelW = 440f, PanelH = 600f;
+
+        [Tooltip("Vacio = se calcula solo (terreno o escena) la primera vez que se abre.")] public Bounds worldBounds;
 
         const int S = 64;
-        const float Pad = 28f;
+        const float Side = 392f;
         static readonly Color Me = new Color(0.45f, 0.95f, 1f), Goal = new Color(0.25f, 1f, 0.4f);
         static Sprite s_disc, s_arrow;
 
-        GameObject _root;
         RectTransform _me, _goal, _halo;
         Image _goalImg, _haloImg;
-        bool _open, _shown;
+        bool _built, _was, _shown;
         float _sc;
         Vector3 _c;
 
-        void Awake() => Build();
-
         void Update()
         {
-            var kb = Keyboard.current;
             var sm = StoryManager.Instance;
             var inv = InventoryController.LocalInstance;
-            if (kb != null && kb.mKey.wasPressedThisFrame && (_open || (sm != null && !sm.IsBusy && inv != null && MenuGate.TryOpen("map")))) Toggle(!_open);
-            if (!_open) return;
-            if (sm == null || inv == null) { Toggle(false); return; }
+            if (sm == null || inv == null || !sm.MissionOpen) { _was = false; return; }
+            if (!_built)
+            {
+                var host = sm.MissionPanel;
+                if (host == null) return;
+                Build(host);
+            }
+            if (!_was)
+            {
+                _was = true;
+                _shown = false; // fuerza refrescar la marca del objetivo al abrir
+                _goal.gameObject.SetActive(false);
+                _halo.gameObject.SetActive(false);
+                Fit();
+            }
 
             var pt = inv.transform;
             Place(_me, pt.position);
@@ -54,22 +64,7 @@ namespace Runtime.Scripts.Narrative
             _goalImg.color = new Color(Goal.r, Goal.g, Goal.b, 0.6f + 0.4f * p);
         }
 
-        void OnGate(string k) { if (k == "map" && _open) Toggle(false); }
-
-        void Toggle(bool on)
-        {
-            _open = on;
-            if (!on) MenuGate.Close("map");
-            MenuGate.CloseRequested -= OnGate;
-            if (on) MenuGate.CloseRequested += OnGate;
-            if (on) Fit();
-            _root.SetActive(on);
-            _shown = false; // fuerza refrescar la marca del objetivo al abrir
-            _goal.gameObject.SetActive(false);
-            _halo.gameObject.SetActive(false);
-        }
-
-        // Tama�o total del mapa: terreno(s) activo(s); si no hay, todos los renderers de la escena. Se calcula una sola vez.
+        // Area total del radar: terreno(s) activo(s); si no hay, todos los renderers de la escena. Se calcula una sola vez.
         void Fit()
         {
             if (worldBounds.size == Vector3.zero)
@@ -87,37 +82,75 @@ namespace Runtime.Scripts.Narrative
                 worldBounds = any ? b : new Bounds(Vector3.zero, new Vector3(1000f, 0f, 1000f));
             }
             _c = worldBounds.center;
-            _sc = (size - 2f * Pad) / Mathf.Max(1f, Mathf.Max(worldBounds.size.x, worldBounds.size.z));
+            _sc = (Side - 28f) / Mathf.Max(1f, Mathf.Max(worldBounds.size.x, worldBounds.size.z));
         }
 
         void Place(RectTransform rt, Vector3 w)
         {
-            float lim = size * 0.5f - 16f;
+            float lim = Side * 0.5f - 16f;
             rt.anchoredPosition = new Vector2(Mathf.Clamp((w.x - _c.x) * _sc, -lim, lim), Mathf.Clamp((w.z - _c.z) * _sc, -lim, lim));
         }
 
-        // ---------- UI (una sola vez) ----------
+        // ---------- UI (una sola vez, hija del panel de misiones) ----------
 
-        void Build()
+        void Build(Transform host)
         {
-            _root = new GameObject("StoryMapUI", typeof(Canvas), typeof(CanvasScaler));
-            _root.transform.SetParent(transform, false);
-            var cv = _root.GetComponent<Canvas>();
-            cv.renderMode = RenderMode.ScreenSpaceOverlay;
-            cv.sortingOrder = 440;
-            var cs = _root.GetComponent<CanvasScaler>();
-            cs.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            cs.referenceResolution = new Vector2(1920, 1080);
+            _built = true;
+            var rt = MenuGate.Panel(host, new Vector2(PanelW, PanelH), 0.6f).GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(1f, 0.5f);
+            rt.pivot = new Vector2(0f, 0.5f);
+            rt.anchoredPosition = new Vector2(-12f, 0f); // se solapa con el marco: se lee como una sola pieza
 
-            var pg = MenuGate.Panel(_root.transform, new Vector2(size, size), 0.6f).gameObject;
+            var scr = Img(rt, new Color(0.02f, 0.05f, 0.04f), new Vector2(PanelW - 32f, PanelH - 24f));
 
-            _haloImg = Mark(pg.transform, Disc(), 40f, Goal);
-            _goalImg = Mark(pg.transform, Disc(), 18f, Goal);
-            var me = Mark(pg.transform, Arrow(), 44f, Me);
+            Top(Label(scr, 30, "RADAR", TextAlignmentOptions.Left), 16f, 44f);
+            Top(Label(scr, 20, "<color=#73F2FF>TU</color>      <color=#40FF66>OBJETIVO</color>", TextAlignmentOptions.Center), 514f, 36f);
+
+            var map = Img(scr, new Color(0f, 0.025f, 0.015f), new Vector2(Side, Side));
+            map.anchoredPosition = new Vector2(0f, -8f);
+
+            _haloImg = Mark(map, Disc(), 40f, Goal);
+            _goalImg = Mark(map, Disc(), 18f, Goal);
+            var me = Mark(map, Arrow(), 44f, Me);
             _halo = _haloImg.rectTransform;
             _goal = _goalImg.rectTransform;
             _me = me.rectTransform;
-            _root.SetActive(false);
+        }
+
+        static RectTransform Img(Transform parent, Color c, Vector2 size)
+        {
+            var g = new GameObject("b", typeof(Image));
+            g.transform.SetParent(parent, false);
+            var im = g.GetComponent<Image>();
+            im.color = c;
+            im.raycastTarget = false;
+            im.rectTransform.sizeDelta = size;
+            return im.rectTransform;
+        }
+
+        static TextMeshProUGUI Label(Transform parent, int size, string text, TextAlignmentOptions a)
+        {
+            var g = new GameObject("t", typeof(TextMeshProUGUI));
+            g.transform.SetParent(parent, false);
+            var t = g.GetComponent<TextMeshProUGUI>();
+            t.fontSize = size;
+            t.color = MenuGate.Green;
+            t.alignment = a;
+            t.fontStyle = FontStyles.Bold;
+            t.raycastTarget = false;
+            t.text = text;
+            return t;
+        }
+
+        // Franja horizontal anclada arriba (margen lateral 20).
+        static void Top(TextMeshProUGUI t, float y, float h)
+        {
+            var r = t.rectTransform;
+            r.anchorMin = new Vector2(0f, 1f);
+            r.anchorMax = new Vector2(1f, 1f);
+            r.pivot = new Vector2(0.5f, 1f);
+            r.anchoredPosition = new Vector2(0f, -y);
+            r.sizeDelta = new Vector2(-40f, h);
         }
 
         static Image Mark(Transform parent, Sprite s, float sz, Color c)
@@ -132,7 +165,7 @@ namespace Runtime.Scripts.Narrative
             return im;
         }
 
-        // ---------- Texturas dibujadas por c�digo (se generan una vez y se comparten) ----------
+        // ---------- Texturas dibujadas por codigo (se generan una vez y se comparten) ----------
 
         static Sprite Disc()
         {
@@ -183,6 +216,5 @@ namespace Runtime.Scripts.Narrative
         }
 
         static float Sg(Vector2 p1, Vector2 p2, Vector2 p3) => (p1.x - p3.x) * (p2.y - p3.y) - (p2.x - p3.x) * (p1.y - p3.y);
-
     }
 }
