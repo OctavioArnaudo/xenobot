@@ -1,6 +1,9 @@
 // Poner FUERA de la carpeta Editor (ej. Assets/Scripts/Crystal.cs). Lo usan Tools/Terrain/16, MeleeController y los arboles.
 using System.Collections.Generic;
 using UnityEngine;
+using Unity.Netcode;
+using Runtime.Scripts.Inventory;
+using Runtime.Scripts.Items;
 
 // Todo lo rompible (cristales, arboles). Recibe dano de: Damage(float) (SendMessage), MeleeController y ProjectileController.
 public class Smashable : MonoBehaviour
@@ -34,12 +37,13 @@ public class Crystal : Smashable
     void OnDisable() => All.Remove(this);
     public Bounds Box => col != null ? col.bounds : new Bounds(transform.position, Vector3.one * 8f);
 
+    // Suelta 1-3 fragmentos fisicos (CrystalFragments). "drops" ya no se usa. Ruedan por la pendiente hasta el suelo y se recogen al
+    // acercarse el jugador: van al inventario como objeto con su modelo 3D.
     protected override void Die()
     {
-        if (drops == null || drops.Length < 3) return;
         for (int i = Random.Range(1, 4); i > 0; i--)
         {
-            var g = Instantiate(drops[Random.Range(0, 3)], transform.position + Vector3.up * (1f + .3f * i) + Random.insideUnitSphere * .3f, Random.rotation);
+            var g = CrystalFragments.Spawn(Random.Range(0, 3), transform.position + Vector3.up * (2f + 1.4f * i) + Random.insideUnitSphere * 1f, Random.rotation);
             g.GetComponent<Rigidbody>().AddForce(Random.insideUnitSphere * 3f + Vector3.up * 3f, ForceMode.VelocityChange);
         }
     }
@@ -51,23 +55,69 @@ public class CrystalPickup : MonoBehaviour
 {
     public static readonly int[] Count = new int[4];
     public int color;
-    float t;
+    float t, nudgeT;
     Transform pl;
+    Rigidbody rb;
+    InventoryController inv;
+    bool rolled;
+
+    void Awake() => rb = GetComponent<Rigidbody>();
+
+    // Primer contacto con el suelo: empujon cuesta abajo, para que ruede aunque la pendiente sea suave.
+    void OnCollisionEnter(Collision c)
+    {
+        if (rolled || rb == null || rb.isKinematic) return;
+        rolled = true;
+        Vector3 down = Vector3.ProjectOnPlane(Vector3.down, c.GetContact(0).normal);
+        if (down.sqrMagnitude > 0.0004f) rb.AddForce(down.normalized * (1f + 3f * down.magnitude), ForceMode.VelocityChange);
+    }
 
     void Update()
     {
+        // Si se queda parado sobre una pendiente, se le vuelve a dar un empujon cuesta abajo.
+        if (rb != null && !rb.isKinematic && (nudgeT -= Time.deltaTime) <= 0f)
+        {
+            nudgeT = 0.5f;
+            if (rb.linearVelocity.sqrMagnitude < 0.04f &&
+                Physics.Raycast(transform.position + Vector3.up * 0.2f, Vector3.down, out var h, 1f, ~0, QueryTriggerInteraction.Ignore) && h.normal.y < 0.97f)
+                rb.AddForce(Vector3.ProjectOnPlane(Vector3.down, h.normal).normalized * 2f, ForceMode.VelocityChange);
+        }
+
         if ((t += Time.deltaTime) < .8f) return;
         if (pl == null)
         {
-            var p = GameObject.FindWithTag("Player");
-            pl = p != null ? p.transform : Camera.main != null ? Camera.main.transform : null;
+            var li = InventoryController.LocalInstance;
+            if (li != null) pl = li.transform;
+            else
+            {
+                var p = GameObject.FindWithTag("Player");
+                pl = p != null ? p.transform : Camera.main != null ? Camera.main.transform : null;
+            }
             if (pl == null) return;
         }
         Vector3 d = pl.position + Vector3.up - transform.position;
         if (d.sqrMagnitude > 64f) return;
-        if (d.sqrMagnitude < 1.5f) { Count[color]++; Destroy(gameObject); return; }
-        GetComponent<Rigidbody>().isKinematic = true;
+        if (d.sqrMagnitude < 6f) { Collect(); return; }
+        if (rb != null) rb.isKinematic = true;
         transform.position += d.normalized * 10f * Time.deltaTime;
+    }
+
+    void Collect()
+    {
+        Count[color]++;
+        if (color < 3)   // gemas -> inventario (la madera solo cuenta)
+        {
+            if (inv == null) inv = pl.GetComponentInChildren<InventoryController>() ?? InventoryController.LocalInstance;
+            if (inv != null)
+            {
+                var def = CrystalFragments.Item(color);
+                inv.RegisterItem(def);
+                int hash = def.GetHashCode();
+                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening) inv.AddItemServerRpc(hash, 1);
+                else inv.InternalAddItem(hash, 1);
+            }
+        }
+        Destroy(gameObject);
     }
 }
 
@@ -246,5 +296,114 @@ public class CrystalHud : MonoBehaviour
     void OnGUI()
     {
         for (int i = 0; i < 4; i++) { GUI.color = C[i]; GUI.Label(new Rect(20, 20 + i * 22, 160, 22), N[i] + ": " + CrystalPickup.Count[i]); }
+    }
+}
+
+// Fragmentos de cristal: un ItemsData por color (creados por codigo, iguales en todas las maquinas: el hash sale del nombre)
+// y un "prefab" procedural: rombo irregular facetado, vidrioso y con emision. Es lo que se ve en el mundo y en el inventario.
+public static class CrystalFragments
+{
+    const float Size = 4.5f;   // escala del fragmento respecto al modelo base (0.56 de alto): ~2.5 m
+    public static readonly string[] Names = { "Fragmento de cristal violeta", "Fragmento de cristal rojo", "Fragmento de cristal amarillo" };
+    static ItemsData[] items;
+    static GameObject[] tpl;
+    static PhysicsMaterial phys;
+
+    public static ItemsData[] Items { get { Build(); return items; } }
+    public static ItemsData Item(int color) => Items[Mathf.Clamp(color, 0, 2)];
+
+    /// <summary>Crea un fragmento fisico en el mundo (rueda por las pendientes).</summary>
+    public static GameObject Spawn(int color, Vector3 pos, Quaternion rot)
+    {
+        Build();
+        return Object.Instantiate(tpl[Mathf.Clamp(color, 0, 2)], pos, rot);
+    }
+
+    static void Build()
+    {
+        if (items != null && items[0] != null && tpl[0] != null) return;
+        items = new ItemsData[3];
+        tpl = new GameObject[3];
+        var root = new GameObject("CrystalFragmentTemplates") { hideFlags = HideFlags.HideAndDontSave };
+        Object.DontDestroyOnLoad(root);
+        root.SetActive(false);   // las plantillas no viven; solo se clonan
+
+        phys = new PhysicsMaterial("CrystalFragment") { dynamicFriction = 0.2f, staticFriction = 0.2f, bounciness = 0.35f, frictionCombine = PhysicsMaterialCombine.Minimum, bounceCombine = PhysicsMaterialCombine.Maximum };
+        var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+
+        for (int c = 0; c < 3; c++)
+        {
+            var t = new GameObject("CrystalFragment");
+            t.transform.SetParent(root.transform, false);
+            t.AddComponent<MeshFilter>().sharedMesh = MakeMesh(7 + c * 13);
+            var mr = t.AddComponent<MeshRenderer>();
+            mr.sharedMaterial = MakeMaterial(shader, Crystal.Colors[c]);
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+            var sc = t.AddComponent<SphereCollider>();   // esfera: rueda cuesta abajo
+            sc.radius = 0.2f * Size * 0.85f;
+            sc.sharedMaterial = phys;
+            var rb = t.AddComponent<Rigidbody>();
+            rb.mass = 1.5f;
+            rb.linearDamping = 0.05f;
+            rb.angularDamping = 0.02f;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+            t.AddComponent<CrystalPickup>().color = c;
+            tpl[c] = t;
+
+            var d = ScriptableObject.CreateInstance<ItemsData>();
+            d.hideFlags = HideFlags.DontSave;
+            d.name = "Item_Fragment" + c;
+            d.itemName = Names[c];
+            d.isPickable = true;
+            d.isUsable = false;
+            d.isQuitable = false;
+            d.isDropable = false;
+            d.maxStack = 99;
+            d.itemPrefab = t;
+            items[c] = d;
+        }
+    }
+
+    static Material MakeMaterial(Shader sh, Color c)
+    {
+        var m = new Material(sh) { color = c };
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
+        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0.95f);
+        if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0.25f);
+        m.EnableKeyword("_EMISSION");
+        m.SetColor("_EmissionColor", c * 1.3f);
+        return m;
+    }
+
+    // Bipiramide pentagonal irregular, caras planas (rombo vidrioso).
+    static Mesh MakeMesh(int seed)
+    {
+        var rnd = new System.Random(seed);
+        float J(float a) => ((float)rnd.NextDouble() * 2f - 1f) * a;
+        var top = new Vector3(J(.05f), .30f + J(.04f), J(.05f));
+        var bot = new Vector3(J(.05f), -.26f + J(.04f), J(.05f));
+        var eq = new Vector3[5];
+        for (int i = 0; i < 5; i++)
+        {
+            float a = (i + J(.2f)) / 5f * Mathf.PI * 2f, r = .14f + J(.05f);
+            eq[i] = new Vector3(Mathf.Cos(a) * r, J(.07f), Mathf.Sin(a) * r);
+        }
+        var v = new List<Vector3>(30);
+        var tri = new List<int>(30);
+        void T(Vector3 a, Vector3 b, Vector3 c)
+        {
+            if (Vector3.Dot(Vector3.Cross(b - a, c - a), (a + b + c) / 3f) < 0f) { var x = b; b = c; c = x; }   // normal hacia fuera
+            tri.Add(v.Count); tri.Add(v.Count + 1); tri.Add(v.Count + 2);
+            v.Add(a * Size); v.Add(b * Size); v.Add(c * Size);
+        }
+        for (int i = 0; i < 5; i++) { T(top, eq[i], eq[(i + 1) % 5]); T(bot, eq[i], eq[(i + 1) % 5]); }
+        var m = new Mesh { name = "CrystalFragment" };
+        m.SetVertices(v);
+        m.SetTriangles(tri, 0);
+        m.RecalculateNormals();
+        m.RecalculateBounds();
+        return m;
     }
 }

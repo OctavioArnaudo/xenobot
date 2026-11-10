@@ -2,6 +2,7 @@
 // Alterna muy lento entre tu skybox actual (dia) y una noche azul cerrada con estrellas brillantes.
 // De noche el skybox del dia se REEMPLAZA por el de noche (el dia deja de dibujarse y de iluminar el ambiente).
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 public class SkyCycle : MonoBehaviour
 {
@@ -13,6 +14,8 @@ public class SkyCycle : MonoBehaviour
     const float NightSun = 0.03f, NightAmbient = 0.15f, NightReflection = 0.1f;
     static readonly Color Moon = new Color(.45f, .55f, 1f), FogNight = new Color(.01f, .02f, .05f), UnlitNight = new Color(.12f, .14f, .25f, 1f);
 
+    bool logged;
+    Camera[] cams = new Camera[16];
     Material mat, nightSky, daySky; bool isNight; Transform sky; Renderer rend; Camera cam; float next;
     float sunI, ambI, refI; Color sunC, fogC; Color[] unlitC;
     UnityEngine.Rendering.SphericalHarmonicsL2 held; bool has; UnityEngine.Rendering.AmbientMode amb0;   // ultimo ambiente del dia
@@ -41,6 +44,7 @@ public class SkyCycle : MonoBehaviour
         if (!sun) foreach (var l in FindObjectsByType<Light>(FindObjectsSortMode.None)) if (l.type == LightType.Directional) { sun = l; break; }
         if (sun) { sunI = sun.intensity; sunC = sun.color; }
         ambI = RenderSettings.ambientIntensity; refI = RenderSettings.reflectionIntensity; fogC = RenderSettings.fogColor; amb0 = RenderSettings.ambientMode;
+        if (!daySky) Debug.LogWarning("[SkyCycle] No habia skybox de dia al iniciar: se tomara el primero que aparezca (escena creada por codigo).");
         if (unlit == null) unlit = new Material[0];
         unlitC = new Color[unlit.Length];
         for (int i = 0; i < unlit.Length; i++) unlitC[i] = unlit[i].color;
@@ -53,6 +57,28 @@ public class SkyCycle : MonoBehaviour
         float e = 0.5f - 0.5f * Mathf.Cos(Time.time * Mathf.PI * 2f / period);
         float t = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((e - 0.25f) * 2f));   // 0 dia, 1 noche: tramos fijos largos y transiciones cortas
         bool night = t > 0.97f;
+
+        // Escenas creadas por codigo: el skybox y el sol pueden aparecer DESPUES de Start. Se capturan cuando existen.
+        if (!daySky && !isNight && RenderSettings.skybox && RenderSettings.skybox != nightSky) daySky = RenderSettings.skybox;
+        if (!sun && t < 0.001f) { sun = RenderSettings.sun; if (sun) { sunI = sun.intensity; sunC = sun.color; } }
+        if (!night && daySky && RenderSettings.skybox != daySky) RenderSettings.skybox = daySky;   // de dia siempre el cielo de dia
+
+        // Toda camara de juego (no overlay, sin RenderTexture) debe dibujar el skybox; cam = la que se usa para posicionar la esfera.
+        if (Camera.allCamerasCount > cams.Length) cams = new Camera[Camera.allCamerasCount];
+        int cn = Camera.GetAllCameras(cams);
+        for (int i = 0; i < cn; i++)
+        {
+            var c = cams[i];
+            if (c.targetTexture || (c.TryGetComponent(out UniversalAdditionalCameraData d) && d.renderType == CameraRenderType.Overlay)) continue;
+            if (!cam || !cam.isActiveAndEnabled) cam = c;
+            if (!night && RenderSettings.skybox && c.clearFlags != CameraClearFlags.Skybox) c.clearFlags = CameraClearFlags.Skybox;
+        }
+        if (!logged && Time.time > 3f)
+        {
+            logged = true;
+            var sk = RenderSettings.skybox;
+            Debug.Log("[SkyCycle] skybox=" + (sk ? sk.name + " (shader " + sk.shader.name + ", soportado=" + sk.shader.isSupported + ")" : "NINGUNO") + ", camara=" + (cam ? cam.clearFlags.ToString() : "n/a") + ", sol=" + (sun ? sun.intensity.ToString("F2") : "n/a"));
+        }
         if (!night && t > 0.8f) { held = RenderSettings.ambientProbe; has = true; }   // guarda el ambiente del final del dia
         if (night != isNight)   // cambio real de skybox (el solape ya cubre el cielo, no se nota)
         {

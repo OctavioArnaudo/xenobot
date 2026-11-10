@@ -1,4 +1,3 @@
-using Runtime.Scripts.Narrative;
 using UnityEngine;
 
 // Puerta entre exterior e interior en la MISMA escena (el interior esta lejos, en otra altura).
@@ -33,7 +32,6 @@ public class SceneDoor : MonoBehaviour
             Inside = true;
             Move(t, dest.position, dest.rotation);
         }
-        StoryManager.Instance?.Save();
     }
 
     public static void Move(Transform t, Vector3 p, Quaternion r)

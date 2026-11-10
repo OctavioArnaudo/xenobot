@@ -162,10 +162,17 @@ namespace Runtime.Scripts.Inventory
             return itemsDatabase.FirstOrDefault(x => x.itemName.ToLowerInvariant() == c);
         }
 
+        private bool _fragmentsAdded;
+
         private void EnsureDatabase()
         {
             if (itemsDatabase == null || itemsDatabase.Count == 0)
                 itemsDatabase = Resources.LoadAll<ItemsData>("").ToList();
+            if (!_fragmentsAdded)   // items creados por codigo (fragmentos de cristal): iguales en todas las maquinas
+            {
+                _fragmentsAdded = true;
+                foreach (var f in CrystalFragments.Items) if (!itemsDatabase.Contains(f)) itemsDatabase.Add(f);
+            }
         }
 
         [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
@@ -337,7 +344,13 @@ namespace Runtime.Scripts.Inventory
 
         public static void Toggle() { var i = LocalInstance; if (i != null) i.SetOpen(!i._open); }
 
-        private void OnGate(string k) { if (k == "inventory") SetOpen(false); }
+        // Esc: primero deselecciona el objeto abierto en el panel; si no hay ninguno, cierra el panel.
+        private void OnGate(string k)
+        {
+            if (k != "inventory") return;
+            if (CharacterPanel.TryDeselect()) return;
+            SetOpen(false);
+        }
 
         private void SetOpen(bool open)
         {

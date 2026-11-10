@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Sky_NightOverlay
-  m_Shader: {fileID: 4800000, guid: d7b4954dd55682d46bc91fe97966ee47, type: 3}
+  m_Name: Skybox_Twilight 1
+  m_Shader: {fileID: 4800000, guid: a36dd42cc0b7ef04c8c28bd2e87f701b, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -25,7 +25,14 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Blend: 0
-    m_Colors: []
+    - _Glow: 10
+    - _SunSize: 0.002
+    m_Colors:
+    - _Ground: {r: 0.079999976, g: 0.049999982, b: 0.09999997, a: 1}
+    - _Horizon: {r: 1, g: 0.45, b: 0.19999996, a: 1}
+    - _Mid: {r: 0.41999996, g: 0.21999997, b: 0.45, a: 1}
+    - _Sun: {r: 0.75183773, g: -0.087155744, b: 0.6535627, a: 0}
+    - _SunColor: {r: 1, g: 0.6, b: 0.29999998, a: 1}
+    - _Zenith: {r: 0.049999982, g: 0.06999998, b: 0.21999997, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

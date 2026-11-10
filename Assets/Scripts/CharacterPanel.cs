@@ -108,6 +108,14 @@ namespace Runtime.Scripts.Inventory
             go.SetActive(false);
         }
 
+        /// <summary>Esc (via MenuGate): si hay un objeto seleccionado lo deselecciona y devuelve true, para que Esc no cierre el panel.</summary>
+        public static bool TryDeselect()
+        {
+            if (s_inst == null || s_inst._sel < 0) return false;
+            s_inst.Unpick();
+            return true;
+        }
+
         public static void Set(InventoryController inv, bool open)
         {
             if (open) Prebuild(inv);
