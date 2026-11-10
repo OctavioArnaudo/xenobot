@@ -1211,4 +1211,109 @@ static class TerrainTools
         Save(dp, col, S, false);
         Save(np, nm, S, true);
     }
+
+    // 11) ASSET: plataforma para base urbana futurista (losa de metal oxidado + cerco perimetral de malla de alambre
+    //     con una abertura en cada lado). Genera el prefab Assets/Prefabs/UrbanBase/UrbanBasePlatform.prefab, listo
+    //     para arrastrar a la escena. Todo con collider solido; las aberturas quedan libres.
+    const float BaseSize = 40f, BaseThick = 0.6f, FenceH = 3f, PanelW = 4f, GateW = 8f;
+
+    [MenuItem("Tools/Terrain/11 Urban Base Platform (genera prefab)")]
+    static void UrbanBase()
+    {
+        const string dir = "Assets/Prefabs/UrbanBase";
+        Directory.CreateDirectory(dir);
+        Material metal = MetalMat(), wire = WireMat(), deck = DeckMat();
+        var root = new GameObject("UrbanBasePlatform");
+        Blk(root.transform, "Platform", new Vector3(0, BaseThick / 2, 0), new Vector3(BaseSize, BaseThick, BaseSize), deck, true);
+
+        int n = Mathf.RoundToInt(BaseSize / PanelW);
+        float z = BaseSize / 2 - 0.15f, y = BaseThick + FenceH / 2;
+        for (int k = 0; k < 4; k++)
+        {
+            var side = new GameObject("Side" + k).transform;
+            side.SetParent(root.transform, false);
+            side.localRotation = Quaternion.Euler(0, 90 * k, 0);
+            for (int i = 0; i < n; i++)
+            {
+                bool panel = Mathf.Abs(-BaseSize / 2 + PanelW * (i + 0.5f)) >= GateW / 2;
+                bool prev = i > 0 && Mathf.Abs(-BaseSize / 2 + PanelW * (i - 0.5f)) >= GateW / 2;
+                float cx = -BaseSize / 2 + PanelW * (i + 0.5f), bx = -BaseSize / 2 + PanelW * i;
+                if (panel)
+                {
+                    Blk(side, "Wire", new Vector3(cx, y, z), new Vector3(PanelW, FenceH, 0.04f), wire, true);
+                    Blk(side, "Rail", new Vector3(cx, BaseThick + FenceH, z), new Vector3(PanelW, 0.1f, 0.1f), metal, false);
+                }
+                if (panel || prev)
+                    Blk(side, "Post", new Vector3(bx, y + 0.1f, z), new Vector3(0.18f, FenceH + 0.2f, 0.18f), metal, true);
+            }
+        }
+        var go = PrefabUtility.SaveAsPrefabAsset(root, dir + "/UrbanBasePlatform.prefab");
+        Object.DestroyImmediate(root);
+        AssetDatabase.SaveAssets();
+        Selection.activeObject = go;
+        EditorGUIUtility.PingObject(go);
+        Debug.Log("[UrbanBase] Prefab creado en " + dir);
+    }
+
+    static GameObject Blk(Transform p, string n, Vector3 pos, Vector3 size, Material m, bool col)
+    {
+        var g = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        g.name = n;
+        g.transform.SetParent(p, false);
+        g.transform.localPosition = pos;
+        g.transform.localScale = size;
+        g.GetComponent<Renderer>().sharedMaterial = m;
+        if (!col) Object.DestroyImmediate(g.GetComponent<Collider>());
+        return g;
+    }
+
+    // Misma chapa oxidada de la herramienta 10, con tiling mayor para la losa grande.
+    static Material DeckMat()
+    {
+        const string path = MetalDir + "/RustMetalDeck.mat";
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m != null) return m;
+        m = new Material(MetalMat()) { mainTextureScale = new Vector2(5f, 5f) };
+        AssetDatabase.CreateAsset(m, path);
+        return m;
+    }
+
+    // Malla de alambre tipo eslabon (rombos), recorte por alfa, tileable.
+    static Material WireMat()
+    {
+        const string path = MetalDir + "/WireMesh.mat", tp = MetalDir + "/WireMesh_D.png";
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (m != null) return m;
+        Directory.CreateDirectory(MetalDir);
+        const int S = 128;
+        var px = new Color[S * S];
+        for (int y = 0; y < S; y++)
+            for (int x = 0; x < S; x++)
+            {
+                float u = x / (float)S, v = y / (float)S;
+                float a = Mathf.Abs(Mathf.Repeat((u + v) * 8f, 1f) - 0.5f), b = Mathf.Abs(Mathf.Repeat((u - v) * 8f, 1f) - 0.5f);
+                px[y * S + x] = new Color(0.55f, 0.58f, 0.62f, (a > 0.44f || b > 0.44f) ? 1f : 0f);
+            }
+        Save(tp, px, S, false);
+        var imp = (TextureImporter)AssetImporter.GetAtPath(tp);
+        imp.alphaIsTransparency = true;
+        imp.mipMapsPreserveCoverage = true;
+        imp.alphaTestReferenceValue = 0.5f;
+        imp.SaveAndReimport();
+        m = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+        var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(tp);
+        if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", tex);
+        if (m.HasProperty("_MainTex")) m.SetTexture("_MainTex", tex);
+        if (m.HasProperty("_AlphaClip")) m.SetFloat("_AlphaClip", 1f);
+        if (m.HasProperty("_Mode")) m.SetFloat("_Mode", 1f);
+        if (m.HasProperty("_Cutoff")) m.SetFloat("_Cutoff", 0.5f);
+        if (m.HasProperty("_Cull")) m.SetFloat("_Cull", 0f);
+        if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0.7f);
+        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0.5f);
+        m.EnableKeyword("_ALPHATEST_ON");
+        m.renderQueue = 2450;
+        m.mainTextureScale = new Vector2(4f, 3f);
+        AssetDatabase.CreateAsset(m, path);
+        return m;
+    }
 }
