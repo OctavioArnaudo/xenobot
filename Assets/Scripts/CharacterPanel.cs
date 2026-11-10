@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using Runtime.Scripts.Gate;
 using Runtime.Scripts.Hud;
@@ -18,8 +19,8 @@ namespace Runtime.Scripts.Inventory
     /// </summary>
     public sealed class CharacterPanel : MonoBehaviour
     {
-        const int Slots = 20, Rows = 12, Layer = 31;           // Layer: capa libre usada solo por la vista previa
-        const float Fov = 28f, RotSpeed = 140f;
+        const int Slots = 24, Cols = 4, Cell = 84, Step = 89, IconPx = 256, IconLayer = 30, Rows = 12, Layer = 31;           // Layer: capa libre usada solo por la vista previa
+        const float Fov = 28f, RotSpeed = 140f, Cw = 340f, Ch = 450f;
 
         static CharacterPanel s_inst;
 
@@ -34,10 +35,10 @@ namespace Runtime.Scripts.Inventory
 
         sealed class Slot
         {
-            public RectTransform root, useRt, dropRt;
-            public Image bg, icon;
-            public TextMeshProUGUI qty, useTxt;
-            public Button use, drop;
+            public RectTransform root;
+            public Image bg;
+            public RawImage icon;
+            public TextMeshProUGUI qty;
             public ItemsData def;
             public string qtyStr;
             public int state = -1;
@@ -59,6 +60,26 @@ namespace Runtime.Scripts.Inventory
         Hold _left, _right;
         float _angle, _dist = 5f, _tick, _syncT;
         Vector3 _pivotOff = Vector3.up;
+
+        // seleccion: UNA sola tarjeta en pool que crece desde el slot elegido
+        RectTransform _grid, _card, _useRt, _dropRt;
+        Image _cardBg;
+        RawImage _cardIcon;
+        TextMeshProUGUI _cardName, _useTxt;
+        CanvasGroup _body;
+        Button _useBtn, _dropBtn;
+        ItemsData _selDef;
+        int _sel = -1, _cst = -2;
+        string _cq;
+        float _a, _tgt;
+        Vector2 _from, _to;
+
+        // iconos 3D: cada prefab se hornea UNA vez en un RenderTexture y se reutiliza
+        readonly Dictionary<ItemsData, Texture> _icons = new Dictionary<ItemsData, Texture>();
+        readonly List<RenderTexture> _rts = new List<RenderTexture>();
+        GameObject _rig, _box;
+        Camera _ic;
+        Light _il;
 
         readonly List<Renderer> _rends = new List<Renderer>(64);
         readonly Dictionary<GameObject, int> _saved = new Dictionary<GameObject, int>();
@@ -97,10 +118,12 @@ namespace Runtime.Scripts.Inventory
             var dim = Img(transform, new Color(0f, 0f, 0f, 0.6f));
             Fit(dim, 0f, 0f, 1f, 1f);
             dim.GetComponent<Image>().raycastTarget = true; // bloquea clics al mundo
+            dim.gameObject.AddComponent<Click>().Fn = Unpick;
 
             var lay = Blank(transform);
             lay.anchorMin = lay.anchorMax = lay.pivot = new Vector2(0.5f, 0.5f);
             lay.sizeDelta = new Vector2(1400f, 800f);
+            lay.gameObject.AddComponent<Click>().Fn = Unpick; // clic en cualquier zona vacia = deseleccionar
 
             BuildInventory(lay);
             BuildViewer(lay);
@@ -122,9 +145,10 @@ namespace Runtime.Scripts.Inventory
             for (int i = 0; i < Slots; i++) _slot[i] = MakeSlot(grid, i);
 
             var e = Txt(grid, 22, new Color(0.2f, 1f, 0.35f, 0.5f), TextAlignmentOptions.Center, FontStyles.Normal);
-            e.text = "Inventario vacío";
+            e.text = "Inventario vacio";
             Fit(e.rectTransform, 0f, 0.4f, 1f, 0.6f);
             _empty = e.gameObject;
+            BuildCard(grid);
         }
 
         Slot MakeSlot(RectTransform grid, int i)
@@ -132,27 +156,198 @@ namespace Runtime.Scripts.Inventory
             var s = new Slot();
             s.root = Blank(grid);
             s.root.anchorMin = s.root.anchorMax = s.root.pivot = new Vector2(0f, 1f);
-            s.root.sizeDelta = new Vector2(80f, 106f);
-            s.root.anchoredPosition = new Vector2((i % 4) * 90f, -(i / 4) * 108f);
+            s.root.sizeDelta = new Vector2(Cell, Cell);
+            s.root.anchoredPosition = new Vector2((i % Cols) * Step, -(i / Cols) * Step);
 
             var bg = Rnd(Img(s.root, SlotOff));
-            bg.anchorMin = bg.anchorMax = bg.pivot = new Vector2(0f, 1f);
-            bg.sizeDelta = new Vector2(80f, 80f);
+            Fit(bg, 0f, 0f, 1f, 1f);
             s.bg = bg.GetComponent<Image>();
+            s.bg.raycastTarget = true; // Img lo deja apagado: sin esto el Button no recibe clics
+            var b = bg.gameObject.AddComponent<Button>();
+            b.transition = Selectable.Transition.None;
+            int k = i;
+            b.onClick.AddListener(() => Pick(k));
 
-            var ic = Img(bg, Color.white);
-            Fit(ic, 0f, 0f, 1f, 1f, 8f);
-            s.icon = ic.GetComponent<Image>();
-            s.icon.preserveAspect = true;
+            s.icon = RawIcon(bg);
+            Fit(s.icon.rectTransform, 0f, 0f, 1f, 1f, 3f);
 
-            s.qty = Txt(bg, 18, Green, TextAlignmentOptions.BottomRight, FontStyles.Bold);
+            s.qty = Txt(bg, 16, Green, TextAlignmentOptions.BottomRight, FontStyles.Bold);
+            s.qty.raycastTarget = false;
             Fit(s.qty.rectTransform, 0f, 0f, 1f, 1f, 4f);
-
-            s.useRt = Mini(s.root, "USE", out s.useTxt, out s.use);
-            s.dropRt = Mini(s.root, "DROP", out _, out s.drop);
-            s.use.onClick.AddListener(() => { if (s.def != null && _inv != null) { _inv.UseItem(s.def); _syncT = 0f; } });
-            s.drop.onClick.AddListener(() => { if (s.def != null && _inv != null) { _inv.DropItem(s.def); _syncT = 0f; } });
             return s;
+        }
+
+        static RawImage RawIcon(RectTransform p)
+        {
+            var g = new GameObject("i", typeof(RawImage));
+            g.transform.SetParent(p, false);
+            var r = g.GetComponent<RawImage>();
+            r.raycastTarget = false;
+            return r;
+        }
+
+        // ---------------- tarjeta de seleccion ----------------
+
+        void BuildCard(RectTransform grid)
+        {
+            _grid = grid;
+            _card = Rnd(Img(grid, new Color(0.04f, 0.16f, 0.07f, 1f)), 10);
+            _cardBg = _card.GetComponent<Image>();
+            _cardBg.raycastTarget = true;
+            _card.anchorMin = _card.anchorMax = _card.pivot = new Vector2(0f, 1f);
+            _card.sizeDelta = new Vector2(Cw, Ch);
+            _card.gameObject.AddComponent<Button>().transition = Selectable.Transition.None; // absorbe clics
+
+            _cardIcon = RawIcon(_card);
+            Fit(_cardIcon.rectTransform, 0.02f, 0.26f, 0.98f, 0.985f);
+
+            var body = Blank(_card);
+            Fit(body, 0f, 0f, 1f, 0.26f);
+            _body = body.gameObject.AddComponent<CanvasGroup>();
+
+            _cardName = Txt(body, 26, Amber, TextAlignmentOptions.Center, FontStyles.Bold);
+            Fit(_cardName.rectTransform, 0.03f, 0.6f, 0.97f, 1f);
+
+            _useRt = Mini(body, "USE", out _useTxt, out _useBtn);
+            _dropRt = Mini(body, "DROP", out var dt, out _dropBtn);
+            _useTxt.fontSize = dt.fontSize = 24;
+            _useBtn.onClick.AddListener(() => { if (_selDef != null) { _inv.UseItem(_selDef); _tick = 1f; } });
+            _dropBtn.onClick.AddListener(() => { if (_selDef != null) { _inv.DropItem(_selDef); Unpick(); } });
+            _card.gameObject.SetActive(false);
+        }
+
+        void Pick(int i)
+        {
+            var s = _slot[i];
+            if (s.def == null) return;
+            if (_sel == i) { Unpick(); return; }
+            _sel = i;
+            _selDef = s.def;
+            _cst = -2;
+            var g = _grid.rect;
+            _from = s.root.anchoredPosition;
+            _to = new Vector2((g.width - Cw) * 0.5f, -(g.height - Ch) * 0.5f);
+            _a = 0f;
+            _tgt = 1f;
+            _cardIcon.texture = s.icon.texture;
+            _cardIcon.enabled = s.icon.texture != null;
+            _card.gameObject.SetActive(true);
+            FillCard(s);
+            Anim();
+        }
+
+        void Unpick() { if (_sel < 0) return; _sel = -1; _selDef = null; _tgt = 0f; } // se encoge de vuelta al slot
+
+        void Shut() { _sel = -1; _selDef = null; _a = _tgt = 0f; if (_card != null) _card.gameObject.SetActive(false); }
+
+        void FillCard(Slot s)
+        {
+            _cst = s.state;
+            _cq = s.qtyStr;
+            _cardName.text = s.def.itemName + "  " + s.qtyStr;
+            bool eq = (s.state & 2) != 0, use = (s.state & 1) != 0, drop = (s.state & 4) != 0;
+            _useBtn.gameObject.SetActive(use);
+            _dropBtn.gameObject.SetActive(drop);
+            _useTxt.text = eq ? "QUIT" : "USE";
+            Fit(_useRt, 0.04f, 0.06f, drop ? 0.49f : 0.96f, 0.56f);
+            Fit(_dropRt, use ? 0.51f : 0.04f, 0.06f, 0.96f, 0.56f);
+        }
+
+        void Anim()
+        {
+            float e = _a * _a * (3f - 2f * _a);
+            _card.anchoredPosition = Vector2.Lerp(_from, _to, e);
+            _card.localScale = Vector3.one * Mathf.Lerp(Cell / Cw, 1f, e);
+            _body.alpha = Mathf.Clamp01((_a - 0.5f) * 2f);
+            var c = _cardBg.color;
+            c.a = Mathf.Clamp01((_a - 0.2f) * 2f);
+            _cardBg.color = c;
+        }
+
+        // ---------------- iconos 3D (modelo del objeto, horneado una vez) ----------------
+
+        Texture Icon(ItemsData d)
+        {
+            if (_icons.TryGetValue(d, out var t)) return t;
+            t = Bake(d);
+            if (t == null && d.itemSprite != null) t = d.itemSprite.texture;
+            _icons[d] = t;
+            return t;
+        }
+
+        void MakeRig()
+        {
+            _rig = new GameObject("IconRig");
+            _rig.transform.position = new Vector3(5000f, 5000f, 5000f);
+            _box = new GameObject("Box");
+            _box.transform.SetParent(_rig.transform, false);
+            _box.SetActive(false);
+
+            var cg = new GameObject("Cam");
+            cg.transform.SetParent(_rig.transform, false);
+            _ic = cg.AddComponent<Camera>();
+            _ic.enabled = false;
+            _ic.clearFlags = CameraClearFlags.SolidColor;
+            _ic.backgroundColor = Color.clear;
+            _ic.cullingMask = 1 << IconLayer;
+            _ic.orthographic = true;
+            _ic.allowHDR = false;
+
+            var lg = new GameObject("Light");
+            lg.transform.SetParent(_rig.transform, false);
+            _il = lg.AddComponent<Light>();
+            _il.type = LightType.Directional;
+            _il.cullingMask = 1 << IconLayer;
+            _il.intensity = 1.3f;
+            _il.shadows = LightShadows.None;
+            _il.enabled = false; // solo se enciende durante el render del icono
+        }
+
+        Texture Bake(ItemsData d)
+        {
+            if (d.itemPrefab == null) return null;
+            if (_ic == null) MakeRig();
+
+            var go = Instantiate(d.itemPrefab, _box.transform); // caja inactiva: no corre Awake/OnEnable
+            go.SetActive(true);
+            var mb = go.GetComponentsInChildren<MonoBehaviour>(true);
+            for (int i = mb.Length - 1; i >= 0; i--) if (mb[i] != null) DestroyImmediate(mb[i]);
+            foreach (var tr in go.GetComponentsInChildren<Transform>(true)) tr.gameObject.layer = IconLayer;
+            foreach (var r in go.GetComponentsInChildren<Renderer>(true))
+                if (!(r is MeshRenderer || r is SkinnedMeshRenderer)) r.enabled = false;
+
+            _box.SetActive(true);
+            bool any = false;
+            Bounds b = default;
+            foreach (var r in go.GetComponentsInChildren<Renderer>(false))
+            {
+                if (!r.enabled) continue;
+                if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds);
+            }
+
+            RenderTexture rt = null;
+            if (any)
+            {
+                float rad = Mathf.Max(b.extents.magnitude, 0.01f);
+                Vector3 dir = new Vector3(0.7f, 0.5f, -0.9f).normalized;
+                var ct = _ic.transform;
+                ct.SetPositionAndRotation(b.center + dir * rad * 4f, Quaternion.LookRotation(-dir));
+                _ic.orthographicSize = rad * 1.05f;
+                _ic.nearClipPlane = 0.01f;
+                _ic.farClipPlane = rad * 8f;
+                _il.transform.rotation = ct.rotation * Quaternion.Euler(30f, -25f, 0f);
+
+                rt = new RenderTexture(IconPx, IconPx, 16, RenderTextureFormat.ARGB32) { antiAliasing = 4, filterMode = FilterMode.Bilinear };
+                _ic.targetTexture = rt;
+                _il.enabled = true;
+                _ic.Render();
+                _il.enabled = false;
+                _ic.targetTexture = null;
+                _rts.Add(rt);
+            }
+            DestroyImmediate(go);
+            _box.SetActive(false);
+            return rt;
         }
 
         void BuildViewer(RectTransform lay)
@@ -271,6 +466,7 @@ namespace Runtime.Scripts.Inventory
         {
             var r = Img(p, Color.white);
             r.GetComponent<Image>().sprite = PanelSkin.Get(k);
+            r.GetComponent<Image>().raycastTarget = false; // el clic en el marco deselecciona
             r.anchorMin = r.anchorMax = r.pivot = anchor;
             r.anchoredPosition = Vector2.zero;
             r.sizeDelta = size;
@@ -336,6 +532,7 @@ namespace Runtime.Scripts.Inventory
         void Apply(InventoryController inv, bool open)
         {
             _inv = inv;
+            Shut();
             gameObject.SetActive(open);
             if (open)
             {
@@ -362,6 +559,8 @@ namespace Runtime.Scripts.Inventory
         void OnDestroy()
         {
             RestoreLayers();
+            for (int i = 0; i < _rts.Count; i++) if (_rts[i] != null) { _rts[i].Release(); Destroy(_rts[i]); }
+            if (_rig != null) Destroy(_rig);
             if (_cam != null) Destroy(_cam.gameObject);
             if (_rt != null) { _rt.Release(); Destroy(_rt); }
         }
@@ -372,6 +571,13 @@ namespace Runtime.Scripts.Inventory
         {
             if (_inv == null) { gameObject.SetActive(false); return; }
             float dt = Time.unscaledDeltaTime;
+            if (_sel >= 0 && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) Unpick();
+            if (_a != _tgt)
+            {
+                _a = Mathf.MoveTowards(_a, _tgt, dt * 8f);
+                Anim();
+                if (_a <= 0f) _card.gameObject.SetActive(false);
+            }
             if (_left != null && _left.Down) _angle += RotSpeed * dt;
             if (_right != null && _right.Down) _angle -= RotSpeed * dt;
 
@@ -396,24 +602,16 @@ namespace Runtime.Scripts.Inventory
                     if (s.def != def)
                     {
                         s.def = def;
-                        s.icon.sprite = def.itemSprite;
-                        s.icon.enabled = def.itemSprite != null;
+                        var tex = Icon(def);
+                        s.icon.texture = tex;
+                        s.icon.enabled = tex != null;
                     }
                     string q = InventoryController.QtyStr(qty);
                     if (!ReferenceEquals(s.qtyStr, q)) { s.qtyStr = q; s.qty.text = q; }
 
                     bool canUse = eq ? def.isQuitable : def.isUsable;
                     int st = (canUse ? 1 : 0) | (eq ? 2 : 0) | (def.isDropable ? 4 : 0);
-                    if (st != s.state)
-                    {
-                        s.state = st;
-                        s.bg.color = eq ? SlotOn : SlotOff;
-                        s.use.gameObject.SetActive(canUse);
-                        s.drop.gameObject.SetActive(def.isDropable);
-                        s.useTxt.text = eq ? "QUIT" : "USE";
-                        Place(s.useRt, 0f, 39f);
-                        Place(s.dropRt, canUse ? 41f : 0f, canUse ? 39f : 80f);
-                    }
+                    if (st != s.state) { s.state = st; s.bg.color = eq ? SlotOn : SlotOff; }
                 }
                 else if (s.root.gameObject.activeSelf)
                 {
@@ -423,12 +621,13 @@ namespace Runtime.Scripts.Inventory
                 }
             }
             if (_empty.activeSelf != (n == 0)) _empty.SetActive(n == 0);
-        }
 
-        static void Place(RectTransform r, float x, float w)
-        {
-            r.anchoredPosition = new Vector2(x, -84f);
-            r.sizeDelta = new Vector2(w, 22f);
+            if (_sel >= 0)
+            {
+                var s = _slot[_sel];
+                if (s.def != _selDef) Shut();                                           // el objeto ya no esta (usado / tirado)
+                else if (s.state != _cst || !ReferenceEquals(s.qtyStr, _cq)) FillCard(s); // QUIT/USE o cantidad cambiaron
+            }
         }
 
         // ---------------- stats / skills ----------------
@@ -537,6 +736,12 @@ namespace Runtime.Scripts.Inventory
         {
             public System.Action<float> OnDelta;
             public void OnDrag(PointerEventData e) => OnDelta?.Invoke(e.delta.x);
+        }
+
+        sealed class Click : MonoBehaviour, IPointerClickHandler
+        {
+            public System.Action Fn;
+            public void OnPointerClick(PointerEventData e) => Fn?.Invoke();
         }
     }
 }
