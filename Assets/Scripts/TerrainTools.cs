@@ -1540,7 +1540,7 @@ static class TerrainTools
     }
 
     // 12) INTERIOR DE LABORATORIO en la MISMA escena (requiere SceneDoor.cs FUERA de la carpeta Editor).
-    //     Ver el menu mas abajo. El interior queda lejos del mundo (InteriorOffset, +300 m en X por laboratorio).
+    //     Ver el menu mas abajo. El interior queda lejos del mundo (InteriorOffset, +1200 m en X por laboratorio).
     const string InteriorDir = "Assets/Prefabs/Interiors";
     static readonly Vector3 InteriorOffset = new Vector3(0f, 2000f, 0f);
     static readonly List<Vector3> IV = new List<Vector3>();
@@ -1556,9 +1556,50 @@ static class TerrainTools
     [MenuItem("Tools/Terrain/12 Lab Interior (seleccion)", true)]
     static bool LabOk() => Selection.activeGameObject != null && !EditorUtility.IsPersistent(Selection.activeGameObject);
 
-    // 12) Interior de laboratorio en la MISMA escena: raiz "<Lab>_Interior" a InteriorOffset (+300 m en X por cada laboratorio).
-    //     Selecciona UN edificio. Crea/reutiliza "Door_<lab>" (Trigger + ReturnPoint), genera 2 salas + 2 tuneles y el trigger "Exit".
+    // 12) Interior de laboratorio en la MISMA escena: raiz "<Lab>_Interior" a InteriorOffset (+1200 m en X por cada laboratorio).
+    //     Selecciona UN edificio. Crea/reutiliza "Door_<lab>" (Trigger + ReturnPoint) y genera un interior DIFERENTE cada vez:
+    //     nodos en cuadricula (salas circulares, rectangulares, octogonales, irregulares o nudos minimos) unidos por tuneles
+    //     curvos, con lazos opcionales; 1 de cada 4 es una red de tuneles sola. Nodo 0 = entrada (PlayerSpawn + Exit).
+    //     Cada sala queda marcada en "Rooms" (escala = semiejes) para que el menu 15 pueda poblarlo.
     //     Si ya existe "<Lab>_Interior" no regenera (borralo antes). Guarda la escena despues.
+    class LabNode { public int kind; public Vector2 c, h; public Vector2[] o; public bool[] g = new bool[64]; }   // kind: 0 circulo, 1 rectangulo, 2 octogono, 3 irregular, 4 nudo
+    static readonly Vector2[] Dirs = { Vector2.right, Vector2.up, Vector2.left, Vector2.down };
+
+    // Contorno de 64 puntos CCW alrededor del origen; h = semiejes inscritos. Rectangulo y octogono tienen un punto exacto
+    // en el centro de cada lado, asi los tuneles (siempre en los ejes) salen perpendiculares a la pared.
+    static Vector2[] Outline(System.Random rnd, int kind, Vector2 h)
+    {
+        var p = new Vector2[64];
+        float f1 = Rf(rnd, 0f, 6.28f), f2 = Rf(rnd, 0f, 6.28f);
+        for (int i = 0; i < 64; i++)
+        {
+            float a = i * Mathf.PI / 32f, u = (i % 16) / 8f - 1f;
+            Vector2 d = new Vector2(Mathf.Cos(a), Mathf.Sin(a));
+            if (kind == 1) { int s = i / 16; p[i] = s == 0 ? new Vector2(h.x, u * h.y) : s == 1 ? new Vector2(-u * h.x, h.y) : s == 2 ? new Vector2(-h.x, -u * h.y) : new Vector2(u * h.x, -h.y); }
+            else if (kind == 2)
+            {
+                int s = i / 8; float r = h.x / 0.9238795f, a0 = (s * 45f - 22.5f) * Mathf.Deg2Rad, a1 = a0 + Mathf.PI / 4f;
+                p[i] = Vector2.Lerp(new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * r, new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * r, (i % 8) / 8f);
+            }
+            else p[i] = d * (kind == 3 ? h.x * (1f + .1f * Mathf.Sin(3f * a + f1) + .05f * Mathf.Sin(5f * a + f2)) / .85f : h.x);
+        }
+        return p;
+    }
+
+    // Punto donde el rayo desde el origen en direccion d corta el contorno.
+    static Vector2 RayEdge(Vector2[] p, Vector2 d)
+    {
+        for (int i = 0; i < p.Length; i++)
+        {
+            Vector2 a = p[i], e = p[(i + 1) % p.Length] - a;
+            float den = d.x * e.y - d.y * e.x;
+            if (Mathf.Abs(den) < 1e-6f) continue;
+            float t = (a.x * e.y - a.y * e.x) / den, u = (a.x * d.y - a.y * d.x) / den;
+            if (t > 0f && u >= 0f && u <= 1f) return d * t;
+        }
+        return d;
+    }
+
     [MenuItem("Tools/Terrain/12 Lab Interior (seleccion)")]
     static void LabInterior()
     {
@@ -1570,66 +1611,105 @@ static class TerrainTools
         lab.GetComponentsInChildren(IR);
         Bounds bd = default; bool has = false;
         foreach (var r in IR) { if (!has) { bd = r.bounds; has = true; } else bd.Encapsulate(r.bounds); }
-        float R = has ? Mathf.Clamp(Mathf.Min(bd.extents.x, bd.extents.z) * 0.5f, 8f, 14f) : 10f, D = 2f * R + 13f;
         const float T = 0.4f;
-        const int M = 64;
         Directory.CreateDirectory(InteriorDir);
 
         var dg = GameObject.Find("Door_" + labName);
         var door = dg != null ? dg.GetComponentInChildren<SceneDoor>(true) : null;
         if (door == null) door = MakeDoor(lab, bd, has);
 
-        var rA = new Vector2[M]; var rB = new Vector2[M]; var gA = new bool[M]; var gB = new bool[M];
-        var off = new Vector2(0f, D);
-        for (int i = 0; i < M; i++)
+        // Disposicion aleatoria: celdas de S m; arbol de crecimiento + lazos opcionales. Celda (0,-1) reservada para la salida.
+        var rnd = new System.Random();
+        bool only = rnd.Next(4) == 0;
+        int cnt = only ? rnd.Next(4, 11) : rnd.Next(2, 8);
+        float S = only ? Rf(rnd, 32f, 56f) : 56f, J = only ? 3f : 5f;
+        var cell = new List<Vector2Int> { Vector2Int.zero };
+        var ed = new List<Vector3Int>();   // (nodo a, nodo b, direccion de a hacia b)
+        for (int tries = 0; cell.Count < cnt && tries < 500; tries++)
         {
-            float a = Mathf.PI * 2f * i / M;
-            rA[i] = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * R;
-            rB[i] = rA[i] + off;
+            int a = rnd.Next(cell.Count), dr = rnd.Next(4);
+            var q = cell[a] + Vector2Int.RoundToInt(Dirs[dr]);
+            if (cell.Contains(q) || q == Vector2Int.down || Mathf.Abs(q.x) > 5 || Mathf.Abs(q.y) > 5) continue;
+            cell.Add(q); ed.Add(new Vector3Int(a, cell.Count - 1, dr));
         }
-        Gap(rA, Vector2.zero, gA, new Vector2(0f, -1f), 1.5f);
-        for (int k = 0; k < 2; k++)
+        for (int a = 0; a < cell.Count; a++)
+            for (int dr = 0; dr < 2; dr++)
+            {
+                int b = cell.IndexOf(cell[a] + Vector2Int.RoundToInt(Dirs[dr]));
+                if (b >= 0 && rnd.NextDouble() < (only ? .5 : .35) && !ed.Any(z => z.x == a && z.y == b || z.x == b && z.y == a)) ed.Add(new Vector3Int(a, b, dr));
+            }
+
+        var nd = new LabNode[cell.Count];
+        int[] kinds = { 0, 0, 1, 1, 1, 2, 2, 3, 4, 4 };
+        for (int i = 0; i < nd.Length; i++)
         {
-            float s = k * 2f - 1f;
-            Gap(rA, Vector2.zero, gA, new Vector2(s * SB, CB), TW);
-            Gap(rB, off, gB, new Vector2(s * SB, -CB), TW);
+            int k = only ? 4 : i == 0 ? rnd.Next(4) : kinds[rnd.Next(10)];
+            float r = k == 4 ? Rf(rnd, 4.5f, 5.5f) : Rf(rnd, 7f, 14f);
+            var h = k == 1 ? new Vector2(r, Rf(rnd, 7f, 14f)) : new Vector2(r, r);
+            nd[i] = new LabNode { kind = k, h = h, o = Outline(rnd, k, h), c = i == 0 ? Vector2.zero : new Vector2(cell[i].x, cell[i].y) * S + new Vector2(Rf(rnd, -J, J), Rf(rnd, -J, J)) };
         }
 
-        Wall(rA, gA, true, TH, T);
-        Wall(rB, gB, true, TH, T);
-        var lamps = new Vector3[2];
-        for (int k = 0; k < 2; k++) { TunnelPath(k * 2f - 1f, R, D); Tunnel(false); lamps[k] = TP[NS / 2] + Vector3.up * 3f; }
-        var walls = Bake(AssetDatabase.GenerateUniqueAssetPath($"{InteriorDir}/{id}_Walls.asset"));
+        // Puertas de cada tunel (extremos hundidos 0.25 m en el muro) y aberturas en los muros.
+        int ne = ed.Count;
+        var p0 = new Vector2[ne]; var p3 = new Vector2[ne];
+        for (int e = 0; e < ne; e++)
+        {
+            LabNode A = nd[ed[e].x], B = nd[ed[e].y]; Vector2 d = Dirs[ed[e].z];
+            p0[e] = A.c + RayEdge(A.o, d) - d * .25f;
+            p3[e] = B.c + RayEdge(B.o, -d) + d * .25f;
+            Gap(A.o, Vector2.zero, A.g, d, TW);
+            Gap(B.o, Vector2.zero, B.g, -d, TW);
+        }
+        Gap(nd[0].o, Vector2.zero, nd[0].g, Vector2.down, 1.5f);
 
-        Disc(rA, Vector2.zero);
-        Disc(rB, off);
-        for (int k = 0; k < 2; k++) { TunnelPath(k * 2f - 1f, R, D); Tunnel(true); }
-        var slab = Bake(AssetDatabase.GenerateUniqueAssetPath($"{InteriorDir}/{id}_Slab.asset"));
+        // Una malla de muros y una de piso POR NODO (con sus tuneles salientes): cada trozo ve solo las luces cercanas.
+        var walls = new Mesh[nd.Length]; var slabs = new Mesh[nd.Length]; var lamps = new List<Vector3>();
+        for (int i = 0; i < nd.Length; i++)
+        {
+            Vector2 c = nd[i].c;
+            var w = nd[i].o.Select(v => v + c).ToArray();
+            Wall(w, nd[i].g, true, TH, T);
+            for (int e = 0; e < ne; e++)
+            {
+                if (ed[e].x != i) continue;
+                TunnelPath(p0[e], Dirs[ed[e].z], p3[e]); Tunnel(false);
+                if ((p3[e] - p0[e]).magnitude > 24f) lamps.Add(TP[NS / 2] + Vector3.up * 3f);
+            }
+            walls[i] = Bake(AssetDatabase.GenerateUniqueAssetPath($"{InteriorDir}/{id}_Walls{i}.asset"));
+            Disc(w, c);
+            for (int e = 0; e < ne; e++) if (ed[e].x == i) { TunnelPath(p0[e], Dirs[ed[e].z], p3[e]); Tunnel(true); }
+            slabs[i] = Bake(AssetDatabase.GenerateUniqueAssetPath($"{InteriorDir}/{id}_Slab{i}.asset"));
+        }
 
-        int n = Object.FindObjectsByType<SceneDoor>(FindObjectsSortMode.None).Count(d => d.exit);
+        int n = Object.FindObjectsByType<SceneDoor>(FindObjectsSortMode.None).Count(x => x.exit);
         var root = new GameObject(id);
         Undo.RegisterCreatedObjectUndo(root, "Lab Interior");
         UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(root, lab.scene);
-        root.transform.position = InteriorOffset + Vector3.right * 300f * n;
-        Part(root, "Walls", walls, MetalMat());
-        Part(root, "Slab", slab, DeckMat());
-        var spawn = Mark(root, "PlayerSpawn", new Vector3(0f, 1.2f, -R + 3f)).transform;
+        root.transform.position = InteriorOffset + Vector3.right * 1200f * n;
+        for (int i = 0; i < nd.Length; i++) { Part(root, "Walls" + i, walls[i], MetalMat()); Part(root, "Slab" + i, slabs[i], DeckMat()); }
 
-        var ex = Mark(root, "Exit", new Vector3(0f, 1.5f, -R + 0.4f));
+        var rooms = Mark(root, "Rooms", Vector3.zero);
+        foreach (var nn in nd)
+        {
+            var m = Mark(rooms, "Room_" + nn.kind, new Vector3(nn.c.x, 0f, nn.c.y));
+            m.transform.localScale = new Vector3(nn.h.x, 1f, nn.h.y);
+            Lamp(root, new Vector3(nn.c.x, TH - 0.8f, nn.c.y), Mathf.Max(nn.h.x, nn.h.y) * 1.6f);
+        }
+        foreach (var lp in lamps) Lamp(root, lp, 12f);
+
+        Vector2 hs = RayEdge(nd[0].o, Vector2.down);
+        var spawn = Mark(root, "PlayerSpawn", new Vector3(hs.x, 1.2f, hs.y + 3f)).transform;
+        var ex = Mark(root, "Exit", new Vector3(hs.x, 1.5f, hs.y + 0.4f));
         ex.transform.localScale = new Vector3(3f, 3f, 1f);
         ex.AddComponent<BoxCollider>().isTrigger = true;
         var sd = ex.AddComponent<SceneDoor>(); sd.exit = true; sd.point = spawn;
 
         door.dest = spawn;
         EditorUtility.SetDirty(door);
-
-        Lamp(root, new Vector3(0f, TH - 0.8f, 0f), R * 1.6f);
-        Lamp(root, new Vector3(0f, TH - 0.8f, D), R * 1.6f);
-        foreach (var lp in lamps) Lamp(root, lp, 12f);
         AssetDatabase.SaveAssets();
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(lab.scene);
         Selection.activeGameObject = root;
-        Debug.Log($"[Interior] '{id}' creado en esta escena a {root.transform.position} (2 salas de radio {R:0.#} m). Ubica 'Door_{labName}/Trigger' en la entrada del modelo y guarda la escena.");
+        Debug.Log($"[Interior] '{id}' creado en {root.transform.position}: {nd.Count(x => x.kind != 4)} salas, {nd.Count(x => x.kind == 4)} nudos, {ne} tuneles{(only ? " (red de tuneles)" : "")}. Ubica 'Door_{labName}/Trigger' en la entrada del modelo y guarda la escena.");
     }
 
     static void Lamp(GameObject root, Vector3 pos, float range)
@@ -1661,21 +1741,18 @@ static class TerrainTools
         }
     }
 
-    // Eje del tunel: curva de Bezier cubica que sale radialmente de A (30 grados al norte) y llega radialmente a B.
-    // s = -1/+1 (lado). Los extremos se hunden 0.25 m en el muro para que el marco quede embebido en su espesor.
-    static void TunnelPath(float s, float R, float D)
+    // Eje del tunel: Bezier cubica de p0 (sale en direccion d) a p3 (llega en direccion d). TS = lateral de cada seccion.
+    static void TunnelPath(Vector2 p0, Vector2 d, Vector2 p3)
     {
-        Vector2 d0 = new Vector2(s * SB, CB), d3 = new Vector2(s * SB, -CB);
-        Vector2 p0 = d0 * (R - 0.25f), p3 = new Vector2(0f, D) + d3 * (R - 0.25f);
-        float k = R * 0.65f;
-        Vector2 p1 = p0 + d0 * k, p2 = p3 + d3 * k;
+        float k = (p3 - p0).magnitude * 0.4f;
+        Vector2 p1 = p0 + d * k, p2 = p3 - d * k;
         for (int i = 0; i <= NS; i++)
         {
             float t = (float)i / NS, u = 1f - t;
             Vector2 p = u * u * u * p0 + 3f * u * u * t * p1 + 3f * u * t * t * p2 + t * t * t * p3;
-            Vector2 d = (3f * u * u * (p1 - p0) + 6f * u * t * (p2 - p1) + 3f * t * t * (p3 - p2)).normalized;
+            Vector2 q = (3f * u * u * (p1 - p0) + 6f * u * t * (p2 - p1) + 3f * t * t * (p3 - p2)).normalized;
             TP[i] = new Vector3(p.x, 0f, p.y);
-            TS[i] = new Vector3(d.y, 0f, -d.x);
+            TS[i] = new Vector3(q.y, 0f, -q.x);
         }
     }
 
@@ -1819,8 +1896,19 @@ static class TerrainTools
         CI[m].Add(new CombineInstance { mesh = CubeM, transform = p * Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.identity, new Vector3(sx, sy, sz)) });
     }
 
-    [MenuItem("Tools/Terrain/15 Console Panel (genera prefab)")]
+    // Menu 15: con un interior seleccionado lo puebla (ver 15b mas abajo); sin seleccion genera un prefab de consola nuevo.
+    [MenuItem("Tools/Terrain/15 Console Panel (prefab / puebla interior)")]
     static void ConsolePanel()
+    {
+        var t = Selection.activeTransform;
+        while (t != null && !EditorUtility.IsPersistent(t) && !t.name.EndsWith("_Interior")) t = t.parent;
+        if (t != null && !EditorUtility.IsPersistent(t)) { PopulateInterior(t); return; }
+        var go = NewConsole();
+        Selection.activeObject = go;
+        EditorGUIUtility.PingObject(go);
+    }
+
+    static GameObject NewConsole()
     {
         const string dir = "Assets/Prefabs/Consoles";
         Directory.CreateDirectory(dir);
@@ -1928,9 +2016,132 @@ static class TerrainTools
         var go = PrefabUtility.SaveAsPrefabAsset(root, $"{dir}/{name}.prefab");
         Object.DestroyImmediate(root);
         AssetDatabase.SaveAssets();
-        Selection.activeObject = go;
-        EditorGUIUtility.PingObject(go);
         Debug.Log($"[Console] {name}: {n} modulos, {nc} cables, en {dir}");
+        return go;
+    }
+
+    // 15b) POBLAR INTERIOR: con "<Lab>_Interior" (o un hijo) seleccionado, el menu 15 pone 5 consolas contra las paredes
+    //      (prefabs de Assets/Prefabs/Consoles; genera los que falten hasta 5) y 2 plataformas de portal (malla PortalPlatform).
+    //      Sirve para interiores nuevos (marcadores "Rooms") y del generador anterior (2 salas circulares). Repetir reemplaza "Props".
+    const float PortalScale = 0.18f;   // la malla mide ~24 x 22 m: a 0.18 cabe en la altura del interior (4.5 m)
+
+    static bool Far(Vector3 a, Vector3 b, float d) => new Vector2(a.x - b.x, a.z - b.z).sqrMagnitude > d * d;
+
+    static List<(Vector3 pos, Vector3 n)> Candidates(Transform root, Vector3 c, Vector2 h, List<(Vector3 p, float r)> avoid)
+    {
+        var l = new List<(Vector3 pos, Vector3 n)>();
+        Vector3 o = root.TransformPoint(c + Vector3.up);
+        for (int k = 0; k < 24; k++)
+        {
+            float a = (k * 15f + 7f) * Mathf.Deg2Rad;
+            if (!Physics.Raycast(o, new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)), out var hit, Mathf.Max(h.x, h.y) * 1.45f + 1f) || Mathf.Abs(hit.normal.y) > .3f) continue;
+            Vector3 n = new Vector3(hit.normal.x, 0f, hit.normal.z).normalized, p = hit.point + n * .45f, s = Vector3.Cross(Vector3.up, n) * .6f, q = p + Vector3.up;
+            if (!Physics.Raycast(q, -n, 1f) || !Physics.Raycast(q + s, -n, 1f) || !Physics.Raycast(q - s, -n, 1f)) continue;   // pared continua detras (sin aberturas)
+            p = root.InverseTransformPoint(p); p.y = 0f;
+            if (avoid.All(v => Far(p, v.p, v.r))) l.Add((p, n));
+        }
+        return l;
+    }
+
+    static List<GameObject> ConsolePrefabs(int n)
+    {
+        var l = AssetDatabase.FindAssets("Console_ t:Prefab", new[] { "Assets/Prefabs/Consoles" })
+            .Select(g => AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(g))).OrderBy(_ => Random.value).Take(n).ToList();
+        while (l.Count < n) l.Add(NewConsole());
+        return l;
+    }
+
+    static GameObject PortalPrefab()
+    {
+        const string path = InteriorDir + "/PortalPlatform.prefab";
+        var pf = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+        if (pf) return pf;
+        var mesh = AssetDatabase.FindAssets("PortalPlatform t:Mesh").Select(g => AssetDatabase.LoadAssetAtPath<Mesh>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault(m => m);
+        if (!mesh) return null;
+        Directory.CreateDirectory(InteriorDir);
+        Color[] cl = { new Color(.12f, .13f, .15f), new Color(.2f, .22f, .26f), new Color(.2f, .8f, 1f), new Color(.6f, .3f, 1f) };   // submallas: base, arcos, anillo A, anillo B
+        var ms = new Material[4];
+        for (int i = 0; i < 4; i++)
+        {
+            ms[i] = Mat(InteriorDir, "Portal" + i, cl[i]);
+            if (i < 2 || !ms[i].HasProperty("_EmissionColor")) continue;
+            ms[i].EnableKeyword("_EMISSION"); ms[i].SetColor("_EmissionColor", cl[i] * 2.5f); EditorUtility.SetDirty(ms[i]);
+        }
+        var g = new GameObject("PortalPlatform");
+        g.transform.localScale = Vector3.one * PortalScale;
+        g.AddComponent<MeshFilter>().sharedMesh = mesh;
+        g.AddComponent<MeshRenderer>().sharedMaterials = ms;
+        g.AddComponent<MeshCollider>().sharedMesh = mesh;
+        pf = PrefabUtility.SaveAsPrefabAsset(g, path);
+        Object.DestroyImmediate(g);
+        return pf;
+    }
+
+    static void Place(GameObject pf, Transform parent, string name, Vector3 pos, Vector3 fwd)
+    {
+        var g = (GameObject)PrefabUtility.InstantiatePrefab(pf, parent);
+        Undo.RegisterCreatedObjectUndo(g, "Populate Interior");
+        g.name = name;
+        g.transform.SetLocalPositionAndRotation(pos, Quaternion.LookRotation(fwd));
+    }
+
+    static void PopulateInterior(Transform root)
+    {
+        var rc = new List<Vector3>(); var rh = new List<Vector2>();   // centro local y semiejes de cada sala
+        var rg = root.Find("Rooms");
+        if (rg != null) foreach (Transform r in rg) { rc.Add(r.localPosition); rh.Add(new Vector2(r.localScale.x, r.localScale.z)); }
+        else if (root.Find("Exit") is Transform ex0)   // generador anterior: 2 salas circulares
+        {
+            float R = 0.4f - ex0.localPosition.z;
+            rc.Add(Vector3.zero); rc.Add(new Vector3(0f, 0f, 2f * R + 13f)); rh.Add(new Vector2(R, R)); rh.Add(new Vector2(R, R));
+        }
+        if (rc.Count == 0) { Debug.LogWarning("[Populate] No parece un interior generado (sin 'Rooms' ni 'Exit')."); return; }
+
+        var old = root.Find("Props");
+        if (old) Undo.DestroyObjectImmediate(old.gameObject);
+        var props = new GameObject("Props");
+        props.transform.SetParent(root, false);
+        Undo.RegisterCreatedObjectUndo(props, "Populate Interior");
+        Physics.SyncTransforms();
+
+        // Portales: las 2 salas mas grandes (evita la de entrada); si solo cabe una sala grande, los 2 enfrentados en ella.
+        var pr = Enumerable.Range(0, rc.Count).OrderBy(i => i == 0).ThenByDescending(i => Mathf.Min(rh[i].x, rh[i].y)).Where(i => Mathf.Min(rh[i].x, rh[i].y) >= 3.9f).Take(2).ToList();
+        var pp = pr.Select(i => rc[i]).ToList();
+        if (pr.Count == 1 && Mathf.Min(rh[pr[0]].x, rh[pr[0]].y) >= 7.5f) { Vector3 c = rc[pr[0]]; pp = new List<Vector3> { c + Vector3.left * 3.5f, c + Vector3.right * 3.5f }; }
+
+        var avoid = pp.Select(p => (p, 4.2f)).ToList();
+        foreach (var nm in new[] { "PlayerSpawn", "Exit" }) { var t = root.Find(nm); if (t) avoid.Add((t.localPosition, 3.5f)); }
+
+        // Consolas: candidatos contra la pared (rayos desde el centro de cada sala), repartidos por salas de mayor a menor.
+        var cand = Enumerable.Range(0, rc.Count).OrderByDescending(i => rh[i].x * rh[i].y)
+            .Select(i => new Queue<(Vector3 pos, Vector3 n)>(Candidates(root, rc[i], rh[i], avoid).OrderBy(_ => Random.value))).ToList();
+        var chosen = new List<(Vector3 pos, Vector3 n)>();
+        for (bool more = true; chosen.Count < 5 && more;)
+        {
+            more = false;
+            foreach (var qu in cand)
+                while (qu.Count > 0 && chosen.Count < 5)
+                {
+                    var cc = qu.Dequeue();
+                    if (chosen.Any(v => !Far(v.pos, cc.pos, 2f))) continue;
+                    chosen.Add(cc); more = true; break;
+                }
+        }
+
+        var cp = ConsolePrefabs(chosen.Count);
+        for (int i = 0; i < chosen.Count; i++) Place(cp[i], props.transform, "Console" + i, chosen[i].pos, chosen[i].n);
+
+        var pf = PortalPrefab();
+        if (pf == null) Debug.LogWarning("[Populate] No encontre la malla 'PortalPlatform' (Mesh) en el proyecto: sin portales.");
+        else foreach (var p in pp)
+            {
+                Vector3 fw = rc[0] - p; fw.y = 0f;
+                Place(pf, props.transform, "Portal", p, fw.sqrMagnitude < 1f ? Vector3.back : fw);
+            }
+
+        ESM.MarkSceneDirty(root.gameObject.scene);
+        Selection.activeGameObject = props;
+        Debug.Log($"[Populate] '{root.name}': {chosen.Count}/5 consolas y {(pf == null ? 0 : pp.Count)}/2 portales." + (chosen.Count < 5 ? " Faltan consolas: no hay mas paredes libres o las colisiones aun no existen (guarda la escena y repite)." : ""));
     }
 
     // 16) CRISTALES: racimos de puntas y estalagmitas PROCEDURALES (6 variantes de malla, sin FBX) de vidrio translucido y
