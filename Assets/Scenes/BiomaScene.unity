@@ -16451,6 +16451,33 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 643fc360ab03903469646571c197f757, type: 3}
+--- !u!1 &139044447 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+  m_PrefabInstance: {fileID: 893698069}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &139044448
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 139044447}
+  m_Enabled: 1
+  m_Avatar: {fileID: 9000000, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+  m_Controller: {fileID: 9100000, guid: a83f0f6cd365e1c4db61c825f275065d, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &139482161 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 623809650406847859, guid: 5f688d735ab38ef46b4f2f9b048a00ba, type: 3}
@@ -86876,6 +86903,66 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5165724424727546765, guid: c678b37ef721b734fb7012a40855c6c2, type: 3}
   m_PrefabInstance: {fileID: 1381280258}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &893698069
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1495.4
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 332
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      propertyPath: m_Name
+      value: Enemigo Mele animaciones
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 139044448}
+  m_SourcePrefab: {fileID: 100100000, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
 --- !u!4 &894020050 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3164909683476977494, guid: 97a590863f4f35d459edcd93fed790e7, type: 3}
@@ -368521,3 +368608,4 @@ SceneRoots:
   - {fileID: 300602953}
   - {fileID: 121152456}
   - {fileID: 1118449296}
+  - {fileID: 893698069}
