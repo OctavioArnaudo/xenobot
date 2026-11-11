@@ -2209,8 +2209,22 @@ static class TerrainTools
                 }
             }
         }
+        EnsureCrystalNet();
         UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
         Debug.Log($"[Crystals] +{total} racimos nuevos, {root.transform.childCount} en total (pendiente >= {CrystalMinSlope} grados). Si salen pocos, baja CrystalMinSlope; ejecuta de nuevo para sumar mas.");
+    }
+
+    // 18) Agrega (una sola vez) el objeto de red de los cristales: NetworkObject + CrystalNet. No toca los cristales existentes.
+    [MenuItem("Tools/Terrain/18 Crystal Net (red de cristales)")]
+    static void CrystalNetMenu() { EnsureCrystalNet(); UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty(); }
+
+    static void EnsureCrystalNet()
+    {
+        if (Object.FindFirstObjectByType<CrystalNet>() != null) { Debug.Log("[Crystals] CrystalNet ya existe en la escena."); return; }
+        var g = new GameObject("CrystalNet");
+        g.AddComponent<Unity.Netcode.NetworkObject>(); g.AddComponent<CrystalNet>();
+        Undo.RegisterCreatedObjectUndo(g, "CrystalNet");
+        Debug.Log("[Crystals] CrystalNet creado. Guarda la escena.");
     }
 
     // 17) Borra todos los cristales colocados por 16.

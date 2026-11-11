@@ -16,10 +16,11 @@ public class Smashable : MonoBehaviour
 
     public void Damage(float d)
     {
-        if (dead || (life -= d) > 0f) return;
+        if (dead || Forward(d) || (life -= d) > 0f) return;
         dead = true; Die(); Remove();
     }
 
+    protected virtual bool Forward(float d) => false;   // true = el dano se envio al servidor y aqui no se aplica
     protected virtual void Die() { }
     protected virtual void Remove() => Destroy(gameObject);
 
@@ -32,6 +33,7 @@ public class Crystal : Smashable
     public static readonly List<Crystal> All = new List<Crystal>();
     public static readonly Color[] Colors = { new Color(.6f, .1f, 1f), new Color(1f, .05f, .05f), new Color(1f, .85f, .05f) };
     public int color;               // 0 violeta, 1 rojo, 2 amarillo
+    [System.NonSerialized] public int id = -1;   // lo asigna CrystalNet (orden de los hijos de "Crystals", igual en todas las maquinas)
     public GameObject[] drops;      // un pickup por color
     Collider col;
 
@@ -39,24 +41,35 @@ public class Crystal : Smashable
     void OnDisable() => All.Remove(this);
     public Bounds Box => col != null ? col.bounds : new Bounds(transform.position, Vector3.one * 8f);
 
-    // Suelta 1-3 fragmentos fisicos (CrystalFragments). "drops" ya no se usa. Ruedan por la pendiente hasta el suelo y se recogen al
-    // acercarse el jugador: van al inventario como objeto con su modelo 3D.
+    // Solo corre en el servidor (o sin red): los clientes reenvian su dano por CrystalNet. Cada fragmento aparece en TODAS las maquinas.
+    protected override bool Forward(float d)
+    {
+        if (id < 0 || !CrystalNet.Active || CrystalNet.I.IsServer) return false;
+        CrystalNet.I.DamageRpc(id, d); return true;
+    }
+
     protected override void Die()
     {
         for (int i = Random.Range(1, 4); i > 0; i--)
-        {
-            var g = CrystalFragments.Spawn(Random.Range(0, 3), transform.position + Vector3.up * (2f + 1.4f * i) + Random.insideUnitSphere * 1f, Random.rotation);
-            g.GetComponent<Rigidbody>().AddForce(Random.insideUnitSphere * 3f + Vector3.up * 3f, ForceMode.VelocityChange);
-        }
+            CrystalPickup.Drop(Random.Range(0, 3), transform.position + Vector3.up * (2f + 1.4f * i) + Random.insideUnitSphere * 1f, Random.rotation, Random.insideUnitSphere * 3f + Vector3.up * 3f);
+    }
+
+    protected override void Remove()
+    {
+        if (id >= 0 && CrystalNet.Active) CrystalNet.I.BreakRpc(id);   // los clientes quitan su copia
+        base.Remove();
     }
 }
 
-// Recolectable apilable (0-2 gemas, 3 madera): se acerca solo al jugador (tag Player, o Camera.main).
-// Para usar tu inventario real, reemplaza "Count[color]++" por tu llamada de inventario.
+// Fragmento recolectable (0-2 = gemas): se acerca solo al jugador local. Con red, la recogida la arbitra el servidor (CrystalNet.ClaimRpc):
+// gana el primero en reclamar y el resto ve desaparecer su copia. Sin red, se recoge directo.
 public class CrystalPickup : MonoBehaviour
 {
-    public static readonly int[] Count = new int[4];
+    public static readonly int[] Count = new int[3];
+    public static readonly Dictionary<int, CrystalPickup> ById = new Dictionary<int, CrystalPickup>();
     public int color;
+    [System.NonSerialized] public int fid;   // id de red del fragmento (0 = sin red)
+    bool claiming;
     float t, nudgeT;
     Transform pl;
     Rigidbody rb;
@@ -64,7 +77,7 @@ public class CrystalPickup : MonoBehaviour
     bool rolled;
 
     void Awake() => rb = GetComponent<Rigidbody>();
-    void OnEnable() { t = nudgeT = 0f; rolled = false; if (rb) rb.isKinematic = false; }   // reutilizado desde el pool
+    void OnEnable() { t = nudgeT = 0f; rolled = false; claiming = false; if (rb) rb.isKinematic = false; }   // reutilizado desde el pool
 
     // Primer contacto con el suelo: empujon cuesta abajo, para que ruede aunque la pendiente sea suave.
     void OnCollisionEnter(Collision c)
@@ -75,8 +88,28 @@ public class CrystalPickup : MonoBehaviour
         if (down.sqrMagnitude > 0.0004f) rb.AddForce(down.normalized * (1f + 3f * down.magnitude), ForceMode.VelocityChange);
     }
 
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetStatics() { ById.Clear(); System.Array.Clear(Count, 0, Count.Length); }
+
+    // Crea un fragmento con impulso. Con red lo invoca el servidor y CrystalNet lo replica a todas las maquinas.
+    public static void Drop(int color, Vector3 p, Quaternion r, Vector3 force)
+    {
+        if (CrystalNet.Active) CrystalNet.I.DropRpc(CrystalNet.I.NextId(), color, p, r, force);
+        else Spawn(0, color, p, r, force);
+    }
+
+    public static void Spawn(int fid, int color, Vector3 p, Quaternion r, Vector3 force)
+    {
+        var pk = CrystalFragments.Spawn(color, p, r).GetComponent<CrystalPickup>();
+        pk.fid = fid; if (fid > 0) ById[fid] = pk;
+        pk.rb.AddForce(force, ForceMode.VelocityChange);
+    }
+
+    public void Free() { if (fid > 0) ById.Remove(fid); fid = 0; Pool.Release(gameObject); }
+
     void Update()
     {
+        if (claiming) return;   // esperando al servidor
         // Si se queda parado sobre una pendiente, se le vuelve a dar un empujon cuesta abajo.
         if (rb != null && !rb.isKinematic && (nudgeT -= Time.deltaTime) <= 0f)
         {
@@ -107,25 +140,26 @@ public class CrystalPickup : MonoBehaviour
 
     void Collect()
     {
+        if (fid > 0 && CrystalNet.Active) { claiming = true; if (rb) rb.isKinematic = true; CrystalNet.I.ClaimRpc(fid); return; }
+        Grant(); Free();
+    }
+
+    // Entrega la gema al jugador local.
+    public void Grant()
+    {
         Count[color]++;
-        if (color < 3)   // gemas -> inventario (la madera solo cuenta)
-        {
-            if (inv == null) inv = pl.GetComponentInChildren<InventoryController>() ?? InventoryController.LocalInstance;
-            if (inv != null)
-            {
-                var def = CrystalFragments.Item(color);
-                inv.RegisterItem(def);
-                int hash = def.GetHashCode();
-                if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening) inv.AddItemServerRpc(hash, 1);
-                else inv.InternalAddItem(hash, 1);
-            }
-        }
-        Pool.Release(gameObject);   // fragmentos al pool; la madera (no viene del pool) se destruye
+        if (inv == null) inv = (pl != null ? pl.GetComponentInChildren<InventoryController>() : null) ?? InventoryController.LocalInstance;
+        if (inv == null) return;
+        var def = CrystalFragments.Item(color);
+        inv.RegisterItem(def);
+        int hash = def.GetHashCode();
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening) inv.AddItemServerRpc(hash, 1);
+        else inv.InternalAddItem(hash, 1);
     }
 }
 
 // Arboles del Terrain rompibles. Los TreeInstance no tienen colliders, asi que cerca del jugador (R metros) se
-// crean colliders-proxy; al romperse se oculta el arbol, y cada 3 arboles se suelta 1 madera.
+// crean colliders-proxy (reciclados); al romperse se oculta el arbol.
 // En el Editor se clona el TerrainData para no borrar arboles del asset al jugar.
 public class TreeBreaker : MonoBehaviour
 {
@@ -136,8 +170,6 @@ public class TreeBreaker : MonoBehaviour
     readonly Stack<TreeBit> idle = new Stack<TreeBit>();   // proxies reciclados: sin Instantiate/Destroy al caminar por el bosque
     Vector3 lastScan = new Vector3(1e9f, 0f, 0f);
     readonly List<(Terrain, int)> gone = new List<(Terrain, int)>();
-    static int broken;
-    static Material wood;
     float next;
     Transform pl;
 
@@ -217,19 +249,6 @@ public class TreeBreaker : MonoBehaviour
         e.dead[i] = true; live.Remove((t, i));
         var ti = e.a[i]; ti.heightScale = ti.widthScale = 1e-4f;
         e.a[i] = ti; t.terrainData.SetTreeInstance(i, ti);
-        if (++broken % 3 == 0) DropWood(p);
-    }
-
-    static void DropWood(Vector3 p)
-    {
-        var g = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        g.name = "Wood";
-        g.transform.SetPositionAndRotation(p + Vector3.up, Random.rotation);
-        g.transform.localScale = new Vector3(.25f, .5f, .25f);
-        if (wood == null) { wood = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard")); wood.color = new Color(.4f, .25f, .1f); }
-        g.GetComponent<Renderer>().sharedMaterial = wood;
-        g.AddComponent<Rigidbody>().mass = .5f;
-        g.AddComponent<CrystalPickup>().color = 3;
     }
 }
 
@@ -299,15 +318,15 @@ public class CrystalGlow : MonoBehaviour
 // Contador en pantalla (se crea solo).
 public class CrystalHud : MonoBehaviour
 {
-    static readonly Color[] C = { new Color(.7f, .25f, 1f), Color.red, Color.yellow, new Color(.75f, .5f, .25f) };
-    static readonly string[] N = { "Violeta", "Rojo", "Amarillo", "Madera" };
+    static readonly Color[] C = { new Color(.7f, .25f, 1f), Color.red, Color.yellow };
+    static readonly string[] N = { "Violeta", "Rojo", "Amarillo" };
 
     [RuntimeInitializeOnLoadMethod]
     static void Init() => DontDestroyOnLoad(new GameObject("CrystalHud", typeof(CrystalHud)));
 
     void OnGUI()
     {
-        for (int i = 0; i < 4; i++) { GUI.color = C[i]; GUI.Label(new Rect(20, 20 + i * 22, 160, 22), N[i] + ": " + CrystalPickup.Count[i]); }
+        for (int i = 0; i < 3; i++) { GUI.color = C[i]; GUI.Label(new Rect(20, 20 + i * 22, 160, 22), N[i] + ": " + CrystalPickup.Count[i]); }
     }
 }
 
