@@ -18,8 +18,8 @@ RenderSettings:
   m_FogColor: {r: 0.49699998, g: 0.23449998, b: 0.22749996, a: 0.7}
   m_FogMode: 3
   m_FogDensity: 0
-  m_LinearFogStart: 0
-  m_LinearFogEnd: 300
+  m_LinearFogStart: 557
+  m_LinearFogEnd: 1114
   m_AmbientSkyColor: {r: 0.41999993, g: 0.21999994, b: 0.45, a: 1}
   m_AmbientEquatorColor: {r: 0.6, g: 0.27, b: 0.11999996, a: 0.6}
   m_AmbientGroundColor: {r: 0.079999946, g: 0.049999967, b: 0.09999994, a: 1}
@@ -170570,6 +170570,51 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 2831276960709877072, guid: b2d229d8e22b20a498bc0ed678261c77, type: 3}
   m_PrefabInstance: {fileID: 705540587}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1694733069
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1694733071}
+  - component: {fileID: 1694733070}
+  m_Layer: 0
+  m_Name: ViewDistance
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1694733070
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1694733069}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9865f4a7ba1ff474fa8b02bde6ac2940, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ViewDistance
+  distancia: 1114
+--- !u!4 &1694733071
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1694733069}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1695196058
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -362914,9 +362959,17 @@ PrefabInstance:
       value: Surface
       objectReference: {fileID: 0}
     - target: {fileID: 2914522978093777060, guid: 2b8c7491c31797c42a0e1cc8ae2821b7, type: 3}
+      propertyPath: m_VoxelSize
+      value: 0.6666667
+      objectReference: {fileID: 0}
+    - target: {fileID: 2914522978093777060, guid: 2b8c7491c31797c42a0e1cc8ae2821b7, type: 3}
+      propertyPath: m_AgentTypeID
+      value: -334000983
+      objectReference: {fileID: 0}
+    - target: {fileID: 2914522978093777060, guid: 2b8c7491c31797c42a0e1cc8ae2821b7, type: 3}
       propertyPath: m_NavMeshData
       value: 
-      objectReference: {fileID: 23800000, guid: 6a1059f0367a6ea44b54c68fbd33ab7b, type: 2}
+      objectReference: {fileID: 23800000, guid: 8ae932f6298d8324692c6730312a218a, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -368609,3 +368662,4 @@ SceneRoots:
   - {fileID: 121152456}
   - {fileID: 1118449296}
   - {fileID: 893698069}
+  - {fileID: 1694733071}
