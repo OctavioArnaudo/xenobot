@@ -16552,6 +16552,249 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &139044450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 139044447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2134494731
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  m_InScenePlacedDisabledByDefault: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  m_InScenePlaced: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 0
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &139044451
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 139044447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 41a6b49393d376a40b50a6c34d4de6f9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChargerAI
+  ShowTopMostFoldoutHeaderGroup: 1
+  detectRange: 40
+  walkSpeed: 2.5
+  wanderRadius: 40
+  idleMin: 1
+  idleMax: 4
+  windupTime: 0.8
+  chargeSpeed: 24
+  chargeAccel: 30
+  chargeMax: 60
+  chargeTimeout: 3.5
+  cooldown: 5
+  shockRadius: 18
+  hitRadius: 4.5
+  stunTime: 0.9
+  impactDamage: 100
+  knockback: 20
+  plowRadius: 5
+  smashDamage: 16
+--- !u!114 &139044452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 139044447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dce423dc18d740d41acb1376195ed62d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Runtime.Scripts.Health.HealthController
+  ShowTopMostFoldoutHeaderGroup: 1
+  team: 2
+  MaxHealth: 120
+  maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
+    use: 0
+    value: 0
+  visualsToFlash: []
+  flashColor: {r: 1, g: 0, b: 0, a: 1}
+  flashDuration: 0.15
+  OnDeath:
+    m_PersistentCalls:
+      m_Calls: []
+  OnTakeDamage:
+    m_PersistentCalls:
+      m_Calls: []
+--- !u!195 &139044453
+NavMeshAgent:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 139044447}
+  m_Enabled: 1
+  m_AgentTypeID: -334000983
+  m_Radius: 0.5
+  m_Speed: 3.5
+  m_Acceleration: 8
+  avoidancePriority: 50
+  m_AngularSpeed: 120
+  m_StoppingDistance: 0
+  m_AutoTraverseOffMeshLink: 1
+  m_AutoBraking: 1
+  m_AutoRepath: 1
+  m_Height: 2
+  m_BaseOffset: 0
+  m_WalkableMask: 4294967295
+  m_ObstacleAvoidanceType: 4
+--- !u!114 &139044454
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 139044447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e96cb6065543e43c4a752faaa1468eb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkTransform
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkTransformExpanded: 0
+  AutoOwnerAuthorityTickOffset: 1
+  PositionInterpolationType: 0
+  RotationInterpolationType: 0
+  ScaleInterpolationType: 0
+  PositionLerpSmoothing: 1
+  PositionMaxInterpolationTime: 0.1
+  RotationLerpSmoothing: 1
+  RotationMaxInterpolationTime: 0.1
+  ScaleLerpSmoothing: 1
+  ScaleMaxInterpolationTime: 0.1
+  AuthorityMode: 0
+  TickSyncChildren: 0
+  UseUnreliableDeltas: 0
+  SyncPositionX: 1
+  SyncPositionY: 1
+  SyncPositionZ: 1
+  SyncRotAngleX: 1
+  SyncRotAngleY: 1
+  SyncRotAngleZ: 1
+  SyncScaleX: 1
+  SyncScaleY: 1
+  SyncScaleZ: 1
+  PositionThreshold: 0.001
+  RotAngleThreshold: 0.01
+  ScaleThreshold: 0.01
+  UseQuaternionSynchronization: 0
+  UseQuaternionCompression: 0
+  UseHalfFloatPrecision: 0
+  InLocalSpace: 0
+  SwitchTransformSpaceWhenParented: 0
+  Interpolate: 1
+  SlerpPosition: 0
+--- !u!114 &139044455
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 139044447}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8d0727d5ae3244e3b569694d3912374, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.Components.NetworkAnimator
+  ShowTopMostFoldoutHeaderGroup: 1
+  NetworkAnimatorExpanded: 0
+  AuthorityMode: 0
+  m_Animator: {fileID: 139044448}
+  TransitionStateInfoList: []
+  AnimatorParameterEntries:
+    ParameterEntries:
+    - name: Speed
+      NameHash: -823668238
+      Synchronize: 1
+      ParameterType: 1
+    - name: Attack
+      NameHash: 1080829965
+      Synchronize: 1
+      ParameterType: 9
+    - name: TakeDamage
+      NameHash: -339413771
+      Synchronize: 1
+      ParameterType: 9
+    - name: IsDead
+      NameHash: 1270110494
+      Synchronize: 1
+      ParameterType: 4
+  AnimatorParametersExpanded: 0
+--- !u!54 &139044456
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 139044447}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 1
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
+--- !u!136 &139044457
+CapsuleCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 139044447}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Height: 1
+  m_Direction: 1
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &139482161 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 623809650406847859, guid: 5f688d735ab38ef46b4f2f9b048a00ba, type: 3}
@@ -43286,6 +43529,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Charger
       objectReference: {fileID: 0}
+    - target: {fileID: 8704540935688633364, guid: e409d5956f3dbd646a85341d16d5c56a, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: a83f0f6cd365e1c4db61c825f275065d, type: 2}
     - target: {fileID: 8740283843384274764, guid: e409d5956f3dbd646a85341d16d5c56a, type: 3}
       propertyPath: m_InScenePlaced
       value: 1
@@ -45201,7 +45448,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3355534328688976972, guid: 06d8cbbc1c6505d43b957c55395f9b52, type: 3}
       propertyPath: far clip plane
-      value: 5000
+      value: 1114
       objectReference: {fileID: 0}
     - target: {fileID: 3355534328688976972, guid: 06d8cbbc1c6505d43b957c55395f9b52, type: 3}
       propertyPath: near clip plane
@@ -87820,6 +88067,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Enemigo Mele animaciones
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      propertyPath: m_TagString
+      value: Enemy
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -87827,6 +88078,30 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 139044448}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 139044453}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 139044450}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 139044452}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 139044451}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 139044455}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 139044454}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 139044457}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 139044456}
   m_SourcePrefab: {fileID: 100100000, guid: c335e5d770bb63644a51f40843712b3c, type: 3}
 --- !u!4 &894020050 stripped
 Transform:
@@ -95375,6 +95650,10 @@ PrefabInstance:
     - target: {fileID: 3048046792638108112, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: m_ClearFlags
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3048046792638108112, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: far clip plane
+      value: 1114
       objectReference: {fileID: 0}
     - target: {fileID: 3281595573793558308, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: m_InScenePlaced

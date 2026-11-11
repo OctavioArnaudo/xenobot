@@ -1,7 +1,6 @@
-// Poner en Assets/Scripts (FUERA de Editor). Lo deja listo Tools/Enemy/1 Setup Charger: no hay que configurar nada a mano.
+// Poner en Assets/Scripts (FUERA de Editor).
 // Ciclo: camina al azar por el NavMesh -> detecta al jugador -> prepara (windup) -> carga en linea recta -> al chocar o frenar
 // suelta una onda expansiva (dana al jugador, rompe arboles y cristales) -> queda aturdido -> vuelve a patrullar.
-// Rendimiento: sin asignaciones en juego (buffers estaticos, NavMeshPath reutilizado, hashes del Animator, anillo con pool).
 using System.Collections.Generic;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Player;
@@ -11,30 +10,37 @@ using UnityEngine.AI;
 using UnityEngine.Events;
 
 [RequireComponent(typeof(NavMeshAgent), typeof(HealthController))]
-public class ChargerAI : NetworkBehaviour
-{
-    // Parametros del Animator: ChargerTools crea el controller con ESTOS nombres (cambiarlos aqui basta).
-    public const string PSpeed = "speed", PWindup = "windup", PCharging = "charging", PImpact = "impact", PStunned = "stunned", PHurt = "takeDamage", PDead = "dead";
-    static readonly int HSpeed = Animator.StringToHash(PSpeed), HWindup = Animator.StringToHash(PWindup), HCharging = Animator.StringToHash(PCharging),
-        HImpact = Animator.StringToHash(PImpact), HStunned = Animator.StringToHash(PStunned), HHurt = Animator.StringToHash(PHurt), HDead = Animator.StringToHash(PDead);
+public class ChargerAI : NetworkBehaviour {
+    // Parámetros del Animator actualizados
+    public const string PIsDead = "IsDead";
+    public const string PAttack = "Attack";
+    public const string PTakeDamage = "TakeDamage";
+    public const string PSpeed = "Speed";
+
+    static readonly int HIsDead = Animator.StringToHash(PIsDead);
+    static readonly int HAttack = Animator.StringToHash(PAttack);
+    static readonly int HTakeDamage = Animator.StringToHash(PTakeDamage);
+    static readonly int HSpeed = Animator.StringToHash(PSpeed);
 
     [Header("Deteccion y patrulla")]
     public float detectRange = 40f;
     public float walkSpeed = 2.5f, wanderRadius = 40f, idleMin = 1f, idleMax = 4f;
+
     [Header("Carga")]
-    public float windupTime = 0.8f;       // lo fija el Setup con la duracion del clip
+    public float windupTime = 0.8f;
     public float chargeSpeed = 24f, chargeAccel = 30f, chargeMax = 60f, chargeTimeout = 3.5f, cooldown = 5f;
+
     [Header("Impacto")]
     public float shockRadius = 18f, hitRadius = 4.5f, stunTime = .9f;
-    public int impactDamage = 100;        // al jugador, en el centro (cae hasta 25% en el borde)
-    public float knockback = 20f;        // empuje horizontal al jugador alcanzado
-    public float plowRadius = 5f;        // durante la carga rompe arboles/cristales a su paso
-    public float smashDamage = 16f;       // a Smashable (arboles/cristales viven 6): el borde del radio todavia los rompe
+    public int impactDamage = 100;
+    public float knockback = 20f;
+    public float plowRadius = 5f;
+    public float smashDamage = 16f;
 
     enum S { Wander, Windup, Charge, Stun }
     S s;
     int tries; float next, until, readyAt, idleUntil, chargeStart, plowAt, cv; Vector3 cdir, cfrom;
-    NavMeshQueryFilter qf;   // el agente Charger tiene su PROPIO NavMesh: toda consulta debe usar su agentTypeID
+    NavMeshQueryFilter qf;
     NavMeshAgent ag; Animator an; HealthController hp; Transform target;
     UnityAction<int> onHurt; UnityAction onDie;
 
@@ -45,56 +51,81 @@ public class ChargerAI : NetworkBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() { pl = System.Array.Empty<GameObject>(); scanAt = 0f; }
 
-    void Awake()
-    {
-        ag = GetComponent<NavMeshAgent>(); hp = GetComponent<HealthController>(); an = GetComponentInChildren<Animator>();
+    void Awake() {
+        ag = GetComponent<NavMeshAgent>();
+        hp = GetComponent<HealthController>();
+        an = GetComponentInChildren<Animator>();
+
         an.applyRootMotion = false;
         an.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
-        onHurt = _ => { if (s == S.Windup || s == S.Charge) an.ResetTrigger(HHurt); };   // el golpe no interrumpe la coreografia
-        onDie = () => an.SetBool(HDead, true);
+
+        onHurt = _ => {
+            // El golpe no interrumpe la carga ni el ataque
+            if (s != S.Windup && s != S.Charge)
+                an.SetTrigger(HTakeDamage);
+        };
+
+        onDie = () => an.SetBool(HIsDead, true);
     }
 
-    void OnEnable()
-    {
-        hp.OnTakeDamage.AddListener(onHurt); hp.OnDeath.AddListener(onDie);
+    void OnEnable() {
+        hp.OnTakeDamage.AddListener(onHurt);
+        hp.OnDeath.AddListener(onDie);
         qf = new NavMeshQueryFilter { agentTypeID = ag.agentTypeID, areaMask = NavMesh.AllAreas };
-        s = S.Wander; next = Time.time + Random.value; readyAt = Time.time + Random.Range(0f, 3f); idleUntil = 0f;
-        an.SetBool(HDead, false); an.SetBool(HCharging, false); an.SetBool(HStunned, false);
+        s = S.Wander;
+        next = Time.time + Random.value;
+        readyAt = Time.time + Random.Range(0f, 3f);
+        idleUntil = 0f;
+
+        an.SetBool(HIsDead, false);
+        an.SetFloat(HSpeed, 0f);
+
         if (ag.isOnNavMesh) { ag.isStopped = false; ag.speed = walkSpeed; }
     }
 
-    void OnDisable() { hp.OnTakeDamage.RemoveListener(onHurt); hp.OnDeath.RemoveListener(onDie); }
+    void OnDisable() {
+        hp.OnTakeDamage.RemoveListener(onHurt);
+        hp.OnDeath.RemoveListener(onDie);
+    }
 
-    // Solo el servidor decide; los clientes reciben posicion y animacion replicadas.
-    public override void OnNetworkSpawn() { if (!IsServer) { ag.enabled = false; enabled = false; } }
+    public override void OnNetworkSpawn() {
+        if (!IsServer) { ag.enabled = false; enabled = false; }
+    }
 
-    void Update()
-    {
+    void Update() {
         float t = Time.time;
-        if (!ag.isOnNavMesh)   // fuera del NavMesh: se recoloca en el mas cercano (1 intento/s) en vez de lanzar errores
-        {
-            if (t >= next)
-            {
+        if (!ag.isOnNavMesh) {
+            if (t >= next) {
                 next = t + 2f;
-                if (tries++ >= 3) { enabled = false; return; }   // no hay NavMesh cerca: se rinde sin llenar la consola
+                if (tries++ >= 3) { enabled = false; return; }
                 if (NavMesh.SamplePosition(transform.position, out var ph, 50f, qf) && ag.Warp(ph.position)) tries = 0;
             }
             return;
         }
-        an.SetFloat(HSpeed, ag.velocity.magnitude, .1f, Time.deltaTime);
+
+        // Calcula la velocidad real según el estado:
+        // En Wander usa la velocidad del agente (caminar/idle).
+        // En Charge usa la velocidad de aceleración lineal (correr).
+        // En Windup o Stun es 0.
+        float currentSpeed = 0f;
+        if (s == S.Charge) currentSpeed = cv;
+        else if (s == S.Wander) currentSpeed = ag.velocity.magnitude;
+
+        an.SetFloat(HSpeed, currentSpeed, .1f, Time.deltaTime);
+
         if (s == S.Windup) { Face(target.position); if (t >= until) Charge(); return; }
         if (s == S.Charge) { Run(t); return; }
         if (t < next) return;
         next = t + .2f;
+
         if (s == S.Wander) Wander(t);
-        else if (t >= until) { an.SetBool(HStunned, false); ag.isStopped = false; ag.speed = walkSpeed; ag.acceleration = 8f; s = S.Wander; }
+        else if (t >= until) { ag.isStopped = false; ag.speed = walkSpeed; ag.acceleration = 8f; s = S.Wander; }
     }
 
-    void Wander(float t)
-    {
+    void Wander(float t) {
         var p = Nearest();
         if (p && t >= readyAt) { Windup(p.transform, t); return; }
-        if (ag.pathPending || (ag.hasPath && ag.remainingDistance > .8f)) { idleUntil = 0f; return; }   // sigue caminando
+        if (ag.pathPending || (ag.hasPath && ag.remainingDistance > .8f)) { idleUntil = 0f; return; }
         if (idleUntil == 0f) idleUntil = t + Random.Range(idleMin, idleMax);
         if (t < idleUntil) return;
         idleUntil = 0f;
@@ -103,12 +134,10 @@ public class ChargerAI : NetworkBehaviour
         if (NavMesh.SamplePosition(from + new Vector3(r.x, 0f, r.y), out var h, 20f, qf)) ag.SetDestination(h.position);
     }
 
-    GameObject Nearest()
-    {
-        if (Time.time >= scanAt) { scanAt = Time.time + 1f; pl = GameObject.FindGameObjectsWithTag("Player"); }   // 1 vez/s para TODOS los enemigos
+    GameObject Nearest() {
+        if (Time.time >= scanAt) { scanAt = Time.time + 1f; pl = GameObject.FindGameObjectsWithTag("Player"); }
         GameObject b = null; float m = detectRange * detectRange;
-        foreach (var g in pl)
-        {
+        foreach (var g in pl) {
             if (!g || !g.activeInHierarchy) continue;
             float d = (g.transform.position - transform.position).sqrMagnitude;
             if (d < m) { m = d; b = g; }
@@ -116,32 +145,26 @@ public class ChargerAI : NetworkBehaviour
         return b;
     }
 
-    void Windup(Transform p, float t)
-    {
+    void Windup(Transform p, float t) {
         target = p; s = S.Windup; until = t + windupTime;
         ag.velocity = Vector3.zero; ag.ResetPath(); ag.isStopped = true;
-        an.ResetTrigger(HHurt); an.SetTrigger(HWindup);
+        an.ResetTrigger(HTakeDamage);
+        an.SetTrigger(HAttack); // Dispara la preparación/ataque
     }
 
-    void Face(Vector3 w)
-    {
+    void Face(Vector3 w) {
         Vector3 d = w - transform.position; d.y = 0f;
         if (d.sqrMagnitude > .01f) transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(d), 360f * Time.deltaTime);
     }
 
-    // La carga es en LINEA RECTA: direccion fijada al terminar el windup, aceleracion progresiva (envion) y ag.Move,
-    // que desliza por el NavMesh sin depender de rutas. Termina al tocar al jugador, chocar (se frena), por distancia o tiempo.
-    void Charge()
-    {
+    void Charge() {
         Vector3 d = target.position - transform.position; d.y = 0f;
         cdir = d.sqrMagnitude > .01f ? d.normalized : transform.forward;
         cv = 0f; cfrom = transform.position; chargeStart = Time.time; s = S.Charge;
         ag.ResetPath(); ag.isStopped = false;
-        an.SetBool(HCharging, true);
     }
 
-    void Run(float t)
-    {
+    void Run(float t) {
         cv = Mathf.MoveTowards(cv, chargeSpeed, chargeAccel * Time.deltaTime);
         Face(transform.position + cdir);
         Vector3 before = transform.position;
@@ -153,33 +176,27 @@ public class ChargerAI : NetworkBehaviour
             Impact(transform.position + cdir * 1.5f);
     }
 
-    bool NearPlayer()
-    {
+    bool NearPlayer() {
         Vector3 p = transform.position + Vector3.up;
         foreach (var g in pl) if (g && g.activeInHierarchy && (g.transform.position + Vector3.up - p).sqrMagnitude < hitRadius * hitRadius) return true;
         return false;
     }
 
-    // Mientras carga: rompe lo Smashable que tenga delante (10 veces/s).
-    void Plow(float t)
-    {
+    void Plow(float t) {
         if (t < plowAt) return;
         plowAt = t + .1f;
         int n = Physics.OverlapSphereNonAlloc(transform.position + transform.forward * 1.5f + Vector3.up, plowRadius, buf, ~0, QueryTriggerInteraction.Ignore);
         for (int i = 0; i < n; i++) if (buf[i].TryGetComponent(out Smashable sm)) sm.Damage(smashDamage);
     }
 
-    void Impact(Vector3 c)
-    {
+    void Impact(Vector3 c) {
         s = S.Stun; until = Time.time + stunTime; readyAt = until + cooldown;
         ag.velocity = Vector3.zero; ag.ResetPath(); ag.isStopped = true;
-        an.SetBool(HCharging, false); an.SetBool(HStunned, true); an.SetTrigger(HImpact);
+
         ShockRing.Play(c, shockRadius);
         CombatFx.Slash(c + Vector3.up, cdir, 5f, new Color(1f, .25f, .2f, .9f));
 
-        // Jugadores: se recorre la lista directamente (la fisica con arboles densos llena el buffer y podia dejar fuera al jugador).
-        foreach (var g in pl)
-        {
+        foreach (var g in pl) {
             if (!g || !g.activeInHierarchy) continue;
             float d = Vector3.Distance(g.transform.position + Vector3.up, c);
             if (d > shockRadius) continue;
@@ -192,7 +209,6 @@ public class ChargerAI : NetworkBehaviour
             if (pc) pc.ApplyKnockback((away.sqrMagnitude > .01f ? away.normalized : cdir) * (knockback * Mathf.Lerp(.5f, 1f, k)) + Vector3.up * 7f);
         }
 
-        // Arboles y cristales en el radio de la onda.
         int n = Physics.OverlapSphereNonAlloc(c, shockRadius, buf, ~0, QueryTriggerInteraction.Ignore);
         for (int i = 0; i < n; i++)
             if (buf[i].TryGetComponent(out Smashable sm))
@@ -200,32 +216,27 @@ public class ChargerAI : NetworkBehaviour
     }
 
 #if UNITY_EDITOR
-    void OnDrawGizmosSelected()
-    {
+    void OnDrawGizmosSelected() {
         Gizmos.color = Color.yellow; Gizmos.DrawWireSphere(transform.position, detectRange);
         Gizmos.color = Color.red; Gizmos.DrawWireSphere(transform.position, shockRadius);
     }
 #endif
 }
 
-// Anillo de la onda expansiva con pool (se crean al primer uso y se reciclan, sin Instantiate/Destroy en juego).
-public class ShockRing : MonoBehaviour
-{
+public class ShockRing : MonoBehaviour {
     static readonly Stack<ShockRing> pool = new Stack<ShockRing>();
     float t, r; Material mat;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() => pool.Clear();
 
-    public static void Play(Vector3 p, float radius)
-    {
+    public static void Play(Vector3 p, float radius) {
         var s = pool.Count > 0 ? pool.Pop() : Create();
         s.transform.position = p; s.r = radius; s.t = 0f;
         s.gameObject.SetActive(true);
     }
 
-    static ShockRing Create()
-    {
+    static ShockRing Create() {
         var g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         Destroy(g.GetComponent<Collider>());
         var rd = g.GetComponent<Renderer>();
@@ -235,8 +246,7 @@ public class ShockRing : MonoBehaviour
         return s;
     }
 
-    void Update()
-    {
+    void Update() {
         if ((t += Time.deltaTime / .45f) >= 1f) { gameObject.SetActive(false); pool.Push(this); return; }
         transform.localScale = new Vector3(1f, .15f, 1f) * (2f * r * t);
         mat.color = new Color(1f, .6f, .2f, .6f * (1f - t));
