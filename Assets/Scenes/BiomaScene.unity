@@ -44679,7 +44679,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3355534328688976972, guid: 06d8cbbc1c6505d43b957c55395f9b52, type: 3}
       propertyPath: far clip plane
-      value: 5000
+      value: 1043
       objectReference: {fileID: 0}
     - target: {fileID: 3355534328688976972, guid: 06d8cbbc1c6505d43b957c55395f9b52, type: 3}
       propertyPath: near clip plane
@@ -49709,6 +49709,79 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 97a590863f4f35d459edcd93fed790e7, type: 3}
+--- !u!1001 &495429234
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.5833
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.5833
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.5833
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1433.7
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 328.95
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -42.15
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_Name
+      value: Planta
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 963b62c1296fd9448bd9d1dd9213a998, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 3ed5003a4fb6fa7468258bdcb18336e9, type: 3}
 --- !u!4 &496220414 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2831276960709877072, guid: b2d229d8e22b20a498bc0ed678261c77, type: 3}
@@ -94426,7 +94499,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3048046792638108112, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: far clip plane
-      value: 5000
+      value: 1043
       objectReference: {fileID: 0}
     - target: {fileID: 3281595573793558308, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: m_InScenePlaced
@@ -368857,3 +368930,4 @@ SceneRoots:
   - {fileID: 1118449296}
   - {fileID: 1694733071}
   - {fileID: 1817875432}
+  - {fileID: 495429234}
