@@ -246,7 +246,7 @@ static class ChargerTools
             var t = ts[rnd.Next(ts.Length)]; Vector3 tp = t.transform.position, sz = t.terrainData.size;
             var p = new Vector3(tp.x + (float)rnd.NextDouble() * sz.x, 0f, tp.z + (float)rnd.NextDouble() * sz.z);
             p.y = tp.y + t.SampleHeight(p);
-            if (!NavMesh.SamplePosition(p, out var h, 4f, qf)) continue;
+            if (!NavMesh.SamplePosition(p, out var h, 2f, qf)) continue;
             if (pts.Any(q => (q - h.position).sqrMagnitude < Gap * Gap) || (rp && (rp.transform.position - h.position).sqrMagnitude < SafeZone * SafeZone)) continue;
             pts.Add(h.position);
         }

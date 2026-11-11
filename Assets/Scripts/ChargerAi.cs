@@ -4,6 +4,7 @@
 // Rendimiento: sin asignaciones en juego (buffers estaticos, NavMeshPath reutilizado, hashes del Animator, anillo con pool).
 using System.Collections.Generic;
 using Runtime.Scripts.Health;
+using Runtime.Scripts.Player;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
@@ -26,12 +27,13 @@ public class ChargerAI : NetworkBehaviour
     [Header("Impacto")]
     public float shockRadius = 18f, hitRadius = 4.5f, stunTime = .9f;
     public int impactDamage = 100;        // al jugador, en el centro (cae hasta 25% en el borde)
+    public float knockback = 20f;        // empuje horizontal al jugador alcanzado
     public float plowRadius = 5f;        // durante la carga rompe arboles/cristales a su paso
     public float smashDamage = 16f;       // a Smashable (arboles/cristales viven 6): el borde del radio todavia los rompe
 
     enum S { Wander, Windup, Charge, Stun }
     S s;
-    float next, until, readyAt, idleUntil, chargeStart, plowAt, cv; Vector3 cdir, cfrom;
+    int tries; float next, until, readyAt, idleUntil, chargeStart, plowAt, cv; Vector3 cdir, cfrom;
     NavMeshQueryFilter qf;   // el agente Charger tiene su PROPIO NavMesh: toda consulta debe usar su agentTypeID
     NavMeshAgent ag; Animator an; HealthController hp; Transform target;
     UnityAction<int> onHurt; UnityAction onDie;
@@ -71,7 +73,12 @@ public class ChargerAI : NetworkBehaviour
         float t = Time.time;
         if (!ag.isOnNavMesh)   // fuera del NavMesh: se recoloca en el mas cercano (1 intento/s) en vez de lanzar errores
         {
-            if (t >= next) { next = t + 1f; if (NavMesh.SamplePosition(transform.position, out var ph, 50f, qf)) ag.Warp(ph.position); }
+            if (t >= next)
+            {
+                next = t + 2f;
+                if (tries++ >= 3) { enabled = false; return; }   // no hay NavMesh cerca: se rinde sin llenar la consola
+                if (NavMesh.SamplePosition(transform.position, out var ph, 50f, qf) && ag.Warp(ph.position)) tries = 0;
+            }
             return;
         }
         an.SetFloat(HSpeed, ag.velocity.magnitude, .1f, Time.deltaTime);
@@ -168,6 +175,7 @@ public class ChargerAI : NetworkBehaviour
         ag.velocity = Vector3.zero; ag.ResetPath(); ag.isStopped = true;
         an.SetBool(HCharging, false); an.SetBool(HStunned, true); an.SetTrigger(HImpact);
         ShockRing.Play(c, shockRadius);
+        CombatFx.Slash(c + Vector3.up, cdir, 5f, new Color(1f, .25f, .2f, .9f));
 
         // Jugadores: se recorre la lista directamente (la fisica con arboles densos llena el buffer y podia dejar fuera al jugador).
         foreach (var g in pl)
@@ -176,7 +184,12 @@ public class ChargerAI : NetworkBehaviour
             float d = Vector3.Distance(g.transform.position + Vector3.up, c);
             if (d > shockRadius) continue;
             var h = g.GetComponentInParent<HealthController>();
-            if (h && h.EffectiveTeam == Team.Player) h.TakeDamage(Mathf.RoundToInt(impactDamage * Mathf.Lerp(.25f, 1f, 1f - d / shockRadius)));
+            if (!h || h.EffectiveTeam != Team.Player) continue;
+            float k = 1f - d / shockRadius;
+            h.TakeDamage(Mathf.RoundToInt(impactDamage * Mathf.Lerp(.25f, 1f, k)));
+            Vector3 away = g.transform.position - c; away.y = 0f;
+            var pc = g.GetComponentInParent<PlayerController>();
+            if (pc) pc.ApplyKnockback((away.sqrMagnitude > .01f ? away.normalized : cdir) * (knockback * Mathf.Lerp(.5f, 1f, k)) + Vector3.up * 7f);
         }
 
         // Arboles y cristales en el radio de la onda.

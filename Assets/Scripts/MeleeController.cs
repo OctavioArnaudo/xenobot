@@ -22,7 +22,7 @@ namespace Runtime.Scripts.Melee
     public class MeleeController : NetworkBehaviour
     {
         private const float DEFAULT_PLAYER_MELEE_DAMAGE = 2f;
-        private const float DEFAULT_PLAYER_MELEE_RANGE = 3.2f;
+        private const float DEFAULT_PLAYER_MELEE_RANGE = 5.5f;
         private const float DEFAULT_PLAYER_MELEE_COOLDOWN = 0.8f;
         private const float DEFAULT_PLAYER_SLAM_DAMAGE = 2f;
         private const float DEFAULT_PLAYER_SLAM_RADIUS = 5.5f;
@@ -469,7 +469,7 @@ namespace Runtime.Scripts.Melee
         private void ExecuteGroundSlamDamageServer(Vector3 impactPosition)
         {
             float finalDamage = EffectiveSlamDamage;
-            int mask = (targetLayers.value != 0) ? targetLayers.value : ~0;
+            int mask = ~0;   // el filtro real es HealthController + equipo; asi ningun enemigo queda fuera por su layer
 
             Collider[] hits = Physics.OverlapSphere(impactPosition, EffectiveSlamRadius, mask, QueryTriggerInteraction.Collide);
             if (IsPlayerSide) HitBreakables(impactPosition, EffectiveSlamRadius, finalDamage);
@@ -651,50 +651,7 @@ namespace Runtime.Scripts.Melee
                 AudioSource.PlayClipAtPoint(meleeHitSound, position);
             }
 
-            if (swingVfxPrefab != null)
-            {
-                ProjectileController vfx = Instantiate(swingVfxPrefab, position, Quaternion.LookRotation(direction));
-                vfx.Launch(gameObject, direction, 0f, m_Health != null ? m_Health.EffectiveTeam : Team.Neutral);
-            }
-            else
-            {
-                GenerateHardcodedSlashVFX(position, direction);
-            }
-        }
-
-        private void GenerateHardcodedSlashVFX(Vector3 position, Vector3 direction)
-        {
-            GameObject vfxGo = new GameObject("MeleeSlashVFX");
-            vfxGo.transform.position = position;
-            vfxGo.transform.rotation = Quaternion.LookRotation(direction.sqrMagnitude > 0.01f ? direction : transform.forward);
-
-            ParticleSystem ps = vfxGo.AddComponent<ParticleSystem>();
-            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-
-            var main = ps.main;
-            main.loop = false;
-            main.duration = 0.35f;
-            main.startLifetime = 0.35f;
-            main.startSpeed = 8f;
-            main.startSize = 0.4f;
-            main.startColor = CompareTag("Enemy") ? Color.red : new Color(1f, 0.85f, 0.1f);
-            main.stopAction = ParticleSystemStopAction.Destroy;
-
-            var emission = ps.emission;
-            emission.rateOverTime = 0;
-            emission.SetBursts(new ParticleSystem.Burst[] { new ParticleSystem.Burst(0, 25) });
-
-            var shape = ps.shape;
-            shape.shapeType = ParticleSystemShapeType.Cone;
-            shape.angle = 45f;
-            shape.radius = 0.2f;
-
-            var renderer = vfxGo.GetComponent<ParticleSystemRenderer>();
-            Shader shader = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Particles/Standard Unlit");
-            if (shader != null) renderer.material = new Material(shader);
-
-            ps.Play();
-            Destroy(vfxGo, 1.5f);
+            CombatFx.Slash(position, direction, EffectiveAttackRange * .9f, CompareTag("Enemy") ? new Color(1f, .25f, .2f, .9f) : new Color(.7f, .95f, 1f, .9f));
         }
 
         private bool HasParameter(Animator animator, string paramName)

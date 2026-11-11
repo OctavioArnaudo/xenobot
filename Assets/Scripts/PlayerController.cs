@@ -219,6 +219,7 @@ namespace Runtime.Scripts.Player
         private bool _gameCursor;
         private float _rotationVelocity;
         private float _verticalVelocity;
+        private Vector3 _kb;   // empuje externo (ataques enemigos): decae solo
         private float _terminalVelocity = 53.0f;
 
         private float _jumpTimeoutDelta;
@@ -1028,7 +1029,25 @@ namespace Runtime.Scripts.Player
                 _moveDir = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
             }
 
-            _controller.Move(_moveDir.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+            _kb = Vector3.MoveTowards(_kb, Vector3.zero, 35f * Time.deltaTime);
+            _controller.Move(_moveDir.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime + _kb * Time.deltaTime);
+        }
+
+        // Lo llama el servidor / single player: parpadeo rojo en todos y despide al jugador (lo aplica solo su dueno).
+        public void ApplyKnockback(Vector3 push)
+        {
+            if (IsNetworkActive && IsServer) KnockbackClientRpc(push); else Knock(push);
+        }
+
+        [ClientRpc]
+        private void KnockbackClientRpc(Vector3 push) => Knock(push);
+
+        private void Knock(Vector3 push)
+        {
+            CombatFx.Flash(gameObject);
+            if (!CanExecuteLocalLogic) return;
+            _kb = new Vector3(push.x, 0f, push.z);
+            _verticalVelocity = Mathf.Max(_verticalVelocity, push.y);
         }
 
         private void JumpAndGravity()

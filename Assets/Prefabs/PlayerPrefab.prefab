@@ -391,7 +391,7 @@ MonoBehaviour:
     value: 0
   JumpTimeout: 0.5
   FallTimeout: 0.15
-  FallGravityMultiplier: 2
+  FallGravityMultiplier: 3
   crosshairUI: {fileID: 0}
   aimFOV: 40
   normalFOV: 60
@@ -794,7 +794,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
-  AttackRange: 3.2
+  AttackRange: 5.5
   attackRange:
     use: 0
     value: 0
