@@ -1,6 +1,4 @@
 // Poner en Assets/Scripts (FUERA de Editor).
-// Ciclo: camina al azar por el NavMesh -> detecta al jugador -> prepara (windup) -> carga en linea recta -> al chocar o frenar
-// suelta una onda expansiva (dana al jugador, rompe arboles y cristales) -> queda aturdido -> vuelve a patrullar.
 using System.Collections.Generic;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Player;
@@ -11,11 +9,19 @@ using UnityEngine.Events;
 
 [RequireComponent(typeof(NavMeshAgent), typeof(HealthController))]
 public class ChargerAI : NetworkBehaviour {
-    // Parámetros del Animator actualizados
+    // Parámetros activos del Animator
     public const string PIsDead = "IsDead";
     public const string PAttack = "Attack";
     public const string PTakeDamage = "TakeDamage";
     public const string PSpeed = "Speed";
+
+    // Constantes de compatibilidad para ChargerTools
+    public const string PWindup = "Attack";
+    public const string PImpact = "Attack";
+    public const string PHurt = "TakeDamage";
+    public const string PCharging = "Speed";
+    public const string PStunned = "Speed";
+    public const string PDead = "IsDead";
 
     static readonly int HIsDead = Animator.StringToHash(PIsDead);
     static readonly int HAttack = Animator.StringToHash(PAttack);
@@ -60,7 +66,7 @@ public class ChargerAI : NetworkBehaviour {
         an.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
 
         onHurt = _ => {
-            // El golpe no interrumpe la carga ni el ataque
+            // No interrumpe si está cargando o ejecutando el golpe
             if (s != S.Windup && s != S.Charge)
                 an.SetTrigger(HTakeDamage);
         };
@@ -89,7 +95,11 @@ public class ChargerAI : NetworkBehaviour {
     }
 
     public override void OnNetworkSpawn() {
-        if (!IsServer) { ag.enabled = false; enabled = false; }
+        // En singleplayer local / editor sin servidor levantado no se deshabilita
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !IsServer) {
+            ag.enabled = false;
+            enabled = false;
+        }
     }
 
     void Update() {
@@ -103,10 +113,7 @@ public class ChargerAI : NetworkBehaviour {
             return;
         }
 
-        // Calcula la velocidad real según el estado:
-        // En Wander usa la velocidad del agente (caminar/idle).
-        // En Charge usa la velocidad de aceleración lineal (correr).
-        // En Windup o Stun es 0.
+        // Determina la velocidad que alimenta al Animator
         float currentSpeed = 0f;
         if (s == S.Charge) currentSpeed = cv;
         else if (s == S.Wander) currentSpeed = ag.velocity.magnitude;
@@ -149,7 +156,7 @@ public class ChargerAI : NetworkBehaviour {
         target = p; s = S.Windup; until = t + windupTime;
         ag.velocity = Vector3.zero; ag.ResetPath(); ag.isStopped = true;
         an.ResetTrigger(HTakeDamage);
-        an.SetTrigger(HAttack); // Dispara la preparación/ataque
+        // Durante la preparación se queda quieto encarando al objetivo (Speed baja a 0 = Walk/Idle)
     }
 
     void Face(Vector3 w) {
@@ -192,6 +199,9 @@ public class ChargerAI : NetworkBehaviour {
     void Impact(Vector3 c) {
         s = S.Stun; until = Time.time + stunTime; readyAt = until + cooldown;
         ag.velocity = Vector3.zero; ag.ResetPath(); ag.isStopped = true;
+
+        // Dispara la animación de golpe al frenar/impactar contra el jugador o el obstáculo
+        an.SetTrigger(HAttack);
 
         ShockRing.Play(c, shockRadius);
         CombatFx.Slash(c + Vector3.up, cdir, 5f, new Color(1f, .25f, .2f, .9f));
