@@ -385,11 +385,10 @@ namespace Runtime.Scripts.Hud
         readonly RectTransform[] _fill = new RectTransform[4];
         readonly TextMeshProUGUI[] _barTxt = new TextMeshProUGUI[4];
         readonly float[] _lastF = new float[4];
-        Image _plate;
-        Image _scopeRing;
+        readonly Image[] _plate = new Image[3], _ring = new Image[3]; // 0 melee, 1 disparo, 2 mira
         Image _glow, _jDot; // aviso rojo del boton J: historia nueva sin leer
         bool _lit;
-        static Sprite s_scope, s_ring, s_glow;
+        static Sprite s_scope, s_ring, s_glow, s_fist, s_gun;
         float _uiTick;
 
         // Botones de panel (metalicos, punto rubi): TAB = inventario / personaje, J = misiones + radar.
@@ -451,9 +450,14 @@ namespace Runtime.Scripts.Hud
             if (Time.unscaledTime < _uiTick) return;
             _uiTick = Time.unscaledTime + 0.1f;
             RefreshBars();
-            _plate.raycastTarget = MenuGate.Busy; // el icono de mira solo es clicable con un menu abierto
+            bool busy = MenuGate.Busy; // los iconos solo son clicables con un menu abierto
             var pcs = GetPlayer();
-            if (pcs != null && _scopeRing.gameObject.activeSelf != pcs.scopeMode) _scopeRing.gameObject.SetActive(pcs.scopeMode);
+            for (int i = 0; i < 3; i++)
+            {
+                _plate[i].raycastTarget = busy;
+                bool on = pcs != null && (i == 0 ? pcs.meleeMode : i == 1 ? !pcs.meleeMode : pcs.scopeMode);
+                if (_ring[i].gameObject.activeSelf != on) _ring[i].gameObject.SetActive(on);
+            }
         }
 
         void BuildHud()
@@ -494,31 +498,33 @@ namespace Runtime.Scripts.Hud
                 _barTxt[i] = t;
             }
 
-            // Mira telescopica (tecla 1): placa metalica; el aro verde indica que esta activa. Clic = alternar (solo con un menu abierto).
-            var r = Rnd(Img(_uiRoot.transform, new Color(0.02f, 0.03f, 0.03f)));
-            _plate = r.GetComponent<Image>();
-            r.anchorMin = r.anchorMax = r.pivot = new Vector2(1f, 0f);
-            r.sizeDelta = new Vector2(80f, 80f);
-            r.anchoredPosition = new Vector2(-30f, 122f);
-            var btn = _plate.gameObject.AddComponent<Button>();
-            btn.transition = Selectable.Transition.None;
-            btn.onClick.AddListener(() => { var p = GetPlayer(); if (p != null) p.scopeMode = !p.scopeMode; });
-            var ring = Img(r, Green);
-            _scopeRing = ring.GetComponent<Image>();
-            _scopeRing.sprite = RingSprite();
-            Mid(ring, 70f);
-            ring.gameObject.SetActive(false);
-            var ic = Img(r, new Color(0.8f, 0.9f, 0.8f));
-            ic.GetComponent<Image>().sprite = ScopeSprite();
-            Mid(ic, 48f);
-
-            // Indicador de la tecla 1 junto al icono de mira
-            var one = Txt(r, 22, Amber, TextAlignmentOptions.Center, FontStyles.Bold);
-            one.text = "1";
-            one.raycastTarget = false;
-            one.rectTransform.anchorMin = one.rectTransform.anchorMax = one.rectTransform.pivot = new Vector2(0f, 1f);
-            one.rectTransform.sizeDelta = new Vector2(24f, 24f);
-            one.rectTransform.anchoredPosition = new Vector2(4f, -2f);
+            // Selector (1 melee, 2 disparo, 3 mira telescopica): placas apiladas; el aro verde marca la activa. Clic = elegir (solo con un menu abierto).
+            for (int i = 0; i < 3; i++)
+            {
+                int id = i;
+                var r = Rnd(Img(_uiRoot.transform, new Color(0.02f, 0.03f, 0.03f)));
+                _plate[i] = r.GetComponent<Image>();
+                r.anchorMin = r.anchorMax = r.pivot = new Vector2(1f, 0f);
+                r.sizeDelta = new Vector2(80f, 80f);
+                r.anchoredPosition = new Vector2(-30f, 122f + (2 - i) * 90f);
+                var btn = _plate[i].gameObject.AddComponent<Button>();
+                btn.transition = Selectable.Transition.None;
+                btn.onClick.AddListener(() => { var p = GetPlayer(); if (p == null) return; if (id == 2) p.scopeMode = !p.scopeMode; else p.meleeMode = id == 0; });
+                var ring = Img(r, Green);
+                _ring[i] = ring.GetComponent<Image>();
+                _ring[i].sprite = RingSprite();
+                Mid(ring, 70f);
+                ring.gameObject.SetActive(false);
+                var ic = Img(r, new Color(0.8f, 0.9f, 0.8f));
+                ic.GetComponent<Image>().sprite = i == 0 ? FistSprite() : i == 1 ? GunSprite() : ScopeSprite();
+                Mid(ic, 48f);
+                var n = Txt(r, 22, Amber, TextAlignmentOptions.Center, FontStyles.Bold);
+                n.text = (i + 1).ToString();
+                n.raycastTarget = false;
+                n.rectTransform.anchorMin = n.rectTransform.anchorMax = n.rectTransform.pivot = new Vector2(0f, 1f);
+                n.rectTransform.sizeDelta = new Vector2(24f, 24f);
+                n.rectTransform.anchoredPosition = new Vector2(4f, -2f);
+            }
 
             // 2 botones metalicos redondos con punto rubi (TAB, J), en la misma fila que la placa de la mira, dentro del margen derecho
             for (int i = 0; i < 2; i++)
@@ -621,15 +627,15 @@ namespace Runtime.Scripts.Hud
 
             if (shooter != null && (shooter.isUnlocked || shooter.Projectile != null))
             {
-                names.Add(shooter.HoldToFire ? "Disparo continuo" : "Disparo"); keys.Add("LMB");
+                names.Add(shooter.HoldToFire ? "Disparo continuo" : "Disparo"); keys.Add("2+LMB");
                 names.Add("Recarga"); keys.Add("R");
             }
-            if (pc != null && pc.HasMelee) { names.Add("Cuerpo a cuerpo"); keys.Add("LMB"); }
+            if (pc != null && pc.HasMelee) { names.Add("Cuerpo a cuerpo"); keys.Add("1+LMB"); }
             if (shield != null && shield.isUnlocked) { names.Add("Escudo"); keys.Add("MMB"); }
             if (pc != null && pc.HasHook) { names.Add("Gancho"); keys.Add("RMB+G"); }
             names.Add("Sprint"); keys.Add("Shift");
             if (prop != null && prop.MaxJetpack > 0) { names.Add("Jetpack"); keys.Add("Space/B"); }
-            names.Add(pc != null && pc.scopeMode ? "Mira telescopica (ON)" : "Mira telescopica"); keys.Add("1");
+            names.Add(pc != null && pc.scopeMode ? "Mira telescopica (ON)" : "Mira telescopica"); keys.Add("3");
         }
 
         // Sprites dibujados por codigo, una sola vez y compartidos.
@@ -645,6 +651,19 @@ namespace Runtime.Scripts.Hud
                 return Mathf.Max(a, Mathf.Clamp01(2.5f - d));
             });
         }
+
+        static Sprite FistSprite() => s_fist ??= Draw((x, y) =>
+        {
+            float a = Mathf.Max(Box(x, y, 20f, 12f, 46f, 38f), Mathf.Max(Box(x, y, 26f, 4f, 42f, 12f), Disc(x, y, 17f, 27f, 6f)));
+            for (int k = 0; k < 4; k++) a = Mathf.Max(a, Disc(x, y, 24f + k * 6.7f, 38f, 5.3f));
+            return a;
+        });
+
+        static Sprite GunSprite() => s_gun ??= Draw((x, y) =>
+            Mathf.Max(Box(x, y, 12f, 36f, 52f, 46f), Mathf.Max(Box(x, y, 14f, 14f, 28f, 36f), Box(x, y, 28f, 28f, 31f, 36f))));
+
+        static float Box(float x, float y, float x0, float y0, float x1, float y1) => Band(x, x0, x1) * Band(y, y0, y1);
+        static float Disc(float x, float y, float cx, float cy, float r) => Mathf.Clamp01(r - Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) + 0.5f);
 
         static Sprite RingSprite()
         {

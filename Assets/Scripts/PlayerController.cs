@@ -95,7 +95,7 @@ namespace Runtime.Scripts.Player
         [Range(0f, 1f), Tooltip("Intensidad del zoom al apuntar SIN mira telescopica: 0 = sin zoom, 1 = distancia/FOV/offset de apuntado completos.")] public float aimZoomStrength = 0.3f;
         [Tooltip("Velocidad de la transicion al apuntar sin mira telescopica (menor = mas suave).")] public float aimZoomSpeed = 5f;
         [Range(0.2f, 1f)] public float aimMoveSpeedMultiplier = 0.6f;
-        [Tooltip("Alterna mira comun / telescopica. Apuntar siempre es clic derecho.")] public Key scopeToggleKey = Key.Digit1;
+        [Tooltip("1 = melee, 2 = disparo (se eligen, no son toggle): el clic izquierdo usa el modo activo. 3 = mira telescopica (toggle).")] public bool meleeMode;
         public bool scopeMode; // false = mira comun, true = telescopica
         public bool HasMelee => _melee != null;                   // para la lista de skills del panel de personaje
         public bool HasHook => hookProjectilePrefab != null;
@@ -701,9 +701,14 @@ namespace Runtime.Scripts.Player
                                        (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame);
             bool aimIsHeld = (_aimAction != null && _aimAction.IsPressed()) ||
                              (Mouse.current != null && Mouse.current.rightButton.isPressed);
-            // Tecla 1: alterna mira comun / telescopica (solo con el cursor bloqueado, es decir, sin menus). El clic derecho siempre apunta.
-            if (Keyboard.current != null && Cursor.lockState == CursorLockMode.Locked && Keyboard.current[scopeToggleKey].wasPressedThisFrame)
-                scopeMode = !scopeMode;
+            // Teclas (solo con el cursor bloqueado): 1 = melee, 2 = disparo (seleccion), 3 = mira telescopica (toggle). El clic derecho siempre apunta.
+            if (Keyboard.current != null && Cursor.lockState == CursorLockMode.Locked)
+            {
+                var k = Keyboard.current;
+                if (k.digit1Key.wasPressedThisFrame) meleeMode = true;
+                else if (k.digit2Key.wasPressedThisFrame) meleeMode = false;
+                else if (k.digit3Key.wasPressedThisFrame) scopeMode = !scopeMode;
+            }
 
             if (toggleAim)
             {
@@ -735,7 +740,7 @@ namespace Runtime.Scripts.Player
                 for (int i = 1; i <= 9; i++)
                 {
                     var wk = Key.Digit1 + (i - 1);
-                    if (wk == scopeToggleKey) continue; // reservada para la mira telescopica
+                    if (i <= 3) continue; // 1-3 reservadas: melee, disparo, mira
                     if (Keyboard.current[wk].wasPressedThisFrame)
                     {
                         selectWeapon = i;
@@ -759,7 +764,7 @@ namespace Runtime.Scripts.Player
         {
             if (crosshairUI != null)
             {
-                crosshairUI.SetActive(aim);
+                crosshairUI.SetActive(!(_gameCursor && Cursor.visible)); // mira minima siempre visible, salvo con un menu abierto
             }
 
             if (_vcamCache == null) SetupCamera();
@@ -802,20 +807,9 @@ namespace Runtime.Scripts.Player
                 hook = false;
             }
 
-            if (_shooter != null && (_shooter.isUnlocked || _shooter.Projectile != null))
-            {
-                if (_shooter.HoldToFire ? fireHeld : fire)
-                {
-                    if (!_shooter.TryFire() && _melee != null && fire)
-                    {
-                        _melee.PerformMeleeAction();
-                    }
-                }
-            }
-            else if (_melee != null && fire)
-            {
-                _melee.PerformMeleeAction();
-            }
+            // Clic izquierdo segun el modo elegido (1 melee / 2 disparo).
+            if (meleeMode) { if (_melee != null && fire) _melee.PerformMeleeAction(); }
+            else if (_shooter != null && (_shooter.isUnlocked || _shooter.Projectile != null) && (_shooter.HoldToFire ? fireHeld : fire)) _shooter.TryFire();
         }
 
         private void TryFireHook()
