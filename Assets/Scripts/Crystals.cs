@@ -9,17 +9,19 @@ using Runtime.Scripts.Items;
 public class Smashable : MonoBehaviour
 {
     public float life = 6f;   // golpes/disparos de 2 de dano: 3
-    bool dead;
+    bool dead; float life0;
 
-    void Awake() { if (!TryGetComponent<Rigidbody>(out _)) gameObject.AddComponent<Rigidbody>().isKinematic = true; }   // asegura eventos de fisica
+    void Awake() { life0 = life; if (!TryGetComponent<Rigidbody>(out _)) gameObject.AddComponent<Rigidbody>().isKinematic = true; }   // asegura eventos de fisica
+    protected virtual void OnEnable() { life = life0; dead = false; }   // al reutilizarse desde un pool queda como nuevo
 
     public void Damage(float d)
     {
         if (dead || (life -= d) > 0f) return;
-        dead = true; Die(); Destroy(gameObject);
+        dead = true; Die(); Remove();
     }
 
     protected virtual void Die() { }
+    protected virtual void Remove() => Destroy(gameObject);
 
     void OnCollisionEnter(Collision c) { if (c.relativeVelocity.sqrMagnitude > 100f) Damage(c.relativeVelocity.magnitude); }
 }
@@ -33,7 +35,7 @@ public class Crystal : Smashable
     public GameObject[] drops;      // un pickup por color
     Collider col;
 
-    void OnEnable() { col = GetComponent<Collider>(); All.Add(this); }
+    protected override void OnEnable() { base.OnEnable(); col = GetComponent<Collider>(); All.Add(this); }
     void OnDisable() => All.Remove(this);
     public Bounds Box => col != null ? col.bounds : new Bounds(transform.position, Vector3.one * 8f);
 
@@ -62,6 +64,7 @@ public class CrystalPickup : MonoBehaviour
     bool rolled;
 
     void Awake() => rb = GetComponent<Rigidbody>();
+    void OnEnable() { t = nudgeT = 0f; rolled = false; if (rb) rb.isKinematic = false; }   // reutilizado desde el pool
 
     // Primer contacto con el suelo: empujon cuesta abajo, para que ruede aunque la pendiente sea suave.
     void OnCollisionEnter(Collision c)
@@ -117,7 +120,7 @@ public class CrystalPickup : MonoBehaviour
                 else inv.InternalAddItem(hash, 1);
             }
         }
-        Destroy(gameObject);
+        Pool.Release(gameObject);   // fragmentos al pool; la madera (no viene del pool) se destruye
     }
 }
 
@@ -129,7 +132,9 @@ public class TreeBreaker : MonoBehaviour
     const float R = 40f;
     class E { public TreeInstance[] a; public TreePrototype[] p; public bool[] dead; }
     readonly Dictionary<Terrain, E> cache = new Dictionary<Terrain, E>();
-    readonly Dictionary<(Terrain, int), GameObject> live = new Dictionary<(Terrain, int), GameObject>();
+    readonly Dictionary<(Terrain, int), TreeBit> live = new Dictionary<(Terrain, int), TreeBit>();
+    readonly Stack<TreeBit> idle = new Stack<TreeBit>();   // proxies reciclados: sin Instantiate/Destroy al caminar por el bosque
+    Vector3 lastScan = new Vector3(1e9f, 0f, 0f);
     readonly List<(Terrain, int)> gone = new List<(Terrain, int)>();
     static int broken;
     static Material wood;
@@ -150,11 +155,13 @@ public class TreeBreaker : MonoBehaviour
             if (pl == null) return;
         }
         Vector3 c = pl.position;
+        if ((c - lastScan).sqrMagnitude < 25f) return;   // los proxies solo cambian al moverse el jugador ~5 m
+        lastScan = c;
 
         gone.Clear();
         foreach (var kv in live)
             if (kv.Value == null || (kv.Value.transform.position - c).sqrMagnitude > (R + 10f) * (R + 10f)) gone.Add(kv.Key);
-        foreach (var k in gone) { if (live[k] != null) Destroy(live[k]); live.Remove(k); }
+        foreach (var k in gone) { if (live[k] != null) Recycle(live[k]); live.Remove(k); }
 
         foreach (var t in Terrain.activeTerrains)
         {
@@ -180,7 +187,7 @@ public class TreeBreaker : MonoBehaviour
         }
     }
 
-    GameObject Proxy(Terrain t, E e, int i, Vector3 pos)
+    TreeBit Proxy(Terrain t, E e, int i, Vector3 pos)
     {
         var ti = e.a[i];
         float h = 8f, r = .4f;
@@ -191,14 +198,18 @@ public class TreeBreaker : MonoBehaviour
             Bounds b = mf.sharedMesh.bounds;
             h = b.size.y; r = Mathf.Clamp(Mathf.Max(b.extents.x, b.extents.z) * .15f, .3f, 1f);
         }
-        var go = new GameObject("TreeProxy");
-        go.transform.position = pos;
-        var cap = go.AddComponent<CapsuleCollider>();
+        TreeBit s;
+        if (idle.Count > 0) s = idle.Pop();
+        else { var go = new GameObject("TreeProxy"); go.SetActive(false); s = go.AddComponent<TreeBit>(); s.cap = go.AddComponent<CapsuleCollider>(); }
+        s.transform.position = pos;
+        var cap = s.cap;
         cap.height = h * ti.heightScale; cap.radius = r * ti.widthScale; cap.center = Vector3.up * cap.height / 2f;
-        var s = go.AddComponent<TreeBit>();
         s.owner = this; s.t = t; s.i = i;
-        return go;
+        s.gameObject.SetActive(true);
+        return s;
     }
+
+    public void Recycle(TreeBit b) { b.gameObject.SetActive(false); idle.Push(b); }
 
     public void Fell(Terrain t, int i, Vector3 p)
     {
@@ -224,8 +235,9 @@ public class TreeBreaker : MonoBehaviour
 
 public class TreeBit : Smashable
 {
-    public TreeBreaker owner; public Terrain t; public int i;
+    public TreeBreaker owner; public Terrain t; public int i; public CapsuleCollider cap;
     protected override void Die() => owner.Fell(t, i, transform.position);
+    protected override void Remove() => owner.Recycle(this);
 }
 
 // Los cristales EMITEN LUZ de su color: un pool de 6 luces puntuales (sin sombras) sigue a los racimos mas cercanos.
@@ -316,8 +328,11 @@ public static class CrystalFragments
     public static GameObject Spawn(int color, Vector3 pos, Quaternion rot)
     {
         Build();
-        return Object.Instantiate(tpl[Mathf.Clamp(color, 0, 2)], pos, rot);
+        return Pool.Get(tpl[Mathf.Clamp(color, 0, 2)], pos, rot);
     }
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void Boot() { Build(); for (int c = 0; c < 3; c++) Pool.Warm(tpl[c], 6); }   // plantillas y pool listos antes de romper el primer cristal
 
     static void Build()
     {

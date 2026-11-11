@@ -18,8 +18,8 @@ RenderSettings:
   m_FogColor: {r: 0.49699998, g: 0.23449998, b: 0.22749996, a: 0.7}
   m_FogMode: 3
   m_FogDensity: 0
-  m_LinearFogStart: 557
-  m_LinearFogEnd: 1114
+  m_LinearFogStart: 521.5
+  m_LinearFogEnd: 1043
   m_AmbientSkyColor: {r: 0.41999993, g: 0.21999994, b: 0.45, a: 1}
   m_AmbientEquatorColor: {r: 0.6, g: 0.27, b: 0.11999996, a: 0.6}
   m_AmbientGroundColor: {r: 0.079999946, g: 0.049999967, b: 0.09999994, a: 1}
@@ -170665,7 +170665,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9865f4a7ba1ff474fa8b02bde6ac2940, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ViewDistance
-  distancia: 1114
+  distancia: 1043
+  escala: 0.25
+  dinamica: 0
+  fpsObjetivo: 60
 --- !u!4 &1694733071
 Transform:
   m_ObjectHideFlags: 0

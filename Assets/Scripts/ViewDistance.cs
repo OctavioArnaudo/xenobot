@@ -1,15 +1,48 @@
 // Assets/Scripts (fuera de Editor). Menu: Tools/Perf/Crear ViewDistance (lo pone en la escena) y Tools/Perf/Optimizar URP.
 // Mueve el slider "Distancia" en el Inspector, en Play o fuera de Play. Ajusta far clip, arboles/detalle del Terrain y niebla.
+// "Escala" = Render Scale de URP: reduce SOLO la resolucion 3D. Los Canvas en Screen Space - Overlay se dibujan a resolucion nativa (HUD y menus nitidos);
+// los Canvas en modo Camera/World SI se escalan (se avisa en consola). "Dinamica": baja/sube la escala sola para sostener fpsObjetivo (Escala = maximo).
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 [ExecuteAlways]
 public class ViewDistance : MonoBehaviour
 {
     [Range(50f, 2000f)] public float distancia = 400f;
+    [Range(.25f, 1f)] public float escala = 1f;
+    public bool dinamica; [Range(30, 144)] public int fpsObjetivo = 60;
 
-    void OnEnable() { RenderPipelineManager.beginCameraRendering += Pre; Camera.onPreCull += PreBuiltin; Apply(); }
-    void OnDisable() { RenderPipelineManager.beginCameraRendering -= Pre; Camera.onPreCull -= PreBuiltin; }
+    float orig = 1f, cur = 1f, acc, okFor; int frames;
+
+    void OnEnable()
+    {
+        RenderPipelineManager.beginCameraRendering += Pre; Camera.onPreCull += PreBuiltin;
+        var a = UniversalRenderPipeline.asset; if (a) orig = a.renderScale;
+        cur = escala; Apply();
+        if (Application.isPlaying)
+            foreach (var c in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+                if (c.isRootCanvas && c.renderMode != RenderMode.ScreenSpaceOverlay) { Debug.LogWarning($"[ViewDistance] Canvas '{c.name}' no es Screen Space - Overlay: se vera borroso con Escala < 1.", c); }
+    }
+    void OnDisable()
+    {
+        RenderPipelineManager.beginCameraRendering -= Pre; Camera.onPreCull -= PreBuiltin;
+        var a = UniversalRenderPipeline.asset; if (a) a.renderScale = orig;
+    }
+
+    void Update()
+    {
+        if (!dinamica || !Application.isPlaying) return;
+        acc += Time.unscaledDeltaTime; frames++;
+        if (acc < 1f) return;
+        float fps = frames / acc; acc = 0f; frames = 0;
+        if (fps < fpsObjetivo * .9f) { okFor = 0f; cur -= .05f; }      // baja rapido
+        else if (fps >= fpsObjetivo * .97f && ++okFor >= 5f) { okFor = 0f; cur += .05f; }   // sube tras 5 s estables
+        cur = Mathf.Clamp(cur, .25f, escala);
+        Scale(cur);
+    }
+
+    static void Scale(float v) { var a = UniversalRenderPipeline.asset; if (a && !Mathf.Approximately(a.renderScale, v)) a.renderScale = v; }
     void OnValidate() => Apply();
 
     // Se fija justo antes de renderizar CADA camara de juego: gana sobre Cinemachine u otros scripts que reescriben el far clip.
@@ -18,6 +51,7 @@ public class ViewDistance : MonoBehaviour
 
     void Apply()
     {
+        cur = Mathf.Min(cur, escala); Scale(dinamica && Application.isPlaying ? cur : escala);
         float d = distancia;
         foreach (var t in Terrain.activeTerrains) { t.treeBillboardDistance = d * .5f; t.detailObjectDistance = Mathf.Min(d * .25f, 120f); t.basemapDistance = d * .5f; }
         if (RenderSettings.fog) { RenderSettings.fogEndDistance = d; RenderSettings.fogStartDistance = d * .5f; }
