@@ -45,7 +45,7 @@ public static class CombatFx
     // 3 estelas concentricas; ancho maximo al centro, puntas finas; alfa por vertice.
     static Mesh BuildMesh()
     {
-        float[] r = { 1f, .78f, .58f }, span = { 120f, 100f, 80f }, w = { .30f, .22f, .15f };
+        float[] r = { 1f, .78f, .58f }, span = { 120f, 100f, 80f }, w = { .55f, .40f, .28f };
         const int N = 14;
         var v = new List<Vector3>(); var c = new List<Color32>(); var t = new List<int>();
         for (int k = 0; k < 3; k++)
@@ -53,9 +53,10 @@ public static class CombatFx
             {
                 float u = i / (float)N, s = Mathf.Sin(Mathf.PI * u), a = Mathf.Deg2Rad * Mathf.Lerp(-span[k] * .5f, span[k] * .5f, u);
                 var d = new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a));
-                v.Add(d * (r[k] + w[k] * s * .5f) + Vector3.up * k * .05f); v.Add(d * (r[k] - w[k] * s * .5f) + Vector3.up * k * .05f);
-                var col = new Color32(255, 255, 255, (byte)(s * 255f)); c.Add(col); c.Add(col);
-                if (i < N) { int b = (k * (N + 1) + i) * 2; t.AddRange(new[] { b, b + 1, b + 2, b + 1, b + 3, b + 2 }); }
+                Vector3 y = Vector3.up * k * .05f, o = d * (w[k] * s * .5f);
+                v.Add(d * r[k] + o + y); v.Add(d * r[k] + y); v.Add(d * r[k] - o + y);   // borde, centro, borde: el alfa se difumina a lo ancho
+                c.Add(new Color32(255, 255, 255, 0)); c.Add(new Color32(255, 255, 255, (byte)(s * s * 255f))); c.Add(new Color32(255, 255, 255, 0));
+                if (i < N) { int b = (k * (N + 1) + i) * 3; t.AddRange(new[] { b, b + 1, b + 4, b, b + 4, b + 3, b + 1, b + 2, b + 5, b + 1, b + 5, b + 4 }); }
             }
         var m = new Mesh { name = "WindSlash" };
         m.SetVertices(v); m.SetColors(c); m.SetTriangles(t, 0); m.RecalculateBounds();
