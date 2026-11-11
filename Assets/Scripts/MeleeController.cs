@@ -330,6 +330,7 @@ namespace Runtime.Scripts.Melee
 
         private void TryContactDamage(GameObject hitObject, Vector3 impactPoint)
         {
+            if (m_Player != null) return;   // el player NO golpea por contacto: solo con clic (PerformMeleeAction). El dano por contacto queda para enemigos.
             if (hitObject == null || hitObject == gameObject || hitObject.transform.IsChildOf(transform)) return;
 
             if (Time.time < m_NextAttackTime) return;

@@ -18,30 +18,30 @@ public class ChargerAI : NetworkBehaviour
         HImpact = Animator.StringToHash(PImpact), HStunned = Animator.StringToHash(PStunned), HHurt = Animator.StringToHash(PHurt), HDead = Animator.StringToHash(PDead);
 
     [Header("Deteccion y patrulla")]
-    public float detectRange = 30f;
+    public float detectRange = 40f;
     public float walkSpeed = 2.5f, wanderRadius = 40f, idleMin = 1f, idleMax = 4f;
     [Header("Carga")]
     public float windupTime = 0.8f;       // lo fija el Setup con la duracion del clip
-    public float chargeSpeed = 22f, chargeAccel = 80f, overshoot = 8f, chargeMax = 45f, chargeTimeout = 3.5f, cooldown = 5f;
+    public float chargeSpeed = 24f, chargeAccel = 30f, chargeMax = 60f, chargeTimeout = 3.5f, cooldown = 5f;
     [Header("Impacto")]
-    public float shockRadius = 10f, hitRadius = 2.5f, stunTime = 2.5f;
+    public float shockRadius = 18f, hitRadius = 4.5f, stunTime = .9f;
     public int impactDamage = 100;        // al jugador, en el centro (cae hasta 25% en el borde)
+    public float plowRadius = 5f;        // durante la carga rompe arboles/cristales a su paso
     public float smashDamage = 16f;       // a Smashable (arboles/cristales viven 6): el borde del radio todavia los rompe
 
     enum S { Wander, Windup, Charge, Stun }
     S s;
-    float next, until, readyAt, idleUntil, chargeStart;
+    float next, until, readyAt, idleUntil, chargeStart, plowAt, cv; Vector3 cdir, cfrom;
+    NavMeshQueryFilter qf;   // el agente Charger tiene su PROPIO NavMesh: toda consulta debe usar su agentTypeID
     NavMeshAgent ag; Animator an; HealthController hp; Transform target;
     UnityAction<int> onHurt; UnityAction onDie;
 
-    static NavMeshPath path;
     static GameObject[] pl = System.Array.Empty<GameObject>();
     static float scanAt;
-    static readonly Collider[] buf = new Collider[256];
-    static readonly HealthController[] hit = new HealthController[8];
+    static readonly Collider[] buf = new Collider[512];
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetStatics() { path = null; pl = System.Array.Empty<GameObject>(); scanAt = 0f; }
+    static void ResetStatics() { pl = System.Array.Empty<GameObject>(); scanAt = 0f; }
 
     void Awake()
     {
@@ -55,6 +55,7 @@ public class ChargerAI : NetworkBehaviour
     void OnEnable()
     {
         hp.OnTakeDamage.AddListener(onHurt); hp.OnDeath.AddListener(onDie);
+        qf = new NavMeshQueryFilter { agentTypeID = ag.agentTypeID, areaMask = NavMesh.AllAreas };
         s = S.Wander; next = Time.time + Random.value; readyAt = Time.time + Random.Range(0f, 3f); idleUntil = 0f;
         an.SetBool(HDead, false); an.SetBool(HCharging, false); an.SetBool(HStunned, false);
         if (ag.isOnNavMesh) { ag.isStopped = false; ag.speed = walkSpeed; }
@@ -68,9 +69,14 @@ public class ChargerAI : NetworkBehaviour
     void Update()
     {
         float t = Time.time;
+        if (!ag.isOnNavMesh)   // fuera del NavMesh: se recoloca en el mas cercano (1 intento/s) en vez de lanzar errores
+        {
+            if (t >= next) { next = t + 1f; if (NavMesh.SamplePosition(transform.position, out var ph, 50f, qf)) ag.Warp(ph.position); }
+            return;
+        }
         an.SetFloat(HSpeed, ag.velocity.magnitude, .1f, Time.deltaTime);
         if (s == S.Windup) { Face(target.position); if (t >= until) Charge(); return; }
-        if (s == S.Charge) { if (ChargeHit()) Impact(transform.position + transform.forward * 1.5f); return; }
+        if (s == S.Charge) { Run(t); return; }
         if (t < next) return;
         next = t + .2f;
         if (s == S.Wander) Wander(t);
@@ -80,15 +86,14 @@ public class ChargerAI : NetworkBehaviour
     void Wander(float t)
     {
         var p = Nearest();
-        if (p && t >= readyAt && Sees(p.transform)) { Windup(p.transform, t); return; }
-        if (ag.pathPending || ag.remainingDistance > .8f) { idleUntil = 0f; return; }   // sigue caminando
+        if (p && t >= readyAt) { Windup(p.transform, t); return; }
+        if (ag.pathPending || (ag.hasPath && ag.remainingDistance > .8f)) { idleUntil = 0f; return; }   // sigue caminando
         if (idleUntil == 0f) idleUntil = t + Random.Range(idleMin, idleMax);
         if (t < idleUntil) return;
         idleUntil = 0f;
         Vector2 r = Random.insideUnitCircle * wanderRadius;
         Vector3 from = transform.position;
-        if (NavMesh.SamplePosition(from + new Vector3(r.x, 0f, r.y), out var h, 20f, NavMesh.AllAreas)
-            && NavMesh.CalculatePath(from, h.position, NavMesh.AllAreas, path ??= new NavMeshPath()) && path.status == NavMeshPathStatus.PathComplete) ag.SetPath(path);
+        if (NavMesh.SamplePosition(from + new Vector3(r.x, 0f, r.y), out var h, 20f, qf)) ag.SetDestination(h.position);
     }
 
     GameObject Nearest()
@@ -104,11 +109,6 @@ public class ChargerAI : NetworkBehaviour
         return b;
     }
 
-    // Linea de vista: la bloquea el terreno o las paredes; arboles y cristales no.
-    bool Sees(Transform p) =>
-        !Physics.Linecast(transform.position + Vector3.up * 1.5f, p.position + Vector3.up, out var h, ~0, QueryTriggerInteraction.Ignore)
-        || h.transform.IsChildOf(p) || h.transform.IsChildOf(transform) || h.collider.TryGetComponent<Smashable>(out _);
-
     void Windup(Transform p, float t)
     {
         target = p; s = S.Windup; until = t + windupTime;
@@ -122,27 +122,44 @@ public class ChargerAI : NetworkBehaviour
         if (d.sqrMagnitude > .01f) transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(d), 360f * Time.deltaTime);
     }
 
-    // El destino se fija UNA vez, pasado el jugador; NavMesh.Raycast lo recorta contra paredes/precipicios del NavMesh.
+    // La carga es en LINEA RECTA: direccion fijada al terminar el windup, aceleracion progresiva (envion) y ag.Move,
+    // que desliza por el NavMesh sin depender de rutas. Termina al tocar al jugador, chocar (se frena), por distancia o tiempo.
     void Charge()
     {
-        Vector3 p = transform.position, d = target.position - p; d.y = 0f;
-        float len = Mathf.Min(d.magnitude + overshoot, chargeMax);
-        Vector3 to = p + d.normalized * len;
-        if (NavMesh.Raycast(p, to, out var h, NavMesh.AllAreas)) to = h.position;
-        else if (NavMesh.SamplePosition(to, out h, 4f, NavMesh.AllAreas)) to = h.position;
-        ag.isStopped = false; ag.speed = chargeSpeed; ag.acceleration = chargeAccel; ag.stoppingDistance = 0f; ag.SetDestination(to);
-        s = S.Charge; chargeStart = Time.time;
+        Vector3 d = target.position - transform.position; d.y = 0f;
+        cdir = d.sqrMagnitude > .01f ? d.normalized : transform.forward;
+        cv = 0f; cfrom = transform.position; chargeStart = Time.time; s = S.Charge;
+        ag.ResetPath(); ag.isStopped = false;
         an.SetBool(HCharging, true);
     }
 
-    // Termina la carga al tocar al jugador, chocar con algo vertical, llegar/frenar o por tiempo.
-    bool ChargeHit()
+    void Run(float t)
     {
-        Vector3 p = transform.position; float el = Time.time - chargeStart;
-        if (el > chargeTimeout) return true;
-        foreach (var g in pl) if (g && g.activeInHierarchy && (g.transform.position - p).sqrMagnitude < hitRadius * hitRadius) return true;
-        if (Physics.Raycast(p + Vector3.up, transform.forward, out var h, 2.5f, ~0, QueryTriggerInteraction.Ignore) && !h.transform.IsChildOf(transform) && h.normal.y < .5f) return true;
-        return el > .3f && !ag.pathPending && (!ag.hasPath || ag.remainingDistance < 1f || ag.velocity.sqrMagnitude < 4f);
+        cv = Mathf.MoveTowards(cv, chargeSpeed, chargeAccel * Time.deltaTime);
+        Face(transform.position + cdir);
+        Vector3 before = transform.position;
+        ag.Move(cdir * (cv * Time.deltaTime));
+        Plow(t);
+        float el = t - chargeStart, step = cv * Time.deltaTime;
+        bool blocked = el > .5f && (transform.position - before).magnitude < step * .5f;
+        if (blocked || el > chargeTimeout || (transform.position - cfrom).sqrMagnitude > chargeMax * chargeMax || NearPlayer())
+            Impact(transform.position + cdir * 1.5f);
+    }
+
+    bool NearPlayer()
+    {
+        Vector3 p = transform.position + Vector3.up;
+        foreach (var g in pl) if (g && g.activeInHierarchy && (g.transform.position + Vector3.up - p).sqrMagnitude < hitRadius * hitRadius) return true;
+        return false;
+    }
+
+    // Mientras carga: rompe lo Smashable que tenga delante (10 veces/s).
+    void Plow(float t)
+    {
+        if (t < plowAt) return;
+        plowAt = t + .1f;
+        int n = Physics.OverlapSphereNonAlloc(transform.position + transform.forward * 1.5f + Vector3.up, plowRadius, buf, ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < n; i++) if (buf[i].TryGetComponent(out Smashable sm)) sm.Damage(smashDamage);
     }
 
     void Impact(Vector3 c)
@@ -151,18 +168,22 @@ public class ChargerAI : NetworkBehaviour
         ag.velocity = Vector3.zero; ag.ResetPath(); ag.isStopped = true;
         an.SetBool(HCharging, false); an.SetBool(HStunned, true); an.SetTrigger(HImpact);
         ShockRing.Play(c, shockRadius);
-        int n = Physics.OverlapSphereNonAlloc(c, shockRadius, buf, ~0, QueryTriggerInteraction.Ignore), done = 0;
-        for (int i = 0; i < n; i++)
+
+        // Jugadores: se recorre la lista directamente (la fisica con arboles densos llena el buffer y podia dejar fuera al jugador).
+        foreach (var g in pl)
         {
-            var col = buf[i];
-            if (col.transform.IsChildOf(transform)) continue;
-            float k = 1f - Mathf.Min(Vector3.Distance(col.bounds.center, c) / shockRadius, 1f);   // 1 en el centro, 0 en el borde
-            if (col.TryGetComponent(out Smashable sm)) { sm.Damage(smashDamage * (.4f + .6f * k)); continue; }
-            var h = col.GetComponentInParent<HealthController>();
-            if (!h || h.EffectiveTeam != Team.Player || System.Array.IndexOf(hit, h, 0, done) >= 0) continue;   // 1 golpe por jugador
-            if (done < hit.Length) hit[done++] = h;
-            h.TakeDamage(Mathf.RoundToInt(impactDamage * Mathf.Lerp(.25f, 1f, k)));
+            if (!g || !g.activeInHierarchy) continue;
+            float d = Vector3.Distance(g.transform.position + Vector3.up, c);
+            if (d > shockRadius) continue;
+            var h = g.GetComponentInParent<HealthController>();
+            if (h && h.EffectiveTeam == Team.Player) h.TakeDamage(Mathf.RoundToInt(impactDamage * Mathf.Lerp(.25f, 1f, 1f - d / shockRadius)));
         }
+
+        // Arboles y cristales en el radio de la onda.
+        int n = Physics.OverlapSphereNonAlloc(c, shockRadius, buf, ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < n; i++)
+            if (buf[i].TryGetComponent(out Smashable sm))
+                sm.Damage(smashDamage * (.4f + .6f * (1f - Mathf.Min(Vector3.Distance(buf[i].bounds.center, c) / shockRadius, 1f))));
     }
 
 #if UNITY_EDITOR

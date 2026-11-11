@@ -27,7 +27,7 @@ static class ChargerTools
         ("Idle", new[] { "idle" }),
         ("Walk", new[] { "walk", "walk15f" }),
         ("Windup", new[] { "mele18f", "jumpfront28f", "shield" }),   // preparar la carga
-        ("Charge", new[] { "run", "dash" }),
+        ("Charge", new[] { "dash", "run" }),
         ("Impact", new[] { "smashdown", "meleehit" }),
         ("Stun", new[] { "stunxhit23f", "stun" }),
         ("Hurt", new[] { "takedmg", "takedamage" }),
@@ -64,16 +64,22 @@ static class ChargerTools
         Directory.CreateDirectory(Dir);
 
         // Los clips de movimiento deben hacer loop (si no, Idle/Walk/Run/Stun se congelan al terminar).
-        var loopKeys = Map.Where(m => m.state == "Idle" || m.state == "Walk" || m.state == "Charge" || m.state == "Stun").SelectMany(m => m.clips).ToArray();
+        var loopKeys = Map.Where(m => m.state == "Idle" || m.state == "Walk" || m.state == "Charge").SelectMany(m => m.clips).ToArray();
         var im = (ModelImporter)AssetImporter.GetAtPath(fbx);
         var ca = im.clipAnimations.Length > 0 ? im.clipAnimations : im.defaultClipAnimations;
         bool dirty = false;
-        foreach (var a in ca) if (!a.loopTime && loopKeys.Contains(Norm(a.name))) { a.loopTime = true; dirty = true; }
+        foreach (var a in ca)
+        {
+            string k = Norm(a.name);
+            bool want = loopKeys.Contains(k);
+            if (want != a.loopTime && (want || Map.Any(m => m.state == "Stun" && m.clips.Contains(k)))) { a.loopTime = want; dirty = true; }   // Stun NO hace loop: suena una sola vez por golpe
+        }
         if (dirty) { im.clipAnimations = ca; im.SaveAndReimport(); }
 
         var all = AssetDatabase.LoadAllAssetsAtPath(fbx);
         var clips = all.OfType<AnimationClip>().Where(c => !c.name.StartsWith("__preview__")).ToList();
         var pick = Map.ToDictionary(m => m.state, m => m.clips.Select(k => clips.FirstOrDefault(c => Norm(c.name) == k)).FirstOrDefault(c => c != null));
+        Debug.Log($"[Charger] Clips del FBX: {string.Join(", ", clips.Select(c => c.name))}");
         foreach (var m in Map)
             if (pick[m.state] != null) Debug.Log($"[Charger] {m.state} <- '{pick[m.state].name}' ({pick[m.state].length:0.00} s)");
             else Debug.LogWarning($"[Charger] {m.state}: sin clip. Disponibles: {string.Join(", ", clips.Select(c => c.name))}");
@@ -134,6 +140,7 @@ static class ChargerTools
         if (pick["Windup"] != null) ai.windupTime = Mathf.Clamp(pick["Windup"].length, .4f, 1.5f);
         var ag = root.GetComponent<NavMeshAgent>();
         ag.radius = cap.radius; ag.height = cap.height; ag.speed = ai.walkSpeed; ag.acceleration = 8f; ag.angularSpeed = 360f; ag.stoppingDistance = 0f;
+        ag.baseOffset = -b.min.y;   // los pies del modelo tocan el NavMesh, sin elevar a mano
         ag.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
         root.GetComponent<HealthController>().team = Team.Enemy;
         int type = AgentType(cap.radius, cap.height);
@@ -197,7 +204,20 @@ static class ChargerTools
             mgr.GetMethod("StartBakingSurfaces", F).Invoke(mgr.GetProperty("instance", F).GetValue(null), new object[] { new Object[] { sf } });
             Debug.Log($"[Charger] Horneando el NavMesh (agent type {type})... espera a que termine y guarda la escena.");
         }
-        catch (System.Exception) { Debug.LogWarning("[Charger] Surface configurado (agent type " + type + "), pero no pude hornearlo solo: seleccionalo y pulsa Bake."); }
+        catch (System.Exception)
+        {
+            try   // plan B: BuildNavMesh() del Surface (sincrono) y se guarda el resultado como asset
+            {
+                var t = sf.GetType(); var prop = t.GetProperty("navMeshData");
+                var old = prop.GetValue(sf) as Object; string path = old ? AssetDatabase.GetAssetPath(old) : "";
+                t.GetMethod("BuildNavMesh", System.Type.EmptyTypes).Invoke(sf, null);
+                var nd = prop.GetValue(sf) as Object;
+                if (nd && !AssetDatabase.Contains(nd)) AssetDatabase.CreateAsset(nd, path != "" ? path : Dir + "/NavMesh-Surface.asset");
+                AssetDatabase.SaveAssets(); UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(sf.gameObject.scene);
+                Debug.Log($"[Charger] NavMesh horneado (agent type {type}). Guarda la escena.");
+            }
+            catch (System.Exception) { Debug.LogWarning("[Charger] No pude hornearlo solo: selecciona Surface y pulsa Bake."); }
+        }
     }
 
     [MenuItem("Tools/Enemy/4 Bake NavMesh (agente Charger)")]
@@ -216,6 +236,8 @@ static class ChargerTools
         if (ts.Length == 0) { Debug.LogError("[Charger] No hay Terrain activo en la escena."); return; }
         if (NavMesh.CalculateTriangulation().vertices.Length == 0) { Debug.LogError("[Charger] No hay NavMesh horneado: ejecuta Tools/Enemy/4 Bake NavMesh y espera a que termine."); return; }
 
+        var qf = new NavMeshQueryFilter { agentTypeID = pf.GetComponent<NavMeshAgent>().agentTypeID, areaMask = NavMesh.AllAreas };
+        float off = pf.GetComponent<NavMeshAgent>().baseOffset;   // el agente espera el transform a baseOffset sobre el NavMesh
         var rnd = new System.Random();
         var rp = GameObject.Find("Respawn");
         var pts = new List<Vector3>();
@@ -224,7 +246,7 @@ static class ChargerTools
             var t = ts[rnd.Next(ts.Length)]; Vector3 tp = t.transform.position, sz = t.terrainData.size;
             var p = new Vector3(tp.x + (float)rnd.NextDouble() * sz.x, 0f, tp.z + (float)rnd.NextDouble() * sz.z);
             p.y = tp.y + t.SampleHeight(p);
-            if (!NavMesh.SamplePosition(p, out var h, 4f, NavMesh.AllAreas)) continue;
+            if (!NavMesh.SamplePosition(p, out var h, 4f, qf)) continue;
             if (pts.Any(q => (q - h.position).sqrMagnitude < Gap * Gap) || (rp && (rp.transform.position - h.position).sqrMagnitude < SafeZone * SafeZone)) continue;
             pts.Add(h.position);
         }
@@ -235,7 +257,7 @@ static class ChargerTools
         {
             var g = (GameObject)PrefabUtility.InstantiatePrefab(pf, grp.transform);
             Undo.RegisterCreatedObjectUndo(g, "Fill Chargers");
-            g.transform.SetPositionAndRotation(p, Quaternion.Euler(0f, rnd.Next(360), 0f));
+            g.transform.SetPositionAndRotation(p + Vector3.up * off, Quaternion.Euler(0f, rnd.Next(360), 0f));
         }
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(grp.scene);
         Debug.Log($"[Charger] {pts.Count}/{Count} enemigos en el NavMesh (grupo 'Chargers'). Guarda la escena y dale Play.");
