@@ -102,7 +102,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4159238001
+  GlobalObjectIdHash: 1962428950
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -188,7 +188,7 @@ MonoBehaviour:
   wanderRadius: 40
   idleMin: 1
   idleMax: 4
-  windupTime: 0.75
+  windupTime: 1.5
   chargeSpeed: 24
   chargeAccel: 30
   chargeMax: 60
@@ -198,6 +198,7 @@ MonoBehaviour:
   hitRadius: 4.5
   stunTime: 0.9
   impactDamage: 100
+  knockback: 20
   plowRadius: 5
   smashDamage: 16
 --- !u!114 &3155575217283400508
@@ -265,34 +266,22 @@ MonoBehaviour:
   TransitionStateInfoList: []
   AnimatorParameterEntries:
     ParameterEntries:
-    - name: speed
-      NameHash: 254213878
+    - name: Speed
+      NameHash: -823668238
       Synchronize: 1
       ParameterType: 1
-    - name: windup
-      NameHash: -1515350363
-      Synchronize: 1
-      ParameterType: 9
-    - name: impact
-      NameHash: -1005993977
-      Synchronize: 1
-      ParameterType: 9
-    - name: takeDamage
-      NameHash: -1533413595
-      Synchronize: 1
-      ParameterType: 9
-    - name: charging
-      NameHash: 184195108
+    - name: IsDead
+      NameHash: 1270110494
       Synchronize: 1
       ParameterType: 4
-    - name: stunned
-      NameHash: 713582873
+    - name: Attack
+      NameHash: 1080829965
       Synchronize: 1
-      ParameterType: 4
-    - name: dead
-      NameHash: -316323548
+      ParameterType: 9
+    - name: TakeDamage
+      NameHash: -339413771
       Synchronize: 1
-      ParameterType: 4
+      ParameterType: 9
   AnimatorParametersExpanded: 0
 --- !u!1001 &3001130685727605125
 PrefabInstance:
