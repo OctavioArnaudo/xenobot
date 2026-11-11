@@ -503,6 +503,7 @@ namespace Runtime.Scripts.Shoot
             }
 
             if (MuzzleFlash != null) MuzzleFlash.Play();
+            else Debug.LogWarning("[ShootController] Falta el ParticleSystem/textura de chispas (MuzzleFlash).", this);
         }
 
         private Vector3 GetAimDirection(Vector3 muzzlePos)

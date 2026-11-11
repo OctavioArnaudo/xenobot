@@ -511,46 +511,39 @@ namespace Runtime.Scripts.Enemy
             UpdateInspectorValues();
         }
 
+        private float m_NavRetryAt;
+
         private bool EnsureAgentOnNavMesh()
         {
             if (m_Agent == null) return false;
-
             if (m_Agent.isOnNavMesh) return true;
+            if (Time.time < m_NavRetryAt) return false;   // sin NavMesh: reintenta cada 2 s, no cada frame
 
-            float[] searchRadii = new float[] { 2.0f, 5.0f, 12.0f, 25.0f, 50.0f };
-            foreach (float radius in searchRadii)
+            var filter = new NavMeshQueryFilter { agentTypeID = m_Agent.agentTypeID, areaMask = NavMesh.AllAreas };
+            if (!NavMesh.SamplePosition(transform.position, out NavMeshHit hit, 50f, filter))
             {
-                if (NavMesh.SamplePosition(transform.position, out NavMeshHit hit, radius, NavMesh.AllAreas))
-                {
-                    float groundOffset = 0.9f;
-                    if (BalanceManager.Instance != null)
-                    {
-                        groundOffset = BalanceManager.Instance.GetVerticalGroundOffset(gameObject);
-                    }
-                    else if (TryGetComponent<CapsuleCollider>(out var cap))
-                    {
-                        groundOffset = Mathf.Max(0.8f, -(cap.center.y - cap.height * 0.5f));
-                    }
-                    groundOffset = Mathf.Max(0.85f, groundOffset);
-
-                    Vector3 validPos = hit.position + Vector3.up * groundOffset;
-
-                    m_Agent.enabled = false;
-                    transform.position = validPos;
-                    m_Agent.enabled = true;
-
-                    if (m_Agent.isOnNavMesh)
-                    {
-                        return true;
-                    }
-
-                    if (m_Agent.Warp(hit.position))
-                    {
-                        return true;
-                    }
-                }
+                m_NavRetryAt = Time.time + 2f;   // no hay NavMesh de este tipo de agente: ni se toca el agente (cero warnings)
+                return false;
             }
 
+            float groundOffset = 0.9f;
+            if (BalanceManager.Instance != null)
+            {
+                groundOffset = BalanceManager.Instance.GetVerticalGroundOffset(gameObject);
+            }
+            else if (TryGetComponent<CapsuleCollider>(out var cap))
+            {
+                groundOffset = Mathf.Max(0.8f, -(cap.center.y - cap.height * 0.5f));
+            }
+            groundOffset = Mathf.Max(0.85f, groundOffset);
+
+            m_Agent.enabled = false;
+            transform.position = hit.position + Vector3.up * groundOffset;
+            m_Agent.enabled = true;
+
+            if (m_Agent.isOnNavMesh || m_Agent.Warp(hit.position)) return true;
+
+            m_NavRetryAt = Time.time + 2f;
             return false;
         }
 

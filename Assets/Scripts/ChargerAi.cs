@@ -8,7 +8,8 @@ using UnityEngine.AI;
 using UnityEngine.Events;
 
 [RequireComponent(typeof(NavMeshAgent), typeof(HealthController))]
-public class ChargerAI : NetworkBehaviour {
+public class ChargerAI : NetworkBehaviour
+{
     // Parámetros activos del Animator
     public const string PIsDead = "IsDead";
     public const string PAttack = "Attack";
@@ -45,7 +46,7 @@ public class ChargerAI : NetworkBehaviour {
 
     enum S { Wander, Windup, Charge, Stun }
     S s;
-    int tries; float next, until, readyAt, idleUntil, chargeStart, plowAt, cv; Vector3 cdir, cfrom;
+    int tries; float navRetry, next, until, readyAt, idleUntil, chargeStart, plowAt, cv; Vector3 cdir, cfrom;
     NavMeshQueryFilter qf;
     NavMeshAgent ag; Animator an; HealthController hp; Transform target;
     UnityAction<int> onHurt; UnityAction onDie;
@@ -57,7 +58,8 @@ public class ChargerAI : NetworkBehaviour {
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() { pl = System.Array.Empty<GameObject>(); scanAt = 0f; }
 
-    void Awake() {
+    void Awake()
+    {
         ag = GetComponent<NavMeshAgent>();
         hp = GetComponent<HealthController>();
         an = GetComponentInChildren<Animator>();
@@ -74,7 +76,8 @@ public class ChargerAI : NetworkBehaviour {
         onDie = () => an.SetBool(HIsDead, true);
     }
 
-    void OnEnable() {
+    void OnEnable()
+    {
         hp.OnTakeDamage.AddListener(onHurt);
         hp.OnDeath.AddListener(onDie);
         qf = new NavMeshQueryFilter { agentTypeID = ag.agentTypeID, areaMask = NavMesh.AllAreas };
@@ -86,29 +89,44 @@ public class ChargerAI : NetworkBehaviour {
         an.SetBool(HIsDead, false);
         an.SetFloat(HSpeed, 0f);
 
-        if (ag.isOnNavMesh) { ag.isStopped = false; ag.speed = walkSpeed; }
+        // El agente va APAGADO en el prefab: solo se activa si hay NavMesh cerca (sin warnings).
+        if (!ag.isOnNavMesh) Place(); else Init();
     }
 
-    void OnDisable() {
+    void Init() { ag.isStopped = false; ag.speed = walkSpeed; }
+
+    bool Place()
+    {
+        if (!NavSafe.TryPlace(ag, transform.position, ref navRetry, 50f, 2f)) return false;
+        Init(); return true;
+    }
+
+    void OnDisable()
+    {
         hp.OnTakeDamage.RemoveListener(onHurt);
         hp.OnDeath.RemoveListener(onDie);
     }
 
-    public override void OnNetworkSpawn() {
+    public override void OnNetworkSpawn()
+    {
         // En singleplayer local / editor sin servidor levantado no se deshabilita
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !IsServer) {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !IsServer)
+        {
             ag.enabled = false;
             enabled = false;
         }
     }
 
-    void Update() {
+    void Update()
+    {
         float t = Time.time;
-        if (!ag.isOnNavMesh) {
-            if (t >= next) {
+        if (!ag.isOnNavMesh)
+        {
+            if (t >= next)
+            {
                 next = t + 2f;
                 if (tries++ >= 3) { enabled = false; return; }
-                if (NavMesh.SamplePosition(transform.position, out var ph, 50f, qf) && ag.Warp(ph.position)) tries = 0;
+                if (Place()) tries = 0;
             }
             return;
         }
@@ -129,7 +147,8 @@ public class ChargerAI : NetworkBehaviour {
         else if (t >= until) { ag.isStopped = false; ag.speed = walkSpeed; ag.acceleration = 8f; s = S.Wander; }
     }
 
-    void Wander(float t) {
+    void Wander(float t)
+    {
         var p = Nearest();
         if (p && t >= readyAt) { Windup(p.transform, t); return; }
         if (ag.pathPending || (ag.hasPath && ag.remainingDistance > .8f)) { idleUntil = 0f; return; }
@@ -141,10 +160,12 @@ public class ChargerAI : NetworkBehaviour {
         if (NavMesh.SamplePosition(from + new Vector3(r.x, 0f, r.y), out var h, 20f, qf)) ag.SetDestination(h.position);
     }
 
-    GameObject Nearest() {
+    GameObject Nearest()
+    {
         if (Time.time >= scanAt) { scanAt = Time.time + 1f; pl = GameObject.FindGameObjectsWithTag("Player"); }
         GameObject b = null; float m = detectRange * detectRange;
-        foreach (var g in pl) {
+        foreach (var g in pl)
+        {
             if (!g || !g.activeInHierarchy) continue;
             float d = (g.transform.position - transform.position).sqrMagnitude;
             if (d < m) { m = d; b = g; }
@@ -152,26 +173,30 @@ public class ChargerAI : NetworkBehaviour {
         return b;
     }
 
-    void Windup(Transform p, float t) {
+    void Windup(Transform p, float t)
+    {
         target = p; s = S.Windup; until = t + windupTime;
         ag.velocity = Vector3.zero; ag.ResetPath(); ag.isStopped = true;
         an.ResetTrigger(HTakeDamage);
         // Durante la preparación se queda quieto encarando al objetivo (Speed baja a 0 = Walk/Idle)
     }
 
-    void Face(Vector3 w) {
+    void Face(Vector3 w)
+    {
         Vector3 d = w - transform.position; d.y = 0f;
         if (d.sqrMagnitude > .01f) transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(d), 360f * Time.deltaTime);
     }
 
-    void Charge() {
+    void Charge()
+    {
         Vector3 d = target.position - transform.position; d.y = 0f;
         cdir = d.sqrMagnitude > .01f ? d.normalized : transform.forward;
         cv = 0f; cfrom = transform.position; chargeStart = Time.time; s = S.Charge;
         ag.ResetPath(); ag.isStopped = false;
     }
 
-    void Run(float t) {
+    void Run(float t)
+    {
         cv = Mathf.MoveTowards(cv, chargeSpeed, chargeAccel * Time.deltaTime);
         Face(transform.position + cdir);
         Vector3 before = transform.position;
@@ -183,20 +208,23 @@ public class ChargerAI : NetworkBehaviour {
             Impact(transform.position + cdir * 1.5f);
     }
 
-    bool NearPlayer() {
+    bool NearPlayer()
+    {
         Vector3 p = transform.position + Vector3.up;
         foreach (var g in pl) if (g && g.activeInHierarchy && (g.transform.position + Vector3.up - p).sqrMagnitude < hitRadius * hitRadius) return true;
         return false;
     }
 
-    void Plow(float t) {
+    void Plow(float t)
+    {
         if (t < plowAt) return;
         plowAt = t + .1f;
         int n = Physics.OverlapSphereNonAlloc(transform.position + transform.forward * 1.5f + Vector3.up, plowRadius, buf, ~0, QueryTriggerInteraction.Ignore);
         for (int i = 0; i < n; i++) if (buf[i].TryGetComponent(out Smashable sm)) sm.Damage(smashDamage);
     }
 
-    void Impact(Vector3 c) {
+    void Impact(Vector3 c)
+    {
         s = S.Stun; until = Time.time + stunTime; readyAt = until + cooldown;
         ag.velocity = Vector3.zero; ag.ResetPath(); ag.isStopped = true;
 
@@ -206,7 +234,8 @@ public class ChargerAI : NetworkBehaviour {
         ShockRing.Play(c, shockRadius);
         CombatFx.Slash(c + Vector3.up, cdir, 5f, new Color(1f, .25f, .2f, .9f));
 
-        foreach (var g in pl) {
+        foreach (var g in pl)
+        {
             if (!g || !g.activeInHierarchy) continue;
             float d = Vector3.Distance(g.transform.position + Vector3.up, c);
             if (d > shockRadius) continue;
@@ -226,27 +255,31 @@ public class ChargerAI : NetworkBehaviour {
     }
 
 #if UNITY_EDITOR
-    void OnDrawGizmosSelected() {
+    void OnDrawGizmosSelected()
+    {
         Gizmos.color = Color.yellow; Gizmos.DrawWireSphere(transform.position, detectRange);
         Gizmos.color = Color.red; Gizmos.DrawWireSphere(transform.position, shockRadius);
     }
 #endif
 }
 
-public class ShockRing : MonoBehaviour {
+public class ShockRing : MonoBehaviour
+{
     static readonly Stack<ShockRing> pool = new Stack<ShockRing>();
     float t, r; Material mat;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() => pool.Clear();
 
-    public static void Play(Vector3 p, float radius) {
+    public static void Play(Vector3 p, float radius)
+    {
         var s = pool.Count > 0 ? pool.Pop() : Create();
         s.transform.position = p; s.r = radius; s.t = 0f;
         s.gameObject.SetActive(true);
     }
 
-    static ShockRing Create() {
+    static ShockRing Create()
+    {
         var g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         Destroy(g.GetComponent<Collider>());
         var rd = g.GetComponent<Renderer>();
@@ -256,7 +289,8 @@ public class ShockRing : MonoBehaviour {
         return s;
     }
 
-    void Update() {
+    void Update()
+    {
         if ((t += Time.deltaTime / .45f) >= 1f) { gameObject.SetActive(false); pool.Push(this); return; }
         transform.localScale = new Vector3(1f, .15f, 1f) * (2f * r * t);
         mat.color = new Color(1f, .6f, .2f, .6f * (1f - t));

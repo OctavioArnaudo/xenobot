@@ -469,7 +469,7 @@ namespace Runtime.Scripts.Balance
 
             if (instance == null)
             {
-                instance = Instantiate(prefab, _poolParentTransform);
+                instance = Instantiate(prefab, position, rotation, _poolParentTransform);   // nace en el punto de spawn: el NavMeshAgent encuentra NavMesh (sin warnings)
                 instance.name = prefab.name;
             }
 

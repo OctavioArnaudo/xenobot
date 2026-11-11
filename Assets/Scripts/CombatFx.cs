@@ -103,10 +103,10 @@ public class FxFlash : MonoBehaviour
 {
     const int Slots = 8; const float Life = .6f;
     readonly int[] id = new int[Slots]; readonly Renderer[][] rs = new Renderer[Slots][]; readonly float[] t = new float[Slots];
-    static readonly MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+    static MaterialPropertyBlock mpb;   // creado en Awake/Update, nunca en inicializador de campo (Unity lo prohibe)
     static readonly int Base = Shader.PropertyToID("_BaseColor"), Col = Shader.PropertyToID("_Color");
 
-    void Awake() { for (int i = 0; i < Slots; i++) t[i] = Life; }
+    void Awake() { mpb ??= new MaterialPropertyBlock(); for (int i = 0; i < Slots; i++) t[i] = Life; }
 
     public void Add(int key, Renderer[] r)
     {
