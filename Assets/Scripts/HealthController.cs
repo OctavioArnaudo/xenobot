@@ -15,7 +15,7 @@ namespace Runtime.Scripts.Health
     public enum Team { Neutral, Player, Enemy }
 
     /// <summary>
-    /// Universal controller for Health, Team, and Shield Mitigation.
+    /// Universal controller for Health, Team, and Shield Mitigation with IFrames support.
     /// </summary>
     public class HealthController : NetworkBehaviour, IBalanceCalibratable
     {
@@ -43,11 +43,13 @@ namespace Runtime.Scripts.Health
         [Header("Identity & Team")]
         public Team team = Team.Neutral;
 
-        [Header("Health")]
+        [Header("Health & Invulnerability (Iframes)")]
         public int MaxHealth;
         public Optional<int> maxHealth;
         public int CurrentHealth;
         public Optional<int> currentHealth;
+        [Tooltip("Duración en segundos de la invulnerabilidad (iframes) tras recibir daño.")]
+        public float invulnerabilityDuration = 0.5f;
 
         [Header("Visual Feedback (Optional)")]
         public Renderer[] visualsToFlash;
@@ -59,6 +61,7 @@ namespace Runtime.Scripts.Health
         public UnityEvent<int> OnTakeDamage;
 
         private float m_DamageFlashTimer;
+        private float m_InvulnerabilityTimer = 0f;
 
         // Caché de colores originales para restaurar exactamente la apariencia sin decolorar al personaje
         private Dictionary<Material, Color> m_OriginalColors = new Dictionary<Material, Color>();
@@ -68,6 +71,8 @@ namespace Runtime.Scripts.Health
         private bool _hasAnimDamage;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
+
+        public bool IsInvulnerable => m_InvulnerabilityTimer > 0f;
 
         public Team EffectiveTeam
         {
@@ -106,10 +111,6 @@ namespace Runtime.Scripts.Health
                 return currentHealth.Get(CurrentHealth, defaultVal, balanceOpt);
             }
         }
-
-
-
-
 
         private int CalculateDynamicHealthBalance()
         {
@@ -274,6 +275,12 @@ namespace Runtime.Scripts.Health
 #if UNITY_EDITOR
             UpdateInspectorValues();
 #endif
+            // Actualizar temporizador de Iframes
+            if (m_InvulnerabilityTimer > 0)
+            {
+                m_InvulnerabilityTimer -= Time.deltaTime;
+            }
+
             if (m_DamageFlashTimer > 0)
             {
                 m_DamageFlashTimer -= Time.deltaTime;
@@ -326,7 +333,8 @@ namespace Runtime.Scripts.Health
 
         public void TakeDamage(int damage)
         {
-            if (damage <= 0) return;
+            // Ignorar daño si está en periodo de Iframes (invulnerable)
+            if (damage <= 0 || IsInvulnerable) return;
 
             int finalDamage = damage;
 
@@ -337,6 +345,9 @@ namespace Runtime.Scripts.Health
             }
 
             if (finalDamage <= 0) return;
+
+            // Activar el temporizador de invulnerabilidad (Iframes)
+            m_InvulnerabilityTimer = invulnerabilityDuration;
 
             int newHp = Mathf.Max(0, EffectiveCurrentHealth - finalDamage);
             SetHealth(newHp);

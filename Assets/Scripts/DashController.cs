@@ -9,12 +9,14 @@ using Runtime.Scripts.Effective;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Inventory;
 
-namespace Runtime.Scripts.Singleton {
+namespace Runtime.Scripts.Singleton
+{
     /// <summary>
     /// Network-aware controller for directional dashing.
-    /// Press and release Shift quickly (Tap) + W,A,S,D to trigger local client movement and sync animation/fuel via ServerRpc/ClientRpc.
+    /// Press and release Shift quickly (Tap) + W,A,S,D to trigger local client movement and sync animation via ServerRpc/ClientRpc.
     /// </summary>
-    public class DashController : NetworkBehaviour {
+    public class DashController : NetworkBehaviour
+    {
         [Header("Dash Settings")]
         public float dashForce = 25f;
         public float dashDuration = 0.2f;
@@ -23,32 +25,6 @@ namespace Runtime.Scripts.Singleton {
         [Header("Tap / Hold Settings")]
         [Tooltip("Tiempo máximo en segundos que debe durar la pulsación de Shift para considerarse un Tap.")]
         [SerializeField] private float tapThreshold = 0.2f;
-
-        private const float DEFAULT_STAMINA_COST = 8f;
-
-        [Header("Stamina / Fuel Cost")]
-        public float StaminaCost;
-        public Optional<float> staminaCost;
-
-        public float EffectiveStaminaCost {
-            get {
-                Optional<float> balanceOpt = default;
-                if (BalanceManager.Instance != null) {
-                    var stats = BalanceManager.Instance.GetEntityBalance(gameObject);
-                    if (stats.jetpackConsumptionRate.use && stats.jetpackConsumptionRate.value > 0)
-                        balanceOpt = new Optional<float> { use = true, value = stats.jetpackConsumptionRate.value * 2f };
-                }
-                return staminaCost.Get(StaminaCost, DEFAULT_STAMINA_COST, balanceOpt);
-            }
-        }
-
-        private void UpdateInspectorValues() {
-            StaminaCost = EffectiveStaminaCost;
-        }
-
-        private void OnValidate() {
-            UpdateInspectorValues();
-        }
 
         [Header("Animation Settings")]
         [SerializeField] private string dashTriggerName = "dash";
@@ -71,11 +47,13 @@ namespace Runtime.Scripts.Singleton {
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
-        void Start() {
+        void Start()
+        {
             RefreshReferences();
         }
 
-        public void ApplyEffect(GameObject player) {
+        public void ApplyEffect(GameObject player)
+        {
             m_Player = player.GetComponent<PlayerController>();
             m_CharController = player.GetComponent<CharacterController>();
             m_Health = player.GetComponent<HealthController>();
@@ -84,35 +62,37 @@ namespace Runtime.Scripts.Singleton {
             Debug.Log("[DashController] Lógica de Dash de red activada para el jugador.");
         }
 
-        private void RefreshReferences() {
+        private void RefreshReferences()
+        {
             if (m_Player == null) m_Player = GetComponentInParent<PlayerController>() ?? GetComponentInChildren<PlayerController>(true);
             if (m_CharController == null) m_CharController = GetComponentInParent<CharacterController>() ?? GetComponentInChildren<CharacterController>(true);
             if (m_Health == null) m_Health = GetComponentInParent<HealthController>() ?? GetComponentInChildren<HealthController>(true);
             if (m_Propulsion == null) m_Propulsion = GetComponent<PropulsionController>() ?? GetComponentInParent<PropulsionController>() ?? GetComponentInChildren<PropulsionController>(true);
 
-            if (m_Animator == null) {
+            if (m_Animator == null)
+            {
                 // 1. Buscar en el mismo objeto, hijos (incluso inactivos) o padres
                 m_Animator = GetComponent<Animator>() ??
-                             GetComponentInChildren<Animator>(true) ??
-                             GetComponentInParent<Animator>();
+                           GetComponentInChildren<Animator>(true) ??
+                           GetComponentInParent<Animator>();
 
                 // 2. Si no lo encuentra, buscar desde el GameObject del PlayerController
-                if (m_Animator == null && m_Player != null) {
+                if (m_Animator == null && m_Player != null)
+                {
                     m_Animator = m_Player.GetComponent<Animator>() ??
                                  m_Player.GetComponentInChildren<Animator>(true);
                 }
 
                 // 3. Como último recurso, buscar en toda la jerarquía raíz del prefab
-                if (m_Animator == null) {
+                if (m_Animator == null)
+                {
                     m_Animator = transform.root.GetComponentInChildren<Animator>(true);
                 }
             }
         }
 
-        void Update() {
-#if UNITY_EDITOR
-            UpdateInspectorValues();
-#endif
+        void Update()
+        {
             if (m_Player == null || m_CharController == null || m_Animator == null) RefreshReferences();
             if (m_Player == null || m_CharController == null) return;
 
@@ -123,42 +103,50 @@ namespace Runtime.Scripts.Singleton {
 
             HandleDashExecution();
 
-            if (!m_IsDashing) {
+            if (!m_IsDashing)
+            {
                 DetectShiftDashInput();
             }
         }
 
-        private void DetectShiftDashInput() {
+        private void DetectShiftDashInput()
+        {
             if (Keyboard.current == null || Time.time < m_NextDashTime) return;
 
             var leftShift = Keyboard.current.leftShiftKey;
             var rightShift = Keyboard.current.rightShiftKey;
 
             // 1. Detectar cuando se presiona Shift por primera vez
-            if (leftShift.wasPressedThisFrame || rightShift.wasPressedThisFrame) {
+            if (leftShift.wasPressedThisFrame || rightShift.wasPressedThisFrame)
+            {
                 m_ShiftPressStartTime = Time.time;
                 m_IsWaitingForShiftRelease = true;
             }
 
             // 2. Si se mantiene presionado más allá del umbral, se cancela el Dash (se considera Hold)
-            if (m_IsWaitingForShiftRelease && (Time.time - m_ShiftPressStartTime) > tapThreshold) {
+            if (m_IsWaitingForShiftRelease && (Time.time - m_ShiftPressStartTime) > tapThreshold)
+            {
                 m_IsWaitingForShiftRelease = false;
             }
 
             // 3. Al soltar Shift dentro de la ventana de tiempo
-            if (m_IsWaitingForShiftRelease && (leftShift.wasReleasedThisFrame || rightShift.wasReleasedThisFrame)) {
+            if (m_IsWaitingForShiftRelease && (leftShift.wasReleasedThisFrame || rightShift.wasReleasedThisFrame))
+            {
                 m_IsWaitingForShiftRelease = false;
 
-                if (IsPlayerMoving()) {
+                if (IsPlayerMoving())
+                {
                     PerformShiftDash();
                 }
-                else {
+                else
+                {
                     Debug.LogWarning("[DashController] Se soltó Shift a tiempo, pero NO hay teclas WASD presionadas.");
                 }
             }
         }
 
-        private bool IsPlayerMoving() {
+        private bool IsPlayerMoving()
+        {
             if (Keyboard.current == null) return false;
 
             return Keyboard.current.wKey.isPressed ||
@@ -167,7 +155,8 @@ namespace Runtime.Scripts.Singleton {
                    Keyboard.current.dKey.isPressed;
         }
 
-        public void PerformShiftDash() {
+        public void PerformShiftDash()
+        {
             if (Time.time < m_NextDashTime || m_IsDashing) return;
 
             float x = 0f;
@@ -180,104 +169,108 @@ namespace Runtime.Scripts.Singleton {
 
             Vector3 localDirection = new Vector3(x, 0f, z);
 
-            if (localDirection.sqrMagnitude < 0.01f) {
+            if (localDirection.sqrMagnitude < 0.01f)
+            {
                 localDirection = Vector3.forward;
             }
-            else {
+            else
+            {
                 localDirection.Normalize();
             }
 
             TryStartDash(localDirection);
         }
 
-        private void TryStartDash(Vector3 localDirection) {
+        private void TryStartDash(Vector3 localDirection)
+        {
             Vector3 worldDirection = transform.TransformDirection(localDirection).normalized;
-            if (m_Propulsion == null) RefreshReferences();
-            float cost = EffectiveStaminaCost;
-
-            if (m_Propulsion != null && cost > 0 && m_Propulsion.JetpackFuel < cost) {
-                Debug.LogWarning($"[DashController] Dash cancelado por falta de combustible. Combustible actual: {m_Propulsion.JetpackFuel}, Requerido: {cost}");
-                return;
-            }
 
             TriggerDashAnimation();
 
-            if (IsNetworkActive) {
+            if (IsNetworkActive)
+            {
                 RequestDashServerRpc(worldDirection);
             }
-            else {
-                if (m_Propulsion != null && cost > 0) m_Propulsion.UseFuel(cost);
+            else
+            {
                 ExecuteLocalDash(worldDirection);
             }
         }
 
         [ServerRpc]
-        private void RequestDashServerRpc(Vector3 worldDirection) {
-            if (m_Propulsion == null) RefreshReferences();
-            float cost = EffectiveStaminaCost;
-            if (m_Propulsion != null && cost > 0) {
-                if (m_Propulsion.JetpackFuel < cost) return;
-                m_Propulsion.UseFuel(cost);
-            }
-
+        private void RequestDashServerRpc(Vector3 worldDirection)
+        {
             NotifyDashClientRpc(worldDirection);
         }
 
         [ClientRpc]
-        private void NotifyDashClientRpc(Vector3 worldDirection) {
-            if (IsOwner) {
+        private void NotifyDashClientRpc(Vector3 worldDirection)
+        {
+            if (IsOwner)
+            {
                 ExecuteLocalDash(worldDirection);
             }
-            else {
+            else
+            {
                 TriggerDashAnimation();
             }
         }
 
-        private void ExecuteLocalDash(Vector3 worldDirection) {
+        private void ExecuteLocalDash(Vector3 worldDirection)
+        {
             m_DashDirection = worldDirection;
             m_IsDashing = true;
             m_DashTimer = dashDuration;
             m_NextDashTime = Time.time + dashCooldown;
         }
 
-        private void HandleDashExecution() {
+        private void HandleDashExecution()
+        {
             if (!m_IsDashing) return;
 
-            if (m_DashTimer > 0) {
+            if (m_DashTimer > 0)
+            {
                 Vector3 moveVector = m_DashDirection * dashForce;
 
                 // Anclar al suelo si ya estaba apoyado para que CharacterController.isGrounded no pase a false
-                if (m_CharController.isGrounded) {
+                if (m_CharController.isGrounded)
+                {
                     moveVector.y = -4f;
                 }
 
                 m_CharController.Move(moveVector * Time.deltaTime);
                 m_DashTimer -= Time.deltaTime;
             }
-            else {
+            else
+            {
                 m_IsDashing = false;
             }
         }
 
-        private void TriggerDashAnimation() {
+        private void TriggerDashAnimation()
+        {
             if (m_Animator == null) RefreshReferences();
 
-            if (m_Animator == null) {
+            if (m_Animator == null)
+            {
                 Debug.LogError("[DashController] ERROR: m_Animator es NULL. Arrastra el Animator manualmente en el Inspector del DashController.");
                 return;
             }
 
-            if (!m_Animator.gameObject.activeInHierarchy || !m_Animator.enabled) {
+            if (!m_Animator.gameObject.activeInHierarchy || !m_Animator.enabled)
+            {
                 Debug.LogWarning($"[DashController] ADVERTENCIA: El Animator en '{m_Animator.gameObject.name}' está desactivado.");
                 return;
             }
 
-            if (m_Animator.runtimeAnimatorController == null) {
+            if (m_Animator.runtimeAnimatorController == null)
+            {
                 Debug.LogError($"[DashController] ERROR: El Animator en '{m_Animator.gameObject.name}' no tiene asignado ningún AnimatorController.");
                 return;
             }
 
-            if (!HasParameter(m_Animator, dashTriggerName)) {
+            if (!HasParameter(m_Animator, dashTriggerName))
+            {
                 Debug.LogError($"[DashController] ERROR: El Animator '{m_Animator.runtimeAnimatorController.name}' no contiene ningún parámetro llamado '{dashTriggerName}'.");
                 return;
             }
@@ -286,7 +279,8 @@ namespace Runtime.Scripts.Singleton {
             Debug.Log($"[DashController] -> SetTrigger('{dashTriggerName}') ejecutado en '{m_Animator.gameObject.name}'.");
         }
 
-        private bool HasParameter(Animator animator, string paramName) {
+        private bool HasParameter(Animator animator, string paramName)
+        {
             foreach (AnimatorControllerParameter param in animator.parameters)
                 if (param.name == paramName) return true;
             return false;
