@@ -609,9 +609,10 @@ namespace Runtime.Scripts.Player
 
         public void RefreshFunctionalComponents()
         {
-            _jetpack = GetComponentInChildren<PropulsionController>();
-            _shooter = GetComponentInChildren<ShootController>();
-            _melee = GetComponentInChildren<MeleeController>();
+            // El parámetro 'true' fuerza a buscar los componentes aunque estén desactivados
+            _jetpack = GetComponentInChildren<PropulsionController>(true);
+            _shooter = GetComponentInChildren<ShootController>(true);
+            _melee = GetComponentInChildren<MeleeController>(true);
 
             _animator = null;
             _renderTransform = transform.Find("PlayerRender") ?? transform.Find("Render") ?? transform.Find("EnemyRender");
@@ -806,6 +807,12 @@ namespace Runtime.Scripts.Player
                 TryFireHook();
                 hook = false;
             }
+
+            // --- SOLUCION DE CONFLICTOS DE ANIMACION ---
+            // Apagamos activamente el script del modo que no se está usando para evitar
+            // que sigan interceptando el clic de forma independiente.
+            if (_melee != null) _melee.enabled = meleeMode;
+            if (_shooter != null) _shooter.enabled = !meleeMode;
 
             // Clic izquierdo segun el modo elegido (1 melee / 2 disparo).
             if (meleeMode) { if (_melee != null && fire) _melee.PerformMeleeAction(); }
