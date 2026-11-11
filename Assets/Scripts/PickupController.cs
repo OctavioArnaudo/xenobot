@@ -331,16 +331,22 @@ namespace Runtime.Scripts.Pickup
             else gameObject.SetActive(false);
         }
 
+        /// <summary>Entrega 1 unidad al inventario (registra el asset aunque no este en Resources). Lo usan los pickups y los fragmentos de cristal.</summary>
+        public static void Give(InventoryController inv, ItemsData item, bool net)
+        {
+            inv.RegisterItem(item);
+            int hash = item.GetHashCode();
+            if (net) inv.AddItemServerRpc(hash, 1);
+            else inv.InternalAddItem(hash, 1);
+        }
+
         private void ApplyReward(InventoryController inv, GameObject player)
         {
             ResolveItemsDataIfNeeded();
 
             if (item != null && inv != null && item.isPickable)
             {
-                inv.RegisterItem(item); // garantiza que el inventario conozca el asset aunque no este en Resources
-                int hash = item.GetHashCode();
-                if (IsNetworkActive) inv.AddItemServerRpc(hash, 1);
-                else inv.InternalAddItem(hash, 1);
+                Give(inv, item, IsNetworkActive);
             }
             else
             {

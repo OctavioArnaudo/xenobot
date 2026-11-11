@@ -2163,20 +2163,18 @@ static class TerrainTools
         string[] nm = { "Violet", "Red", "Yellow" };
         Color[] cl = { new Color(.6f, .1f, 1f), new Color(1f, .03f, .03f), new Color(1f, .85f, .02f) };
         // Los assets se crean una sola vez y se reutilizan en las siguientes pasadas.
-        bool fresh = !File.Exists($"{CrDir}/Pick_Violet.prefab");
-        Mesh gem = null; var meshes = new Mesh[CrystalVariants];
-        if (fresh)
-        {
-            gem = Spikes($"{CrDir}/Gem.asset", 99, 1, .5f);
-            for (int i = 0; i < CrystalVariants; i++) meshes[i] = Spikes($"{CrDir}/Cluster{i}.asset", 10 + i, 5 + i % 5, (2.2f + i * .25f) * CrystalScale);
-        }
-        var pk = new GameObject[3]; var cr = new GameObject[3 * CrystalVariants];
+        bool fresh = !File.Exists($"{CrDir}/Crystal_Violet_0.prefab");
+        var meshes = new Mesh[CrystalVariants];
+        if (fresh) for (int i = 0; i < CrystalVariants; i++) meshes[i] = Spikes($"{CrDir}/Cluster{i}.asset", 10 + i, 5 + i % 5, (2.2f + i * .25f) * CrystalScale);
+        var cr = new GameObject[3 * CrystalVariants];
         for (int c = 0; c < 3; c++)
         {
             var m = fresh ? Glass(nm[c], cl[c]) : null;
-            pk[c] = fresh ? CrPrefab(gem, m, $"{CrDir}/Pick_{nm[c]}.prefab", c, null) : AssetDatabase.LoadAssetAtPath<GameObject>($"{CrDir}/Pick_{nm[c]}.prefab");
             for (int k = 0; k < CrystalVariants; k++)
-                cr[c * CrystalVariants + k] = fresh ? CrPrefab(meshes[k], m, $"{CrDir}/Crystal_{nm[c]}_{k}.prefab", c, pk) : AssetDatabase.LoadAssetAtPath<GameObject>($"{CrDir}/Crystal_{nm[c]}_{k}.prefab");
+            {
+                string pp = $"{CrDir}/Crystal_{nm[c]}_{k}.prefab";
+                cr[c * CrystalVariants + k] = fresh ? CrPrefab(meshes[k], m, pp, c) : AssetDatabase.LoadAssetAtPath<GameObject>(pp);
+            }
         }
 
         var root = GameObject.Find("Crystals");
@@ -2227,15 +2225,15 @@ static class TerrainTools
         Debug.Log("[Crystals] CrystalNet creado. Guarda la escena.");
     }
 
-    // 17) Borra todos los cristales colocados por 16.
+    // 17) Borra todos los cristales colocados por 16 y su carpeta de prefabs (sirve para repararlos).
     [MenuItem("Tools/Terrain/17 Clear Crystals")]
     static void ClearCrystals()
     {
         var old = GameObject.Find("Crystals");
-        if (old == null) return;
-        Undo.DestroyObjectImmediate(old);
+        if (old != null) Undo.DestroyObjectImmediate(old);
+        AssetDatabase.DeleteAsset(CrDir);   // 16 regenera prefabs y mallas desde cero
         UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
-        Debug.Log("[Crystals] Borrados.");
+        Debug.Log("[Crystals] Borrados (escena + prefabs).");
     }
 
     // Vidrio: URP Lit transparente "premultiply" (la emision y el brillo no se atenuan con la transparencia).
@@ -2296,8 +2294,8 @@ static class TerrainTools
         return mesh;
     }
 
-    // drops == null -> gema recolectable con Rigidbody; si no -> racimo minable.
-    static GameObject CrPrefab(Mesh mesh, Material m, string path, int color, GameObject[] drops)
+    // Racimo minable: malla + collider + Crystal.
+    static GameObject CrPrefab(Mesh mesh, Material m, string path, int color)
     {
         var root = new GameObject(Path.GetFileNameWithoutExtension(path));
         root.AddComponent<MeshFilter>().sharedMesh = mesh;
@@ -2305,18 +2303,9 @@ static class TerrainTools
         r.sharedMaterial = m;
         r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         Bounds b = mesh.bounds;
-        if (drops == null)
-        {
-            root.AddComponent<Rigidbody>().mass = .1f;
-            var sc = root.AddComponent<SphereCollider>(); sc.center = b.center; sc.radius = b.extents.y;
-            root.AddComponent<CrystalPickup>().color = color;
-        }
-        else
-        {
-            var bc = root.AddComponent<BoxCollider>();
-            bc.center = b.center; bc.size = new Vector3(b.size.x * .7f, b.size.y, b.size.z * .7f);
-            var c = root.AddComponent<Crystal>(); c.color = color; c.drops = drops;
-        }
+        var bc = root.AddComponent<BoxCollider>();
+        bc.center = b.center; bc.size = new Vector3(b.size.x * .7f, b.size.y, b.size.z * .7f);
+        root.AddComponent<Crystal>().color = color;
         var go = PrefabUtility.SaveAsPrefabAsset(root, path);
         Object.DestroyImmediate(root);
         return go;

@@ -1,9 +1,10 @@
-// Poner FUERA de la carpeta Editor (ej. Assets/Scripts/Crystal.cs). Lo usan Tools/Terrain/16, MeleeController y los arboles.
+// DEBE llamarse Crystal.cs (Unity exige que el archivo se llame igual que el MonoBehaviour 'Crystal'). FUERA de la carpeta Editor. Lo usan Tools/Terrain/16, MeleeController y los arboles.
 using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Items;
+using Runtime.Scripts.Pickup;
 
 // Todo lo rompible (cristales, arboles). Recibe dano de: Damage(float) (SendMessage), MeleeController y ProjectileController.
 public class Smashable : MonoBehaviour
@@ -34,7 +35,6 @@ public class Crystal : Smashable
     public static readonly Color[] Colors = { new Color(.6f, .1f, 1f), new Color(1f, .05f, .05f), new Color(1f, .85f, .05f) };
     public int color;               // 0 violeta, 1 rojo, 2 amarillo
     [System.NonSerialized] public int id = -1;   // lo asigna CrystalNet (orden de los hijos de "Crystals", igual en todas las maquinas)
-    public GameObject[] drops;      // un pickup por color
     Collider col;
 
     protected override void OnEnable() { base.OnEnable(); col = GetComponent<Collider>(); All.Add(this); }
@@ -65,7 +65,6 @@ public class Crystal : Smashable
 // gana el primero en reclamar y el resto ve desaparecer su copia. Sin red, se recoge directo.
 public class CrystalPickup : MonoBehaviour
 {
-    public static readonly int[] Count = new int[3];
     public static readonly Dictionary<int, CrystalPickup> ById = new Dictionary<int, CrystalPickup>();
     public int color;
     [System.NonSerialized] public int fid;   // id de red del fragmento (0 = sin red)
@@ -89,7 +88,7 @@ public class CrystalPickup : MonoBehaviour
     }
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-    static void ResetStatics() { ById.Clear(); System.Array.Clear(Count, 0, Count.Length); }
+    static void ResetStatics() => ById.Clear();
 
     // Crea un fragmento con impulso. Con red lo invoca el servidor y CrystalNet lo replica a todas las maquinas.
     public static void Drop(int color, Vector3 p, Quaternion r, Vector3 force)
@@ -147,14 +146,8 @@ public class CrystalPickup : MonoBehaviour
     // Entrega la gema al jugador local.
     public void Grant()
     {
-        Count[color]++;
         if (inv == null) inv = (pl != null ? pl.GetComponentInChildren<InventoryController>() : null) ?? InventoryController.LocalInstance;
-        if (inv == null) return;
-        var def = CrystalFragments.Item(color);
-        inv.RegisterItem(def);
-        int hash = def.GetHashCode();
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening) inv.AddItemServerRpc(hash, 1);
-        else inv.InternalAddItem(hash, 1);
+        if (inv != null) PickupController.Give(inv, CrystalFragments.Item(color), NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening);
     }
 }
 
@@ -315,21 +308,6 @@ public class CrystalGlow : MonoBehaviour
     }
 }
 
-// Contador en pantalla (se crea solo).
-public class CrystalHud : MonoBehaviour
-{
-    static readonly Color[] C = { new Color(.7f, .25f, 1f), Color.red, Color.yellow };
-    static readonly string[] N = { "Violeta", "Rojo", "Amarillo" };
-
-    [RuntimeInitializeOnLoadMethod]
-    static void Init() => DontDestroyOnLoad(new GameObject("CrystalHud", typeof(CrystalHud)));
-
-    void OnGUI()
-    {
-        for (int i = 0; i < 3; i++) { GUI.color = C[i]; GUI.Label(new Rect(20, 20 + i * 22, 160, 22), N[i] + ": " + CrystalPickup.Count[i]); }
-    }
-}
-
 // Fragmentos de cristal: un ItemsData por color (creados por codigo, iguales en todas las maquinas: el hash sale del nombre)
 // y un "prefab" procedural: rombo irregular facetado, vidrioso y con emision. Es lo que se ve en el mundo y en el inventario.
 public static class CrystalFragments
@@ -386,17 +364,7 @@ public static class CrystalFragments
             t.AddComponent<CrystalPickup>().color = c;
             tpl[c] = t;
 
-            var d = ScriptableObject.CreateInstance<ItemsData>();
-            d.hideFlags = HideFlags.DontSave;
-            d.name = "Item_Fragment" + c;
-            d.itemName = Names[c];
-            d.isPickable = true;
-            d.isUsable = false;
-            d.isQuitable = false;
-            d.isDropable = false;
-            d.maxStack = 99;
-            d.itemPrefab = t;
-            items[c] = d;
+            items[c] = ItemsData.Create(Names[c], t);
         }
     }
 

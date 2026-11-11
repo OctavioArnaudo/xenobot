@@ -13,33 +13,25 @@ using Runtime.Scripts.Hud;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Items;
 
-
 namespace Runtime.Scripts.Shoot
 {
-    /// <summary>
-    /// Logic controller for shooting mechanics.
-    /// Supports Infinite Ammo, Auto-Reload from Inventory on empty clip, and Ammo Damage Multipliers.
-    /// </summary>
     public class ShootController : NetworkBehaviour
     {
         private const float DEFAULT_PLAYER_SHOOT_DAMAGE = 2f;
         private const float DEFAULT_PLAYER_FIRE_RATE = 8.0f;
         private const float DEFAULT_PLAYER_AIM_DISTANCE = 120f;
-
         private const float DEFAULT_ENEMY_BASE_SHOOT_DAMAGE = 1f;
         private const float DEFAULT_ENEMY_BASE_FIRE_RATE = 5.0f;
         private const float DEFAULT_ENEMY_BASE_AIM_DISTANCE = 120f;
-
         private const int DEFAULT_MAX_AMMO = 30;
         private const float DEFAULT_RELOAD_DURATION = 1.8f;
         private const bool DEFAULT_INFINITE_AMMO = false;
-
         private const int DEFAULT_BURST_CAPACITY = 30;
         private const float DEFAULT_BURST_COOLDOWN = 1.2f;
         private const float DEFAULT_RECALIBRATION_DELAY = 0.5f;
 
         [Header("References")]
-        public bool isUnlocked = false; // Si está marcado, dispara desde el inicio. Si no, requiere arma.
+        public bool isUnlocked = false;
         public Camera AimCamera;
         public GameObject Muzzle;
         public GameObject Projectile;
@@ -66,18 +58,18 @@ namespace Runtime.Scripts.Shoot
         public float TargetRecalibrationDelay;
         public Optional<float> targetRecalibrationDelay;
 
-        private int m_CurrentBurstShots = 0;
-        private float m_BurstCooldownTimer = 0f;
+        private int m_CurrentBurstShots;
+        private float m_BurstCooldownTimer;
 
         public LayerMask AimLayers = ~0;
         public bool HoldToFire = true;
-        public bool UsePlayerInput = false; // Control delegado al PlayerController
+        public bool UsePlayerInput = false;
 
         [Header("Ammo Runtime State")]
         public int currentAmmo = 30;
         public float currentAmmoDamageMultiplier = 1.0f;
-        public bool isReloading = false;
-        private float m_ReloadTimer = 0f;
+        public bool isReloading;
+        private float m_ReloadTimer;
 
         [Header("Effects")]
         public ParticleSystem MuzzleFlash;
@@ -119,7 +111,7 @@ namespace Runtime.Scripts.Shoot
             get
             {
                 var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
-                float defaultDist = (enemy != null) ? DEFAULT_ENEMY_BASE_AIM_DISTANCE : DEFAULT_PLAYER_AIM_DISTANCE;
+                float defaultDist = enemy != null ? DEFAULT_ENEMY_BASE_AIM_DISTANCE : DEFAULT_PLAYER_AIM_DISTANCE;
                 var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
                 return aimDistance.Get(AimDistance, defaultDist, stats.shootRange);
             }
@@ -171,106 +163,78 @@ namespace Runtime.Scripts.Shoot
             if (isReloading) { isReloading = false; m_ReloadTimer = 0f; }
         }
 
+        private InventoryController Inv => InventoryController.LocalInstance ?? GetComponent<InventoryController>() ?? GetComponentInParent<InventoryController>();
+
         public bool HasAmmoInInventory()
         {
-            var inv = InventoryController.LocalInstance ?? GetComponent<InventoryController>() ?? GetComponentInParent<InventoryController>();
+            var inv = Inv;
             if (inv == null) return false;
-
-            var bag = inv.GetMyBag();
-            foreach (var kvp in bag)
+            foreach (var kvp in inv.GetMyBag())
             {
-                ItemsData itemDef = kvp.Value.def;
-                if (itemDef != null && itemDef.itemPrefab != null)
-                {
-                    AmmoController ammoComp = itemDef.itemPrefab.GetComponentInChildren<AmmoController>();
-                    if (ammoComp != null && kvp.Value.qty > 0)
-                    {
-                        return true;
-                    }
-                }
+                var def = kvp.Value.def;
+                if (def != null && def.itemPrefab != null && kvp.Value.qty > 0 && def.itemPrefab.GetComponentInChildren<AmmoController>() != null)
+                    return true;
             }
             return false;
         }
 
         public bool AutoReloadFromInventory()
         {
-            var inv = InventoryController.LocalInstance ?? GetComponent<InventoryController>() ?? GetComponentInParent<InventoryController>();
+            var inv = Inv;
             if (inv == null) return false;
-
-            var bag = inv.GetMyBag();
-            foreach (var kvp in bag)
+            foreach (var kvp in inv.GetMyBag())
             {
-                ItemsData itemDef = kvp.Value.def;
-                if (itemDef != null && itemDef.itemPrefab != null)
-                {
-                    AmmoController ammoComp = itemDef.itemPrefab.GetComponentInChildren<AmmoController>();
-                    if (ammoComp != null && kvp.Value.qty > 0)
-                    {
-                        InventoryController.RemoveItem(itemDef.itemName);
-                        AddAmmo(ammoComp.EffectiveAmmoAmount, ammoComp.EffectiveDamageMultiplier);
-                        return true;
-                    }
-                }
+                var def = kvp.Value.def;
+                if (def == null || def.itemPrefab == null || kvp.Value.qty <= 0) continue;
+                var ammo = def.itemPrefab.GetComponentInChildren<AmmoController>();
+                if (ammo == null) continue;
+                InventoryController.RemoveItem(def.itemName);
+                AddAmmo(ammo.EffectiveAmmoAmount, ammo.EffectiveDamageMultiplier);
+                return true;
             }
             return false;
         }
 
         public bool TryReload()
         {
-            if (EffectiveInfiniteAmmo) return false;
-            if (isReloading || currentAmmo >= EffectiveMaxAmmo) return false;
-
-            if (m_Player != null && !HasAmmoInInventory())
-            {
-                return false;
-            }
-
+            if (EffectiveInfiniteAmmo || isReloading || currentAmmo >= EffectiveMaxAmmo) return false;
+            if (m_Player != null && !HasAmmoInInventory()) return false;
             isReloading = true;
             m_ReloadTimer = 0f;
             return true;
         }
 
+        private PlayerController FindPlayer() => m_Player != null ? m_Player : (GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>());
+
         private float CalculateDynamicShootDamage()
         {
-            var pc = (m_Player != null) ? m_Player : (GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>());
-            if (pc != null || CompareTag("Player"))
+            if (FindPlayer() != null || CompareTag("Player"))
             {
                 var hud = GetComponent<HudController>() ?? GetComponentInParent<HudController>() ?? HudController.Instance;
-                int lvl = (hud != null) ? Mathf.Max(1, hud.Level) : 1;
+                int lvl = hud != null ? Mathf.Max(1, hud.Level) : 1;
                 return DEFAULT_PLAYER_SHOOT_DAMAGE + (lvl - 1);
             }
-
             return DEFAULT_ENEMY_BASE_SHOOT_DAMAGE;
         }
 
         private float CalculateDynamicFireRate()
         {
-            var pc = (m_Player != null) ? m_Player : (GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>());
-            if (pc != null || CompareTag("Player"))
-            {
-                return DEFAULT_PLAYER_FIRE_RATE;
-            }
+            if (FindPlayer() != null || CompareTag("Player")) return DEFAULT_PLAYER_FIRE_RATE;
 
             var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
-            if (enemy != null)
+            if (enemy == null) return DEFAULT_ENEMY_BASE_FIRE_RATE;
+
+            switch (enemy.activeArchetype)
             {
-                switch (enemy.activeArchetype)
-                {
-                    case AIArchetype.CargaFrenetica: return 10.0f;
-                    case AIArchetype.AtaqueYHuida: return 6.5f;
-                    case AIArchetype.FlanqueoYCobertura: return 6.0f;
-                    case AIArchetype.InvocadorRefuerzos: return 4.0f;
-                    default: return DEFAULT_ENEMY_BASE_FIRE_RATE;
-                }
+                case AIArchetype.CargaFrenetica: return 10.0f;
+                case AIArchetype.AtaqueYHuida: return 6.5f;
+                case AIArchetype.FlanqueoYCobertura: return 6.0f;
+                case AIArchetype.InvocadorRefuerzos: return 4.0f;
+                default: return DEFAULT_ENEMY_BASE_FIRE_RATE;
             }
-
-            return DEFAULT_ENEMY_BASE_FIRE_RATE;
         }
 
-        void Awake()
-        {
-            RefreshReferences();
-        }
+        void Awake() => RefreshReferences();
 
         public void ApplyEffect(GameObject player)
         {
@@ -285,21 +249,12 @@ namespace Runtime.Scripts.Shoot
             {
                 if (m_Player == null) m_Player = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
             }
-            else
-            {
-                m_Player = null;
-            }
+            else m_Player = null;
 
             if (m_Health == null)
-            {
-                m_Health = GetComponent<HealthController>() ??
-                           GetComponentInParent<HealthController>() ??
-                           GetComponentInChildren<HealthController>();
-            }
+                m_Health = GetComponent<HealthController>() ?? GetComponentInParent<HealthController>() ?? GetComponentInChildren<HealthController>();
 
-            if (AimCamera == null && m_Player != null)
-                AimCamera = m_Player.GetComponentInChildren<Camera>();
-
+            if (AimCamera == null && m_Player != null) AimCamera = m_Player.GetComponentInChildren<Camera>();
             if (AimCamera == null) AimCamera = Camera.main;
 
             if (visualsToRotate == null || visualsToRotate.Length == 0)
@@ -310,14 +265,11 @@ namespace Runtime.Scripts.Shoot
 
             if (Muzzle == null)
             {
-                Transform muzzleChild = transform.Find("Muzzle") ?? transform.Find("muzzle");
-                Muzzle = muzzleChild != null ? muzzleChild.gameObject : gameObject;
+                Transform m = transform.Find("Muzzle") ?? transform.Find("muzzle");
+                Muzzle = m != null ? m.gameObject : gameObject;
             }
 
-            if (!isUnlocked && Projectile != null)
-            {
-                isUnlocked = true;
-            }
+            if (!isUnlocked && Projectile != null) isUnlocked = true;
         }
 
         private void UpdateInspectorValues()
@@ -330,10 +282,7 @@ namespace Runtime.Scripts.Shoot
             InfiniteAmmo = EffectiveInfiniteAmmo;
         }
 
-        private void OnValidate()
-        {
-            UpdateInspectorValues();
-        }
+        private void OnValidate() => UpdateInspectorValues();
 
         void Update()
         {
@@ -341,12 +290,8 @@ namespace Runtime.Scripts.Shoot
 
             if (transform != transform.root)
             {
-                var rootShooter = transform.root.GetComponent<ShootController>();
-                if (rootShooter != null && rootShooter != this && rootShooter.isUnlocked)
-                {
-                    enabled = false;
-                    return;
-                }
+                var root = transform.root.GetComponent<ShootController>();
+                if (root != null && root != this && root.isUnlocked) { enabled = false; return; }
             }
 
             if (EffectiveInfiniteAmmo)
@@ -355,130 +300,83 @@ namespace Runtime.Scripts.Shoot
                 isReloading = false;
             }
 
-            if (m_BurstCooldownTimer > 0f)
-            {
-                m_BurstCooldownTimer -= Time.deltaTime;
-                if (m_BurstCooldownTimer < 0f) m_BurstCooldownTimer = 0f;
-            }
+            if (m_BurstCooldownTimer > 0f) m_BurstCooldownTimer = Mathf.Max(0f, m_BurstCooldownTimer - Time.deltaTime);
 
-            if (isReloading)
-            {
-                m_ReloadTimer += Time.deltaTime;
-                if (m_ReloadTimer >= EffectiveReloadDuration)
-                {
-                    bool consumedFromInventory = AutoReloadFromInventory();
-                    if (!consumedFromInventory && m_Player != null)
-                    {
-                        currentAmmo = 0;
-                    }
-                    else if (m_Player == null)
-                    {
-                        currentAmmo = EffectiveMaxAmmo;
-                    }
+            if (!isReloading) return;
+            m_ReloadTimer += Time.deltaTime;
+            if (m_ReloadTimer < EffectiveReloadDuration) return;
 
-                    isReloading = false;
-                    m_ReloadTimer = 0f;
-                }
+            bool consumed = AutoReloadFromInventory();
+            if (m_Player != null) { if (!consumed) currentAmmo = 0; }
+            else currentAmmo = EffectiveMaxAmmo;
+
+            isReloading = false;
+            m_ReloadTimer = 0f;
+        }
+
+        private bool CanFire()
+        {
+            if (!isUnlocked) return false;
+            if (Projectile == null || Muzzle == null)
+            {
+                RefreshReferences();
+                if (Projectile == null || Muzzle == null) return false;
             }
+            if (isReloading || m_BurstCooldownTimer > 0f) return false;
+            if (!EffectiveInfiniteAmmo && currentAmmo <= 0) { TryReload(); return false; }
+            if (Time.time < m_NextFireTime) return false;
+
+            m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, EffectiveFireRate);
+            if (!EffectiveInfiniteAmmo)
+            {
+                currentAmmo = Mathf.Max(0, currentAmmo - 1);
+                if (currentAmmo <= 0) TryReload();
+            }
+            return true;
         }
 
         public bool TryFire()
         {
             if (!isUnlocked) return false;
 
-            // SI ES EL JUGADOR: Solo disparar si se está apuntando con click derecho
             if (m_Player == null) m_Player = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
-            if (m_Player != null && !m_Player.aim && (Mouse.current == null || !Mouse.current.rightButton.isPressed))
-            {
-                return false;
-            }
+            if (m_Player != null && !m_Player.aim && (Mouse.current == null || !Mouse.current.rightButton.isPressed)) return false;
 
-            if (Projectile == null || Muzzle == null)
-            {
-                RefreshReferences();
-                if (Projectile == null || Muzzle == null) return false;
-            }
+            if (!CanFire()) return false;
 
-            if (isReloading || m_BurstCooldownTimer > 0f) return false;
-
-            if (!EffectiveInfiniteAmmo && currentAmmo <= 0)
-            {
-                TryReload();
-                return false;
-            }
-
-            if (Time.time < m_NextFireTime) return false;
-            m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, EffectiveFireRate);
-
-            if (!EffectiveInfiniteAmmo)
-            {
-                currentAmmo = Mathf.Max(0, currentAmmo - 1);
-                if (currentAmmo <= 0) TryReload();
-            }
-
-            Vector3 originPos = Muzzle.transform.position;
-            Vector3 direction = GetAimDirection(originPos);
-            ExecuteFire(direction, originPos);
+            Vector3 origin = Muzzle.transform.position;
+            ExecuteFire(GetAimDirection(origin), origin);
             return true;
         }
 
-        public bool FireAt(Vector3 targetPosition)
+        public bool FireAt(Vector3 target)
         {
-            if (!isUnlocked) return false;
+            if (!CanFire()) return false;
 
-            if (Projectile == null || Muzzle == null)
-            {
-                RefreshReferences();
-                if (Projectile == null || Muzzle == null) return false;
-            }
+            RotateVisualsTowards(target);
 
-            if (isReloading || m_BurstCooldownTimer > 0f) return false;
+            Vector3 origin = Muzzle.transform.position;
+            Vector3 dir = target - origin;
+            dir = dir.sqrMagnitude < 0.01f ? transform.forward : dir.normalized;
 
-            if (!EffectiveInfiniteAmmo && currentAmmo <= 0)
-            {
-                TryReload();
-                return false;
-            }
-
-            if (Time.time < m_NextFireTime) return false;
-            m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, EffectiveFireRate);
-
-            if (!EffectiveInfiniteAmmo)
-            {
-                currentAmmo = Mathf.Max(0, currentAmmo - 1);
-                if (currentAmmo <= 0) TryReload();
-            }
-
-            RotateVisualsTowards(targetPosition);
-
-            Vector3 originPos = Muzzle.transform.position;
-            Vector3 direction = (targetPosition - originPos);
-            if (direction.sqrMagnitude < 0.01f) direction = transform.forward;
-            else direction = direction.normalized;
-
-            ExecuteFire(direction, originPos);
+            ExecuteFire(dir, origin);
             return true;
         }
 
-        private void RotateVisualsTowards(Vector3 targetPosition)
+        private void RotateVisualsTowards(Vector3 target)
         {
             if (visualsToRotate == null) return;
-            Vector3 direction = (targetPosition - transform.position).normalized;
-            if (direction.sqrMagnitude > 0.001f)
-            {
-                Quaternion targetFullRotation = Quaternion.LookRotation(direction);
-                foreach (var r in visualsToRotate)
-                {
-                    if (r != null)
-                        r.transform.rotation = Quaternion.Slerp(r.transform.rotation, targetFullRotation, rotationSpeed * Time.deltaTime);
-                }
-            }
+            Vector3 dir = (target - transform.position).normalized;
+            if (dir.sqrMagnitude <= 0.001f) return;
+
+            Quaternion rot = Quaternion.LookRotation(dir);
+            foreach (var r in visualsToRotate)
+                if (r != null) r.transform.rotation = Quaternion.Slerp(r.transform.rotation, rot, rotationSpeed * Time.deltaTime);
         }
 
         private void ExecuteFire(Vector3 direction, Vector3 spawnPos)
         {
-            m_CurrentBurstShots++;
-            if (m_CurrentBurstShots >= EffectiveBurstShotsCapacity)
+            if (++m_CurrentBurstShots >= EffectiveBurstShotsCapacity)
             {
                 m_CurrentBurstShots = 0;
                 m_BurstCooldownTimer = EffectiveBurstCooldownDuration + EffectiveTargetRecalibrationDelay;
@@ -487,23 +385,13 @@ namespace Runtime.Scripts.Shoot
             float finalDamage = EffectiveDamage * currentAmmoDamageMultiplier;
             Team team = EffectiveTeam;
 
-            if (m_Player != null && IsNetworkActive)
-            {
-                m_Player.RequestFire(Projectile, direction, spawnPos, finalDamage, team);
-            }
-            else
-            {
-                SpawnProjectileLocally(direction, spawnPos, finalDamage, team, IsNetworkActive && NetworkManager.Singleton.IsServer);
-            }
+            if (m_Player != null && IsNetworkActive) m_Player.RequestFire(Projectile, direction, spawnPos, finalDamage, team);
+            else SpawnProjectileLocally(direction, spawnPos, finalDamage, team, IsNetworkActive && NetworkManager.Singleton.IsServer);
 
             Animator anim = GetComponentInChildren<Animator>();
-            if (anim != null && HasParameter(anim, "shoot"))
-            {
-                anim.SetTrigger("shoot");
-            }
+            if (anim != null && HasParameter(anim, "shoot")) anim.SetTrigger("shoot");
 
-            if (MuzzleFlash != null) MuzzleFlash.Play();
-            else Debug.LogWarning("[ShootController] Falta el ParticleSystem/textura de chispas (MuzzleFlash).", this);
+            if (MuzzleFlash) MuzzleFlash.Play();
         }
 
         private Vector3 GetAimDirection(Vector3 muzzlePos)
@@ -511,50 +399,44 @@ namespace Runtime.Scripts.Shoot
             if (AimCamera == null) return transform.forward;
 
             Ray ray = AimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-
             RaycastHit[] hits = Physics.RaycastAll(ray, EffectiveAimDistance, AimLayers);
             System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
 
-            Vector3 targetPoint = ray.GetPoint(EffectiveAimDistance);
-            Transform rootTransform = OwnerEntity.transform;
+            Vector3 target = ray.GetPoint(EffectiveAimDistance);
+            Transform root = OwnerEntity.transform;
 
             foreach (var hit in hits)
             {
-                if (hit.transform.root == rootTransform) continue;
-                if (hit.collider.isTrigger) continue;
-
-                targetPoint = hit.point;
+                if (hit.transform.root == root || hit.collider.isTrigger) continue;
+                target = hit.point;
                 break;
             }
 
-            Vector3 dir = (targetPoint - muzzlePos);
-            if (dir.sqrMagnitude < 0.01f) return AimCamera.transform.forward;
-            return dir.normalized;
+            Vector3 dir = target - muzzlePos;
+            return dir.sqrMagnitude < 0.01f ? AimCamera.transform.forward : dir.normalized;
         }
 
-        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool isServer)
+        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float dmg, Team team, bool isServer)
         {
-            GameObject projGO = BalanceManager.Instance != null
-                ? BalanceManager.Instance.SpawnFromPool(Projectile, spawnPos, Quaternion.LookRotation(direction))
-                : Instantiate(Projectile, spawnPos, Quaternion.LookRotation(direction));
+            Quaternion rot = Quaternion.LookRotation(direction);
+            GameObject go = BalanceManager.Instance != null
+                ? BalanceManager.Instance.SpawnFromPool(Projectile, spawnPos, rot)
+                : Instantiate(Projectile, spawnPos, rot);
 
-            var proj = projGO.GetComponent<ProjectileController>();
-            if (proj != null)
-            {
-                proj.Launch(OwnerEntity, direction, damage, team);
-            }
+            var proj = go.GetComponent<ProjectileController>();
+            if (proj != null) proj.Launch(OwnerEntity, direction, dmg, team);
 
             if (isServer)
             {
-                var netObj = projGO.GetComponent<NetworkObject>();
-                if (netObj != null) netObj.Spawn();
+                var net = go.GetComponent<NetworkObject>();
+                if (net != null) net.Spawn();
             }
         }
 
-        private bool HasParameter(Animator animator, string paramName)
+        private static bool HasParameter(Animator animator, string name)
         {
-            foreach (AnimatorControllerParameter param in animator.parameters)
-                if (param.name == paramName) return true;
+            foreach (var p in animator.parameters)
+                if (p.name == name) return true;
             return false;
         }
     }

@@ -140,5 +140,17 @@ namespace Runtime.Scripts.Items
 
         [FormerlySerializedAs("worldPrefab")]
         public GameObject itemPrefab;
+
+        /// <summary>Item creado por codigo (sin asset): recolectable, sin USE/QUIT/DROP. El hash sale del nombre, igual en todas las maquinas.</summary>
+        public static ItemsData Create(string name, GameObject prefab, int stack = 99)
+        {
+            var d = CreateInstance<ItemsData>();
+            d.hideFlags = HideFlags.DontSave;
+            d.name = d.itemName = name;
+            d.isUsable = d.isQuitable = d.isDropable = false;
+            d.maxStack = stack;
+            d.itemPrefab = prefab;
+            return d;
+        }
     }
 }
