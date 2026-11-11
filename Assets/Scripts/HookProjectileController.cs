@@ -46,15 +46,24 @@ namespace Runtime.Scripts.Hook
         private Vector3 m_StartPos;
         private Vector3 m_Direction;
 
-        private Transform m_CaughtTarget;
-        private bool m_IsPulling = false;
-        private bool m_HasHit = false;
+        // Modos de funcionamiento del gancho
+        private enum HookMode { None, PullEnemyToPlayer, PullPlayerToGround }
+        private HookMode m_CurrentMode = HookMode.None;
 
+        // Variables para cuando arrastra al enemigo hacia el player
+        private Transform m_CaughtTarget;
         private CharacterController m_TargetCC;
         private UnityEngine.AI.NavMeshAgent m_TargetAgent;
         private Rigidbody m_TargetRB;
         private IHookable m_HookableTarget;
         private IStunnable m_StunnableTarget;
+
+        // Variables para cuando arrastra al player hacia el suelo ("Ground")
+        private Vector3 m_TargetGroundPos;
+        private CharacterController m_PlayerController;
+
+        private bool m_IsPulling = false;
+        private bool m_HasHit = false;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
@@ -78,6 +87,19 @@ namespace Runtime.Scripts.Hook
             m_StartPos = transform.position;
 
             transform.rotation = Quaternion.LookRotation(m_Direction);
+
+            if (m_OwnerPlayer != null)
+            {
+                m_PlayerController = m_OwnerPlayer.GetComponent<CharacterController>();
+            }
+
+            // Ignorar colisiones entre el proyectil y el jugador que lo disparó
+            Collider myCollider = GetComponent<Collider>();
+            Collider ownerCollider = m_OwnerPlayer != null ? m_OwnerPlayer.GetComponent<Collider>() : null;
+            if (myCollider != null && ownerCollider != null)
+            {
+                Physics.IgnoreCollision(myCollider, ownerCollider);
+            }
 
             if (lineRenderer == null) lineRenderer = GetComponent<LineRenderer>();
             if (lineRenderer != null)
@@ -103,35 +125,63 @@ namespace Runtime.Scripts.Hook
                     DestroyHook();
                 }
             }
-            else if (m_IsPulling && m_CaughtTarget != null && m_OwnerPlayer != null)
+            else if (m_IsPulling && m_OwnerPlayer != null)
             {
-                Vector3 playerPos = m_OwnerPlayer.transform.position + Vector3.up * 0.9f;
-                Vector3 currentTargetPos = m_CaughtTarget.position;
-                Vector3 pullDirection = (playerPos - currentTargetPos);
-                float distance = pullDirection.magnitude;
-
-                if (distance <= stopDistance)
+                // CASO A: Arrastrar al ENEMIGO hacia el JUGADOR
+                if (m_CurrentMode == HookMode.PullEnemyToPlayer && m_CaughtTarget != null)
                 {
-                    ReleaseTargetAndDestroy();
-                    return;
-                }
+                    Vector3 playerPos = m_OwnerPlayer.transform.position + Vector3.up * 0.9f;
+                    Vector3 currentTargetPos = m_CaughtTarget.position;
+                    Vector3 pullDirection = (playerPos - currentTargetPos);
+                    float distance = pullDirection.magnitude;
 
-                Vector3 moveStep = pullDirection.normalized * (pullSpeed * Time.deltaTime);
+                    if (distance <= stopDistance)
+                    {
+                        ReleaseTargetAndDestroy();
+                        return;
+                    }
 
-                if (m_TargetCC != null)
-                {
-                    m_TargetCC.Move(moveStep);
-                }
-                else if (m_TargetAgent != null && m_TargetAgent.isOnNavMesh)
-                {
-                    m_TargetAgent.Warp(currentTargetPos + moveStep);
-                }
-                else
-                {
-                    m_CaughtTarget.position += moveStep;
-                }
+                    Vector3 moveStep = pullDirection.normalized * (pullSpeed * Time.deltaTime);
 
-                transform.position = m_CaughtTarget.position + Vector3.up * 0.8f;
+                    if (m_TargetCC != null)
+                    {
+                        m_TargetCC.Move(moveStep);
+                    }
+                    else if (m_TargetAgent != null && m_TargetAgent.isOnNavMesh)
+                    {
+                        m_TargetAgent.Warp(currentTargetPos + moveStep);
+                    }
+                    else
+                    {
+                        m_CaughtTarget.position += moveStep;
+                    }
+
+                    transform.position = m_CaughtTarget.position + Vector3.up * 0.8f;
+                }
+                // CASO B: Arrastrar al JUGADOR hacia el SUELO ("Ground")
+                else if (m_CurrentMode == HookMode.PullPlayerToGround)
+                {
+                    Vector3 playerPos = m_OwnerPlayer.transform.position;
+                    Vector3 pullDirection = (m_TargetGroundPos - playerPos);
+                    float distance = pullDirection.magnitude;
+
+                    if (distance <= stopDistance)
+                    {
+                        DestroyHook();
+                        return;
+                    }
+
+                    Vector3 moveStep = pullDirection.normalized * (pullSpeed * Time.deltaTime);
+
+                    if (m_PlayerController != null)
+                    {
+                        m_PlayerController.Move(moveStep);
+                    }
+                    else
+                    {
+                        m_OwnerPlayer.transform.position += moveStep;
+                    }
+                }
             }
         }
 
@@ -157,10 +207,12 @@ namespace Runtime.Scripts.Hook
 
             m_HasHit = true;
 
+            // 1. Verificar si impactó a un enemigo con salud
             HealthController health = hitObj.GetComponentInParent<HealthController>() ?? hitObj.GetComponent<HealthController>();
 
             if (health != null && health.EffectiveCurrentHealth > 0)
             {
+                m_CurrentMode = HookMode.PullEnemyToPlayer;
                 m_CaughtTarget = health.transform;
                 m_IsPulling = true;
 
@@ -169,6 +221,28 @@ namespace Runtime.Scripts.Hook
                 if (hookHitSound != null) AudioSource.PlayClipAtPoint(hookHitSound, impactPoint);
                 if (hitVfxPrefab != null) Instantiate(hitVfxPrefab, impactPoint, Quaternion.LookRotation(-m_Direction));
             }
+            // 2. Verificar si impactó a una superficie con la etiqueta "Ground"
+            else if (hitObj.CompareTag("Ground"))
+            {
+                m_CurrentMode = HookMode.PullPlayerToGround;
+                m_TargetGroundPos = impactPoint;
+                m_IsPulling = true;
+
+                // Congelar el proyectil en el punto exacto de la superficie
+                Rigidbody rb = GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.linearVelocity = Vector3.zero;
+                    rb.isKinematic = true;
+                }
+
+                Collider col = GetComponent<Collider>();
+                if (col != null) col.enabled = false;
+
+                if (hookHitSound != null) AudioSource.PlayClipAtPoint(hookHitSound, impactPoint);
+                if (hitVfxPrefab != null) Instantiate(hitVfxPrefab, impactPoint, Quaternion.LookRotation(-m_Direction));
+            }
+            // 3. Si no es ninguna de las dos cosas, se destruye
             else
             {
                 DestroyHook();
