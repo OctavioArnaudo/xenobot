@@ -24,7 +24,8 @@ namespace Runtime.Scripts.Shield
     /// <summary>
     /// Sistema de escudo de energía esférico con mitigación de daño, colisionadores de impacto,
     /// capacidad de resistencia, drenado en tiempo real, recarga exclusiva al USAR desde inventario,
-    /// escalado por nivel (Jugador), degradación inversa por ciclos (Enemigo) y función de Shield Bash.
+    /// escalado por nivel (Jugador), degradación inversa por ciclos (Enemigo), función de Shield Bash
+    /// y regeneración pasiva de durabilidad cuando está inactivo.
     /// </summary>
     [ExecuteAlways]
     public class ShieldController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
@@ -57,6 +58,10 @@ namespace Runtime.Scripts.Shield
         [Tooltip("Si se activa, el escudo nunca se agota ni entra en cooldown")]
         public bool InfiniteShield;
         public Optional<bool> infiniteShield;
+
+        [Header("Shield Regeneration")]
+        [Tooltip("Cantidad de puntos de durabilidad que se restauran por segundo cuando el escudo está inactivo.")]
+        public float shieldRegenRate = 2.0f;
 
         [Header("Shield Bash Settings")]
         [Tooltip("Daño infligido al embestir con el escudo activo durante un dash")]
@@ -337,6 +342,16 @@ namespace Runtime.Scripts.Shield
             {
                 m_CurrentShieldHealth = EffectiveMaxShieldHealth;
                 m_CooldownTimer = 0f;
+            }
+
+            // Regeneración pasiva del escudo cuando NO está activo
+            if (!IsShieldActive && !EffectiveInfiniteShield)
+            {
+                float maxHealthVal = EffectiveMaxShieldHealth;
+                if (m_CurrentShieldHealth < maxHealthVal)
+                {
+                    m_CurrentShieldHealth = Mathf.Min(maxHealthVal, m_CurrentShieldHealth + (shieldRegenRate * Time.deltaTime));
+                }
             }
 
             if (InCooldown)
