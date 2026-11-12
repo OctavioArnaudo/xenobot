@@ -20,6 +20,7 @@ using Runtime.Scripts.Defeat;
 using Runtime.Scripts.Keys;
 using Runtime.Scripts.Zoom;
 using Runtime.Scripts.Gate;
+using Runtime.Scripts.Shield;
 
 namespace Runtime.Scripts.Player
 {
@@ -70,7 +71,7 @@ namespace Runtime.Scripts.Player
         public Optional<float> gravity;
         public float JumpTimeout = 0.50f;
         public float FallTimeout = 0.15f;
-        [Tooltip("Gravedad extra al caer (1 = igual que al subir). Sube = caida mas rapida y seca; la altura del salto no cambia.")] public float FallGravityMultiplier = 2f;
+        [Tooltip("Gravedad extra al caer")] public float FallGravityMultiplier = 2f;
         #endregion
 
         #region Variables: Aiming & Combat UI
@@ -85,21 +86,20 @@ namespace Runtime.Scripts.Player
         public bool toggleAim = false;
 
         [Header("Camara de hombro (clic derecho)")]
-        [Tooltip("Camara normal: personaje levemente a la izquierda, mira central libre.")] public Vector3 shoulderOffset = new Vector3(0.9f, 0.3f, 0f);
+        public Vector3 shoulderOffset = new Vector3(0.9f, 0.3f, 0f);
         public float shoulderDistance = 3.8f;
-        [Tooltip("Sube la camara (se suma a la altura del hombro) para que la cabeza quede bajo la linea central de la pantalla. Sin efecto en la mira telescopica.")] public float cameraRise = 0.6f;
-        [Tooltip("Apuntando (clic derecho): mas cerca y mas enfocado.")] public Vector3 shoulderAimOffset = new Vector3(1.0f, 0.25f, 0f);
+        public float cameraRise = 0.6f;
+        public Vector3 shoulderAimOffset = new Vector3(1.0f, 0.25f, 0f);
         public float shoulderAimDistance = 2.2f;
-        [Tooltip("Capas contra las que la camara choca (muros, terreno). Excluye las que no quieras.")] public LayerMask cameraCollision = ~0;
+        public LayerMask cameraCollision = ~0;
         public float shoulderAimFOV = 50f;
-        [Range(0f, 1f), Tooltip("Intensidad del zoom al apuntar SIN mira telescopica: 0 = sin zoom, 1 = distancia/FOV/offset de apuntado completos.")] public float aimZoomStrength = 0.3f;
-        [Tooltip("Velocidad de la transicion al apuntar sin mira telescopica (menor = mas suave).")] public float aimZoomSpeed = 5f;
+        [Range(0f, 1f)] public float aimZoomStrength = 0.3f;
+        public float aimZoomSpeed = 5f;
         [Range(0.2f, 1f)] public float aimMoveSpeedMultiplier = 0.6f;
-        [Tooltip("1 = melee, 2 = disparo (se eligen, no son toggle): el clic izquierdo usa el modo activo. 3 = mira telescopica (toggle).")] public bool meleeMode;
-        public bool scopeMode; // false = mira comun, true = telescopica
-        public bool HasMelee => _melee != null;                   // para la lista de skills del panel de personaje
+        [Tooltip("True = Modo Melee (1), False = Modo Rango (2).")] public bool meleeMode;
+        public bool scopeMode;
+        public bool HasMelee => _melee != null;
         public bool HasHook => hookProjectilePrefab != null;
-        // aimFOV / aimCameraDistance / aimShoulderOffset ahora son la mira telescopica (alternable con scopeToggleKey, por defecto 1).
 
         [Header("Hook Settings")]
         public GameObject hookProjectilePrefab;
@@ -219,7 +219,7 @@ namespace Runtime.Scripts.Player
         private bool _gameCursor;
         private float _rotationVelocity;
         private float _verticalVelocity;
-        private Vector3 _kb;   // empuje externo (ataques enemigos): decae solo
+        private Vector3 _kb;
         private float _terminalVelocity = 53.0f;
 
         private float _jumpTimeoutDelta;
@@ -251,6 +251,7 @@ namespace Runtime.Scripts.Player
         private InventoryController _inventory;
         private ShootController _shooter;
         private MeleeController _melee;
+        private ShieldController _shield;
 
         private bool _isJumpHeld;
         private const float _threshold = 0.01f;
@@ -503,7 +504,6 @@ namespace Runtime.Scripts.Player
 #if ENABLE_INPUT_SYSTEM
             if (_fireAction == null) RefreshInputActions();
             UpdateInputState();
-            // Convencion del proyecto: menu abierto = cursor libre (inventario, crafting, stats, panel J). Sin entrada al jugador.
             if (Cursor.lockState == CursorLockMode.Locked) _gameCursor = true;
             if (_gameCursor && Cursor.visible) ClearInput();
 #endif
@@ -531,12 +531,12 @@ namespace Runtime.Scripts.Player
             if (anim != null)
             {
                 Transform bone = anim.GetBoneTransform(HumanBodyBones.UpperChest) ??
-                                 anim.GetBoneTransform(HumanBodyBones.Chest) ??
-                                 anim.GetBoneTransform(HumanBodyBones.Neck) ??
-                                 anim.GetBoneTransform(HumanBodyBones.Head) ??
-                                 anim.transform.Find("spine") ??
-                                 anim.transform.Find("Chest") ??
-                                 anim.transform.Find("head");
+                               anim.GetBoneTransform(HumanBodyBones.Chest) ??
+                               anim.GetBoneTransform(HumanBodyBones.Neck) ??
+                               anim.GetBoneTransform(HumanBodyBones.Head) ??
+                               anim.transform.Find("spine") ??
+                               anim.transform.Find("Chest") ??
+                               anim.transform.Find("head");
 
                 if (bone != null)
                 {
@@ -571,7 +571,6 @@ namespace Runtime.Scripts.Player
 #endif
         }
 
-        // ThirdPersonFollow con colision activa: la camara se acerca al jugador en vez de atravesar muros (pasillos).
         private Unity.Cinemachine.CinemachineThirdPersonFollow Tpf()
         {
             var f = _vcamCache.GetComponent<Unity.Cinemachine.CinemachineThirdPersonFollow>();
@@ -609,10 +608,10 @@ namespace Runtime.Scripts.Player
 
         public void RefreshFunctionalComponents()
         {
-            // El parámetro 'true' fuerza a buscar los componentes aunque estén desactivados
             _jetpack = GetComponentInChildren<PropulsionController>(true);
             _shooter = GetComponentInChildren<ShootController>(true);
             _melee = GetComponentInChildren<MeleeController>(true);
+            _shield = GetComponentInChildren<ShieldController>(true);
 
             _animator = null;
             _renderTransform = transform.Find("PlayerRender") ?? transform.Find("Render") ?? transform.Find("EnemyRender");
@@ -684,7 +683,6 @@ namespace Runtime.Scripts.Player
                 sprint = false;
             }
 
-            // Click Izquierdo -> fuego / ataque melee
             bool actionFire = _fireAction != null && _fireAction.WasPressedThisFrame();
             bool mouseFire = Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
             fire = actionFire || mouseFire;
@@ -697,31 +695,61 @@ namespace Runtime.Scripts.Player
             bool mouseFireReleased = Mouse.current != null && Mouse.current.leftButton.wasReleasedThisFrame;
             fireReleased = actionFireReleased || mouseFireReleased;
 
-            // Click Derecho -> Apuntar (Soporta Mantener o Alternar / Toggle)
             bool aimPressedThisFrame = (_aimAction != null && _aimAction.WasPressedThisFrame()) ||
                                        (Mouse.current != null && Mouse.current.rightButton.wasPressedThisFrame);
             bool aimIsHeld = (_aimAction != null && _aimAction.IsPressed()) ||
                              (Mouse.current != null && Mouse.current.rightButton.isPressed);
-            // Teclas (solo con el cursor bloqueado): 1 = melee, 2 = disparo (seleccion), 3 = mira telescopica (toggle). El clic derecho siempre apunta.
+
             if (Keyboard.current != null && Cursor.lockState == CursorLockMode.Locked)
             {
                 var k = Keyboard.current;
-                if (k.digit1Key.wasPressedThisFrame) meleeMode = true;
-                else if (k.digit2Key.wasPressedThisFrame) meleeMode = false;
+                if (k.digit1Key.wasPressedThisFrame)
+                {
+                    meleeMode = true;
+                    if (_shield != null) _shield.SetShieldState(false);
+                }
+                else if (k.digit2Key.wasPressedThisFrame)
+                {
+                    meleeMode = false;
+                    if (_shield != null) _shield.SetShieldState(false);
+                }
                 else if (k.digit3Key.wasPressedThisFrame) scopeMode = !scopeMode;
             }
 
-            if (toggleAim)
+            if (meleeMode)
             {
-                if (aimPressedThisFrame) aim = !aim;
+                aim = false;
+                scope = false;
+
+                if (_shield != null)
+                {
+                    if (toggleAim)
+                    {
+                        if (aimPressedThisFrame)
+                        {
+                            bool newState = !_shield.IsShieldActive;
+                            _shield.SetShieldState(newState);
+                        }
+                    }
+                    else
+                    {
+                        _shield.SetShieldState(aimIsHeld);
+                    }
+                }
             }
             else
             {
-                aim = aimIsHeld;
+                if (toggleAim)
+                {
+                    if (aimPressedThisFrame) aim = !aim;
+                }
+                else
+                {
+                    aim = aimIsHeld;
+                }
+                scope = aim && scopeMode;
             }
-            scope = aim && scopeMode;
 
-            // Tecla G -> Disparar Gancho
             bool hookActionPressed = _hookAction != null && _hookAction.WasPressedThisFrame();
             bool keyGPressed = Keyboard.current != null && Keyboard.current.gKey.wasPressedThisFrame;
             hook = hookActionPressed || keyGPressed;
@@ -741,7 +769,7 @@ namespace Runtime.Scripts.Player
                 for (int i = 1; i <= 9; i++)
                 {
                     var wk = Key.Digit1 + (i - 1);
-                    if (i <= 3) continue; // 1-3 reservadas: melee, disparo, mira
+                    if (i <= 3) continue;
                     if (Keyboard.current[wk].wasPressedThisFrame)
                     {
                         selectWeapon = i;
@@ -751,7 +779,6 @@ namespace Runtime.Scripts.Player
             }
         }
 
-        // Menú abierto: el jugador no recibe ninguna entrada (la gravedad y el resto del juego siguen).
         private void ClearInput()
         {
             move = Vector2.zero;
@@ -759,18 +786,18 @@ namespace Runtime.Scripts.Player
             jump = jumpHeld = _isJumpHeld = sprint = false;
             fire = fireHeld = fireReleased = aim = scope = hook = crouch = reload = false;
             switchWeapon = selectWeapon = 0;
+            if (_shield != null && meleeMode) _shield.SetShieldState(false);
         }
 
         private void HandleAimingAndCombat()
         {
             if (crosshairUI != null)
             {
-                crosshairUI.SetActive(!(_gameCursor && Cursor.visible)); // mira minima siempre visible, salvo con un menu abierto
+                crosshairUI.SetActive(!(_gameCursor && Cursor.visible));
             }
 
             if (_vcamCache == null) SetupCamera();
 
-            // Apuntado comun: mezcla suave entre camara normal y de apuntado (la telescopica sigue yendo al 100 %).
             float az = aim && !scope ? aimZoomStrength : 0f;
             float zs = scope ? 10f : aimZoomSpeed;
             float normalDist = shoulderDistance * ZoomController.Factor;
@@ -789,7 +816,7 @@ namespace Runtime.Scripts.Player
                 {
                     float targetDistance = scope ? aimCameraDistance : Mathf.Lerp(normalDist, shoulderAimDistance, az);
                     Vector3 targetShoulderOffset = scope ? aimShoulderOffset : Vector3.Lerp(shoulderOffset, shoulderAimOffset, az) + Vector3.up * cameraRise;
-                    _vcam3rdPerson.CameraSide = 1f; // hombro derecho de la camara: el personaje queda a la izquierda
+                    _vcam3rdPerson.CameraSide = 1f;
 
                     _vcam3rdPerson.CameraDistance = Mathf.Lerp(_vcam3rdPerson.CameraDistance, targetDistance, Time.deltaTime * zs);
                     _vcam3rdPerson.ShoulderOffset = Vector3.Lerp(_vcam3rdPerson.ShoulderOffset, targetShoulderOffset, Time.deltaTime * zs);
@@ -801,31 +828,32 @@ namespace Runtime.Scripts.Player
                 camComp.fieldOfView = Mathf.Lerp(camComp.fieldOfView, targetFOV, Time.deltaTime * zs);
             }
 
-            // --- LÓGICA DE GANCHO (MANTENER APUNTADO + PULSAR G) ---
             if (aim && hook)
             {
                 TryFireHook();
                 hook = false;
             }
 
-            // --- SOLUCION DE CONFLICTOS DE ANIMACION ---
-            // Apagamos activamente el script del modo que no se está usando para evitar
-            // que sigan interceptando el clic de forma independiente.
             if (_melee != null) _melee.enabled = meleeMode;
             if (_shooter != null) _shooter.enabled = !meleeMode;
 
-            // Clic izquierdo segun el modo elegido (1 melee / 2 disparo).
-            if (meleeMode) { if (_melee != null && fire) _melee.PerformMeleeAction(); }
-            else if (_shooter != null && (_shooter.isUnlocked || _shooter.Projectile != null) && (_shooter.HoldToFire ? fireHeld : fire)) _shooter.TryFire();
+            if (meleeMode)
+            {
+                if (_melee != null && fire) _melee.PerformMeleeAction();
+            }
+            else
+            {
+                if (_shooter != null && (_shooter.isUnlocked || _shooter.Projectile != null) && (_shooter.HoldToFire ? fireHeld : fire))
+                {
+                    // Pasamos 'aim' (si está apuntando o no) al ShootController
+                    _shooter.TryFire(aim);
+                }
+            }
         }
 
         private void TryFireHook()
         {
-            if (hookProjectilePrefab == null)
-            {
-                Debug.LogWarning("[PlayerController] Falta asignar 'hookProjectilePrefab' en el Inspector.");
-                return;
-            }
+            if (hookProjectilePrefab == null) return;
 
             Transform spawnTransform = hookMuzzle != null ? hookMuzzle : (_shooter != null && _shooter.Muzzle != null ? _shooter.Muzzle.transform : transform);
             Vector3 spawnPos = spawnTransform.position;
@@ -866,41 +894,8 @@ namespace Runtime.Scripts.Player
         public void JumpInput(bool newJumpState) { if (newJumpState) jump = true; }
         public void SprintInput(bool newSprintState) => sprint = newSprintState;
 
-        public void InputMove(InputValue value) => MoveInput(value.Get<Vector2>());
-        public void InputLook(InputValue value) => LookInput(value.Get<Vector2>());
-        public void InputJump(InputValue value)
-        {
-            if (value.isPressed) jump = true;
-            jumpHeld = value.isPressed;
-        }
-        public void InputSprint(InputValue value) => SprintInput(value.isPressed);
-        public void InputFire(InputValue value)
-        {
-            bool isPressed = value.isPressed;
-            if (isPressed) fire = true;
-            fireHeld = isPressed;
-            fireReleased = !isPressed;
-        }
-        public void InputAim(InputValue value)
-        {
-            if (toggleAim)
-            {
-                if (value.isPressed) aim = !aim;
-            }
-            else
-            {
-                aim = value.isPressed;
-            }
-        }
-        public void InputHook(InputValue value) => hook = value.isPressed;
-        public void InputCrouch(InputValue value) => crouch = value.isPressed;
-        public void InputReload(InputValue value) => reload = value.isPressed;
-        public void InputNextWeapon(InputValue value) => switchWeapon = (int)value.Get<float>();
-        public void InputSelectWeapon(InputValue value) => selectWeapon = (int)value.Get<float>();
-
         private void OnApplicationFocus(bool hasFocus)
         {
-            // Con un menu o la pausa abiertos no se re-bloquea el cursor al recuperar el foco (clics en los botones).
             if (CanExecuteLocalLogic && !MenuGate.Busy) SetCursorState(cursorLocked);
         }
 
@@ -912,11 +907,11 @@ namespace Runtime.Scripts.Player
         #endregion
 
         #region Network Shooting Bridge
-        public void RequestFire(GameObject prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team)
+        public void RequestFire(GameObject prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team, bool enableHoming)
         {
             if (IsNetworkActive)
             {
-                FireServerRpc(direction, spawnPos, damage, team);
+                FireServerRpc(direction, spawnPos, damage, team, enableHoming);
             }
             else
             {
@@ -924,13 +919,14 @@ namespace Runtime.Scripts.Player
                 ProjectileController projectile = projObj.GetComponent<ProjectileController>();
                 if (projectile != null)
                 {
+                    projectile.enableHomingTracking = enableHoming;
                     projectile.Launch(gameObject, direction, damage, team);
                 }
             }
         }
 
         [ServerRpc]
-        private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team)
+        private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool enableHoming)
         {
             GameObject projectilePrefab = null;
 
@@ -946,14 +942,11 @@ namespace Runtime.Scripts.Player
                 ProjectileController projectile = projObj.GetComponent<ProjectileController>();
                 if (projectile != null)
                 {
+                    projectile.enableHomingTracking = enableHoming;
                     projectile.Launch(gameObject, direction, damage, team);
                 }
 
                 if (projObj.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
-            }
-            else
-            {
-                Debug.LogWarning("[PlayerController] El servidor no encontró un ShootController con proyectil asignado.");
             }
         }
         #endregion
@@ -969,7 +962,7 @@ namespace Runtime.Scripts.Player
             if (mask == 0) mask = ~((1 << 3) | (1 << 2));
 
             Grounded = Physics.CheckSphere(spherePos, GroundedRadius * 1.1f, mask, QueryTriggerInteraction.Ignore)
-                       || (_controller != null && _controller.isGrounded);
+                     || (_controller != null && _controller.isGrounded);
         }
 
         private void CameraRotation()
@@ -1017,7 +1010,6 @@ namespace Runtime.Scripts.Player
 
             if (aim)
             {
-                // Apuntando: el cuerpo mira siempre hacia donde apunta la camara y el movimiento es de costado (relativo a la camara).
                 float rot = Mathf.SmoothDampAngle(transform.eulerAngles.y, camYaw, ref _rotationVelocity, Mathf.Min(RotationSmoothTime, 0.06f));
                 transform.rotation = Quaternion.Euler(0.0f, rot, 0.0f);
                 if (move != Vector2.zero) _moveDir = Quaternion.Euler(0.0f, camYaw, 0.0f) * new Vector3(move.x, 0f, move.y);
@@ -1034,7 +1026,6 @@ namespace Runtime.Scripts.Player
             _controller.Move(_moveDir.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime + _kb * Time.deltaTime);
         }
 
-        // Lo llama el servidor / single player: parpadeo rojo en todos y despide al jugador (lo aplica solo su dueno).
         public void ApplyKnockback(Vector3 push)
         {
             if (IsNetworkActive && IsServer) KnockbackClientRpc(push); else Knock(push);

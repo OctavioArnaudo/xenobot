@@ -13,16 +13,13 @@ namespace Runtime.Scripts.Projectile
 {
     public enum ProjectileType
     {
-        BalaFuego,      // 1. Balas de fuego (Standard/Fuego - teledirigidas, rastro de fuego)
-        RayoContinuo,   // 2. Rayo continuo (Proyectil/Rayo recto continuo de energía)
-        BalaCongelante, // 3. Balas congelantes (Ralentizan al rival acumulativamente con cada acierto)
-        BalaCorrosiva,  // 4. Balas corrosivas (Aplican daño en el tiempo DoT acumulativo)
-        BalaExplosiva   // 5. Balas explosivas (Se adhieren al rival y explotan al siguiente click/disparo)
+        BalaFuego,
+        RayoContinuo,
+        BalaCongelante,
+        BalaCorrosiva,
+        BalaExplosiva
     }
 
-    /// <summary>
-    /// Componente helper adjuntado dinámicamente a los objetivos para gestionar estados de Congelación (slow) y Corrosión (DoT).
-    /// </summary>
     public class ProjectileStatusReceiver : NetworkBehaviour
     {
         private int m_FreezeStacks = 0;
@@ -119,9 +116,6 @@ namespace Runtime.Scripts.Projectile
         }
     }
 
-    /// <summary>
-    /// Control genérico de proyectiles con 5 tipos temáticos diferenciados, autogestión visual,
-    /// </summary>
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(SphereCollider))]
     public class ProjectileController : NetworkBehaviour, IPoolRecyclable
@@ -161,6 +155,9 @@ namespace Runtime.Scripts.Projectile
         public Optional<float> lifeTime;
         public float Speed;
         public Optional<float> speed;
+
+        [Header("Homing / Tracking")]
+        public bool enableHomingTracking = false;
 
         [Header("Efectos Especiales")]
         public float CorrosionDamage;
@@ -204,18 +201,15 @@ namespace Runtime.Scripts.Projectile
             {
                 if (damage.use) return damage.value;
 
-                // Jerarquía ascendente 1: Consultar al lanzador (ShootController del owner)
                 if (m_Owner != null)
                 {
                     var shooter = m_Owner.GetComponent<ShootController>() ?? m_Owner.GetComponentInChildren<ShootController>();
                     if (shooter != null) return shooter.EffectiveDamage;
 
-                    // Jerarquía ascendente 2: Consultar las estadísticas de Balance del owner
                     var balance = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(m_Owner) : default;
                     if (balance.attackDamage.use) return balance.attackDamage.value;
                 }
 
-                // Jerarquía ascendente 3: Consultar Balance del propio proyectil o fallback predeterminado
                 var selfBalance = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
                 if (selfBalance.attackDamage.use) return (float)selfBalance.attackDamage.value;
 
@@ -291,6 +285,7 @@ namespace Runtime.Scripts.Projectile
             m_IsAttached = false;
             m_AttachedTarget = null;
             m_HomingTarget = null;
+            enableHomingTracking = false;
 
             var col = GetComponent<Collider>();
             if (col != null) col.enabled = true;
@@ -364,16 +359,17 @@ namespace Runtime.Scripts.Projectile
             {
                 if (m_Owner != null && m_Owner.TryGetComponent<NetworkObject>(out var ownerNetObj))
                 {
-                    SyncLaunchRpc(ownerNetObj.NetworkObjectId, m_Direction, EffectiveDamage, m_OwnerTeam);
+                    SyncLaunchRpc(ownerNetObj.NetworkObjectId, m_Direction, EffectiveDamage, m_OwnerTeam, enableHomingTracking);
                 }
             }
         }
 
         [Rpc(SendTo.ClientsAndHost)]
-        private void SyncLaunchRpc(ulong ownerNetworkObjectId, Vector3 direction, float dmg, Team team)
+        private void SyncLaunchRpc(ulong ownerNetworkObjectId, Vector3 direction, float dmg, Team team, bool homing)
         {
             m_Direction = direction;
             m_OwnerTeam = team;
+            enableHomingTracking = homing;
             if (dmg > 0f && !damage.use)
             {
                 damage.use = true;
@@ -502,7 +498,10 @@ namespace Runtime.Scripts.Projectile
                 return;
             }
 
-            //GuideTowardsRivalTarget();
+            if (enableHomingTracking || EffectiveType == ProjectileType.BalaFuego)
+            {
+                GuideTowardsRivalTarget();
+            }
 
             float moveDistance = EffectiveSpeed * Time.deltaTime;
 

@@ -17,15 +17,12 @@ namespace Runtime.Scripts.Shield
 {
     public enum ShieldInputMode
     {
-        HoldToActivate, // Mantener botón central de la rueda para activar, soltar para desactivar
-        TogglePress     // Pulsar/girar la rueda del mouse para alternar (activar/desactivar)
+        HoldToActivate,
+        TogglePress
     }
 
     /// <summary>
-    /// Sistema de escudo de energía esférico con mitigación de daño, colisionadores de impacto,
-    /// capacidad de resistencia, drenado en tiempo real, recarga exclusiva al USAR desde inventario,
-    /// escalado por nivel (Jugador), degradación inversa por ciclos (Enemigo), función de Shield Bash
-    /// y regeneración pasiva de durabilidad cuando está inactivo.
+    /// Sistema de escudo de energía esférico controlado externamente por PlayerController según el modo de combate.
     /// </summary>
     [ExecuteAlways]
     public class ShieldController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
@@ -83,7 +80,6 @@ namespace Runtime.Scripts.Shield
         public float healAmountOnBlock = 5.0f;
 
         [Header("Activation & Input Settings")]
-        [Tooltip("Modo de entrada de la rueda del mouse: HoldToActivate (mantener botón) o TogglePress (pulsar/girar para alternar)")]
         public ShieldInputMode inputMode = ShieldInputMode.HoldToActivate;
         public bool autoUnlockOnStart = false;
         public bool autoActivateOnStart = false;
@@ -102,16 +98,11 @@ namespace Runtime.Scripts.Shield
         public AudioClip shieldBlockSound;
 
         [Header("Animation")]
-        [Tooltip("Parámetro Trigger del Animator que reproduce UNA vez la animación del escudo y vuelve al BlendTree")]
         public string shieldAnimTrigger = "shield";
-
-        [Tooltip("Parámetro Bool opcional (si no existe en el Animator, se ignora)")]
         public string shieldAnimBool = "isShieldActive";
 
         private Animator m_Animator;
         private HealthController m_Health;
-
-        private bool m_ActivatedByInput = false;
 
         private float m_CurrentShieldHealth;
         private float m_ActiveTimer;
@@ -140,7 +131,7 @@ namespace Runtime.Scripts.Shield
             }
         }
 
-        // --- Effective Statistics Resolvers with Optional & Fallback Protection ---
+        // --- Effective Statistics Resolvers ---
 
         public float EffectiveShieldBashDamage
         {
@@ -344,7 +335,7 @@ namespace Runtime.Scripts.Shield
                 m_CooldownTimer = 0f;
             }
 
-            // Regeneración pasiva del escudo cuando NO está activo
+            // Regeneración pasiva del escudo cuando NO está activo (2 puntos por segundo)
             if (!IsShieldActive && !EffectiveInfiniteShield)
             {
                 float maxHealthVal = EffectiveMaxShieldHealth;
@@ -362,7 +353,6 @@ namespace Runtime.Scripts.Shield
                     m_CooldownTimer = 0f;
                     m_ActiveTimer = 0f;
                     m_CurrentShieldHealth = EffectiveMaxShieldHealth;
-                    SetShieldState(true);
                     Debug.Log("<color=green>[ShieldController]</color> Recarga de escudo completa.");
                 }
             }
@@ -389,56 +379,6 @@ namespace Runtime.Scripts.Shield
                     RestoreShieldOriginalColors();
                 }
             }
-
-            if (IsNetworkActive && !IsOwner) return;
-
-            if (Cursor.visible)
-            {
-                if (m_ActivatedByInput || IsShieldActive)
-                {
-                    SetShieldState(false);
-                    m_ActivatedByInput = false;
-                }
-                return;
-            }
-
-            if (Mouse.current != null && isUnlocked && (!InCooldown || EffectiveInfiniteShield) && m_CurrentShieldHealth > 0f)
-            {
-                var middleButton = Mouse.current.middleButton;
-                float scrollValue = Mouse.current.scroll.ReadValue().y;
-                bool isScrolling = Mathf.Abs(scrollValue) > 0.01f;
-
-                bool middlePressedThisFrame = middleButton != null && middleButton.wasPressedThisFrame;
-                bool middleIsPressed = middleButton != null && middleButton.isPressed;
-                bool middleReleasedThisFrame = middleButton != null && middleButton.wasReleasedThisFrame;
-
-                if (inputMode == ShieldInputMode.TogglePress)
-                {
-                    if (middlePressedThisFrame || isScrolling)
-                    {
-                        SetShieldState(!IsShieldActive);
-                        m_ActivatedByInput = IsShieldActive;
-                    }
-                }
-                else // HoldToActivate
-                {
-                    if ((middlePressedThisFrame || isScrolling) && IsShieldActive && !m_ActivatedByInput)
-                    {
-                        SetShieldState(false);
-                        m_ActivatedByInput = false;
-                    }
-                    else if (middleIsPressed)
-                    {
-                        SetShieldState(true);
-                        m_ActivatedByInput = true;
-                    }
-                    else if (middleReleasedThisFrame || (!middleIsPressed && m_ActivatedByInput))
-                    {
-                        SetShieldState(false);
-                        m_ActivatedByInput = false;
-                    }
-                }
-            }
         }
 
         private void LateUpdate()
@@ -458,10 +398,8 @@ namespace Runtime.Scripts.Shield
                 return;
             }
 
-            // Los escudos-pickup del mundo conservan su comportamiento original.
             if (GetComponentInParent<PickupController>() != null) return;
 
-            // En juego la esfera vive en el mundo y sigue al CUERPO VISIBLE (hueso de la cadera), no a objetos raiz.
             if (t.parent != null) t.SetParent(null, true);
 
             if (m_Owner == null)
@@ -503,10 +441,6 @@ namespace Runtime.Scripts.Shield
         }
 
         #region Shield Bash Logic
-        /// <summary>
-        /// Ejecuta el golpe / embestida con el escudo activo (Shield Bash).
-        /// Daña a los enemigos frontales y les aplica knockback.
-        /// </summary>
         public bool ExecuteShieldBashHitCheck()
         {
             if (!IsShieldActive) return false;
@@ -704,12 +638,8 @@ namespace Runtime.Scripts.Shield
             }
         }
 
-        // --- ACCIONES DEDICADAS DE INVENTARIO ---
-
         public void OnQuitItem(GameObject player) => SetShieldState(false);
-
         public void OnDropItem(GameObject player) => SetShieldState(false);
-
         public void OnPickupItem(GameObject player) => isUnlocked = true;
 
         public void OnUseItem(GameObject entity)
@@ -828,7 +758,6 @@ namespace Runtime.Scripts.Shield
                 m_CurrentShieldHealth = Mathf.Max(0f, m_CurrentShieldHealth - damage);
             }
 
-            // --- RECARGA DE +5 HP AL JUGADOR ---
             if (m_Health == null) RefreshReferences();
             if (m_Health != null && healAmountOnBlock > 0f)
             {

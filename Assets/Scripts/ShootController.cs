@@ -335,7 +335,9 @@ namespace Runtime.Scripts.Shoot
             return true;
         }
 
-        public bool TryFire()
+        // isAimed = true (Click derecho / Apuntando) -> Daño 100%, Sin Tracking.
+        // isAimed = false (Click izquierdo / Cadera) -> Daño reducido (65%), Con Tracking ligero.
+        public bool TryFire(bool isAimed = false)
         {
             if (!isUnlocked) return false;
 
@@ -344,7 +346,11 @@ namespace Runtime.Scripts.Shoot
             if (!CanFire()) return false;
 
             Vector3 origin = Muzzle.transform.position;
-            ExecuteFire(GetAimDirection(origin), origin);
+
+            float damageMultiplier = isAimed ? 1.0f : 0.65f;
+            bool enableHoming = !isAimed; // Solo activo si NO está apuntando (es decir, click izquierdo)
+
+            ExecuteFire(GetAimDirection(origin), origin, damageMultiplier, enableHoming);
             return true;
         }
 
@@ -358,7 +364,7 @@ namespace Runtime.Scripts.Shoot
             Vector3 dir = target - origin;
             dir = dir.sqrMagnitude < 0.01f ? transform.forward : dir.normalized;
 
-            ExecuteFire(dir, origin);
+            ExecuteFire(dir, origin, 1.0f, false);
             return true;
         }
 
@@ -373,7 +379,7 @@ namespace Runtime.Scripts.Shoot
                 if (r != null) r.transform.rotation = Quaternion.Slerp(r.transform.rotation, rot, rotationSpeed * Time.deltaTime);
         }
 
-        private void ExecuteFire(Vector3 direction, Vector3 spawnPos)
+        private void ExecuteFire(Vector3 direction, Vector3 spawnPos, float customDamageMultiplier, bool enableHoming)
         {
             if (++m_CurrentBurstShots >= EffectiveBurstShotsCapacity)
             {
@@ -381,11 +387,13 @@ namespace Runtime.Scripts.Shoot
                 m_BurstCooldownTimer = EffectiveBurstCooldownDuration + EffectiveTargetRecalibrationDelay;
             }
 
-            float finalDamage = EffectiveDamage * currentAmmoDamageMultiplier;
+            float finalDamage = EffectiveDamage * currentAmmoDamageMultiplier * customDamageMultiplier;
             Team team = EffectiveTeam;
 
-            if (m_Player != null && IsNetworkActive) m_Player.RequestFire(Projectile, direction, spawnPos, finalDamage, team);
-            else SpawnProjectileLocally(direction, spawnPos, finalDamage, team, IsNetworkActive && NetworkManager.Singleton.IsServer);
+            if (m_Player != null && IsNetworkActive)
+                m_Player.RequestFire(Projectile, direction, spawnPos, finalDamage, team, enableHoming);
+            else
+                SpawnProjectileLocally(direction, spawnPos, finalDamage, team, IsNetworkActive && NetworkManager.Singleton.IsServer, enableHoming);
 
             Animator anim = GetComponentInChildren<Animator>();
             if (anim != null && HasParameter(anim, "shoot")) anim.SetTrigger("shoot");
@@ -415,7 +423,7 @@ namespace Runtime.Scripts.Shoot
             return dir.sqrMagnitude < 0.01f ? AimCamera.transform.forward : dir.normalized;
         }
 
-        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float dmg, Team team, bool isServer)
+        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float dmg, Team team, bool isServer, bool enableHoming)
         {
             Quaternion rot = Quaternion.LookRotation(direction);
             GameObject go = BalanceManager.Instance != null
@@ -423,7 +431,11 @@ namespace Runtime.Scripts.Shoot
                 : Instantiate(Projectile, spawnPos, rot);
 
             var proj = go.GetComponent<ProjectileController>();
-            if (proj != null) proj.Launch(OwnerEntity, direction, dmg, team);
+            if (proj != null)
+            {
+                proj.enableHomingTracking = enableHoming;
+                proj.Launch(OwnerEntity, direction, dmg, team);
+            }
 
             if (isServer)
             {
