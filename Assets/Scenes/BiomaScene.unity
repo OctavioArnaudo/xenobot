@@ -41661,6 +41661,34 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 9193409881328918840, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: DamageReduction
+      value: 0.95
+      objectReference: {fileID: 0}
+    - target: {fileID: 9193409881328918840, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: shieldBashDamage
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 9193409881328918840, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: damageReduction.use
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9193409881328918840, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: customBashDamage.use
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9193409881328918840, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: damageReduction.value
+      value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 9193409881328918840, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: customBashDamage.value
+      value: 30
+      objectReference: {fileID: 0}
+    - target: {fileID: 9193409881328918840, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: bashTargetLayers.m_Bits
+      value: 64
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -244530,6 +244558,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 777045721597328612, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: Damage
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 777045721597328612, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: FireRate
       value: 1
       objectReference: {fileID: 0}
@@ -244538,8 +244570,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2095162831}
     - target: {fileID: 777045721597328612, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: damage.use
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 777045721597328612, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: damage.value
-      value: 3
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 777045721597328612, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: fireRate.use
@@ -244548,6 +244584,10 @@ PrefabInstance:
     - target: {fileID: 777045721597328612, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: fireRate.value
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 777045721597328612, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: AimLayers.m_Bits
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 877363672913729459, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: m_CastShadows
@@ -244594,6 +244634,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 1641075483950178257, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: Damage
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1641075483950178257, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: FireRate
       value: 1
       objectReference: {fileID: 0}
@@ -244602,8 +244646,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2095162831}
     - target: {fileID: 1641075483950178257, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: damage.use
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1641075483950178257, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: damage.value
-      value: 3
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 1641075483950178257, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: fireRate.use
@@ -244612,6 +244660,10 @@ PrefabInstance:
     - target: {fileID: 1641075483950178257, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: fireRate.value
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1641075483950178257, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: AimLayers.m_Bits
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 1740289779570819011, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: m_CastShadows
@@ -245010,6 +245062,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6388313441299567172, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: Damage
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6388313441299567172, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: FireRate
       value: 1
       objectReference: {fileID: 0}
@@ -245018,8 +245074,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2095162831}
     - target: {fileID: 6388313441299567172, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: damage.use
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6388313441299567172, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: damage.value
-      value: 3
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 6388313441299567172, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: fireRate.use
@@ -245028,6 +245088,10 @@ PrefabInstance:
     - target: {fileID: 6388313441299567172, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: fireRate.value
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6388313441299567172, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: AimLayers.m_Bits
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 6433051914784709207, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: m_InScenePlaced
@@ -245178,6 +245242,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8064797988174106639, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: Damage
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8064797988174106639, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: FireRate
       value: 1
       objectReference: {fileID: 0}
@@ -245186,8 +245254,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2095162831}
     - target: {fileID: 8064797988174106639, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: damage.use
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8064797988174106639, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: damage.value
-      value: 3
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 8064797988174106639, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: fireRate.use
@@ -245196,6 +245268,10 @@ PrefabInstance:
     - target: {fileID: 8064797988174106639, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: fireRate.value
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8064797988174106639, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: AimLayers.m_Bits
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 8075730276147601091, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: m_CastShadows
@@ -245254,6 +245330,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8647217564922582497, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: Damage
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8647217564922582497, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: FireRate
       value: 1
       objectReference: {fileID: 0}
@@ -245262,8 +245342,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2095162831}
     - target: {fileID: 8647217564922582497, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: damage.use
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8647217564922582497, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: damage.value
-      value: 3
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 8647217564922582497, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: fireRate.use
@@ -245272,6 +245356,10 @@ PrefabInstance:
     - target: {fileID: 8647217564922582497, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: fireRate.value
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8647217564922582497, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: AimLayers.m_Bits
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 8672029100472961549, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: m_CastShadows
@@ -245298,6 +245386,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9018402377574268209, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: Damage
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9018402377574268209, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: FireRate
       value: 1
       objectReference: {fileID: 0}
@@ -245306,8 +245398,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2095162831}
     - target: {fileID: 9018402377574268209, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: damage.use
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9018402377574268209, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: damage.value
-      value: 3
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 9018402377574268209, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: fireRate.use
@@ -245316,6 +245412,10 @@ PrefabInstance:
     - target: {fileID: 9018402377574268209, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
       propertyPath: fireRate.value
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9018402377574268209, guid: 29e503f1d5da56f4bb42518b73660516, type: 3}
+      propertyPath: AimLayers.m_Bits
+      value: 8
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
