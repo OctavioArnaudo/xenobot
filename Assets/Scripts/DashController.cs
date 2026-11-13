@@ -183,7 +183,14 @@ namespace Runtime.Scripts.Singleton
 
         private void TryStartDash(Vector3 localDirection)
         {
-            Vector3 worldDirection = transform.TransformDirection(localDirection).normalized;
+            // El dash usa los ejes horizontales de la cámara, igual que el movimiento del jugador.
+            Camera mainCamera = Camera.main;
+            float cameraYaw = mainCamera != null
+                ? mainCamera.transform.eulerAngles.y
+                : (m_Player != null ? m_Player.transform.eulerAngles.y : transform.eulerAngles.y);
+            Vector3 worldDirection = Quaternion.Euler(0f, cameraYaw, 0f) * localDirection;
+            worldDirection.y = 0f;
+            worldDirection.Normalize();
 
             TriggerDashAnimation();
 

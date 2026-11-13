@@ -1009,20 +1009,22 @@ namespace Runtime.Scripts.Player
             _animationBlend = Mathf.Lerp(_animationBlend, targetSpeed, Time.deltaTime * SpeedChangeRate);
 
             if (_mainCamera == null) _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
-            float camYaw = (_mainCamera != null) ? _mainCamera.transform.eulerAngles.y : 0f;
+            float camYaw = (_mainCamera != null) ? _mainCamera.transform.eulerAngles.y : transform.eulerAngles.y;
+            Quaternion cameraYaw = Quaternion.Euler(0.0f, camYaw, 0.0f);
 
-            if (aim)
+            if (move != Vector2.zero)
             {
-                float rot = Mathf.SmoothDampAngle(transform.eulerAngles.y, camYaw, ref _rotationVelocity, Mathf.Min(RotationSmoothTime, 0.06f));
-                transform.rotation = Quaternion.Euler(0.0f, rot, 0.0f);
-                if (move != Vector2.zero) _moveDir = Quaternion.Euler(0.0f, camYaw, 0.0f) * new Vector3(move.x, 0f, move.y);
-            }
-            else if (move != Vector2.zero)
-            {
-                _targetRotation = Mathf.Atan2(move.x, move.y) * Mathf.Rad2Deg + camYaw;
-                float rotation = Mathf.SmoothDampAngle(transform.eulerAngles.y, _targetRotation, ref _rotationVelocity, RotationSmoothTime);
+                // WASD mueve respecto a la cámara; no convierte A/S/D en el nuevo frente del jugador.
+                Vector3 inputDirection = new Vector3(move.x, 0f, move.y);
+                _moveDir = cameraYaw * inputDirection;
+
+                // El cuerpo solo sigue el rumbo de la cámara mientras el jugador se desplaza.
+                float rotation = Mathf.SmoothDampAngle(
+                    transform.eulerAngles.y,
+                    camYaw,
+                    ref _rotationVelocity,
+                    aim ? Mathf.Min(RotationSmoothTime, 0.06f) : RotationSmoothTime);
                 transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
-                _moveDir = Quaternion.Euler(0.0f, _targetRotation, 0.0f) * Vector3.forward;
             }
 
             _kb = Vector3.MoveTowards(_kb, Vector3.zero, 35f * Time.deltaTime);
