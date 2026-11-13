@@ -498,7 +498,7 @@ namespace Runtime.Scripts.Projectile
                 return;
             }
 
-            if (enableHomingTracking || EffectiveType == ProjectileType.BalaFuego)
+            if (enableHomingTracking)
             {
                 GuideTowardsRivalTarget();
             }

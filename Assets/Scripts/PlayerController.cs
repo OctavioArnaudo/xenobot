@@ -909,6 +909,9 @@ namespace Runtime.Scripts.Player
         #region Network Shooting Bridge
         public void RequestFire(GameObject prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team, bool enableHoming)
         {
+            // Mientras se apunta con clic derecho, los proyectiles viajan sin homing.
+            // Sin apuntar, se conserva la configuración de homing del ShootController.
+            enableHoming = enableHoming && !aim;
             if (IsNetworkActive)
             {
                 FireServerRpc(direction, spawnPos, damage, team, enableHoming);
