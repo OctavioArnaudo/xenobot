@@ -385,10 +385,10 @@ namespace Runtime.Scripts.Hud
         readonly RectTransform[] _fill = new RectTransform[4];
         readonly TextMeshProUGUI[] _barTxt = new TextMeshProUGUI[4];
         readonly float[] _lastF = new float[4];
-        readonly Image[] _plate = new Image[3], _ring = new Image[3]; // 0 melee, 1 disparo, 2 mira
+        readonly Image[] _plate = new Image[6], _ring = new Image[6], _ic = new Image[6]; // 0 melee, 1 disparo, 2 mira, 3 jetpack, 4 gancho, 5 escudo
         Image _glow, _jDot; // aviso rojo del boton J: historia nueva sin leer
         bool _lit;
-        static Sprite s_scope, s_ring, s_glow, s_fist, s_gun;
+        static Sprite s_scope, s_ring, s_glow, s_fist, s_gun, s_jet, s_hook, s_shield;
         float _uiTick;
 
         // Botones de panel (metalicos, punto rubi): TAB = inventario / personaje, J = misiones + radar.
@@ -455,9 +455,26 @@ namespace Runtime.Scripts.Hud
             for (int i = 0; i < 3; i++)
             {
                 _plate[i].raycastTarget = busy;
-                bool on = pcs != null && (i == 0 ? pcs.meleeMode : i == 1 ? !pcs.meleeMode : pcs.scopeMode);
-                if (_ring[i].gameObject.activeSelf != on) _ring[i].gameObject.SetActive(on);
+                Lit(i, pcs != null && (i == 0 ? pcs.meleeMode : i == 1 ? !pcs.meleeMode : pcs.scopeMode));
             }
+            var pr = GetPropulsion(); var sh = GetShield();
+            Lit(3, pr != null && pr.MaxJetpack > 0);
+            Lit(4, pcs != null && pcs.HasHook);
+            Lit(5, sh != null && sh.isUnlocked && !sh.InCooldown);
+        }
+
+        static void Top(RectTransform t, float size, float y)
+        {
+            t.anchorMin = t.anchorMax = t.pivot = new Vector2(0.5f, 1f);
+            t.sizeDelta = new Vector2(size, size);
+            t.anchoredPosition = new Vector2(0f, y);
+        }
+
+        void Lit(int i, bool on)
+        {
+            if (_ring[i].gameObject.activeSelf == on) return;
+            _ring[i].gameObject.SetActive(on);
+            if (i > 2) _ic[i].color = new Color(0.8f, 0.9f, 0.8f, on ? 1f : 0.3f);
         }
 
         void BuildHud()
@@ -498,39 +515,51 @@ namespace Runtime.Scripts.Hud
                 _barTxt[i] = t;
             }
 
-            // Selector (1 melee, 2 disparo, 3 mira telescopica): placas apiladas; el aro verde marca la activa. Clic = elegir (solo con un menu abierto).
-            for (int i = 0; i < 3; i++)
+            // Fila centrada sobre la zona media del tablero: 1 melee, 2 disparo, 3 mira (clic solo con un menu abierto), jetpack, gancho, escudo
+            // (los 3 ultimos son solo indicadores: aro verde = disponible/listo, icono tenue = no disponible).
+            const float PlateW = 68f, PlateH = 76f, PlateGap = 8f, RowY = 130f;   // RowY: borde inferior de la fila (sube/baja si pisa el marco naranja)
+            string[] hint = { "1", "2", "3", "SPC", "G", "MMB" };
+            for (int i = 0; i < 6; i++)
             {
                 int id = i;
                 var r = Rnd(Img(_uiRoot.transform, new Color(0.02f, 0.03f, 0.03f)));
                 _plate[i] = r.GetComponent<Image>();
-                r.anchorMin = r.anchorMax = r.pivot = new Vector2(1f, 0f);
-                r.sizeDelta = new Vector2(80f, 80f);
-                r.anchoredPosition = new Vector2(-30f, 122f + (2 - i) * 90f);
-                var btn = _plate[i].gameObject.AddComponent<Button>();
-                btn.transition = Selectable.Transition.None;
-                btn.onClick.AddListener(() => { var p = GetPlayer(); if (p == null) return; if (id == 2) p.scopeMode = !p.scopeMode; else p.meleeMode = id == 0; });
+                r.anchorMin = r.anchorMax = r.pivot = new Vector2(0.5f, 0f);
+                r.sizeDelta = new Vector2(PlateW, PlateH);
+                r.anchoredPosition = new Vector2((i - 2.5f) * (PlateW + PlateGap), RowY);
+                if (i < 3)
+                {
+                    var btn = _plate[i].gameObject.AddComponent<Button>();
+                    btn.transition = Selectable.Transition.None;
+                    btn.onClick.AddListener(() => { var p = GetPlayer(); if (p == null) return; if (id == 2) p.scopeMode = !p.scopeMode; else p.meleeMode = id == 0; });
+                }
+                else _plate[i].raycastTarget = false;
                 var ring = Img(r, Green);
                 _ring[i] = ring.GetComponent<Image>();
                 _ring[i].sprite = RingSprite();
-                Mid(ring, 70f);
+                _ring[i].raycastTarget = false;
+                Top(ring, 50f, -3f);   // icono arriba, tecla debajo
                 ring.gameObject.SetActive(false);
-                var ic = Img(r, new Color(0.8f, 0.9f, 0.8f));
-                ic.GetComponent<Image>().sprite = i == 0 ? FistSprite() : i == 1 ? GunSprite() : ScopeSprite();
-                Mid(ic, 48f);
-                var n = Txt(r, 22, Amber, TextAlignmentOptions.Center, FontStyles.Bold);
-                n.text = (i + 1).ToString();
+                var ic = Img(r, i < 3 ? new Color(0.8f, 0.9f, 0.8f) : new Color(0.8f, 0.9f, 0.8f, 0.3f));
+                _ic[i] = ic.GetComponent<Image>();
+                _ic[i].sprite = i == 0 ? FistSprite() : i == 1 ? GunSprite() : i == 2 ? ScopeSprite() : i == 3 ? JetSprite() : i == 4 ? HookSprite() : ShieldSprite();
+                _ic[i].raycastTarget = false;
+                Top(ic, 36f, -10f);
+                var n = Txt(r, 16, Amber, TextAlignmentOptions.Center, FontStyles.Bold);
+                n.text = hint[i];
                 n.raycastTarget = false;
-                n.rectTransform.anchorMin = n.rectTransform.anchorMax = n.rectTransform.pivot = new Vector2(0f, 1f);
-                n.rectTransform.sizeDelta = new Vector2(24f, 24f);
-                n.rectTransform.anchoredPosition = new Vector2(4f, -2f);
+                n.rectTransform.anchorMin = new Vector2(0f, 0f);
+                n.rectTransform.anchorMax = new Vector2(1f, 0f);
+                n.rectTransform.pivot = new Vector2(0.5f, 0f);
+                n.rectTransform.sizeDelta = new Vector2(0f, 20f);
+                n.rectTransform.anchoredPosition = new Vector2(0f, 1f);
             }
 
-            // 2 botones metalicos redondos con punto rubi (TAB, J), en la misma fila que la placa de la mira, dentro del margen derecho
+            // 2 botones metalicos redondos con punto rubi (TAB, J), a la derecha; dentro del marco naranja; el texto de objeto clave va justo debajo
             for (int i = 0; i < 2; i++)
             {
                 int id = i;
-                var pos = new Vector2(-126f - (1 - i) * 76f, 130f);
+                var pos = new Vector2(-30f - (1 - i) * 76f, 112f);
                 if (i == 1) // halo grande detras del boton J
                 {
                     var hl = Img(_uiRoot.transform, new Color(1f, 0.05f, 0.03f, 0f));
@@ -661,6 +690,35 @@ namespace Runtime.Scripts.Hud
 
         static Sprite GunSprite() => s_gun ??= Draw((x, y) =>
             Mathf.Max(Box(x, y, 12f, 36f, 52f, 46f), Mathf.Max(Box(x, y, 14f, 14f, 28f, 36f), Box(x, y, 28f, 28f, 31f, 36f))));
+
+        static Sprite JetSprite() => s_jet ??= Draw((x, y) =>
+        {
+            float a = Box(x, y, 29f, 32f, 35f, 38f);
+            for (int k = 0; k < 2; k++)
+            {
+                float cx = 23f + k * 18f, w = 4f * Mathf.Clamp01((y - 6f) / 16f);
+                a = Mathf.Max(a, Box(x, y, cx - 6f, 24f, cx + 6f, 46f));
+                a = Mathf.Max(a, Disc(x, y, cx, 46f, 6f));
+                if (y < 24f) a = Mathf.Max(a, Band(x, cx - w, cx + w) * Band(y, 6f, 22f) * 0.8f);
+            }
+            return a;
+        });
+
+        static Sprite HookSprite() => s_hook ??= Draw((x, y) =>
+        {
+            float dx = x - 32f, dy = y - 50f, hx = x - 22f, hy = y - 22f;
+            float a = Mathf.Max(Band(Mathf.Sqrt(dx * dx + dy * dy), 5f, 9f), Box(x, y, 30f, 22f, 34f, 41f));
+            if (y <= 22f && x <= 34f) a = Mathf.Max(a, Band(Mathf.Sqrt(hx * hx + hy * hy), 8f, 12f));
+            return Mathf.Max(a, Box(x, y, 10f, 22f, 14f, 30f));
+        });
+
+        static Sprite ShieldSprite() => s_shield ??= Draw((x, y) =>
+        {
+            float hw = y >= 36f ? 18f : 18f * Mathf.Clamp01((y - 10f) / 26f);
+            if (hw <= 0f) return 0f;
+            float a = Band(x, 31.5f - hw, 31.5f + hw) * Band(y, 10f, 54f);
+            return a * (1f - Band(Mathf.Abs(x - 31.5f), 0f, 1.5f) * Band(y, 16f, 48f) * 0.6f);
+        });
 
         static float Box(float x, float y, float x0, float y0, float x1, float y1) => Band(x, x0, x1) * Band(y, y0, y1);
         static float Disc(float x, float y, float cx, float cy, float r) => Mathf.Clamp01(r - Mathf.Sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) + 0.5f);

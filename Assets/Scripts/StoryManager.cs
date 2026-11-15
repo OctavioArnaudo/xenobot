@@ -890,10 +890,10 @@ namespace Runtime.Scripts.Narrative
             Fill(hint.gameObject, 8);
             _dlg.SetActive(false);
 
-            // HUD: contador (abajo-izquierda), objetivos (arriba-izquierda), aviso de E
+            // HUD: contador (abajo-derecha, bajo TAB/J), objetivos (arriba-izquierda), aviso de E
             var hud = NewCanvas("StoryHud", 91).transform;
-            var cb = MenuGate.Rnd(Box(hud, Dark, new Vector2(270, 42)));
-            Anchor(cb, Vector2.zero, new Vector2(30f, 116f));
+            var cb = MenuGate.Rnd(Box(hud, Dark, new Vector2(270, 36)));
+            Anchor(cb, new Vector2(1f, 0f), new Vector2(-30f, 69f));   // entre TAB/J y la barra SHIELD
             _counter = Txt(cb.transform, 22, TextAlignmentOptions.Center);
             Fill(_counter.gameObject, 4);
             _counter.text = $"OBJETOS CLAVE  0/{pairs.Count}";
