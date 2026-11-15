@@ -405,7 +405,11 @@ namespace Runtime.Scripts.Inventory
 
                 bool isOver = cell.Contains(Event.current.mousePosition);
                 GUI.DrawTexture(cell, isOver ? _texSelected : _texNormal);
-                if (slot.def.itemSprite != null) GUI.DrawTexture(new Rect(cell.x + 10f * k, cell.y + 10f * k, cell.width - 20f * k, cell.height - 20f * k), slot.def.itemSprite.texture);
+                if (slot.def.itemSprite != null)
+                {
+                    var spr = slot.def.itemSprite;
+                    Graphics.DrawTexture(new Rect(cell.x + 10f * k, cell.y + 10f * k, cell.width - 20f * k, cell.height - 20f * k), spr.texture, spr.rect, 0, 0, 0, 0);
+                }
                 GUI.Label(cell, QtyStr(slot.qty), _qtySty);
 
                 Rect btnArea = new Rect(cell.x, cell.yMax + 2f * k, cell.width, 35f * k);
