@@ -112,9 +112,11 @@ namespace Runtime.Scripts.Life
             if (Application.isPlaying) mf.mesh = mesh;
             else mf.sharedMesh = mesh;
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            Shader shader = Shader.Find("Standard") ?? Shader.Find("Legacy Shaders/Diffuse") ?? Shader.Find("Unlit/Color");
             Material mat = new Material(shader);
             mat.color = heartColor;
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", heartColor);
+            if (mat.HasProperty("_Color")) mat.SetColor("_Color", heartColor);
 
             if (shader.name.Contains("Lit") || shader.name.Contains("Standard"))
             {

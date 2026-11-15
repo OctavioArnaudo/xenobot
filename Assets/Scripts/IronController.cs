@@ -87,10 +87,12 @@ namespace Runtime.Scripts.Iron
             if (Application.isPlaying) mf.mesh = mesh;
             else mf.sharedMesh = mesh;
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            Shader shader = Shader.Find("Standard") ?? Shader.Find("Legacy Shaders/Diffuse") ?? Shader.Find("Unlit/Color");
             Material mat = new Material(shader);
             mat.name = "IronIngot_Material";
             mat.color = ironColor;
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", ironColor);
+            if (mat.HasProperty("_Color")) mat.SetColor("_Color", ironColor);
 
             if (mat.HasProperty("_Metallic")) mat.SetFloat("_Metallic", metallic);
             if (mat.HasProperty("_Smoothness")) mat.SetFloat("_Smoothness", smoothness);

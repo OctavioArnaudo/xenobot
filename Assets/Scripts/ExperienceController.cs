@@ -30,7 +30,6 @@ namespace Runtime.Scripts.Experience
 
         public void ApplyEffect(GameObject entity)
         {
-            // 1. Try finding the pure functionality StatsController (HUD)
             HudController stats = entity.GetComponent<HudController>() ??
                                     entity.GetComponentInParent<HudController>() ??
                                     entity.GetComponentInChildren<HudController>();
@@ -38,8 +37,6 @@ namespace Runtime.Scripts.Experience
             if (stats != null)
             {
                 stats.AddExp(EXP_AMOUNT);
-                Debug.Log($"[ExperienceController] Otorgados {EXP_AMOUNT} EXP a {entity.name} via StatsController.");
-                return;
             }
         }
 
@@ -66,12 +63,12 @@ namespace Runtime.Scripts.Experience
             }
 
             var mr = visual.GetComponent<MeshRenderer>();
-            var shader = Shader.Find("Universal Render Pipeline/Unlit")
-                      ?? Shader.Find("Unlit/Color")
-                      ?? Shader.Find("Standard");
+            var shader = Shader.Find("Standard") ?? Shader.Find("Legacy Shaders/Diffuse") ?? Shader.Find("Unlit/Color");
 
             var mat = new Material(shader);
             mat.color = orbColor;
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", orbColor);
+            if (mat.HasProperty("_Color")) mat.SetColor("_Color", orbColor);
             if (shader.name.Contains("Lit") || shader.name.Contains("Standard"))
             {
                 mat.EnableKeyword("_EMISSION");
