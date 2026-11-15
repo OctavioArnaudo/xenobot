@@ -22,6 +22,7 @@ namespace Runtime.Scripts.Hook
     public class HookProjectileController : NetworkBehaviour
     {
         private const float DEFAULT_STUN_DURATION = 2.5f;
+        private const float MAX_LIFETIME = 3.0f; // Tiempo de vida máximo de seguridad (3 segundos)
 
         [Header("Hook Settings")]
         public float flySpeed = 35f;
@@ -52,6 +53,7 @@ namespace Runtime.Scripts.Hook
 
         // Variables para cuando arrastra al enemigo hacia el player
         private Transform m_CaughtTarget;
+        private HealthController m_CaughtHealth;
         private CharacterController m_TargetCC;
         private UnityEngine.AI.NavMeshAgent m_TargetAgent;
         private Rigidbody m_TargetRB;
@@ -64,6 +66,7 @@ namespace Runtime.Scripts.Hook
 
         private bool m_IsPulling = false;
         private bool m_HasHit = false;
+        private float m_LifeTimer = 0f; // Temporizador para el tiempo de vida
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
@@ -85,6 +88,7 @@ namespace Runtime.Scripts.Hook
             m_Direction = direction.normalized;
             m_MuzzleTransform = muzzleTransform;
             m_StartPos = transform.position;
+            m_LifeTimer = 0f; // Reiniciamos el temporizador al lanzar
 
             transform.rotation = Quaternion.LookRotation(m_Direction);
 
@@ -116,6 +120,14 @@ namespace Runtime.Scripts.Hook
 #endif
             UpdateLineVisuals();
 
+            // Control de tiempo de vida máximo (3 segundos)
+            m_LifeTimer += Time.deltaTime;
+            if (m_LifeTimer >= MAX_LIFETIME)
+            {
+                ReleaseTargetAndDestroy();
+                return;
+            }
+
             if (!m_HasHit)
             {
                 transform.position += m_Direction * (flySpeed * Time.deltaTime);
@@ -128,8 +140,15 @@ namespace Runtime.Scripts.Hook
             else if (m_IsPulling && m_OwnerPlayer != null)
             {
                 // CASO A: Arrastrar al ENEMIGO hacia el JUGADOR
-                if (m_CurrentMode == HookMode.PullEnemyToPlayer && m_CaughtTarget != null)
+                if (m_CurrentMode == HookMode.PullEnemyToPlayer)
                 {
+                    // Si el objetivo ya no existe, fue destruido o su vida llegó a 0, liberamos el gancho
+                    if (m_CaughtTarget == null || (m_CaughtHealth != null && m_CaughtHealth.EffectiveCurrentHealth <= 0))
+                    {
+                        ReleaseTargetAndDestroy();
+                        return;
+                    }
+
                     Vector3 playerPos = m_OwnerPlayer.transform.position + Vector3.up * 0.9f;
                     Vector3 currentTargetPos = m_CaughtTarget.position;
                     Vector3 pullDirection = (playerPos - currentTargetPos);
@@ -214,6 +233,7 @@ namespace Runtime.Scripts.Hook
             {
                 m_CurrentMode = HookMode.PullEnemyToPlayer;
                 m_CaughtTarget = health.transform;
+                m_CaughtHealth = health;
                 m_IsPulling = true;
 
                 DisableTargetMovement(m_CaughtTarget.gameObject);
@@ -228,7 +248,6 @@ namespace Runtime.Scripts.Hook
                 m_TargetGroundPos = impactPoint;
                 m_IsPulling = true;
 
-                // Congelar el proyectil en el punto exacto de la superficie
                 Rigidbody rb = GetComponent<Rigidbody>();
                 if (rb != null)
                 {
@@ -274,7 +293,7 @@ namespace Runtime.Scripts.Hook
                 m_HookableTarget.OnHookReleased();
             }
 
-            if (m_StunnableTarget != null)
+            if (m_StunnableTarget != null && m_CaughtTarget != null && m_CaughtHealth != null && m_CaughtHealth.EffectiveCurrentHealth > 0)
             {
                 m_StunnableTarget.ApplyStun(EffectiveStunDuration);
             }

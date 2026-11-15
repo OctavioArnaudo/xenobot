@@ -1,4 +1,3 @@
-using UnityEngine;
 using System.Collections.Generic;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -21,6 +20,7 @@ using Runtime.Scripts.Keys;
 using Runtime.Scripts.Zoom;
 using Runtime.Scripts.Gate;
 using Runtime.Scripts.Shield;
+using UnityEngine;
 
 namespace Runtime.Scripts.Player
 {
@@ -750,9 +750,10 @@ namespace Runtime.Scripts.Player
                 scope = aim && scopeMode;
             }
 
+            // Gancho asignado a la tecla F (independiente del modo de combate)
             bool hookActionPressed = _hookAction != null && _hookAction.WasPressedThisFrame();
-            bool keyGPressed = Keyboard.current != null && Keyboard.current.gKey.wasPressedThisFrame;
-            hook = hookActionPressed || keyGPressed;
+            bool keyFPressed = Keyboard.current != null && Keyboard.current.fKey.wasPressedThisFrame;
+            hook = hookActionPressed || keyFPressed;
 
             if (_crouchAction != null && _crouchAction.WasPressedThisFrame()) crouch = true;
             if (_reloadAction != null && _reloadAction.WasPressedThisFrame()) reload = true;
@@ -828,7 +829,8 @@ namespace Runtime.Scripts.Player
                 camComp.fieldOfView = Mathf.Lerp(camComp.fieldOfView, targetFOV, Time.deltaTime * zs);
             }
 
-            if (aim && hook)
+            // Gancho independiente: se ejecuta al presionar F sin importar si se está apuntando o el modo de combate
+            if (hook)
             {
                 TryFireHook();
                 hook = false;
@@ -845,7 +847,6 @@ namespace Runtime.Scripts.Player
             {
                 if (_shooter != null && (_shooter.isUnlocked || _shooter.Projectile != null) && (_shooter.HoldToFire ? fireHeld : fire))
                 {
-                    // Pasamos 'aim' (si está apuntando o no) al ShootController
                     _shooter.TryFire(aim);
                 }
             }
@@ -909,8 +910,6 @@ namespace Runtime.Scripts.Player
         #region Network Shooting Bridge
         public void RequestFire(GameObject prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team, bool enableHoming)
         {
-            // Mientras se apunta con clic derecho, los proyectiles viajan sin homing.
-            // Sin apuntar, se conserva la configuración de homing del ShootController.
             enableHoming = enableHoming && !aim;
             if (IsNetworkActive)
             {
@@ -1014,11 +1013,9 @@ namespace Runtime.Scripts.Player
 
             if (move != Vector2.zero)
             {
-                // WASD mueve respecto a la cámara; no convierte A/S/D en el nuevo frente del jugador.
                 Vector3 inputDirection = new Vector3(move.x, 0f, move.y);
                 _moveDir = cameraYaw * inputDirection;
 
-                // El cuerpo solo sigue el rumbo de la cámara mientras el jugador se desplaza.
                 float rotation = Mathf.SmoothDampAngle(
                     transform.eulerAngles.y,
                     camYaw,

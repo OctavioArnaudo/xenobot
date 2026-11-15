@@ -267,12 +267,12 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   flySpeed: 35
   maxDistance: 60
-  pullSpeed: 22
+  pullSpeed: 25
   stopDistance: 1.8
-  StunDuration: 2.5
+  StunDuration: 3
   stunDuration:
-    use: 0
-    value: 0
+    use: 1
+    value: 3
   lineRenderer: {fileID: 389756976431691575}
   hookHitSound: {fileID: 0}
   hitVfxPrefab: {fileID: 0}
