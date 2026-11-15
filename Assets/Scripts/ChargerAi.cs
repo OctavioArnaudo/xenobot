@@ -32,6 +32,7 @@ public class ChargerAI : NetworkBehaviour
 
     [Header("Deteccion y patrulla")]
     public float detectRange = 40f;
+    public float walkAccel = 40f;   // aceleracion al caminar: con valores bajos (8) no alcanza walkSpeed
     public float walkSpeed = 2.5f, wanderRadius = 40f, idleMin = 1f, idleMax = 4f;
 
     [Header("Carga")]
@@ -41,6 +42,8 @@ public class ChargerAI : NetworkBehaviour
     [Header("Impacto")]
     public float shockRadius = 18f, hitRadius = 4.5f, stunTime = .9f;
     public int impactDamage = 100;
+    public int runDamage = 40;   // dano por contacto durante la carga (antes del golpe)
+    public float runHitRadius = 10f;   // alcance del dano durante la carga: mas grande = hay que esquivar mas
     public float hurtTime = 0.9f;   // duracion de la animacion de dano
     public float knockback = 20f;
     public float plowRadius = 5f;
@@ -48,7 +51,7 @@ public class ChargerAI : NetworkBehaviour
 
     enum S { Wander, Windup, Charge, Stun }
     S s;
-    int tries; float hurtUntil, navRetry, next, until, readyAt, idleUntil, chargeStart, plowAt, cv; Vector3 cdir, cfrom;
+    int tries; float hitAt, hurtUntil, navRetry, next, until, readyAt, idleUntil, chargeStart, plowAt, cv; Vector3 cdir, cfrom, plowFrom;
     NavMeshQueryFilter qf;
     NavMeshAgent ag; Animator an; HealthController hp; Transform target;
     UnityAction<int> onHurt; UnityAction onDie;
@@ -95,7 +98,7 @@ public class ChargerAI : NetworkBehaviour
         if (!ag.isOnNavMesh) Place(); else Init();
     }
 
-    void Init() { ag.isStopped = false; ag.speed = walkSpeed; }
+    void Init() { ag.isStopped = false; ag.speed = walkSpeed; ag.acceleration = walkAccel; }
 
     bool Place()
     {
@@ -144,15 +147,17 @@ public class ChargerAI : NetworkBehaviour
         if (s == S.Charge) currentSpeed = cv;
         else if (s == S.Wander) currentSpeed = ag.velocity.magnitude;
 
-        an.SetFloat(HSpeed, currentSpeed, .1f, Time.deltaTime);
+        if (currentSpeed < 1f) an.SetFloat(HSpeed, 0f);   // detenido: Idle al instante, sin suavizado
+        else an.SetFloat(HSpeed, currentSpeed, .1f, Time.deltaTime);
 
         if (s == S.Windup) { Face(target.position); if (t >= until) Charge(); return; }
         if (s == S.Charge) { Run(t); return; }
+        if (s == S.Stun) Plow(t);   // sigue derribando lo que toca mientras dura el golpe
         if (t < next) return;
         next = t + .2f;
 
         if (s == S.Wander) Wander(t);
-        else if (t >= until) { ag.isStopped = false; ag.speed = walkSpeed; ag.acceleration = 8f; s = S.Wander; an.ResetTrigger(HAttack); an.CrossFadeInFixedTime(HWalk, .15f); }
+        else if (t >= until) { ag.isStopped = false; ag.speed = walkSpeed; ag.acceleration = walkAccel; s = S.Wander; an.ResetTrigger(HAttack); an.CrossFadeInFixedTime(HWalk, .15f); }
     }
 
     void Wander(float t)
@@ -199,7 +204,7 @@ public class ChargerAI : NetworkBehaviour
     {
         Vector3 d = target.position - transform.position; d.y = 0f;
         cdir = d.sqrMagnitude > .01f ? d.normalized : transform.forward;
-        cv = 0f; cfrom = transform.position; chargeStart = Time.time; s = S.Charge;
+        cv = 0f; cfrom = plowFrom = transform.position; chargeStart = Time.time; s = S.Charge;
         ag.ResetPath(); ag.isStopped = false;
     }
 
@@ -209,7 +214,7 @@ public class ChargerAI : NetworkBehaviour
         Face(transform.position + cdir);
         Vector3 before = transform.position;
         ag.Move(cdir * (cv * Time.deltaTime));
-        Plow(t);
+        Plow(t); RunHit(t);
         float el = t - chargeStart, step = cv * Time.deltaTime;
         bool blocked = el > .5f && (transform.position - before).magnitude < step * .5f;
         if (blocked || el > chargeTimeout || (transform.position - cfrom).sqrMagnitude > chargeMax * chargeMax || NearPlayer())
@@ -223,11 +228,29 @@ public class ChargerAI : NetworkBehaviour
         return false;
     }
 
+    void RunHit(float t)
+    {
+        if (t < hitAt) return;
+        Vector3 p = transform.position + Vector3.up; float r2 = runHitRadius * runHitRadius;
+        foreach (var g in pl)
+        {
+            if (!g || !g.activeInHierarchy || (g.transform.position + Vector3.up - p).sqrMagnitude > r2) continue;
+            var h = g.GetComponentInParent<HealthController>();
+            if (!h || h.EffectiveTeam != Team.Player) continue;
+            hitAt = t + .5f; h.TakeDamage(runDamage);
+            var pc = g.GetComponentInParent<PlayerController>();
+            if (pc) pc.ApplyKnockback(cdir * (knockback * .5f) + Vector3.up * 4f);
+        }
+    }
+
     void Plow(float t)
     {
         if (t < plowAt) return;
-        plowAt = t + .1f;
-        int n = Physics.OverlapSphereNonAlloc(transform.position + transform.forward * 1.5f + Vector3.up, plowRadius, buf, ~0, QueryTriggerInteraction.Ignore);
+        plowAt = t + .05f;
+        Vector3 off = transform.forward * 1.5f + Vector3.up;
+        // barrido entre la posicion anterior y la actual: a alta velocidad no se salta arboles
+        int n = Physics.OverlapCapsuleNonAlloc(plowFrom + off, transform.position + off, plowRadius, buf, ~0, QueryTriggerInteraction.Ignore);
+        plowFrom = transform.position;
         for (int i = 0; i < n; i++) if (buf[i].TryGetComponent(out Smashable sm)) sm.Damage(smashDamage);
     }
 

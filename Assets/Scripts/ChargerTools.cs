@@ -111,6 +111,8 @@ static class ChargerTools
             st[m.state] = s;
         }
 
+        st["Walk"].speed = AnimSpeed; st["Run"].speed = AnimSpeed;   // pasos acordes al desplazamiento (cuerpo grande)
+
         // Configurar estado por defecto: Walk
         sm.defaultState = st["Idle"];
 
@@ -124,8 +126,8 @@ static class ChargerTools
         To(st["Melee Hit"], st["Walk"], .9f, .2f);
 
         // Locomocion Idle <-> Walk <-> Run basada en Speed
-        To(st["Idle"], st["Walk"], -1f, .15f, Gt(ChargerAI.PSpeed, .1f));
-        To(st["Walk"], st["Idle"], -1f, .15f, Lt(ChargerAI.PSpeed, .1f));
+        To(st["Idle"], st["Walk"], -1f, .1f, Gt(ChargerAI.PSpeed, 2f));
+        To(st["Walk"], st["Idle"], -1f, 0f, Lt(ChargerAI.PSpeed, 1f));   // corte inmediato al detenerse
         To(st["Walk"], st["Run"], -1f, .2f, Gt(ChargerAI.PSpeed, RunThreshold));
         To(st["Run"], st["Walk"], -1f, .2f, Lt(ChargerAI.PSpeed, RunThreshold));
 
@@ -159,10 +161,10 @@ static class ChargerTools
         root.AddComponent<NetworkAnimator>().Animator = an;
         if (pick["Melee Hit"] != null) ai.windupTime = Mathf.Clamp(pick["Melee Hit"].length, .4f, 1.5f);
 
-        ai.walkSpeed = WalkSpeed;
+        ai.walkSpeed = WalkSpeed; ai.walkAccel = WalkAccel;
         ai.chargeSpeed = RunSpeed;   // el Run del Animator se activa durante la carga
         var ag = root.GetComponent<NavMeshAgent>();
-        ag.radius = cap.radius; ag.height = cap.height; ag.speed = ai.walkSpeed; ag.acceleration = 8f; ag.angularSpeed = 360f; ag.stoppingDistance = 0f;
+        ag.radius = cap.radius; ag.height = cap.height; ag.speed = ai.walkSpeed; ag.acceleration = ai.walkAccel; ag.angularSpeed = 360f; ag.stoppingDistance = 0f;
         ag.baseOffset = -b.min.y;
         ag.obstacleAvoidanceType = ObstacleAvoidanceType.LowQualityObstacleAvoidance;
         root.GetComponent<HealthController>().team = Team.Enemy;
@@ -179,7 +181,7 @@ static class ChargerTools
         Debug.Log($"[Charger] Listo: {Dir}/Charger.prefab (modelo: {fbx}). Cuando termine el horneado del NavMesh: Tools/Enemy/2 Fill Terrain with Chargers.");
     }
 
-    const float WalkSpeed = 3.5f, RunSpeed = 4f, RunThreshold = 3.75f;   // umbral Walk<->Run del Animator: entre ambas velocidades
+    const float WalkSpeed = 50f, RunSpeed = 70f, RunThreshold = 60f, WalkAccel = 100f, AnimSpeed = 2.5f;   // umbral Walk<->Run del Animator: entre ambas velocidades
     const float Slope = 60f, Climb = 2.1f;   // 60 = maximo que permite Unity: el NavMesh cubre toda ladera menor a eso
 
     static int AgentType(float r, float h)
