@@ -405,10 +405,22 @@ namespace Runtime.Scripts.Inventory
 
                 bool isOver = cell.Contains(Event.current.mousePosition);
                 GUI.DrawTexture(cell, isOver ? _texSelected : _texNormal);
-                if (slot.def.itemSprite != null)
+                Sprite spr = slot.def.itemSprite;
+                if (spr != null && spr.texture != null)
                 {
-                    var spr = slot.def.itemSprite;
                     Graphics.DrawTexture(new Rect(cell.x + 10f * k, cell.y + 10f * k, cell.width - 20f * k, cell.height - 20f * k), spr.texture, spr.rect, 0, 0, 0, 0);
+                }
+                else
+                {
+                    Color fallbackColor = Color.gray;
+                    string nameLower = slot.def.itemName != null ? slot.def.itemName.ToLowerInvariant() : "";
+                    if (nameLower.Contains("iron")) fallbackColor = new Color(0.75f, 0.75f, 0.8f);
+                    else if (nameLower.Contains("exp") || nameLower.Contains("orb")) fallbackColor = new Color(1f, 0.85f, 0f);
+                    else if (nameLower.Contains("life") || nameLower.Contains("heart")) fallbackColor = new Color(0.8f, 0.1f, 0.1f);
+                    Rect iconRect = new Rect(cell.x + 12f * k, cell.y + 12f * k, cell.width - 24f * k, cell.height - 24f * k);
+                    GUI.DrawTexture(iconRect, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, fallbackColor, 0f, 6f * k);
+                    string initial = !string.IsNullOrEmpty(slot.def.itemName) ? slot.def.itemName.Substring(0, 1).ToUpper() : "?";
+                    GUI.Label(iconRect, initial, _titleSty);
                 }
                 GUI.Label(cell, QtyStr(slot.qty), _qtySty);
 
