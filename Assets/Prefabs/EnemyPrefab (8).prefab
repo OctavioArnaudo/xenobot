@@ -17,7 +17,7 @@ GameObject:
   - component: {fileID: 2402464989908802694}
   - component: {fileID: 5200747575897830689}
   - component: {fileID: 628380081687363175}
-  m_Layer: 6
+  m_Layer: 9
   m_Name: EnemyPrefab (8)
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -60,7 +60,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -89,34 +89,27 @@ MonoBehaviour:
   currentState: 0
   activePhaseName: Fase Inicial
   activeArchetype: 0
+  HoverHeight: 3.5
   hoverHeight:
-    useOverride: 0
+    use: 0
     value: 0
+  WanderSpeed: 3.5
   wanderSpeed:
-    useOverride: 0
+    use: 0
     value: 0
+  ChaseSpeed: 8
   chaseSpeed:
-    useOverride: 0
+    use: 0
     value: 0
+  TurnSpeed: 20
   turnSpeed:
-    useOverride: 0
+    use: 0
     value: 0
+  WanderRadius: 20
   wanderRadius:
-    useOverride: 0
+    use: 0
     value: 0
-  detectionRange:
-    useOverride: 0
-    value: 0
-  shootRange:
-    useOverride: 0
-    value: 0
-  meleeRange:
-    useOverride: 0
-    value: 0
-  m_Shooter: {fileID: 0}
-  m_Melee: {fileID: 0}
-  m_Health: {fileID: 0}
-  m_Spawn: {fileID: 0}
+  minionPrefabs: []
 --- !u!195 &7662924702350691767
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -151,25 +144,56 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d3d5d514ddf64b71a0e5c2f6b6b4d105, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.ShootController
+  ShowTopMostFoldoutHeaderGroup: 1
   isUnlocked: 0
   AimCamera: {fileID: 0}
   Muzzle: {fileID: 5480920675093285123}
   Projectile: {fileID: 100000, guid: e3d5d514ddf64b71a0e5c2f6b6b4d202, type: 3}
   visualsToRotate: []
-  Damage:
-    useOverride: 0
+  Damage: 1
+  damage:
+    use: 0
     value: 0
-  FireRate:
-    useOverride: 0
+  FireRate: 5
+  fireRate:
+    use: 0
     value: 0
-  AimDistance:
-    useOverride: 0
+  AimDistance: 120
+  aimDistance:
+    use: 0
+    value: 0
+  MaxAmmo: 30
+  maxAmmo:
+    use: 0
+    value: 0
+  ReloadDuration: 1.8
+  reloadDuration:
+    use: 0
+    value: 0
+  InfiniteAmmo: 0
+  infiniteAmmo:
+    use: 0
+    value: 0
+  BurstShotsCapacity: 0
+  burstShotsCapacity:
+    use: 0
+    value: 0
+  BurstCooldownDuration: 0
+  burstCooldownDuration:
+    use: 0
+    value: 0
+  TargetRecalibrationDelay: 0
+  targetRecalibrationDelay:
+    use: 0
     value: 0
   AimLayers:
     serializedVersion: 2
     m_Bits: 4294967295
   HoldToFire: 1
   UsePlayerInput: 1
+  currentAmmo: 30
+  currentAmmoDamageMultiplier: 1
+  isReloading: 0
   MuzzleFlash: {fileID: 0}
   TracerPrefab: {fileID: 0}
   TracerLifetime: 0.05
@@ -212,38 +236,52 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.MeleeController
   ShowTopMostFoldoutHeaderGroup: 1
+  AttackRange: 3.8
   attackRange:
-    useOverride: 0
+    use: 0
     value: 0
+  AttackDamage: 1
   attackDamage:
-    useOverride: 0
+    use: 0
     value: 0
+  AttackCooldown: 1
   attackCooldown:
-    useOverride: 0
+    use: 0
     value: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 0
+  specificMeshColliders: []
+  meleeHitboxes: []
+  SlamHoldDuration: 0.15
   slamHoldDuration:
-    useOverride: 0
+    use: 0
     value: 0
+  SlamDamage: 2
   slamDamage:
-    useOverride: 0
+    use: 0
     value: 0
+  SlamRadius: 4
   slamRadius:
-    useOverride: 0
+    use: 0
     value: 0
+  SlamSpeed: 35
   slamSpeed:
-    useOverride: 0
+    use: 0
     value: 0
+  SlamKnockbackForce: 600
   slamKnockbackForce:
-    useOverride: 0
+    use: 0
     value: 0
   slamVfxPrefab: {fileID: 0}
   slamSound: {fileID: 0}
+  RotationSpeedOverride: 10
+  rotationSpeedOverride:
+    use: 0
+    value: 0
   swingVfxPrefab: {fileID: 0}
   visualsToRotate: []
-  rotationSpeed: 10
+  meleeHitSound: {fileID: 0}
 --- !u!114 &5200747575897830689
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -258,7 +296,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HealthController
   ShowTopMostFoldoutHeaderGroup: 1
   team: 0
-  maxHealth: 100
+  MaxHealth: 120
+  maxHealth:
+    use: 0
+    value: 0
+  CurrentHealth: 120
+  currentHealth:
+    use: 0
+    value: 0
+  invulnerabilityDuration: 0.5
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -283,8 +329,14 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   lootTable: []
   itemsToSpawn: []
-  explosionForce: 10
-  spreadRadius: 2.5
+  ExplosionForce: 10
+  explosionForce:
+    use: 0
+    value: 0
+  SpreadRadius: 2.5
+  spreadRadius:
+    use: 0
+    value: 0
 --- !u!1 &5480920675093285123
 GameObject:
   m_ObjectHideFlags: 0
@@ -294,7 +346,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2112495849522612989}
-  m_Layer: 6
+  m_Layer: 9
   m_Name: Muzzle
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -324,6 +376,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 8181788382255728042}
     m_Modifications:
+    - target: {fileID: 909352273628467108, guid: 0bd99fd60c3a2a040ba9bb4f7db703c1, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 3021527001135880569, guid: 0bd99fd60c3a2a040ba9bb4f7db703c1, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
     - target: {fileID: 5099338652773780478, guid: 0bd99fd60c3a2a040ba9bb4f7db703c1, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -369,12 +429,24 @@ PrefabInstance:
       value: EnemyRender
       objectReference: {fileID: 0}
     - target: {fileID: 5588876772103967044, guid: 0bd99fd60c3a2a040ba9bb4f7db703c1, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 5588876772103967044, guid: 0bd99fd60c3a2a040ba9bb4f7db703c1, type: 3}
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5588876772103967044, guid: 0bd99fd60c3a2a040ba9bb4f7db703c1, type: 3}
       propertyPath: m_TagString
       value: Render
+      objectReference: {fileID: 0}
+    - target: {fileID: 6874828323083015899, guid: 0bd99fd60c3a2a040ba9bb4f7db703c1, type: 3}
+      propertyPath: m_Layer
+      value: 9
+      objectReference: {fileID: 0}
+    - target: {fileID: 7566400879841415884, guid: 0bd99fd60c3a2a040ba9bb4f7db703c1, type: 3}
+      propertyPath: m_Layer
+      value: 9
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

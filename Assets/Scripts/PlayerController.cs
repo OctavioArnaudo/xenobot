@@ -69,8 +69,6 @@ namespace Runtime.Scripts.Player
 
         public float Gravity;
         public Optional<float> gravity;
-        public float JumpTimeout = 0.50f;
-        public float FallTimeout = 0.15f;
         [Tooltip("Gravedad extra al caer")] public float FallGravityMultiplier = 2f;
         #endregion
 
@@ -140,7 +138,6 @@ namespace Runtime.Scripts.Player
         public float yThreshold = -5f;
         public AudioClip respawnSound;
         private Vector3 _startingPosition;
-        private Quaternion _startingRotation;
         #endregion
 
         #region Variables: Input Data
@@ -160,7 +157,6 @@ namespace Runtime.Scripts.Player
         public bool reload;
         public int switchWeapon;
         public int selectWeapon;
-        public bool analogMovement;
         public bool cursorLocked = true;
         public bool cursorInputForLook = true;
         #endregion
@@ -214,7 +210,6 @@ namespace Runtime.Scripts.Player
 
         private float _speed;
         private float _animationBlend;
-        private float _targetRotation = 0.0f;
         private Vector3 _moveDir = Vector3.forward;
         private bool _gameCursor;
         private float _rotationVelocity;
@@ -222,8 +217,6 @@ namespace Runtime.Scripts.Player
         private Vector3 _kb;
         private float _terminalVelocity = 53.0f;
 
-        private float _jumpTimeoutDelta;
-        private float _fallTimeoutDelta;
         private int _jumpsRemaining;
 
         private float _shiftHoldTimer;
@@ -248,7 +241,6 @@ namespace Runtime.Scripts.Player
 
         private HealthController _health;
         private PropulsionController _jetpack;
-        private InventoryController _inventory;
         private ShootController _shooter;
         private MeleeController _melee;
         private ShieldController _shield;
@@ -295,7 +287,6 @@ namespace Runtime.Scripts.Player
             {
                 _health.OnDeath.AddListener(OnPlayerDeath);
             }
-            _inventory = GetComponent<InventoryController>();
 
             EnableDoubleJump = true;
             if (JumpHeight < 1f) JumpHeight = 1.2f;
@@ -307,9 +298,6 @@ namespace Runtime.Scripts.Player
             _playerInput = GetComponent<PlayerInput>();
             RefreshInputActions();
 #endif
-
-            if (_mainCamera == null)
-                _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 
             if (CanExecuteLocalLogic)
             {
@@ -331,9 +319,6 @@ namespace Runtime.Scripts.Player
             _cameraStartingPosition = CinemachineCameraTarget.transform.position;
             _cameraStartingRotation = CinemachineCameraTarget.transform.rotation;
             _startingPosition = transform.position;
-            _startingRotation = transform.rotation;
-            _jumpTimeoutDelta = JumpTimeout;
-            _fallTimeoutDelta = FallTimeout;
 
             if (!IsNetworkActive)
             {
@@ -426,7 +411,6 @@ namespace Runtime.Scripts.Player
                 transform.position = targetSpawn.position;
                 transform.rotation = targetSpawn.rotation;
                 _startingPosition = transform.position;
-                _startingRotation = transform.rotation;
                 if (_controller != null) _controller.enabled = true;
             }
         }
@@ -1012,17 +996,14 @@ namespace Runtime.Scripts.Player
             Quaternion cameraYaw = Quaternion.Euler(0.0f, camYaw, 0.0f);
 
             if (move != Vector2.zero)
-            {
-                Vector3 inputDirection = new Vector3(move.x, 0f, move.y);
-                _moveDir = cameraYaw * inputDirection;
+                _moveDir = cameraYaw * new Vector3(move.x, 0f, move.y);
 
-                float rotation = Mathf.SmoothDampAngle(
-                    transform.eulerAngles.y,
-                    camYaw,
-                    ref _rotationVelocity,
-                    aim ? Mathf.Min(RotationSmoothTime, 0.06f) : RotationSmoothTime);
-                transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
-            }
+            float rotation = Mathf.SmoothDampAngle(
+                transform.eulerAngles.y,
+                camYaw,
+                ref _rotationVelocity,
+                aim ? Mathf.Min(RotationSmoothTime, 0.06f) : RotationSmoothTime);
+            transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
 
             _kb = Vector3.MoveTowards(_kb, Vector3.zero, 35f * Time.deltaTime);
             _controller.Move(_moveDir.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime + _kb * Time.deltaTime);
@@ -1054,8 +1035,6 @@ namespace Runtime.Scripts.Player
 
             if (Grounded)
             {
-                _fallTimeoutDelta = FallTimeout;
-
                 if (_verticalVelocity < 0.0f)
                 {
                     _verticalVelocity = -8f;
@@ -1067,7 +1046,6 @@ namespace Runtime.Scripts.Player
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
                     _jumpsRemaining--;
                     if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
-                    jump = false;
                 }
             }
             else
@@ -1077,7 +1055,6 @@ namespace Runtime.Scripts.Player
                     _verticalVelocity = Mathf.Sqrt(DoubleJumpHeight * -2f * Gravity);
                     _jumpsRemaining--;
                     if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
-                    jump = false;
                 }
             }
 

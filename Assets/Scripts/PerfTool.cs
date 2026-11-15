@@ -2,10 +2,14 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.SceneManagement;
 
 public static class PerfTool
 {
     const float TreeDist = 1200; // bajar si sigue lento
+    const bool TreeColliders = false; // false = los arboles del Terrain no colisionan (ni con camara ni con player)
+    const string LTrees = "Trees", LEnemies = "Enemies";
+
     [MenuItem("Tools/Perf/Apply All")]
     static void All() { Terrains(); Trees(); Scene(); Quality(); Urp(); AssetDatabase.SaveAssets(); }
 
@@ -159,5 +163,106 @@ public static class PerfTool
         if (v is float f) p.floatValue = f;
         else if (v is int i) p.intValue = i;
         else if (v is bool b) p.boolValue = b;
+    }
+
+    // Camara: ignora Trees, Enemies y Player. Enemigos (HealthController sin tag Player) -> capa Enemies
+    [MenuItem("Tools/Perf/Camera Collision")]
+    static void CamFix()
+    {
+        int tr = Layer(LTrees), en = Layer(LEnemies);
+        if (tr < 0 || en < 0) { Debug.LogError("PerfTool: no hay capas libres"); return; }
+        int pl = LayerMask.NameToLayer("Player");
+        int mask = ~((1 << tr) | (1 << en) | (pl >= 0 ? 1 << pl : 0));
+
+        foreach (var t in Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None))
+        {
+            var tc = t.GetComponent<TerrainCollider>();
+            if (tc)
+            {
+                var so = new SerializedObject(tc);
+                var p = so.FindProperty("m_EnableTreeColliders");
+                if (p != null) { p.boolValue = TreeColliders; so.ApplyModifiedProperties(); }
+            }
+            foreach (var pr in t.terrainData.treePrototypes)
+            {
+                var path = pr.prefab ? AssetDatabase.GetAssetPath(pr.prefab) : null;
+                if (string.IsNullOrEmpty(path)) continue;
+                SetLayer(pr.prefab, tr);
+            }
+        }
+
+        foreach (var root in SceneManager.GetActiveScene().GetRootGameObjects()) Fix(root, mask, en);
+
+        foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { "Assets" }))
+        {
+            var path = AssetDatabase.GUIDToAssetPath(guid);
+            var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (!asset || !Hit(asset)) continue;
+            Fix(asset, mask, en);
+        }
+        AssetDatabase.SaveAssets();
+    }
+
+    static bool Hit(GameObject g)
+    {
+        foreach (var m in g.GetComponentsInChildren<MonoBehaviour>(true))
+            if (m) { var n = m.GetType().Name; if (n == "PlayerController" || n == "HealthController") return true; }
+        return false;
+    }
+
+    static bool Fix(GameObject root, int mask, int en)
+    {
+        bool ch = false;
+        foreach (var m in root.GetComponentsInChildren<MonoBehaviour>(true))
+        {
+            if (!m) continue;
+            var n = m.GetType().Name;
+            if (n == "PlayerController")
+            {
+                var so = new SerializedObject(m);
+                var p = so.FindProperty("cameraCollision");
+                if (p == null) continue;
+                p.intValue = mask;
+                so.ApplyModifiedProperties();
+                ch = true;
+            }
+            else if (n == "HealthController" && !IsPlayer(m.transform))
+            {
+                SetLayer(m.gameObject, en);
+                ch = true;
+            }
+        }
+        return ch;
+    }
+
+    static bool IsPlayer(Transform t)
+    {
+        for (; t; t = t.parent) if (t.CompareTag("Player")) return true;
+        return false;
+    }
+
+    static void SetLayer(GameObject g, int l)
+    {
+        g.layer = l;
+        EditorUtility.SetDirty(g);
+        foreach (Transform c in g.transform) SetLayer(c.gameObject, l);
+    }
+
+    // Devuelve el indice de la capa; la crea si no existe. -1 si no hay hueco.
+    static int Layer(string n)
+    {
+        int i = LayerMask.NameToLayer(n);
+        if (i >= 0) return i;
+        var so = new SerializedObject(AssetDatabase.LoadAssetAtPath<Object>("ProjectSettings/TagManager.asset"));
+        var l = so.FindProperty("layers");
+        for (i = 8; i < 32; i++)
+        {
+            var e = l.GetArrayElementAtIndex(i);
+            if (!string.IsNullOrEmpty(e.stringValue)) continue;
+            e.stringValue = n;
+            so.ApplyModifiedProperties();
+            return i;
+        }
+        return -1;
     }
 }

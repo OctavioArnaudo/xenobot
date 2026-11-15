@@ -389,8 +389,6 @@ MonoBehaviour:
   gravity:
     use: 0
     value: 0
-  JumpTimeout: 0.5
-  FallTimeout: 0.15
   FallGravityMultiplier: 3
   crosshairUI: {fileID: 0}
   aimFOV: 40
@@ -407,12 +405,12 @@ MonoBehaviour:
   shoulderAimDistance: 2.5
   cameraCollision:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 4294966519
   shoulderAimFOV: 50
   aimZoomStrength: 0.3
   aimZoomSpeed: 5
   aimMoveSpeedMultiplier: 0.6
-  scopeToggleKey: 41
+  meleeMode: 0
   scopeMode: 0
   hookProjectilePrefab: {fileID: 987970283401832635, guid: 4acfa825610b469479174c24059b6bdd, type: 3}
   hookMuzzle: {fileID: 2129362248708108617}
@@ -457,7 +455,6 @@ MonoBehaviour:
   reload: 0
   switchWeapon: 0
   selectWeapon: 0
-  analogMovement: 0
   cursorLocked: 1
   cursorInputForLook: 1
 --- !u!114 &4579385987849053243
@@ -482,6 +479,7 @@ MonoBehaviour:
   currentHealth:
     use: 0
     value: 100
+  invulnerabilityDuration: 0.5
   visualsToFlash: []
   flashColor: {r: 1, g: 1, b: 1, a: 1}
   flashDuration: 0.15
@@ -776,11 +774,8 @@ MonoBehaviour:
   dashDuration: 0.2
   dashCooldown: 1
   tapThreshold: 0.2
-  StaminaCost: 8
-  staminaCost:
-    use: 0
-    value: 0
   dashTriggerName: dash
+  m_Animator: {fileID: 0}
 --- !u!114 &6353754398152676254
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -874,6 +869,7 @@ MonoBehaviour:
   infiniteShield:
     use: 0
     value: 0
+  shieldRegenRate: 2
   shieldBashDamage: 15
   customBashDamage:
     use: 0
