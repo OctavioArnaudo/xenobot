@@ -1,4 +1,4 @@
-// Poner en Assets/Editor (junto a ChargerAI.cs en Assets/Scripts). Menu: Tools/Enemy
+﻿// Poner en Assets/Editor (junto a ChargerAI.cs en Assets/Scripts). Menu: Tools/Enemy
 // 1) Setup: arma el Animator con los MISMOS parametros que usa ChargerAI, crea el prefab, crea el Agent Type "Charger"
 //    (radio/altura del enemigo, pendiente 35) y deja el NavMeshSurface de la escena abierta configurado y horneando.
 // 2) Fill: reparte los enemigos sobre el NavMesh.   3) Clear: los borra.   4) Bake: re-hornea (tras cambiar terreno/estructuras).
@@ -14,7 +14,8 @@ using UnityEditor.Animations;
 using UnityEngine;
 using UnityEngine.AI;
 
-static class ChargerTools {
+static class ChargerTools
+{
     const string Dir = "Assets/Prefabs/Enemies", FbxName = "Enemigo_Mele_animaciones", FbxPath = "Assets/Prefabs/Enemigo Mele animaciones.fbx";
     const int Count = 20;                  // enemigos que reparte "2 Fill"
     const float Gap = 45f, SafeZone = 60f; // separacion minima entre ellos y distancia minima al objeto "Respawn"
@@ -22,6 +23,7 @@ static class ChargerTools {
     // Estado del Animator <- nombres posibles del clip (sin mayusculas/espacios/simbolos; gana el primero que exista).
     static readonly (string state, string[] clips)[] Map =
     {
+        ("Idle", new[] { "idle" }),
         ("Walk", new[] { "walk", "walk15f" }),
         ("Run", new[] { "run", "dash" }),
         ("Melee Hit", new[] { "meleehit", "hit", "attack", "smashdown" }),
@@ -36,7 +38,8 @@ static class ChargerTools {
     static (string, AnimatorConditionMode, float) Gt(string p, float v) => (p, AnimatorConditionMode.Greater, v);
     static (string, AnimatorConditionMode, float) Lt(string p, float v) => (p, AnimatorConditionMode.Less, v);
 
-    static void Link(AnimatorStateTransition t, float exit, (string p, AnimatorConditionMode m, float v)[] c, float duration = .1f) {
+    static void Link(AnimatorStateTransition t, float exit, (string p, AnimatorConditionMode m, float v)[] c, float duration = .1f)
+    {
         t.hasExitTime = exit >= 0f;
         t.exitTime = Mathf.Max(exit, 0f);
         t.hasFixedDuration = true;
@@ -44,30 +47,34 @@ static class ChargerTools {
         foreach (var x in c) t.AddCondition(x.m, x.v, x.p);
     }
 
-    static void To(AnimatorState a, AnimatorState b, float exit, float duration = .15f, params (string p, AnimatorConditionMode m, float v)[] c) {
+    static void To(AnimatorState a, AnimatorState b, float exit, float duration = .15f, params (string p, AnimatorConditionMode m, float v)[] c)
+    {
         var t = a.AddTransition(b);
         Link(t, exit, c, duration);
     }
 
-    static void FromAny(AnimatorStateMachine sm, AnimatorState b, float duration = .1f, params (string p, AnimatorConditionMode m, float v)[] c) {
+    static void FromAny(AnimatorStateMachine sm, AnimatorState b, float duration = .1f, params (string p, AnimatorConditionMode m, float v)[] c)
+    {
         var t = sm.AddAnyStateTransition(b);
         t.canTransitionToSelf = false;
         Link(t, -1f, c, duration);
     }
 
     [MenuItem("Tools/Enemy/1 Setup Charger (animator + prefab)")]
-    static void Setup() {
+    static void Setup()
+    {
         string fbx = File.Exists(FbxPath) ? FbxPath : AssetDatabase.FindAssets("t:Model").Select(AssetDatabase.GUIDToAssetPath)
             .FirstOrDefault(p => Norm(Path.GetFileNameWithoutExtension(p)) == Norm(FbxName) && p.EndsWith(".fbx", System.StringComparison.OrdinalIgnoreCase));
         if (fbx == null) { Debug.LogError($"[Charger] No encuentro {FbxName}.fbx en el proyecto."); return; }
         Directory.CreateDirectory(Dir);
 
         // Los clips de movimiento continuo (Walk, Run) deben hacer loop.
-        var loopKeys = Map.Where(m => m.state == "Walk" || m.state == "Run").SelectMany(m => m.clips).ToArray();
+        var loopKeys = Map.Where(m => m.state == "Idle" || m.state == "Walk" || m.state == "Run").SelectMany(m => m.clips).ToArray();
         var im = (ModelImporter)AssetImporter.GetAtPath(fbx);
         var ca = im.clipAnimations.Length > 0 ? im.clipAnimations : im.defaultClipAnimations;
         bool dirty = false;
-        foreach (var a in ca) {
+        foreach (var a in ca)
+        {
             string k = Norm(a.name);
             bool want = loopKeys.Contains(k);
             if (want != a.loopTime) { a.loopTime = want; dirty = true; }
@@ -76,10 +83,11 @@ static class ChargerTools {
 
         var all = AssetDatabase.LoadAllAssetsAtPath(fbx);
         var clips = all.OfType<AnimationClip>().Where(c => !c.name.StartsWith("__preview__")).ToList();
-        var pick = Map.ToDictionary(m => m.state, m => m.clips.Select(k => clips.FirstOrDefault(c => Norm(c.name) == k)).FirstOrDefault(c => c != null));
+        var pick = Map.ToDictionary(m => m.state, m => m.clips.Select(k => clips.Where(c => Norm(c.name) == k).OrderBy(c => c.length).FirstOrDefault()).FirstOrDefault(c => c != null));   // si el FBX trae clips duplicados (ej. "Melee Hit" de 22 s y "metarig.003|Melee Hit" de 1.5 s) usa el mas corto
 
         Debug.Log($"[Charger] Clips del FBX: {string.Join(", ", clips.Select(c => c.name))}");
-        foreach (var m in Map) {
+        foreach (var m in Map)
+        {
             if (pick[m.state] != null) Debug.Log($"[Charger] {m.state} <- '{pick[m.state].name}' ({pick[m.state].length:0.00} s)");
             else Debug.LogWarning($"[Charger] {m.state}: sin clip. Disponibles: {string.Join(", ", clips.Select(c => c.name))}");
         }
@@ -96,27 +104,30 @@ static class ChargerTools {
 
         var sm = ac.layers[0].stateMachine;
         var st = new Dictionary<string, AnimatorState>();
-        foreach (var m in Map) {
+        foreach (var m in Map)
+        {
             var s = sm.AddState(m.state);
             s.motion = pick[m.state];
             st[m.state] = s;
         }
 
         // Configurar estado por defecto: Walk
-        sm.defaultState = st["Walk"];
+        sm.defaultState = st["Idle"];
 
         // Transiciones Any State
         FromAny(sm, st["Die_001"], .1f, If(ChargerAI.PIsDead));
         FromAny(sm, st["Take DMG"], .05f, If(ChargerAI.PTakeDamage), Not(ChargerAI.PIsDead));
         FromAny(sm, st["Melee Hit"], .1f, If(ChargerAI.PAttack), Not(ChargerAI.PIsDead));
 
-        // Transiciones de retorno a Walk al terminar la animaci�n
+        // Transiciones de retorno a Walk al terminar la animación
         To(st["Take DMG"], st["Walk"], .9f, .15f);
         To(st["Melee Hit"], st["Walk"], .9f, .2f);
 
-        // Locomocion Walk <-> Run basada en Speed
-        To(st["Walk"], st["Run"], -1f, .2f, Gt(ChargerAI.PSpeed, 3f));
-        To(st["Run"], st["Walk"], -1f, .2f, Lt(ChargerAI.PSpeed, 3f));
+        // Locomocion Idle <-> Walk <-> Run basada en Speed
+        To(st["Idle"], st["Walk"], -1f, .15f, Gt(ChargerAI.PSpeed, .1f));
+        To(st["Walk"], st["Idle"], -1f, .15f, Lt(ChargerAI.PSpeed, .1f));
+        To(st["Walk"], st["Run"], -1f, .2f, Gt(ChargerAI.PSpeed, RunThreshold));
+        To(st["Run"], st["Walk"], -1f, .2f, Lt(ChargerAI.PSpeed, RunThreshold));
 
         EditorUtility.SetDirty(ac);
 
@@ -148,6 +159,8 @@ static class ChargerTools {
         root.AddComponent<NetworkAnimator>().Animator = an;
         if (pick["Melee Hit"] != null) ai.windupTime = Mathf.Clamp(pick["Melee Hit"].length, .4f, 1.5f);
 
+        ai.walkSpeed = WalkSpeed;
+        ai.chargeSpeed = RunSpeed;   // el Run del Animator se activa durante la carga
         var ag = root.GetComponent<NavMeshAgent>();
         ag.radius = cap.radius; ag.height = cap.height; ag.speed = ai.walkSpeed; ag.acceleration = 8f; ag.angularSpeed = 360f; ag.stoppingDistance = 0f;
         ag.baseOffset = -b.min.y;
@@ -166,14 +179,19 @@ static class ChargerTools {
         Debug.Log($"[Charger] Listo: {Dir}/Charger.prefab (modelo: {fbx}). Cuando termine el horneado del NavMesh: Tools/Enemy/2 Fill Terrain with Chargers.");
     }
 
-    static int AgentType(float r, float h) {
+    const float WalkSpeed = 3.5f, RunSpeed = 4f, RunThreshold = 3.75f;   // umbral Walk<->Run del Animator: entre ambas velocidades
+    const float Slope = 60f, Climb = 2.1f;   // 60 = maximo que permite Unity: el NavMesh cubre toda ladera menor a eso
+
+    static int AgentType(float r, float h)
+    {
         var a = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/NavMeshAreas.asset").FirstOrDefault();
         var so = a ? new SerializedObject(a) : null;
         var names = so?.FindProperty("m_SettingNames"); var set = so?.FindProperty("m_Settings");
         if (names == null || set == null) { Debug.LogWarning("[Charger] No pude leer los Agent Types: uso Humanoid. Ajustalo en Window > AI > Navigation > Agents."); return 0; }
         int i = -1;
         for (int k = 0; k < names.arraySize; k++) if (names.GetArrayElementAtIndex(k).stringValue == "Charger") i = k;
-        if (i < 0) {
+        if (i < 0)
+        {
             int id = NavMesh.CreateSettings().agentTypeID;
             so.Update();
             for (int k = 0; k < set.arraySize; k++) if (set.GetArrayElementAtIndex(k).FindPropertyRelative("agentTypeID")?.intValue == id) i = k;
@@ -182,7 +200,8 @@ static class ChargerTools {
             names.GetArrayElementAtIndex(i).stringValue = "Charger";
         }
         var e = set.GetArrayElementAtIndex(i);
-        foreach (var kv in new[] { ("agentRadius", r), ("agentHeight", h), ("agentSlope", 35f), ("agentClimb", .4f) }) {
+        foreach (var kv in new[] { ("agentRadius", r), ("agentHeight", h), ("agentSlope", Slope), ("agentClimb", Climb) })
+        {
             var pr = e.FindPropertyRelative(kv.Item1);
             if (pr != null) pr.floatValue = kv.Item2;
         }
@@ -191,23 +210,42 @@ static class ChargerTools {
         return e.FindPropertyRelative("agentTypeID")?.intValue ?? 0;
     }
 
-    static void Bake(int type) {
+    static void Bake(int type)
+    {
         var sf = Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).FirstOrDefault(m => m && m.GetType().Name == "NavMeshSurface");
         if (!sf) { Debug.LogWarning("[Charger] No hay NavMeshSurface en la escena abierta: abre BiomaScene y usa Tools/Enemy/4 Bake NavMesh."); return; }
+        var cfg = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/NavMeshAreas.asset").FirstOrDefault();   // el menu 4 tambien corrige pendiente y escalon
+        if (cfg)
+        {
+            var cs = new SerializedObject(cfg); var arr = cs.FindProperty("m_Settings");
+            for (int k = 0; arr != null && k < arr.arraySize; k++)
+            {
+                var e = arr.GetArrayElementAtIndex(k);
+                if (e.FindPropertyRelative("agentTypeID")?.intValue != type) continue;
+                e.FindPropertyRelative("agentSlope").floatValue = Slope; e.FindPropertyRelative("agentClimb").floatValue = Climb;
+            }
+            cs.ApplyModifiedProperties(); AssetDatabase.SaveAssets();
+        }
         var so = new SerializedObject(sf);
         var p = so.FindProperty("m_AgentTypeID"); if (p != null) p.intValue = type;
+        p = so.FindProperty("m_UseGeometry"); if (p != null) p.intValue = 1;   // Physics Colliders: ignora mallas de arboles
+        foreach (var tc in Object.FindObjectsByType<TerrainCollider>(FindObjectsSortMode.None)) { var ts = new SerializedObject(tc); var tp = ts.FindProperty("m_EnableTreeColliders"); if (tp != null) { tp.boolValue = false; ts.ApplyModifiedProperties(); } }
+        p = so.FindProperty("m_MinRegionArea"); if (p != null) p.floatValue = 0f;   // no descartar parches pequenos de ladera
         p = so.FindProperty("m_CollectObjects"); if (p != null) p.intValue = 0;
         so.ApplyModifiedProperties();
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(sf.gameObject.scene);
-        try {
+        try
+        {
             var mgr = System.AppDomain.CurrentDomain.GetAssemblies()
                 .SelectMany(x => { try { return x.GetTypes(); } catch { return new System.Type[0]; } }).FirstOrDefault(t => t.Name == "NavMeshAssetManager");
             const System.Reflection.BindingFlags F = System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Instance;
             mgr.GetMethod("StartBakingSurfaces", F).Invoke(mgr.GetProperty("instance", F).GetValue(null), new object[] { new Object[] { sf } });
             Debug.Log($"[Charger] Horneando el NavMesh (agent type {type})... espera a que termine y guarda la escena.");
         }
-        catch (System.Exception) {
-            try {
+        catch (System.Exception)
+        {
+            try
+            {
                 var t = sf.GetType(); var prop = t.GetProperty("navMeshData");
                 var old = prop.GetValue(sf) as Object; string path = old ? AssetDatabase.GetAssetPath(old) : "";
                 t.GetMethod("BuildNavMesh", System.Type.EmptyTypes).Invoke(sf, null);
@@ -221,13 +259,15 @@ static class ChargerTools {
     }
 
     [MenuItem("Tools/Enemy/4 Bake NavMesh (agente Charger)")]
-    static void Rebake() {
+    static void Rebake()
+    {
         var pf = AssetDatabase.LoadAssetAtPath<GameObject>(Dir + "/Charger.prefab");
         Bake(pf ? pf.GetComponent<NavMeshAgent>().agentTypeID : 0);
     }
 
     [MenuItem("Tools/Enemy/2 Fill Terrain with Chargers")]
-    static void Fill() {
+    static void Fill()
+    {
         var pf = AssetDatabase.LoadAssetAtPath<GameObject>(Dir + "/Charger.prefab");
         if (!pf) { Debug.LogError("[Charger] Falta el prefab: ejecuta primero Tools/Enemy/1 Setup."); return; }
         var ts = Terrain.activeTerrains;
@@ -239,7 +279,8 @@ static class ChargerTools {
         var rnd = new System.Random();
         var rp = GameObject.Find("Respawn");
         var pts = new List<Vector3>();
-        for (int i = 0; i < Count * 40 && pts.Count < Count; i++) {
+        for (int i = 0; i < Count * 40 && pts.Count < Count; i++)
+        {
             var t = ts[rnd.Next(ts.Length)]; Vector3 tp = t.transform.position, sz = t.terrainData.size;
             var p = new Vector3(tp.x + (float)rnd.NextDouble() * sz.x, 0f, tp.z + (float)rnd.NextDouble() * sz.z);
             p.y = tp.y + t.SampleHeight(p);
@@ -250,7 +291,8 @@ static class ChargerTools {
 
         var grp = GameObject.Find("Chargers");
         if (!grp) { grp = new GameObject("Chargers"); Undo.RegisterCreatedObjectUndo(grp, "Fill Chargers"); }
-        foreach (var p in pts) {
+        foreach (var p in pts)
+        {
             var g = (GameObject)PrefabUtility.InstantiatePrefab(pf, grp.transform);
             Undo.RegisterCreatedObjectUndo(g, "Fill Chargers");
             g.transform.SetPositionAndRotation(p + Vector3.up * off, Quaternion.Euler(0f, rnd.Next(360), 0f));
@@ -260,7 +302,8 @@ static class ChargerTools {
     }
 
     [MenuItem("Tools/Enemy/3 Clear Chargers")]
-    static void Clear() {
+    static void Clear()
+    {
         var g = GameObject.Find("Chargers");
         if (!g) return;
         UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(g.scene);

@@ -102,14 +102,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1962428950
+  GlobalObjectIdHash: 658713268
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -127,7 +127,7 @@ NavMeshAgent:
   m_Enabled: 1
   m_AgentTypeID: -334000983
   m_Radius: 2
-  m_Speed: 2.5
+  m_Speed: 3.5
   m_Acceleration: 8
   avoidancePriority: 50
   m_AngularSpeed: 360
@@ -161,6 +161,7 @@ MonoBehaviour:
   currentHealth:
     use: 0
     value: 0
+  invulnerabilityDuration: 0.5
   visualsToFlash: []
   flashColor: {r: 1, g: 0, b: 0, a: 1}
   flashDuration: 0.15
@@ -184,12 +185,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ChargerAI
   ShowTopMostFoldoutHeaderGroup: 1
   detectRange: 40
-  walkSpeed: 2.5
+  walkSpeed: 20
   wanderRadius: 40
-  idleMin: 1
-  idleMax: 4
+  idleMin: 2
+  idleMax: 2
   windupTime: 1.5
-  chargeSpeed: 24
+  chargeSpeed: 70
   chargeAccel: 30
   chargeMax: 60
   chargeTimeout: 3.5
@@ -198,6 +199,7 @@ MonoBehaviour:
   hitRadius: 4.5
   stunTime: 0.9
   impactDamage: 100
+  hurtTime: 0.9
   knockback: 20
   plowRadius: 5
   smashDamage: 16

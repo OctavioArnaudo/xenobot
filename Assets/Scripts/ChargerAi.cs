@@ -28,6 +28,7 @@ public class ChargerAI : NetworkBehaviour
     static readonly int HAttack = Animator.StringToHash(PAttack);
     static readonly int HTakeDamage = Animator.StringToHash(PTakeDamage);
     static readonly int HSpeed = Animator.StringToHash(PSpeed);
+    static readonly int HWalk = Animator.StringToHash("Walk");
 
     [Header("Deteccion y patrulla")]
     public float detectRange = 40f;
@@ -40,13 +41,14 @@ public class ChargerAI : NetworkBehaviour
     [Header("Impacto")]
     public float shockRadius = 18f, hitRadius = 4.5f, stunTime = .9f;
     public int impactDamage = 100;
+    public float hurtTime = 0.9f;   // duracion de la animacion de dano
     public float knockback = 20f;
     public float plowRadius = 5f;
     public float smashDamage = 16f;
 
     enum S { Wander, Windup, Charge, Stun }
     S s;
-    int tries; float navRetry, next, until, readyAt, idleUntil, chargeStart, plowAt, cv; Vector3 cdir, cfrom;
+    int tries; float hurtUntil, navRetry, next, until, readyAt, idleUntil, chargeStart, plowAt, cv; Vector3 cdir, cfrom;
     NavMeshQueryFilter qf;
     NavMeshAgent ag; Animator an; HealthController hp; Transform target;
     UnityAction<int> onHurt; UnityAction onDie;
@@ -68,9 +70,9 @@ public class ChargerAI : NetworkBehaviour
         an.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
 
         onHurt = _ => {
-            // No interrumpe si está cargando o ejecutando el golpe
-            if (s != S.Windup && s != S.Charge)
-                an.SetTrigger(HTakeDamage);
+            // Una sola vez por golpe: no interrumpe la carga ni reinicia la animacion mientras suena
+            if (s != S.Windup && s != S.Charge && Time.time >= hurtUntil)
+            { hurtUntil = Time.time + hurtTime; an.SetTrigger(HTakeDamage); }
         };
 
         onDie = () => an.SetBool(HIsDead, true);
@@ -81,7 +83,7 @@ public class ChargerAI : NetworkBehaviour
         hp.OnTakeDamage.AddListener(onHurt);
         hp.OnDeath.AddListener(onDie);
         qf = new NavMeshQueryFilter { agentTypeID = ag.agentTypeID, areaMask = NavMesh.AllAreas };
-        s = S.Wander;
+        s = S.Wander; hurtUntil = 0f;
         next = Time.time + Random.value;
         readyAt = Time.time + Random.Range(0f, 3f);
         idleUntil = 0f;
@@ -131,6 +133,12 @@ public class ChargerAI : NetworkBehaviour
             return;
         }
 
+        if (hurtUntil != 0f && t >= hurtUntil)   // salida garantizada de Take DMG
+        {
+            hurtUntil = 0f; an.ResetTrigger(HTakeDamage);
+            if (s == S.Wander) an.CrossFadeInFixedTime(HWalk, .1f);
+        }
+
         // Determina la velocidad que alimenta al Animator
         float currentSpeed = 0f;
         if (s == S.Charge) currentSpeed = cv;
@@ -144,7 +152,7 @@ public class ChargerAI : NetworkBehaviour
         next = t + .2f;
 
         if (s == S.Wander) Wander(t);
-        else if (t >= until) { ag.isStopped = false; ag.speed = walkSpeed; ag.acceleration = 8f; s = S.Wander; }
+        else if (t >= until) { ag.isStopped = false; ag.speed = walkSpeed; ag.acceleration = 8f; s = S.Wander; an.ResetTrigger(HAttack); an.CrossFadeInFixedTime(HWalk, .15f); }
     }
 
     void Wander(float t)
