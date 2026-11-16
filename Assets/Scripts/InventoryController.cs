@@ -408,7 +408,7 @@ namespace Runtime.Scripts.Inventory
                 Sprite spr = slot.def.itemSprite;
                 if (spr != null && spr.texture != null)
                 {
-                    Graphics.DrawTexture(new Rect(cell.x + 10f * k, cell.y + 10f * k, cell.width - 20f * k, cell.height - 20f * k), spr.texture, spr.rect, 0, 0, 0, 0);
+                    DrawSprite(new Rect(cell.x + 10f * k, cell.y + 10f * k, cell.width - 20f * k, cell.height - 20f * k), spr);
                 }
                 else
                 {
@@ -668,5 +668,14 @@ namespace Runtime.Scripts.Inventory
         public Dictionary<string, (ItemsData def, int qty)> GetMyBag() => _localBag;
         public static void MarkCountDirty() => s_CountDirty = true;
         public static ItemsData GetItemsDataByCodeStatic(string code) => LocalInstance?.GetItemsDataByCode(code);
+
+        private static void DrawSprite(Rect rect, Sprite spr)
+        {
+            if (spr == null || spr.texture == null) return;
+            Rect r = spr.rect;
+            Texture2D tex = spr.texture;
+            Rect uv = new Rect(r.x / tex.width, r.y / tex.height, r.width / tex.width, r.height / tex.height);
+            GUI.DrawTextureWithTexCoords(rect, tex, uv);
+        }
     }
 }

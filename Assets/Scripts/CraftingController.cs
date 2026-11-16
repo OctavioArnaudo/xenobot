@@ -384,7 +384,20 @@ namespace Runtime.Scripts.Crafting
                 if (displayItem != null)
                 {
                     float ic = r.height - 12f * k;
-                    if (displayItem.itemSprite != null) GUI.DrawTexture(new Rect(6f * k, r.y + 6f * k, ic, ic), displayItem.itemSprite.texture);
+                    if (displayItem.itemSprite != null)
+                    {
+                        GUI.DrawTexture(new Rect(6f * k, r.y + 6f * k, ic, ic), displayItem.itemSprite.texture);
+                    }
+                    else
+                    {
+                        Color fallbackColor = Color.gray;
+                        string nameLower = displayItem.itemName != null ? displayItem.itemName.ToLowerInvariant() : "";
+                        if (nameLower.Contains("iron")) fallbackColor = new Color(0.75f, 0.75f, 0.8f);
+                        else if (nameLower.Contains("exp") || nameLower.Contains("orb")) fallbackColor = new Color(1f, 0.85f, 0f);
+                        else if (nameLower.Contains("life") || nameLower.Contains("heart")) fallbackColor = new Color(0.8f, 0.1f, 0.1f);
+                        else if (nameLower.Contains("crystal") || nameLower.Contains("fragment")) fallbackColor = new Color(0.5f, 0.3f, 0.9f);
+                        GUI.DrawTexture(new Rect(6f * k, r.y + 6f * k, ic, ic), Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, fallbackColor, 0f, 4f * k);
+                    }
                     GUI.Label(new Rect(ic + 14f * k, r.y, r.width - ic - 20f * k, r.height), displayItem.itemName, _recipeSty);
                 }
                 else GUI.Label(new Rect(10f * k, r.y, r.width - 20f * k, r.height), availableTrades[i].name, _recipeSty);
@@ -426,9 +439,22 @@ namespace Runtime.Scripts.Crafting
         private float Line(ItemsData item, string qty, float y, float sl, float dw, float k)
         {
             GUI.DrawTexture(new Rect(0, y, sl, sl), _texSlot);
-            if (item.itemSprite != null) GUI.DrawTexture(new Rect(4f * k, y + 4f * k, sl - 8f * k, sl - 8f * k), item.itemSprite.texture);
+            if (item != null && item.itemSprite != null)
+            {
+                GUI.DrawTexture(new Rect(4f * k, y + 4f * k, sl - 8f * k, sl - 8f * k), item.itemSprite.texture);
+            }
+            else if (item != null)
+            {
+                Color fallbackColor = Color.gray;
+                string nameLower = item.itemName != null ? item.itemName.ToLowerInvariant() : "";
+                if (nameLower.Contains("iron")) fallbackColor = new Color(0.75f, 0.75f, 0.8f);
+                else if (nameLower.Contains("exp") || nameLower.Contains("orb")) fallbackColor = new Color(1f, 0.85f, 0f);
+                else if (nameLower.Contains("life") || nameLower.Contains("heart")) fallbackColor = new Color(0.8f, 0.1f, 0.1f);
+                else if (nameLower.Contains("crystal") || nameLower.Contains("fragment")) fallbackColor = new Color(0.5f, 0.3f, 0.9f);
+                GUI.DrawTexture(new Rect(4f * k, y + 4f * k, sl - 8f * k, sl - 8f * k), Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, fallbackColor, 0f, 4f * k);
+            }
             GUI.Label(new Rect(0, y, sl, sl), qty, _qtySty);
-            GUI.Label(new Rect(sl + 10f * k, y + (sl - 28f * k) / 2f, dw - sl - 10f * k, 28f * k), item.itemName, _recipeSty);
+            GUI.Label(new Rect(sl + 10f * k, y + (sl - 28f * k) / 2f, dw - sl - 10f * k, 28f * k), item != null ? item.itemName : "", _recipeSty);
             return y + sl + 8f * k;
         }
 
