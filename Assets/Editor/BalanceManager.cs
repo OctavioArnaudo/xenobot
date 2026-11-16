@@ -74,7 +74,7 @@ namespace Editor.Scripts.Balance
             SerializedObject so = new SerializedObject(bm);
 
             var spProp = so.FindProperty("hostSpawnPoints");
-            spProp.clearArray();
+            spProp.arraySize = 0;
             for (int i = 0; i < hostPoints.Count; i++)
             {
                 spProp.InsertArrayElementAtIndex(i);
@@ -84,7 +84,7 @@ namespace Editor.Scripts.Balance
             }
 
             var itProp = so.FindProperty("itemSpawnPoints");
-            itProp.clearArray();
+            itProp.arraySize = 0;
             for (int i = 0; i < itemPoints.Count; i++)
             {
                 itProp.InsertArrayElementAtIndex(i);
@@ -94,7 +94,7 @@ namespace Editor.Scripts.Balance
             }
 
             var prProp = so.FindProperty("propSpawnPoints");
-            prProp.clearArray();
+            prProp.arraySize = 0;
             for (int i = 0; i < propPoints.Count; i++)
             {
                 prProp.InsertArrayElementAtIndex(i);
