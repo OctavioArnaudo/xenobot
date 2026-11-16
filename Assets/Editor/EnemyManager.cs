@@ -48,6 +48,11 @@ namespace Editor.Scripts.Enemy
                         }
                     }
 
+                    if (g.GetComponent<MeleeController>() == null) g.AddComponent<MeleeController>();
+                    if (g.GetComponent<HealthController>() == null) g.AddComponent<HealthController>();
+                    if (g.GetComponent<SpawnController>() == null) g.AddComponent<SpawnController>();
+                    if (g.GetComponent<ShootController>() == null) g.AddComponent<ShootController>();
+
                     Undo.RegisterCreatedObjectUndo(g, "Fill With Enemies");
                 }
             }
