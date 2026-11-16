@@ -35,7 +35,7 @@ namespace Editor.Scripts.Enemy
                 Vector3 p = new Vector3(tp.x + (float)rnd.NextDouble() * sz.x, 0f, tp.z + (float)rnd.NextDouble() * sz.z);
                 p.y = tp.y + t.SampleHeight(p);
 
-                if (NavMesh.SamplePosition(p, out var h, 20f, NavMesh.AllAreas))
+                if (NavMesh.SamplePosition(p, out var h, 100f, NavMesh.AllAreas))
                 {
                     var g = (GameObject)PrefabUtility.InstantiatePrefab(renderPrefab, grp.transform);
                     g.name = "EnemyPrefab";
@@ -56,6 +56,9 @@ namespace Editor.Scripts.Enemy
                     if (g.GetComponent<HealthController>() == null) g.AddComponent<HealthController>();
                     if (g.GetComponent<SpawnController>() == null) g.AddComponent<SpawnController>();
                     if (g.GetComponent<ShootController>() == null) g.AddComponent<ShootController>();
+
+                    var agent = g.GetComponent<NavMeshAgent>();
+                    if (agent != null) agent.Warp(h.position);
 
                     Undo.RegisterCreatedObjectUndo(g, "Fill With Enemies");
                 }
