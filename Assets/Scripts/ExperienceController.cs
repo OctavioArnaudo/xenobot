@@ -46,7 +46,8 @@ namespace Runtime.Scripts.Experience
             {
                 if (child.name.StartsWith("ExpVisual_"))
                 {
-                    DestroyImmediate(child.gameObject);
+                    if (Application.isPlaying) Destroy(child.gameObject);
+                    else DestroyImmediate(child.gameObject);
                 }
             }
 
