@@ -12,7 +12,7 @@ namespace Editor.Scripts.Enemy
             var ts = Terrain.activeTerrains;
             if (ts.Length == 0) return;
 
-            var grp = GameObject.Find("EnemiesPrefab.prefab") ?? new GameObject("EnemiesPrefab.prefab");
+            var grp = GameObject.Find("EnemiesPrefab") ?? new GameObject("EnemiesPrefab");
             var rnd = new System.Random();
 
             for (int i = 0; i < 20; i++)
@@ -34,7 +34,7 @@ namespace Editor.Scripts.Enemy
                 if (NavMesh.SamplePosition(p, out var h, 2f, NavMesh.AllAreas))
                 {
                     var g = (GameObject)PrefabUtility.InstantiatePrefab(renderPrefab, grp.transform);
-                    g.name = "EnemyPrefab.prefab";
+                    g.name = "EnemyPrefab";
                     g.transform.position = h.position;
 
                     if (logicPrefab != null)
