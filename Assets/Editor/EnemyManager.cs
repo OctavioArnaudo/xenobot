@@ -58,12 +58,44 @@ namespace Editor.Scripts.Enemy
                     if (g.GetComponent<ShootController>() == null) g.AddComponent<ShootController>();
 
                     var agent = g.GetComponent<NavMeshAgent>();
-                    if (agent != null) agent.Warp(h.position);
+                    if (agent != null)
+                    {
+                        var surfaceObj = GameObject.Find("EnemySurface");
+                        if (surfaceObj != null)
+                        {
+                            var surfComp = surfaceObj.GetComponent(System.Type.GetType("Unity.AI.Navigation.NavMeshSurface, Unity.AI.Navigation") ?? System.Type.GetType("NavMeshSurface"));
+                            if (surfComp != null)
+                            {
+                                var prop = surfComp.GetType().GetProperty("agentTypeID");
+                                if (prop != null) agent.agentTypeID = (int)prop.GetValue(surfComp);
+                            }
+                        }
+                        agent.Warp(h.position);
+                    }
 
                     Undo.RegisterCreatedObjectUndo(g, "Fill With Enemies");
                 }
             }
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(grp.scene);
+        }
+
+        [MenuItem("Tools/Enemy/Create Enemy Surface")]
+        static void CreateEnemySurface()
+        {
+            var existing = GameObject.Find("EnemySurface");
+            if (existing != null)
+            {
+                Selection.activeGameObject = existing;
+                return;
+            }
+
+            GameObject go = new GameObject("EnemySurface");
+            System.Type surfaceType = System.Type.GetType("Unity.AI.Navigation.NavMeshSurface, Unity.AI.Navigation") ?? System.Type.GetType("NavMeshSurface");
+            if (surfaceType != null) go.AddComponent(surfaceType);
+
+            Undo.RegisterCreatedObjectUndo(go, "Create Enemy Surface");
+            Selection.activeGameObject = go;
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(go.scene);
         }
     }
 }
