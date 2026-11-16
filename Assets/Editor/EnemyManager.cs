@@ -1,6 +1,10 @@
 using UnityEngine;
 using UnityEditor;
 using UnityEngine.AI;
+using Runtime.Scripts.Melee;
+using Runtime.Scripts.Health;
+using Runtime.Scripts.Spawn;
+using Runtime.Scripts.Shoot;
 
 namespace Editor.Scripts.Enemy
 {

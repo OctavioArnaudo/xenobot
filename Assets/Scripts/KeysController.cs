@@ -1,7 +1,6 @@
 using UnityEngine;
 using Unity.Netcode;
 using Runtime.Scripts.Items;
-using Runtime.Scripts.Modular;
 using Runtime.Scripts.Pickup;
 
 
@@ -95,12 +94,6 @@ namespace Runtime.Scripts.Keys
 
         public void ApplyEffect(GameObject entity)
         {
-            ModularController hub = entity.GetComponent<ModularController>() ?? entity.GetComponentInParent<ModularController>();
-
-            // Only execute if this is the local player or owner
-            bool isLocal = hub != null && (!hub.IsSpawned || hub.IsOwner);
-            if (!isLocal) return;
-
             GameObject[] walls = GameObject.FindGameObjectsWithTag(targetTag);
             int count = 0;
             foreach (var wall in walls)

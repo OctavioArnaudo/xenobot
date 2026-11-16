@@ -9,7 +9,6 @@ using Runtime.Scripts.Items;
 using Runtime.Scripts.Spawn;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Player;
-using Runtime.Scripts.Modular;
 using Runtime.Scripts.Costume;
 using Runtime.Scripts.Jetpack;
 using Runtime.Scripts.Weapon;
@@ -607,7 +606,6 @@ namespace Runtime.Scripts.Inventory
 
             // Refrescar referencias del robot (muzzle, cámara, etc)
             GetComponent<PlayerController>()?.RefreshFunctionalComponents();
-            GetComponent<ModularController>()?.RefreshBodyReferences();
         }
 
         private void ApplyConsumableEffect(ItemsData item)
