@@ -35,11 +35,17 @@ namespace Editor.Scripts.Enemy
                 Vector3 p = new Vector3(tp.x + (float)rnd.NextDouble() * sz.x, 0f, tp.z + (float)rnd.NextDouble() * sz.z);
                 p.y = tp.y + t.SampleHeight(p);
 
-                if (NavMesh.SamplePosition(p, out var h, 2f, NavMesh.AllAreas))
+                if (NavMesh.SamplePosition(p, out var h, 10f, NavMesh.AllAreas))
                 {
                     var g = (GameObject)PrefabUtility.InstantiatePrefab(renderPrefab, grp.transform);
                     g.name = "EnemyPrefab";
+
+                    var agent = g.GetComponent<NavMeshAgent>();
+                    if (agent != null) agent.enabled = false;
+
                     g.transform.position = h.position;
+
+                    if (agent != null) agent.enabled = true;
 
                     if (logicPrefab != null)
                     {
