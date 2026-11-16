@@ -292,7 +292,7 @@ namespace Runtime.Scripts.Inventory
             _rig.transform.position = new Vector3(5000f, 5000f, 5000f);
             _box = new GameObject("Box");
             _box.transform.SetParent(_rig.transform, false);
-            _box.SetActive(false);
+            _box.SetActive(true);
 
             var cg = new GameObject("Cam");
             cg.transform.SetParent(_rig.transform, false);
@@ -314,12 +314,20 @@ namespace Runtime.Scripts.Inventory
             _il.enabled = false; // solo se enciende durante el render del icono
         }
 
-        // Instancia el prefab sin scripts, sin fisica y solo en la capa de iconos. La caja esta inactiva: no corre Awake/OnEnable.
         GameObject Spawn(ItemsData d)
         {
             if (_ic == null) MakeRig();
+            _box.SetActive(true);
             var go = Instantiate(d.itemPrefab, _box.transform);
             go.SetActive(true);
+
+            var iron = go.GetComponentInChildren<Iron.IronController>(true);
+            if (iron != null) iron.GenerateIronVisuals();
+            var life = go.GetComponentInChildren<Life.LifeController>(true);
+            if (life != null) life.GenerateLifeVisuals();
+            var exp = go.GetComponentInChildren<Experience.ExperienceController>(true);
+            if (exp != null) exp.GenerateOrbVisuals();
+
             var mb = go.GetComponentsInChildren<MonoBehaviour>(true);
             for (int i = mb.Length - 1; i >= 0; i--) if (mb[i] != null) DestroyImmediate(mb[i]);
             foreach (var col in go.GetComponentsInChildren<Collider>(true)) DestroyImmediate(col);
