@@ -60,8 +60,7 @@ namespace Runtime.Scripts.Life
             {
                 if (child.name == "LifeRender")
                 {
-                    if (Application.isPlaying) Destroy(child.gameObject);
-                    else DestroyImmediate(child.gameObject);
+                    DestroyImmediate(child.gameObject);
                 }
             }
 

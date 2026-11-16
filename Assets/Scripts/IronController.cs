@@ -44,8 +44,7 @@ namespace Runtime.Scripts.Iron
             {
                 if (child.name == "IronRender")
                 {
-                    if (Application.isPlaying) Destroy(child.gameObject);
-                    else DestroyImmediate(child.gameObject);
+                    DestroyImmediate(child.gameObject);
                 }
             }
 

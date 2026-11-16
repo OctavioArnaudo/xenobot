@@ -387,7 +387,7 @@ namespace Runtime.Scripts.Crafting
                     Sprite spr = displayItem.itemSprite;
                     if (spr != null && spr.texture != null)
                     {
-                        Graphics.DrawTexture(new Rect(6f * k, r.y + 6f * k, ic, ic), spr.texture, spr.rect, 0, 0, 0, 0);
+                        DrawSprite(new Rect(6f * k, r.y + 6f * k, ic, ic), spr);
                     }
                     else
                     {
@@ -442,7 +442,7 @@ namespace Runtime.Scripts.Crafting
             Sprite spr = item != null ? item.itemSprite : null;
             if (spr != null && spr.texture != null)
             {
-                Graphics.DrawTexture(new Rect(4f * k, y + 4f * k, sl - 8f * k, sl - 8f * k), spr.texture, spr.rect, 0, 0, 0, 0);
+                DrawSprite(new Rect(4f * k, y + 4f * k, sl - 8f * k, sl - 8f * k), spr);
             }
             else if (item != null)
             {
@@ -624,6 +624,15 @@ namespace Runtime.Scripts.Crafting
             var s = new GUIStyle(GUI.skin.label) { fontSize = sz, fontStyle = fs, alignment = a };
             s.normal.textColor = c;
             return s;
+        }
+
+        private static void DrawSprite(Rect rect, Sprite spr)
+        {
+            if (spr == null || spr.texture == null) return;
+            Rect r = spr.rect;
+            Texture2D tex = spr.texture;
+            Rect uv = new Rect(r.x / tex.width, r.y / tex.height, r.width / tex.width, r.height / tex.height);
+            GUI.DrawTextureWithTexCoords(rect, tex, uv);
         }
         #endregion
     }
