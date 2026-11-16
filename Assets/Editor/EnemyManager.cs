@@ -74,14 +74,14 @@ namespace Editor.Scripts.Enemy
         [MenuItem("Tools/Enemy/Create Enemy Surface")]
         static void CreateEnemySurface()
         {
-            var existing = GameObject.Find("EnemySurface");
+            var existing = GameObject.Find("SurfaceEnemy");
             if (existing != null)
             {
                 Selection.activeGameObject = existing;
                 return;
             }
 
-            GameObject go = new GameObject("EnemySurface");
+            GameObject go = new GameObject("SurfaceEnemy");
             System.Type surfaceType = System.Type.GetType("Unity.AI.Navigation.NavMeshSurface, Unity.AI.Navigation") ?? System.Type.GetType("NavMeshSurface");
             if (surfaceType != null)
             {
