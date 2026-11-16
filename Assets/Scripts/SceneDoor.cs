@@ -39,7 +39,7 @@ public class SceneDoor : MonoBehaviour
         bool cc = t.TryGetComponent(out CharacterController ch);
         if (cc) ch.enabled = false;
         t.SetPositionAndRotation(p, r);
-        if (t.TryGetComponent(out Rigidbody rb)) rb.linearVelocity = Vector3.zero;
+        if (t.TryGetComponent(out Rigidbody rb) && !rb.isKinematic) rb.linearVelocity = Vector3.zero;
         if (cc) ch.enabled = true;
         Physics.SyncTransforms();
     }
