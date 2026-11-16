@@ -515,10 +515,9 @@ namespace Runtime.Scripts.Hud
                 _barTxt[i] = t;
             }
 
-            // Fila centrada sobre la zona media del tablero: 1 melee, 2 disparo, 3 mira (clic solo con un menu abierto), jetpack, gancho, escudo
-            // (los 3 ultimos son solo indicadores: aro verde = disponible/listo, icono tenue = no disponible).
-            const float PlateW = 68f, PlateH = 76f, PlateGap = 8f, RowY = 130f;   // RowY: borde inferior de la fila (sube/baja si pisa el marco naranja)
-            string[] hint = { "1", "2", "3", "SPC", "G", "MMB" };
+            // Fila centrada sobre la zona media del tablero: 1 melee, 2 disparo, 3 mira, jetpack (SPC), gancho (F), escudo (RMB)
+            const float PlateW = 68f, PlateH = 76f, PlateGap = 8f, RowY = 130f;
+            string[] hint = { "1", "2", "3", "SPC", "F", "RMB" };
             for (int i = 0; i < 6; i++)
             {
                 int id = i;
@@ -555,7 +554,7 @@ namespace Runtime.Scripts.Hud
                 n.rectTransform.anchoredPosition = new Vector2(0f, 1f);
             }
 
-            // 2 botones metalicos redondos con punto rubi (TAB, J), a la derecha; dentro del marco naranja; el texto de objeto clave va justo debajo
+            // 2 botones metalicos redondos con punto rubi (TAB, J)
             for (int i = 0; i < 2; i++)
             {
                 int id = i;
@@ -660,10 +659,10 @@ namespace Runtime.Scripts.Hud
                 names.Add("Recarga"); keys.Add("R");
             }
             if (pc != null && pc.HasMelee) { names.Add("Cuerpo a cuerpo"); keys.Add("1+LMB"); }
-            if (shield != null && shield.isUnlocked) { names.Add("Escudo"); keys.Add("MMB"); }
-            if (pc != null && pc.HasHook) { names.Add("Gancho"); keys.Add("RMB+G"); }
+            if (shield != null && shield.isUnlocked) { names.Add("Escudo"); keys.Add("RMB"); }
+            if (pc != null && pc.HasHook) { names.Add("Gancho"); keys.Add("F"); }
             names.Add("Sprint"); keys.Add("Shift");
-            if (prop != null && prop.MaxJetpack > 0) { names.Add("Jetpack"); keys.Add("Space/B"); }
+            if (prop != null && prop.MaxJetpack > 0) { names.Add("Jetpack"); keys.Add("SPC (Hold)"); }
             names.Add(pc != null && pc.scopeMode ? "Mira telescopica (ON)" : "Mira telescopica"); keys.Add("3");
         }
 
