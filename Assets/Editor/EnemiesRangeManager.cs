@@ -52,7 +52,7 @@ namespace Editor.Scripts.Enemies
                 if (NavMesh.SamplePosition(p, out var h, 100f, NavMesh.AllAreas))
                 {
                     GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(itemPrefab, container.transform);
-                    instance.name = "RangePrefab";
+                    instance.name = "EnemyRangePrefab";
                     instance.transform.position = h.position;
 
                     if (instance.GetComponent<ShootController>() == null) instance.AddComponent<ShootController>();

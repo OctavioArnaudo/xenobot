@@ -52,7 +52,7 @@ namespace Editor.Scripts.Enemies
                 if (NavMesh.SamplePosition(p, out var h, 100f, NavMesh.AllAreas))
                 {
                     GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(itemPrefab, container.transform);
-                    instance.name = "MeleePrefab";
+                    instance.name = "EnemyMeleePrefab";
                     instance.transform.position = h.position;
 
                     if (instance.GetComponent<MeleeController>() == null) instance.AddComponent<MeleeController>();

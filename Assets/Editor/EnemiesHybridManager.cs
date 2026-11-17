@@ -11,7 +11,7 @@ namespace Editor.Scripts.Enemies
 {
     public static class EnemiesHybridManager
     {
-        [MenuItem("Tools/Enemies/EnemyHybridPrefab")]
+        [MenuItem("Tools/Enemies/EnemiesHybridPrefab")]
         static void GenerateHybridEnemies()
         {
             var containerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemiesPrefab.prefab");
@@ -53,7 +53,7 @@ namespace Editor.Scripts.Enemies
                 if (NavMesh.SamplePosition(p, out var h, 100f, NavMesh.AllAreas))
                 {
                     GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(itemPrefab, container.transform);
-                    instance.name = "HybridPrefab";
+                    instance.name = "EnemyHybridPrefab";
                     instance.transform.position = h.position;
 
                     if (instance.GetComponent<ShootController>() == null) instance.AddComponent<ShootController>();
