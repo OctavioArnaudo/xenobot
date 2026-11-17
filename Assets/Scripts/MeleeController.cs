@@ -78,6 +78,7 @@ namespace Runtime.Scripts.Melee
 
         private float m_HoldTimer = 0f;
         private bool m_IsHoldingClick = false;
+        private int m_LastExternalTriggerFrame = -1;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
@@ -127,7 +128,6 @@ namespace Runtime.Scripts.Melee
                 return slamRadius.Get(SlamRadius, defaultRadius);
             }
         }
-
 
         public float EffectiveSlamHoldDuration => slamHoldDuration.Get(SlamHoldDuration, DEFAULT_SLAM_HOLD_DURATION);
         public float EffectiveSlamSpeed => slamSpeed.Get(SlamSpeed, DEFAULT_SLAM_SPEED);
@@ -256,14 +256,7 @@ namespace Runtime.Scripts.Melee
         {
             if (Mouse.current == null) return;
 
-            // BLOQUEO DE MELEE SI EL JUGADOR ESTÁ APUNTANDO
             if (m_Player == null) m_Player = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
-            if (m_Player != null && (m_Player.aim || Mouse.current.rightButton.isPressed))
-            {
-                m_IsHoldingClick = false;
-                m_HoldTimer = 0f;
-                return;
-            }
 
             // Inicio de la pulsación
             if (Mouse.current.leftButton.wasPressedThisFrame)
@@ -272,18 +265,18 @@ namespace Runtime.Scripts.Melee
                 m_HoldTimer = 0f;
             }
 
-            // Mantenimiento sostenido del click
+            // Mantenimiento sostenido del click para Ground Slam en el aire
             if (Mouse.current.leftButton.isPressed && m_IsHoldingClick)
             {
                 m_HoldTimer += Time.deltaTime;
 
                 bool isAirborne = (m_Player != null) ? !m_Player.Grounded : (m_CharacterController != null && !m_CharacterController.isGrounded);
 
-                // SE EJECUTA AUTOMÁTICAMENTE AL ALCANZAR LOS 0.15s EN EL AIRE (SIN ESPERAR A SOLTAR EL CLICK)
-                if (isAirborne && m_HoldTimer >= EffectiveSlamHoldDuration && Time.time >= m_NextAttackTime)
+                if (isAirborne && m_HoldTimer >= EffectiveSlamHoldDuration)
                 {
                     m_IsHoldingClick = false;
                     StartGroundSlam();
+                    return;
                 }
             }
 
@@ -294,8 +287,8 @@ namespace Runtime.Scripts.Melee
                 {
                     m_IsHoldingClick = false;
 
-                    // Solo realiza el ataque melé estándar si no se activó el Slam
-                    if (!m_IsSlamming && Time.time >= m_NextAttackTime)
+                    // Solo ejecuta golpe al soltar si no se activó ya en este ciclo ni estamos en Slam
+                    if (!m_IsSlamming && Time.time >= m_NextAttackTime && m_LastExternalTriggerFrame != Time.frameCount)
                     {
                         PerformMeleeAction();
                     }
@@ -335,7 +328,10 @@ namespace Runtime.Scripts.Melee
 
             if (Time.time < m_NextAttackTime) return;
 
-            HealthController targetHealth = hitObject.GetComponentInParent<HealthController>() ?? hitObject.GetComponent<HealthController>() ?? hitObject.GetComponentInChildren<HealthController>();
+            HealthController targetHealth = hitObject.GetComponentInParent<HealthController>()
+                                         ?? hitObject.GetComponent<HealthController>()
+                                         ?? hitObject.GetComponentInChildren<HealthController>()
+                                         ?? hitObject.transform.root.GetComponentInChildren<HealthController>(true);
 
             if (targetHealth == null || targetHealth.EffectiveCurrentHealth <= 0) return;
 
@@ -350,7 +346,6 @@ namespace Runtime.Scripts.Melee
             if (!isHostile) return;
 
             float damage = EffectiveAttackDamage;
-            int hpBefore = targetHealth.EffectiveCurrentHealth;
             targetHealth.TakeDamage((int)damage);
 
             m_NextAttackTime = Time.time + EffectiveAttackCooldown;
@@ -404,9 +399,27 @@ namespace Runtime.Scripts.Melee
         {
             if (Time.time < m_NextAttackTime || m_IsSlamming) return;
 
+            // Si está en el aire y acaba de pulsar clic, damos margen al Ground Slam si mantiene presionado
+            if (m_Player != null && !m_Player.Grounded && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                return;
+            }
+
+            m_LastExternalTriggerFrame = Time.frameCount;
+
             if (targetPosition.HasValue)
             {
                 RotateVisualsTowards(targetPosition.Value);
+            }
+            else if (m_Player != null && Camera.main != null)
+            {
+                // Alinear al jugador con el frente horizontal de la cámara al golpear en melee
+                Vector3 camForward = Camera.main.transform.forward;
+                camForward.y = 0f;
+                if (camForward.sqrMagnitude > 0.001f)
+                {
+                    transform.rotation = Quaternion.LookRotation(camForward.normalized);
+                }
             }
 
             m_NextAttackTime = Time.time + EffectiveAttackCooldown;
@@ -474,14 +487,19 @@ namespace Runtime.Scripts.Melee
             Collider[] hits = Physics.OverlapSphere(impactPosition, EffectiveSlamRadius, mask, QueryTriggerInteraction.Collide);
             if (IsPlayerSide) HitBreakables(impactPosition, EffectiveSlamRadius, finalDamage);
 
+            HashSet<GameObject> processed = new HashSet<GameObject>();
             foreach (Collider hit in hits)
             {
                 if (hit.gameObject == gameObject || hit.transform.IsChildOf(transform)) continue;
 
-                var targetHealth = hit.GetComponentInParent<HealthController>() ?? hit.GetComponent<HealthController>();
-                if (targetHealth != null)
+                var targetHealth = hit.GetComponentInParent<HealthController>()
+                                ?? hit.GetComponent<HealthController>()
+                                ?? hit.transform.root.GetComponentInChildren<HealthController>(true);
+
+                if (targetHealth != null && !processed.Contains(targetHealth.gameObject))
                 {
                     if (m_Health != null && targetHealth.EffectiveTeam == m_Health.EffectiveTeam) continue;
+                    processed.Add(targetHealth.gameObject);
                     targetHealth.TakeDamage((int)finalDamage);
                 }
 
@@ -555,7 +573,8 @@ namespace Runtime.Scripts.Melee
         private void ExecuteMeleeDamageServer()
         {
             float finalDamage = EffectiveAttackDamage;
-            int mask = (targetLayers.value != 0) ? targetLayers.value : ~0;
+            // Usamos ~0 para no dejar fuera a enemigos por configuración de LayerMask; ProcessHitTarget filtra por HealthController y Team
+            int mask = ~0;
 
             HashSet<GameObject> hitTargets = new HashSet<GameObject>();
 
@@ -569,7 +588,7 @@ namespace Runtime.Scripts.Melee
                 if (col == null || !col.enabled || !col.gameObject.activeInHierarchy) continue;
 
                 Bounds bounds = col.bounds;
-                float radius = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z, 0.6f);
+                float radius = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z, 0.85f);
                 Collider[] hitsFromMesh = Physics.OverlapSphere(bounds.center, radius, mask, QueryTriggerInteraction.Collide);
 
                 foreach (var hit in hitsFromMesh)
@@ -594,7 +613,11 @@ namespace Runtime.Scripts.Melee
         {
             if (hit == null || hit.gameObject == gameObject || hit.transform.IsChildOf(transform)) return;
 
-            var targetHealth = hit.GetComponentInParent<HealthController>() ?? hit.GetComponent<HealthController>() ?? hit.GetComponentInChildren<HealthController>();
+            var targetHealth = hit.GetComponentInParent<HealthController>()
+                            ?? hit.GetComponent<HealthController>()
+                            ?? hit.GetComponentInChildren<HealthController>()
+                            ?? hit.transform.root.GetComponentInChildren<HealthController>(true);
+
             if (targetHealth == null || targetHealth.EffectiveCurrentHealth <= 0) return;
 
             if (processedTargets.Contains(targetHealth.gameObject)) return;
@@ -610,24 +633,7 @@ namespace Runtime.Scripts.Melee
             if (isHostile)
             {
                 processedTargets.Add(targetHealth.gameObject);
-                int hpBefore = targetHealth.EffectiveCurrentHealth;
                 targetHealth.TakeDamage((int)finalDamage);
-            }
-            else
-            {
-            }
-        }
-
-        private void ExecuteExecuteMelee()
-        {
-            ExecuteMeleeDamageServer();
-            Vector3 attackCenter = transform.position + Vector3.up * 1.0f + transform.forward * (EffectiveAttackRange * 0.5f);
-            TriggerMeleeVisualEffect(attackCenter, transform.forward);
-
-            Animator anim = GetComponentInChildren<Animator>();
-            if (anim != null && HasParameter(anim, "meleeAttack"))
-            {
-                anim.SetTrigger("meleeAttack");
             }
         }
 
