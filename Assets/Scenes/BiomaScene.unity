@@ -46399,6 +46399,14 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 461756448}
     - target: {fileID: 3301199262045786351, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: jumpHeight.use
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3301199262045786351, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: jumpHeight.value
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3301199262045786351, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: cameraCollision.m_Bits
       value: 128
       objectReference: {fileID: 0}
