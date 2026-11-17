@@ -1252,7 +1252,7 @@ static class TerrainTools
     // 10) Selecciona objetos en la Hierarchy y ejecuta:
     //     10a Rusty Metal: solo pone la chapa oxidada.
     //     10b Collider: MeshCollider con la forma exacta del modelo (reemplaza cualquier otro collider; convex solo si hay Rigidbody dinamico, Unity lo exige).
-    //     10c Quitar: a lo seleccionado con rusty metal le saca la chapa (revierte al prefab, o material por defecto) y su MeshCollider.
+    //     10c Quitar: saca la chapa oxidada (revierte al prefab, o material por defecto) y TODO MeshCollider de lo seleccionado.
     //     La textura y el material se generan una vez en Assets/Textures/RustMetal (borra la carpeta para regenerarlos).
     const string MetalDir = "Assets/Textures/RustMetal";
     static readonly List<Renderer> RL = new List<Renderer>(), TL = new List<Renderer>();
@@ -1291,56 +1291,76 @@ static class TerrainTools
         Debug.Log($"[Metal] {rs.Count} renderers pintados.");
     }
 
+    // Destruye el collider; si viene del prefab/FBX (no se puede borrar) lo desactiva.
+    static bool Kill(Collider c)
+    {
+        Undo.RecordObject(c, "Quitar collider");
+        if (PrefabUtility.GetCorrespondingObjectFromSource(c) == null) { Undo.DestroyObjectImmediate(c); return true; }
+        c.enabled = false;
+        return false;
+    }
+
     [MenuItem("Tools/Terrain/10b Collider de malla (seleccion)")]
     static void ColliderSelection()
     {
         var rs = Rends();
-        int n = 0;
+        int n = 0, hull = 0;
         foreach (var r in rs)
         {
             var m = MeshOf(r);
             if (m == null) continue;
             var go = r.gameObject;
             go.GetComponents(CL);
-            foreach (var c in CL) if (!(c is MeshCollider)) Undo.DestroyObjectImmediate(c);
+            foreach (var c in CL) if (!(c is MeshCollider)) Kill(c);
             if (!go.TryGetComponent<MeshCollider>(out var mc)) mc = Undo.AddComponent<MeshCollider>(go);
             else Undo.RecordObject(mc, "Mesh Collider");
             var rb = go.GetComponentInParent<Rigidbody>();
+            mc.enabled = true;
             mc.sharedMesh = m;
             mc.isTrigger = false;
             mc.convex = rb != null && !rb.isKinematic;
+            // Sin Weld/Cleaning: con escalas enormes o mallas diminutas el limpiado de PhysX funde vertices y deforma pasillos.
+            mc.cookingOptions = MeshColliderCookingOptions.CookForFasterSimulation | MeshColliderCookingOptions.UseFastMidphase;
+            if (mc.convex) hull++;
             EditorUtility.SetDirty(mc);
             n++;
         }
         ESM.MarkAllScenesDirty();
-        Debug.Log($"[Metal] {n} colliders de malla con la forma del modelo.");
+        Debug.Log($"[Metal] {n} colliders de malla exactos." + (hull > 0 ? $" {hull} son convex (Rigidbody dinamico): forma aproximada." : ""));
     }
 
     [MenuItem("Tools/Terrain/10c Quitar Rusty Metal + Collider (seleccion)")]
     static void StripSelection()
     {
         var rs = Rends();
-        var mat = AssetDatabase.LoadAssetAtPath<Material>(MetalDir + "/RustMetal.mat");
-        if (mat == null) { Debug.LogWarning("[Metal] Aun no existe el material RustMetal."); return; }
         var def = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline != null ? UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline.defaultMaterial : AssetDatabase.GetBuiltinExtraResource<Material>("Default-Diffuse.mat");
-        int n = 0;
+        int nm = 0, nd = 0, nx = 0;
         foreach (var r in rs)
         {
-            var ms = r.sharedMaterials;
-            if (System.Array.IndexOf(ms, mat) < 0) continue;
-            Undo.RecordObject(r, "Quitar Rusty Metal");
-            if (PrefabUtility.IsPartOfPrefabInstance(r))
-                PrefabUtility.RevertPropertyOverride(new SerializedObject(r).FindProperty("m_Materials"), InteractionMode.UserAction);
-            ms = r.sharedMaterials;
-            bool hit = false;
-            for (int i = 0; i < ms.Length; i++) if (ms[i] == mat) { ms[i] = def; hit = true; }
-            if (hit) r.sharedMaterials = ms;
-            if (r.TryGetComponent<MeshCollider>(out var mc)) Undo.DestroyObjectImmediate(mc);
-            EditorUtility.SetDirty(r);
-            n++;
+            if (Rusty(r))
+            {
+                Undo.RecordObject(r, "Quitar Rusty Metal");
+                if (PrefabUtility.IsPartOfPrefabInstance(r))
+                    PrefabUtility.RevertPropertyOverride(new SerializedObject(r).FindProperty("m_Materials"), InteractionMode.UserAction);
+                var ms = r.sharedMaterials;
+                for (int i = 0; i < ms.Length; i++) if (IsRust(ms[i])) ms[i] = def;
+                r.sharedMaterials = ms;
+                EditorUtility.SetDirty(r);
+                nm++;
+            }
+            r.gameObject.GetComponents(CL);
+            foreach (var c in CL) if (c is MeshCollider) { if (Kill(c)) nd++; else nx++; }
         }
         ESM.MarkAllScenesDirty();
-        Debug.Log($"[Metal] {n} renderers sin chapa oxidada ni MeshCollider.");
+        Debug.Log($"[Metal] {nm} sin chapa oxidada, {nd} colliders borrados, {nx} desactivados (venian del prefab/FBX; para borrarlos desactiva 'Generate Colliders' en el import del modelo).");
+    }
+
+    static bool IsRust(Material m) => m != null && m.name.StartsWith("RustMetal");   // incluye RustMetal y RustMetalDeck
+
+    static bool Rusty(Renderer r)
+    {
+        foreach (var m in r.sharedMaterials) if (IsRust(m)) return true;
+        return false;
     }
 
     static Material MetalMat()
