@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.AI;
 using System.Linq;
+using System.Collections.Generic;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Shoot;
 using Runtime.Scripts.Health;
@@ -14,9 +15,14 @@ namespace Editor.Scripts.Enemies
         static void GenerateRangeEnemies()
         {
             var containerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemiesPrefab.prefab");
-            var itemPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/TurretPrefab.prefab") ?? AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyPrefab (1).prefab");
+            var variants = LoadVariants("EnemyRangePrefab");
+            if (variants.Count == 0)
+            {
+                var fallback = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/TurretPrefab.prefab") ?? AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyPrefab (1).prefab");
+                if (fallback != null) variants.Add(fallback);
+            }
 
-            if (itemPrefab == null) return;
+            if (variants.Count == 0) return;
 
             GameObject container = GameObject.Find("EnemiesRangePrefab");
             if (container == null)
@@ -44,6 +50,7 @@ namespace Editor.Scripts.Enemies
 
             for (int i = 0; i < count; i++)
             {
+                var itemPrefab = variants[rnd.Next(variants.Count)];
                 var t = ts[rnd.Next(ts.Length)];
                 Vector3 tp = t.transform.position, sz = t.terrainData.size;
                 Vector3 p = new Vector3(tp.x + (float)rnd.NextDouble() * sz.x, 0f, tp.z + (float)rnd.NextDouble() * sz.z);
@@ -70,6 +77,19 @@ namespace Editor.Scripts.Enemies
             }
 
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(container.scene);
+        }
+
+        static List<GameObject> LoadVariants(string prefix)
+        {
+            var list = new List<GameObject>();
+            for (int i = 1; i <= 20; i++)
+            {
+                string path = $"Assets/Prefabs/{prefix} ({i}).prefab";
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (prefab != null) list.Add(prefab);
+                else if (i > 5) break;
+            }
+            return list;
         }
 
         [MenuItem("Tools/Enemies/SurfaceEnemyRange")]

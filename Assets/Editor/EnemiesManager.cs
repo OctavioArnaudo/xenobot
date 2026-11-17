@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.AI;
 using System.Linq;
+using System.Collections.Generic;
 using Runtime.Scripts.Melee;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Spawn;
@@ -20,17 +21,12 @@ namespace Editor.Scripts.Enemies
             var grp = GameObject.Find("EnemiesPrefab") ?? new GameObject("EnemiesPrefab");
             var rnd = new System.Random();
 
+            var variants = LoadVariants("EnemyPrefab");
+            if (variants.Count == 0) return;
+
             for (int i = 0; i < 20; i++)
             {
-                int variant = rnd.Next(1, 9);
-                string renderPath = $"Assets/Prefabs/EnemyRender ({variant}).prefab";
-                string prefabPath = $"Assets/Prefabs/EnemyPrefab ({variant}).prefab";
-
-                var renderPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(renderPath);
-                var logicPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(prefabPath);
-
-                if (renderPrefab == null) continue;
-
+                var itemPrefab = variants[rnd.Next(variants.Count)];
                 var t = ts[rnd.Next(ts.Length)];
                 Vector3 tp = t.transform.position, sz = t.terrainData.size;
                 Vector3 p = new Vector3(tp.x + (float)rnd.NextDouble() * sz.x, 0f, tp.z + (float)rnd.NextDouble() * sz.z);
@@ -38,20 +34,9 @@ namespace Editor.Scripts.Enemies
 
                 if (NavMesh.SamplePosition(p, out var h, 100f, NavMesh.AllAreas))
                 {
-                    var g = (GameObject)PrefabUtility.InstantiatePrefab(renderPrefab, grp.transform);
+                    var g = (GameObject)PrefabUtility.InstantiatePrefab(itemPrefab, grp.transform);
                     g.name = "EnemyPrefab";
                     g.transform.position = h.position;
-
-                    if (logicPrefab != null)
-                    {
-                        var comps = logicPrefab.GetComponents<Component>();
-                        foreach (var comp in comps)
-                        {
-                            if (comp == null || comp is Transform) continue;
-                            UnityEditorInternal.ComponentUtility.CopyComponent(comp);
-                            UnityEditorInternal.ComponentUtility.PasteComponentAsNew(g);
-                        }
-                    }
 
                     if (g.GetComponent<MeleeController>() == null) g.AddComponent<MeleeController>();
                     if (g.GetComponent<HealthController>() == null) g.AddComponent<HealthController>();
@@ -71,6 +56,24 @@ namespace Editor.Scripts.Enemies
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(grp.scene);
         }
 
+        static List<GameObject> LoadVariants(string prefix)
+        {
+            var list = new List<GameObject>();
+            for (int i = 1; i <= 20; i++)
+            {
+                string path = $"Assets/Prefabs/{prefix} ({i}).prefab";
+                var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (prefab != null) list.Add(prefab);
+                else if (i > 5) break;
+            }
+            if (list.Count == 0)
+            {
+                var single = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Prefabs/{prefix}.prefab");
+                if (single != null) list.Add(single);
+            }
+            return list;
+        }
+
         [MenuItem("Tools/Enemies/SurfaceEnemy")]
         static void CreateEnemySurface()
         {
@@ -81,11 +84,24 @@ namespace Editor.Scripts.Enemies
                 return;
             }
 
-            GameObject go = new GameObject("SurfaceEnemy");
-            System.Type surfaceType = System.Type.GetType("Unity.AI.Navigation.NavMeshSurface, Unity.AI.Navigation") ?? System.Type.GetType("NavMeshSurface");
-            if (surfaceType != null)
+            var surfacePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Surface.prefab");
+            GameObject go;
+            if (surfacePrefab != null)
             {
-                var surfComp = go.AddComponent(surfaceType);
+                go = (GameObject)PrefabUtility.InstantiatePrefab(surfacePrefab);
+            }
+            else
+            {
+                go = new GameObject("SurfaceEnemy");
+                System.Type surfaceType = System.Type.GetType("Unity.AI.Navigation.NavMeshSurface, Unity.AI.Navigation") ?? System.Type.GetType("NavMeshSurface");
+                if (surfaceType != null) go.AddComponent(surfaceType);
+            }
+
+            go.name = "SurfaceEnemy";
+
+            var surfComp = go.GetComponent(System.Type.GetType("Unity.AI.Navigation.NavMeshSurface, Unity.AI.Navigation") ?? System.Type.GetType("NavMeshSurface"));
+            if (surfComp != null)
+            {
                 var prop = surfComp.GetType().GetProperty("agentTypeID");
                 if (prop != null) prop.SetValue(surfComp, GetOrCreateEnemyAgentType());
             }
