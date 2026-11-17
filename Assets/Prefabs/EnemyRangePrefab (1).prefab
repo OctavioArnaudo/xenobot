@@ -86,7 +86,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -107,20 +107,35 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.EnemyController
   ShowTopMostFoldoutHeaderGroup: 1
-  currentState: 0
+  enemyCategory: 1
+  mainArchetype: 8
   playerTag: Player
-  hoverHeight: 3.5
-  wanderSpeed: 2
-  chaseSpeed: 5
-  turnSpeed: 10
-  wanderRadius: 15
-  detectionRange: 20
-  shootRange: 12
-  meleeRange: 2.5
-  m_Shooter: {fileID: 0}
-  m_Melee: {fileID: 0}
-  m_Health: {fileID: 0}
-  m_Spawn: {fileID: 0}
+  phases: []
+  currentPhaseIndex: 0
+  currentState: 0
+  activePhaseName: Fase Inicial
+  activeArchetype: 0
+  HoverHeight: 3.5
+  hoverHeight:
+    use: 0
+    value: 0
+  WanderSpeed: 3.5
+  wanderSpeed:
+    use: 0
+    value: 0
+  ChaseSpeed: 8
+  chaseSpeed:
+    use: 0
+    value: 0
+  TurnSpeed: 20
+  turnSpeed:
+    use: 0
+    value: 0
+  WanderRadius: 20
+  wanderRadius:
+    use: 0
+    value: 0
+  minionPrefabs: []
 --- !u!195 &881596527909093701
 NavMeshAgent:
   m_ObjectHideFlags: 0

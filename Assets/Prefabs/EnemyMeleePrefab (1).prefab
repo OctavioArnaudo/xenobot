@@ -107,7 +107,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.EnemyController
   ShowTopMostFoldoutHeaderGroup: 1
-  enemyCategory: 2
+  enemyCategory: 0
   mainArchetype: 8
   playerTag: Player
   phases: []
@@ -115,34 +115,27 @@ MonoBehaviour:
   currentState: 0
   activePhaseName: Fase Inicial
   activeArchetype: 0
+  HoverHeight: 3.5
   hoverHeight:
-    useOverride: 0
+    use: 0
     value: 0
+  WanderSpeed: 3.5
   wanderSpeed:
-    useOverride: 0
+    use: 0
     value: 0
+  ChaseSpeed: 8
   chaseSpeed:
-    useOverride: 0
+    use: 0
     value: 0
+  TurnSpeed: 20
   turnSpeed:
-    useOverride: 0
+    use: 0
     value: 0
+  WanderRadius: 20
   wanderRadius:
-    useOverride: 0
+    use: 0
     value: 0
-  detectionRange:
-    useOverride: 0
-    value: 0
-  shootRange:
-    useOverride: 0
-    value: 0
-  meleeRange:
-    useOverride: 0
-    value: 0
-  m_Shooter: {fileID: 0}
-  m_Melee: {fileID: 0}
-  m_Health: {fileID: 0}
-  m_Spawn: {fileID: 0}
+  minionPrefabs: []
 --- !u!195 &4953735725139305854
 NavMeshAgent:
   m_ObjectHideFlags: 0
