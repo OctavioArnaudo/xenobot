@@ -323,7 +323,7 @@ namespace Runtime.Scripts.Inventory
 
             var iron = go.GetComponentInChildren<Irons.IronsController>(true);
             if (iron != null) iron.GenerateIronVisuals();
-            var life = go.GetComponentInChildren<Life.LifeController>(true);
+            var life = go.GetComponentInChildren<Lifes.LifesController>(true);
             if (life != null) life.GenerateLifeVisuals();
             var exp = go.GetComponentInChildren<Experience.ExperienceController>(true);
             if (exp != null) exp.GenerateOrbVisuals();

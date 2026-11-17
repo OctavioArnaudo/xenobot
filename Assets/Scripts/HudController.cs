@@ -10,13 +10,12 @@ using Runtime.Scripts.Singleton;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Shoot;
 using Runtime.Scripts.Propulsion;
-using Runtime.Scripts.Shield;
+using Runtime.Scripts.Shields;
 using Runtime.Scripts.Player;
 using Runtime.Scripts.Levels;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Settings;
 using Runtime.Scripts.Inventory;
-using Runtime.Scripts.Crafting;
 using Runtime.Scripts.Narrative;
 using static Runtime.Scripts.Gate.MenuGate;
 
@@ -64,7 +63,7 @@ namespace Runtime.Scripts.Hud
         private HealthController m_PlayerHealth;
         private PropulsionController _propulsion;
         private ShootController _shooter;
-        private ShieldController _shield;
+        private ShieldsController _shield;
         private PlayerController _player;
 
         private float _lastTimeUpdate = -1f;
@@ -94,13 +93,13 @@ namespace Runtime.Scripts.Hud
             return _shooter;
         }
 
-        private ShieldController GetShield()
+        private ShieldsController GetShield()
         {
             if (_shield == null)
             {
-                _shield = GetComponent<ShieldController>() ??
-                          GetComponentInParent<ShieldController>() ??
-                          GetComponentInChildren<ShieldController>();
+                _shield = GetComponent<ShieldsController>() ??
+                          GetComponentInParent<ShieldsController>() ??
+                          GetComponentInChildren<ShieldsController>();
             }
             return _shield;
         }

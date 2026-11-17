@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.AI;
 using Runtime.Scripts.Balance;
+using Runtime.Scripts.Fuels;
 
-namespace Editor.Scripts.Fuel
+namespace Editor.Scripts.Fuels
 {
     public static class FuelsManager
     {
@@ -59,9 +60,9 @@ namespace Editor.Scripts.Fuel
                     instance.name = "FuelPrefab";
                     instance.transform.position = h.position;
 
-                    if (instance.GetComponent<FuelController>() == null)
+                    if (instance.GetComponent<FuelsController>() == null)
                     {
-                        instance.AddComponent<FuelController>();
+                        instance.AddComponent<FuelsController>();
                     }
 
                     Undo.RegisterCreatedObjectUndo(instance, "Generate Fuels");

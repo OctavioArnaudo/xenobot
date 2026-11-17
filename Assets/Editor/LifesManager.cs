@@ -2,9 +2,9 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.AI;
 using Runtime.Scripts.Balance;
-using Runtime.Scripts.Life;
+using Runtime.Scripts.Lifes;
 
-namespace Editor.Scripts.Life
+namespace Editor.Scripts.Lifes
 {
     public static class LifesManager
     {
@@ -60,9 +60,9 @@ namespace Editor.Scripts.Life
                     instance.name = "LifePrefab";
                     instance.transform.position = h.position;
 
-                    if (instance.GetComponent<LifeController>() == null)
+                    if (instance.GetComponent<LifesController>() == null)
                     {
-                        instance.AddComponent<LifeController>();
+                        instance.AddComponent<LifesController>();
                     }
 
                     Undo.RegisterCreatedObjectUndo(instance, "Generate Lifes");

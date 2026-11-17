@@ -2,9 +2,9 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.AI;
 using Runtime.Scripts.Balance;
-using Runtime.Scripts.Shield;
+using Runtime.Scripts.Shields;
 
-namespace Editor.Scripts.Shield
+namespace Editor.Scripts.Shields
 {
     public static class ShieldsManager
     {
@@ -60,9 +60,9 @@ namespace Editor.Scripts.Shield
                     instance.name = "ShieldPrefab";
                     instance.transform.position = h.position;
 
-                    if (instance.GetComponent<ShieldController>() == null)
+                    if (instance.GetComponent<ShieldsController>() == null)
                     {
-                        instance.AddComponent<ShieldController>();
+                        instance.AddComponent<ShieldsController>();
                     }
 
                     Undo.RegisterCreatedObjectUndo(instance, "Generate Shields");

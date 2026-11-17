@@ -13,7 +13,7 @@ using Runtime.Scripts.Optional;
 using Runtime.Scripts.Effective;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Projectile;
-using Runtime.Scripts.Shield;
+using Runtime.Scripts.Shields;
 
 namespace Runtime.Scripts.Enemy
 {
@@ -392,7 +392,7 @@ namespace Runtime.Scripts.Enemy
             AIArchetype archetype = activeArchetype;
             if (archetype == AIArchetype.GuardiaConEscudo)
             {
-                var shield = GetComponent<ShieldController>() ?? GetComponentInParent<ShieldController>();
+                var shield = GetComponent<ShieldsController>() ?? GetComponentInParent<ShieldsController>();
                 if (shield == null)
                 {
                     Debug.LogError($"<color=red>[EnemyController Error]</color> El arquetipo GUARDIA CON ESCUDO en '{gameObject.name}' REQUIERE un componente ShieldController asignado.");
@@ -851,7 +851,7 @@ namespace Runtime.Scripts.Enemy
             }
 
             HealthController targetHealth = m_Target.GetComponent<HealthController>() ?? m_Target.GetComponentInParent<HealthController>();
-            ShieldController targetShield = m_Target.GetComponent<ShieldController>() ?? m_Target.GetComponentInParent<ShieldController>();
+            ShieldsController targetShield = m_Target.GetComponent<ShieldsController>() ?? m_Target.GetComponentInParent<ShieldsController>();
             ShootController targetShooter = m_Target.GetComponent<ShootController>() ?? m_Target.GetComponentInParent<ShootController>();
 
             if (m_Health != null && (m_Health.EffectiveCurrentHealth / (float)m_Health.MaxHealth) < 0.25f)
@@ -1040,7 +1040,7 @@ namespace Runtime.Scripts.Enemy
 
         private void ComportamientoGuardiaConEscudo(EnemyCategory category, float speedMult)
         {
-            var shield = GetComponent<ShieldController>() ?? GetComponentInParent<ShieldController>();
+            var shield = GetComponent<ShieldsController>() ?? GetComponentInParent<ShieldsController>();
             if (shield != null && !shield.IsShieldActive)
             {
                 shield.SetShieldState(true);

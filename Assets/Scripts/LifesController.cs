@@ -5,14 +5,14 @@ using Runtime.Scripts.Health;
 using Runtime.Scripts.Pickup;
 
 
-namespace Runtime.Scripts.Life
+namespace Runtime.Scripts.Lifes
 {
     /// <summary>
     /// Specialized controller for Life (Heart) visual representation and logic.
     /// Handles procedural mesh generation and healing effect.
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
-    public class LifeController : NetworkBehaviour, IItemUseAction, IItemPickupAction
+    public class LifesController : NetworkBehaviour, IItemUseAction, IItemPickupAction
     {
         // Economy Reliability Constants
         private const int HEAL_AMOUNT = 30;

@@ -2,8 +2,9 @@ using UnityEngine;
 using UnityEditor;
 using UnityEngine.AI;
 using Runtime.Scripts.Balance;
+using Runtime.Scripts.Ammos;
 
-namespace Editor.Scripts.Ammo
+namespace Editor.Scripts.Ammos
 {
     public static class AmmosManager
     {
@@ -59,9 +60,9 @@ namespace Editor.Scripts.Ammo
                     instance.name = "AmmoPrefab";
                     instance.transform.position = h.position;
 
-                    if (instance.GetComponent<AmmoController>() == null)
+                    if (instance.GetComponent<AmmosController>() == null)
                     {
-                        instance.AddComponent<AmmoController>();
+                        instance.AddComponent<AmmosController>();
                     }
 
                     Undo.RegisterCreatedObjectUndo(instance, "Generate Ammos");

@@ -13,7 +13,7 @@ using Runtime.Scripts.Balance;
 using Runtime.Scripts.Pickup;
 using Runtime.Scripts.Player;
 
-namespace Runtime.Scripts.Shield
+namespace Runtime.Scripts.Shields
 {
     public enum ShieldInputMode
     {
@@ -25,7 +25,7 @@ namespace Runtime.Scripts.Shield
     /// Sistema de escudo de energía esférico controlado externamente por PlayerController según el modo de combate.
     /// </summary>
     [ExecuteAlways]
-    public class ShieldController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
+    public class ShieldsController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
     {
         private const float DEFAULT_DAMAGE_REDUCTION = 0.50f;
         private const float DEFAULT_MAX_SHIELD_HEALTH = 150.0f;
@@ -648,7 +648,7 @@ namespace Runtime.Scripts.Shield
 
             GameObject playerRoot = entity.transform.root.gameObject;
 
-            ShieldController actualController = playerRoot.GetComponentsInChildren<ShieldController>(true)
+            ShieldsController actualController = playerRoot.GetComponentsInChildren<ShieldsController>(true)
                 .FirstOrDefault(s => s != null && s != this);
 
             if (actualController != null)

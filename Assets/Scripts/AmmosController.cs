@@ -6,13 +6,13 @@ using Runtime.Scripts.Items;
 using Runtime.Scripts.Shoot;
 using Runtime.Scripts.Pickup;
 
-namespace Runtime.Scripts.Ammo
+namespace Runtime.Scripts.Ammos
 {
     /// <summary>
     /// Controller for Ammo visual representation and reload logic.
     /// Implements IItemFunctional, IItemUseAction, and IItemPickupAction to restore ammunition to ShootController.
     /// </summary>
-    public class AmmoController : NetworkBehaviour, IItemUseAction, IItemPickupAction
+    public class AmmosController : NetworkBehaviour, IItemUseAction, IItemPickupAction
     {
         private const int DEFAULT_AMMO_AMOUNT = 30;
         private const float DEFAULT_DAMAGE_MULTIPLIER = 1.25f;
