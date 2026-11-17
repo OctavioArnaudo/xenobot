@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using Unity.Netcode;
 using UnityEngine.Events;
 using Runtime.Scripts.Balance;
@@ -16,6 +17,7 @@ namespace Runtime.Scripts.Health
 
     /// <summary>
     /// Universal controller for Health, Team, and Shield Mitigation with IFrames support.
+    /// Includes automatic floating world-space health bars for enemies.
     /// </summary>
     public class HealthController : NetworkBehaviour, IBalanceCalibratable
     {
@@ -34,8 +36,10 @@ namespace Runtime.Scripts.Health
             {
                 SetHealth(stats.currentHealth.value);
             }
+            ResetEnemyHealthBar();
             OnStatsUpdated?.Invoke(stats);
         }
+
         // --- Internal Hardcoded Health Defaults ---
         private const int DEFAULT_PLAYER_MAX_HEALTH = 250;
         private const int DEFAULT_ENEMY_BASE_HEALTH = 120;
@@ -50,6 +54,13 @@ namespace Runtime.Scripts.Health
         public Optional<int> currentHealth;
         [Tooltip("Duración en segundos de la invulnerabilidad (iframes) tras recibir daño.")]
         public float invulnerabilityDuration = 0.5f;
+
+        [Header("Enemy Floating Health Bar")]
+        public bool showEnemyHealthBar = true;
+        public bool hideBarWhenFull = true;
+        public Vector3 healthBarOffset = new Vector3(0f, 0.45f, 0f);
+        public Vector2 healthBarSize = new Vector2(1.1f, 0.14f);
+        public float healthBarMaxDistance = 35f;
 
         [Header("Visual Feedback (Optional)")]
         public Renderer[] visualsToFlash;
@@ -69,6 +80,17 @@ namespace Runtime.Scripts.Health
         private Animator m_Animator;
         private static readonly int _animIDTakeDamage = Animator.StringToHash("takeDamage");
         private bool _hasAnimDamage;
+
+        // --- Floating Enemy Health Bar State ---
+        private GameObject _hpBarCanvasObj;
+        private RectTransform _hpFillRect;
+        private RectTransform _hpTrailRect;
+        private Transform _hpAnchorTarget;
+        private Vector3 _hpLocalAnchorOffset;
+        private Camera _hpMainCamCache;
+        private float _hpCurrentFill = 1f;
+        private float _hpTrailFill = 1f;
+        private float _hpTrailHoldTimer = 0f;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
@@ -207,6 +229,31 @@ namespace Runtime.Scripts.Health
             CacheOriginalColors();
         }
 
+        private void Start()
+        {
+            if (showEnemyHealthBar && EffectiveTeam == Team.Enemy)
+            {
+                InitEnemyHealthBar();
+            }
+        }
+
+        private void OnEnable()
+        {
+            // Al salir de un Object Pool, restaurar el estado visual de la barra
+            if (_hpBarCanvasObj != null)
+            {
+                ResetEnemyHealthBar();
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (_hpBarCanvasObj != null)
+            {
+                _hpBarCanvasObj.SetActive(false);
+            }
+        }
+
         private void CacheOriginalColors()
         {
             if (visualsToFlash == null || visualsToFlash.Length == 0)
@@ -242,6 +289,11 @@ namespace Runtime.Scripts.Health
             {
                 CSingleton<HealthController>.Instance = this;
             }
+
+            if (showEnemyHealthBar && EffectiveTeam == Team.Enemy && _hpBarCanvasObj == null)
+            {
+                InitEnemyHealthBar();
+            }
         }
 
         public override void OnNetworkDespawn()
@@ -253,6 +305,7 @@ namespace Runtime.Scripts.Health
         public override void OnDestroy()
         {
             CSingleton<HealthController>.UnregisterInstance(this);
+            if (_hpBarCanvasObj != null) Destroy(_hpBarCanvasObj);
             base.OnDestroy();
         }
 
@@ -295,6 +348,11 @@ namespace Runtime.Scripts.Health
                     }
                 }
             }
+        }
+
+        private void LateUpdate()
+        {
+            UpdateEnemyHealthBar();
         }
 
         private void TriggerDamageFlash()
@@ -352,11 +410,15 @@ namespace Runtime.Scripts.Health
             int newHp = Mathf.Max(0, EffectiveCurrentHealth - finalDamage);
             SetHealth(newHp);
 
+            // Retener un instante la barra secundaria amarilla para visualizar el golpe
+            _hpTrailHoldTimer = 0.25f;
+
             TriggerDamageFlash();
             OnTakeDamage?.Invoke(finalDamage);
 
             if (EffectiveCurrentHealth <= 0)
             {
+                if (_hpBarCanvasObj != null) _hpBarCanvasObj.SetActive(false);
                 OnDeath?.Invoke();
                 if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
                 else gameObject.SetActive(false);
@@ -385,5 +447,164 @@ namespace Runtime.Scripts.Health
             int newHp = Mathf.Min(EffectiveMaxHealth, EffectiveCurrentHealth + healthBonus);
             SetHealth(newHp);
         }
+
+        #region Enemy Floating Health Bar
+        private void InitEnemyHealthBar()
+        {
+            if (_hpBarCanvasObj != null) return;
+
+            // 1. Buscar anclaje sobre la cabeza del enemigo
+            Animator anim = GetComponentInChildren<Animator>();
+            Transform headBone = null;
+            if (anim != null && anim.isHuman)
+            {
+                headBone = anim.GetBoneTransform(HumanBodyBones.Head);
+            }
+            if (headBone == null)
+            {
+                foreach (Transform child in GetComponentsInChildren<Transform>())
+                {
+                    if (child.name.ToLower().Contains("head"))
+                    {
+                        headBone = child;
+                        break;
+                    }
+                }
+            }
+
+            if (headBone != null)
+            {
+                _hpAnchorTarget = headBone;
+                _hpLocalAnchorOffset = healthBarOffset;
+            }
+            else
+            {
+                _hpAnchorTarget = transform;
+                float topY = 2.0f;
+                if (TryGetComponent<CharacterController>(out var cc)) topY = cc.height;
+                else if (TryGetComponent<Collider>(out var col)) topY = col.bounds.size.y;
+
+                _hpLocalAnchorOffset = new Vector3(healthBarOffset.x, topY + healthBarOffset.y, healthBarOffset.z);
+            }
+
+            // 2. Crear Canvas World-Space
+            _hpBarCanvasObj = new GameObject("EnemyHealthBarCanvas");
+            _hpBarCanvasObj.transform.SetParent(transform);
+
+            Canvas canvas = _hpBarCanvasObj.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.WorldSpace;
+            canvas.sortingOrder = 50;
+
+            RectTransform canvasRect = _hpBarCanvasObj.GetComponent<RectTransform>();
+            canvasRect.sizeDelta = healthBarSize;
+            canvasRect.localScale = Vector3.one;
+
+            // Fondo oscuro
+            GameObject bgObj = new GameObject("Background", typeof(Image));
+            bgObj.transform.SetParent(_hpBarCanvasObj.transform, false);
+            Image bgImg = bgObj.GetComponent<Image>();
+            bgImg.color = new Color(0.05f, 0.05f, 0.05f, 0.85f);
+            bgImg.raycastTarget = false;
+            StretchBarRect(bgObj.GetComponent<RectTransform>(), Vector2.zero, Vector2.zero);
+
+            Vector2 padding = new Vector2(0.02f, 0.02f);
+
+            // Barra secundaria (rastro de daño reciente en amarillo)
+            GameObject trailObj = new GameObject("DamageTrail", typeof(Image));
+            trailObj.transform.SetParent(bgObj.transform, false);
+            Image trailImg = trailObj.GetComponent<Image>();
+            trailImg.color = new Color(1f, 0.82f, 0.25f, 0.9f);
+            trailImg.raycastTarget = false;
+            _hpTrailRect = trailObj.GetComponent<RectTransform>();
+            StretchBarRect(_hpTrailRect, padding, -padding);
+
+            // Barra principal de vida actual (rojo intenso)
+            GameObject fillObj = new GameObject("HealthFill", typeof(Image));
+            fillObj.transform.SetParent(bgObj.transform, false);
+            Image fillImg = fillObj.GetComponent<Image>();
+            fillImg.color = new Color(0.9f, 0.15f, 0.15f, 1f);
+            fillImg.raycastTarget = false;
+            _hpFillRect = fillObj.GetComponent<RectTransform>();
+            StretchBarRect(_hpFillRect, padding, -padding);
+
+            ResetEnemyHealthBar();
+        }
+
+        private static void StretchBarRect(RectTransform rect, Vector2 offsetMin, Vector2 offsetMax)
+        {
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = offsetMin;
+            rect.offsetMax = offsetMax;
+        }
+
+        private void ResetEnemyHealthBar()
+        {
+            float maxHp = Mathf.Max(1f, EffectiveMaxHealth);
+            float ratio = Mathf.Clamp01(EffectiveCurrentHealth / maxHp);
+            _hpCurrentFill = ratio;
+            _hpTrailFill = ratio;
+            _hpTrailHoldTimer = 0f;
+
+            if (_hpFillRect != null) _hpFillRect.anchorMax = new Vector2(_hpCurrentFill, 1f);
+            if (_hpTrailRect != null) _hpTrailRect.anchorMax = new Vector2(_hpTrailFill, 1f);
+        }
+
+        private void UpdateEnemyHealthBar()
+        {
+            if (_hpBarCanvasObj == null) return;
+
+            int curHp = EffectiveCurrentHealth;
+            int maxHp = Mathf.Max(1, EffectiveMaxHealth);
+
+            if (!showEnemyHealthBar || curHp <= 0 || EffectiveTeam != Team.Enemy)
+            {
+                if (_hpBarCanvasObj.activeSelf) _hpBarCanvasObj.SetActive(false);
+                return;
+            }
+
+            if (_hpMainCamCache == null) _hpMainCamCache = Camera.main;
+            if (_hpMainCamCache == null) return;
+
+            Vector3 worldPos = (_hpAnchorTarget != null ? _hpAnchorTarget.position : transform.position) + _hpLocalAnchorOffset;
+            float sqrDist = (worldPos - _hpMainCamCache.transform.position).sqrMagnitude;
+            bool inRange = sqrDist <= healthBarMaxDistance * healthBarMaxDistance;
+            bool isFull = curHp >= maxHp;
+
+            bool shouldShow = inRange && (!hideBarWhenFull || !isFull);
+            if (_hpBarCanvasObj.activeSelf != shouldShow)
+            {
+                _hpBarCanvasObj.SetActive(shouldShow);
+            }
+
+            if (!shouldShow) return;
+
+            // Posicionar sobre la cabeza y rotar hacia la cámara (Billboard)
+            _hpBarCanvasObj.transform.position = worldPos;
+            _hpBarCanvasObj.transform.rotation = Quaternion.LookRotation(_hpBarCanvasObj.transform.position - _hpMainCamCache.transform.position);
+
+            // Actualizar relleno principal y drenaje suave de la barra de daño reciente
+            _hpCurrentFill = Mathf.Clamp01((float)curHp / maxHp);
+
+            if (_hpTrailFill > _hpCurrentFill)
+            {
+                if (_hpTrailHoldTimer > 0f)
+                {
+                    _hpTrailHoldTimer -= Time.deltaTime;
+                }
+                else
+                {
+                    _hpTrailFill = Mathf.MoveTowards(_hpTrailFill, _hpCurrentFill, 2.2f * Time.deltaTime);
+                }
+            }
+            else
+            {
+                _hpTrailFill = _hpCurrentFill;
+            }
+
+            if (_hpFillRect != null) _hpFillRect.anchorMax = new Vector2(_hpCurrentFill, 1f);
+            if (_hpTrailRect != null) _hpTrailRect.anchorMax = new Vector2(_hpTrailFill, 1f);
+        }
+        #endregion
     }
 }
