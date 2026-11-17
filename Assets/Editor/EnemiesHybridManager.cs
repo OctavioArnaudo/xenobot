@@ -129,8 +129,6 @@ namespace Editor.Scripts.Enemies
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(go.scene);
         }
 
-        z
-
         static int GetOrCreateAgentType(string typeName)
         {
             var a = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/NavMeshAreas.asset").FirstOrDefault();

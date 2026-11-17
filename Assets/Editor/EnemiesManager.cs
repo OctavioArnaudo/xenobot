@@ -12,6 +12,15 @@ namespace Editor.Scripts.Enemies
 {
     public static class EnemiesManager
     {
+        struct EnemyEntry
+        {
+            public GameObject prefab;
+            public string agentTypeName;
+            public bool isMelee;
+            public bool isRange;
+            public bool isHybrid;
+        }
+
         [MenuItem("Tools/Enemies/EnemiesPrefab")]
         static void FillWithEnemies()
         {
@@ -21,12 +30,26 @@ namespace Editor.Scripts.Enemies
             var grp = GameObject.Find("EnemiesPrefab") ?? new GameObject("EnemiesPrefab");
             var rnd = new System.Random();
 
-            var variants = LoadVariants("EnemyPrefab");
-            if (variants.Count == 0) return;
+            var pool = new List<EnemyEntry>();
+
+            foreach (var p in LoadVariants("EnemyMeleePrefab"))
+                pool.Add(new EnemyEntry { prefab = p, agentTypeName = "EnemyMelee", isMelee = true, isRange = false, isHybrid = false });
+            foreach (var p in LoadVariants("EnemyRangePrefab"))
+                pool.Add(new EnemyEntry { prefab = p, agentTypeName = "EnemyRange", isMelee = false, isRange = true, isHybrid = false });
+            foreach (var p in LoadVariants("EnemyHybridPrefab"))
+                pool.Add(new EnemyEntry { prefab = p, agentTypeName = "EnemyHybrid", isMelee = true, isRange = true, isHybrid = true });
+
+            if (pool.Count == 0)
+            {
+                var fallback = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyPrefab (1).prefab");
+                if (fallback != null) pool.Add(new EnemyEntry { prefab = fallback, agentTypeName = "Enemy", isMelee = true, isRange = false, isHybrid = false });
+            }
+
+            if (pool.Count == 0) return;
 
             for (int i = 0; i < 20; i++)
             {
-                var itemPrefab = variants[rnd.Next(variants.Count)];
+                var entry = pool[rnd.Next(pool.Count)];
                 var t = ts[rnd.Next(ts.Length)];
                 Vector3 tp = t.transform.position, sz = t.terrainData.size;
                 Vector3 p = new Vector3(tp.x + (float)rnd.NextDouble() * sz.x, 0f, tp.z + (float)rnd.NextDouble() * sz.z);
@@ -34,19 +57,18 @@ namespace Editor.Scripts.Enemies
 
                 if (NavMesh.SamplePosition(p, out var h, 100f, NavMesh.AllAreas))
                 {
-                    var g = (GameObject)PrefabUtility.InstantiatePrefab(itemPrefab, grp.transform);
-                    g.name = "EnemyPrefab";
+                    var g = (GameObject)PrefabUtility.InstantiatePrefab(entry.prefab, grp.transform);
+                    g.name = entry.prefab.name;
                     g.transform.position = h.position;
 
-                    if (g.GetComponent<MeleeController>() == null) g.AddComponent<MeleeController>();
+                    if (entry.isMelee && g.GetComponent<MeleeController>() == null) g.AddComponent<MeleeController>();
+                    if (entry.isRange && g.GetComponent<ShootController>() == null) g.AddComponent<ShootController>();
                     if (g.GetComponent<HealthController>() == null) g.AddComponent<HealthController>();
-                    if (g.GetComponent<SpawnController>() == null) g.AddComponent<SpawnController>();
-                    if (g.GetComponent<ShootController>() == null) g.AddComponent<ShootController>();
 
                     var agent = g.GetComponent<NavMeshAgent>();
                     if (agent != null)
                     {
-                        agent.agentTypeID = GetOrCreateEnemyAgentType();
+                        agent.agentTypeID = GetOrCreateAgentType(entry.agentTypeName);
                         agent.Warp(h.position);
                     }
 
@@ -65,11 +87,6 @@ namespace Editor.Scripts.Enemies
                 var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
                 if (prefab != null) list.Add(prefab);
                 else if (i > 5) break;
-            }
-            if (list.Count == 0)
-            {
-                var single = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Prefabs/{prefix}.prefab");
-                if (single != null) list.Add(single);
             }
             return list;
         }
@@ -103,7 +120,7 @@ namespace Editor.Scripts.Enemies
             if (surfComp != null)
             {
                 var prop = surfComp.GetType().GetProperty("agentTypeID");
-                if (prop != null) prop.SetValue(surfComp, GetOrCreateEnemyAgentType());
+                if (prop != null) prop.SetValue(surfComp, GetOrCreateAgentType("Enemy"));
             }
 
             Undo.RegisterCreatedObjectUndo(go, "Create Enemy Surface");
@@ -111,7 +128,7 @@ namespace Editor.Scripts.Enemies
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(go.scene);
         }
 
-        static int GetOrCreateEnemyAgentType()
+        static int GetOrCreateAgentType(string typeName)
         {
             var a = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/NavMeshAreas.asset").FirstOrDefault();
             var so = a ? new SerializedObject(a) : null;
@@ -122,7 +139,7 @@ namespace Editor.Scripts.Enemies
             int i = -1;
             for (int k = 0; k < names.arraySize; k++)
             {
-                if (names.GetArrayElementAtIndex(k).stringValue == "Enemy")
+                if (names.GetArrayElementAtIndex(k).stringValue == typeName)
                 {
                     i = k;
                     break;
@@ -143,7 +160,7 @@ namespace Editor.Scripts.Enemies
                 }
                 if (i < 0) return 0;
                 while (names.arraySize <= i) names.InsertArrayElementAtIndex(names.arraySize);
-                names.GetArrayElementAtIndex(i).stringValue = "Enemy";
+                names.GetArrayElementAtIndex(i).stringValue = typeName;
                 so.ApplyModifiedProperties();
                 AssetDatabase.SaveAssets();
             }
