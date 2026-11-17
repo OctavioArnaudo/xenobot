@@ -60,9 +60,9 @@ namespace Editor.Scripts.Irons
                     ironInstance.name = "IronPrefab";
                     ironInstance.transform.position = h.position;
 
-                    if (ironInstance.GetComponent<IronController>() == null)
+                    if (ironInstance.GetComponent<IronsController>() == null)
                     {
-                        ironInstance.AddComponent<IronController>();
+                        ironInstance.AddComponent<IronsController>();
                     }
 
                     Undo.RegisterCreatedObjectUndo(ironInstance, "Generate Irons");
