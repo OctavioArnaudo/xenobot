@@ -39,7 +39,7 @@ namespace Editor.Scripts.Lifes
 
             for (int i = container.transform.childCount - 1; i >= 0; i--)
             {
-                Undo.DestroyObjectImmediate(container.transform.GetChild(i).gameObject);
+                Object.DestroyImmediate(container.transform.GetChild(i).gameObject);
             }
 
             var ts = Terrain.activeTerrains;

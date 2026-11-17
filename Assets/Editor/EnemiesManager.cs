@@ -7,6 +7,7 @@ using Runtime.Scripts.Melee;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Spawn;
 using Runtime.Scripts.Shoot;
+using Runtime.Scripts.Balance;
 
 namespace Editor.Scripts.Enemies
 {
@@ -16,9 +17,7 @@ namespace Editor.Scripts.Enemies
         {
             public GameObject prefab;
             public string agentTypeName;
-            public bool isMelee;
-            public bool isRange;
-            public bool isHybrid;
+            public HostType hostType;
         }
 
         [MenuItem("Tools/Enemies/EnemiesPrefab")]
@@ -27,27 +26,45 @@ namespace Editor.Scripts.Enemies
             var ts = Terrain.activeTerrains;
             if (ts.Length == 0) return;
 
-            var grp = GameObject.Find("EnemiesPrefab") ?? new GameObject("EnemiesPrefab");
-            var rnd = new System.Random();
+            var containerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemiesPrefab.prefab");
 
+            GameObject existingGrp = GameObject.Find("EnemiesPrefab");
+            if (existingGrp != null)
+            {
+                Object.DestroyImmediate(existingGrp);
+            }
+
+            GameObject grp;
+            if (containerPrefab != null)
+            {
+                grp = (GameObject)PrefabUtility.InstantiatePrefab(containerPrefab);
+                grp.name = "EnemiesPrefab";
+            }
+            else
+            {
+                grp = new GameObject("EnemiesPrefab");
+            }
+
+            var rnd = new System.Random();
             var pool = new List<EnemyEntry>();
 
             foreach (var p in LoadVariants("EnemyMeleePrefab"))
-                pool.Add(new EnemyEntry { prefab = p, agentTypeName = "EnemyMelee", isMelee = true, isRange = false, isHybrid = false });
+                pool.Add(new EnemyEntry { prefab = p, agentTypeName = "EnemyMelee", hostType = HostType.Melee });
             foreach (var p in LoadVariants("EnemyRangePrefab"))
-                pool.Add(new EnemyEntry { prefab = p, agentTypeName = "EnemyRange", isMelee = false, isRange = true, isHybrid = false });
+                pool.Add(new EnemyEntry { prefab = p, agentTypeName = "EnemyRange", hostType = HostType.Range });
             foreach (var p in LoadVariants("EnemyHybridPrefab"))
-                pool.Add(new EnemyEntry { prefab = p, agentTypeName = "EnemyHybrid", isMelee = true, isRange = true, isHybrid = true });
+                pool.Add(new EnemyEntry { prefab = p, agentTypeName = "EnemyHybrid", hostType = HostType.Hybrid });
 
             if (pool.Count == 0)
             {
                 var fallback = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemyPrefab (1).prefab");
-                if (fallback != null) pool.Add(new EnemyEntry { prefab = fallback, agentTypeName = "Enemy", isMelee = true, isRange = false, isHybrid = false });
+                if (fallback != null) pool.Add(new EnemyEntry { prefab = fallback, agentTypeName = "Enemy", hostType = HostType.Melee });
             }
 
             if (pool.Count == 0) return;
 
-            for (int i = 0; i < 20; i++)
+            int count = 20;
+            for (int i = 0; i < count; i++)
             {
                 var entry = pool[rnd.Next(pool.Count)];
                 var t = ts[rnd.Next(ts.Length)];
@@ -61,9 +78,12 @@ namespace Editor.Scripts.Enemies
                     g.name = entry.prefab.name;
                     g.transform.position = h.position;
 
-                    if (entry.isMelee && g.GetComponent<MeleeController>() == null) g.AddComponent<MeleeController>();
-                    if (entry.isRange && g.GetComponent<ShootController>() == null) g.AddComponent<ShootController>();
-                    if (g.GetComponent<HealthController>() == null) g.AddComponent<HealthController>();
+                    if ((entry.hostType == HostType.Melee || entry.hostType == HostType.Hybrid) && g.GetComponent<MeleeController>() == null)
+                        g.AddComponent<MeleeController>();
+                    if ((entry.hostType == HostType.Range || entry.hostType == HostType.Hybrid) && g.GetComponent<ShootController>() == null)
+                        g.AddComponent<ShootController>();
+                    if (g.GetComponent<HealthController>() == null)
+                        g.AddComponent<HealthController>();
 
                     var agent = g.GetComponent<NavMeshAgent>();
                     if (agent != null)
