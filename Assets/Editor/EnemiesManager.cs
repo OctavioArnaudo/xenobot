@@ -7,11 +7,11 @@ using Runtime.Scripts.Health;
 using Runtime.Scripts.Spawn;
 using Runtime.Scripts.Shoot;
 
-namespace Editor.Scripts.Enemy
+namespace Editor.Scripts.Enemies
 {
-    public static class EnemyManager
+    public static class EnemiesManager
     {
-        [MenuItem("Tools/Enemy/Fill with Enemies")]
+        [MenuItem("Tools/Enemies/EnemiesPrefab")]
         static void FillWithEnemies()
         {
             var ts = Terrain.activeTerrains;
@@ -71,7 +71,7 @@ namespace Editor.Scripts.Enemy
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(grp.scene);
         }
 
-        [MenuItem("Tools/Enemy/Create Enemy Surface")]
+        [MenuItem("Tools/Enemies/SurfaceEnemy")]
         static void CreateEnemySurface()
         {
             var existing = GameObject.Find("SurfaceEnemy");
