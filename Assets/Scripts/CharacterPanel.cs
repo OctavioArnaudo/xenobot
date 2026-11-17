@@ -321,7 +321,7 @@ namespace Runtime.Scripts.Inventory
             var go = Instantiate(d.itemPrefab, _box.transform);
             go.SetActive(true);
 
-            var iron = go.GetComponentInChildren<Iron.IronController>(true);
+            var iron = go.GetComponentInChildren<Irons.IronsController>(true);
             if (iron != null) iron.GenerateIronVisuals();
             var life = go.GetComponentInChildren<Life.LifeController>(true);
             if (life != null) life.GenerateLifeVisuals();

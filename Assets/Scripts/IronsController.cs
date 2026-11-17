@@ -3,7 +3,7 @@ using Unity.Netcode;
 using Runtime.Scripts.Pickup;
 using Runtime.Scripts.Items;
 
-namespace Runtime.Scripts.Iron
+namespace Runtime.Scripts.Irons
 {
     /// <summary>
     /// Specialized controller for Iron Ingot visual representation.
@@ -12,7 +12,7 @@ namespace Runtime.Scripts.Iron
     /// </summary>
     [RequireComponent(typeof(NetworkObject))]
     [RequireComponent(typeof(PickupController))]
-    public class IronController : NetworkBehaviour
+    public class IronsController : NetworkBehaviour
     {
         [Header("Visual Settings")]
         public Color ironColor = new Color(0.75f, 0.75f, 0.8f); // Shiny Metallic Gray
