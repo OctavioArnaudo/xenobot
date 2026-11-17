@@ -82,11 +82,24 @@ namespace Editor.Scripts.Enemies
             var existing = GameObject.Find(surfaceName);
             if (existing != null) Undo.DestroyObjectImmediate(existing);
 
-            GameObject go = new GameObject(surfaceName);
-            System.Type surfaceType = System.Type.GetType("Unity.AI.Navigation.NavMeshSurface, Unity.AI.Navigation") ?? System.Type.GetType("NavMeshSurface");
-            if (surfaceType != null)
+            var surfacePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Surface.prefab");
+            GameObject go;
+            if (surfacePrefab != null)
             {
-                var surfComp = go.AddComponent(surfaceType);
+                go = (GameObject)PrefabUtility.InstantiatePrefab(surfacePrefab);
+            }
+            else
+            {
+                go = new GameObject(surfaceName);
+                System.Type surfaceType = System.Type.GetType("Unity.AI.Navigation.NavMeshSurface, Unity.AI.Navigation") ?? System.Type.GetType("NavMeshSurface");
+                if (surfaceType != null) go.AddComponent(surfaceType);
+            }
+
+            go.name = surfaceName;
+
+            var surfComp = go.GetComponent(System.Type.GetType("Unity.AI.Navigation.NavMeshSurface, Unity.AI.Navigation") ?? System.Type.GetType("NavMeshSurface"));
+            if (surfComp != null)
+            {
                 var prop = surfComp.GetType().GetProperty("agentTypeID");
                 if (prop != null) prop.SetValue(surfComp, GetOrCreateAgentType(typeName));
             }
