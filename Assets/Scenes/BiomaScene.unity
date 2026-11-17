@@ -46467,12 +46467,24 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6353754398152676254, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: SlamHoldDuration
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6353754398152676254, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: attackDamage.use
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6353754398152676254, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: attackRange.value
       value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 6353754398152676254, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: slamHoldDuration.use
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6353754398152676254, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
+      propertyPath: slamHoldDuration.value
+      value: 0.1
       objectReference: {fileID: 0}
     - target: {fileID: 7736108665850884707, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: m_LocalPosition.x
