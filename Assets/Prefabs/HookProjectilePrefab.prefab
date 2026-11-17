@@ -244,7 +244,7 @@ MonoBehaviour:
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -265,9 +265,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Combating.Scripts.HookProjectileController
   ShowTopMostFoldoutHeaderGroup: 1
-  flySpeed: 35
+  flySpeed: 70
   maxDistance: 60
-  pullSpeed: 25
+  pullSpeed: 50
   stopDistance: 1.8
   StunDuration: 3
   stunDuration:
