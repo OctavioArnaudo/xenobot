@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using UnityEngine.InputSystem;
 #endif
 using Unity.Netcode;
-using Unity.Cinemachine;
 using Runtime.Scripts.Optional;
 using Runtime.Scripts.Effective;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Shoot;
-using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Propulsion;
 using Runtime.Scripts.Melee;
 using Runtime.Scripts.Singleton;
@@ -16,10 +14,9 @@ using Runtime.Scripts.Projectile;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Hook;
 using Runtime.Scripts.Defeat;
-using Runtime.Scripts.Keys;
 using Runtime.Scripts.Zoom;
 using Runtime.Scripts.Gate;
-using Runtime.Scripts.Shield;
+using Runtime.Scripts.Shields;
 using UnityEngine;
 
 namespace Runtime.Scripts.Player
@@ -243,7 +240,7 @@ namespace Runtime.Scripts.Player
         private PropulsionController _jetpack;
         private ShootController _shooter;
         private MeleeController _melee;
-        private ShieldController _shield;
+        private ShieldsController _shield;
 
         private bool _isJumpHeld;
         private const float _threshold = 0.01f;
@@ -595,7 +592,7 @@ namespace Runtime.Scripts.Player
             _jetpack = GetComponentInChildren<PropulsionController>(true);
             _shooter = GetComponentInChildren<ShootController>(true);
             _melee = GetComponentInChildren<MeleeController>(true);
-            _shield = GetComponentInChildren<ShieldController>(true);
+            _shield = GetComponentInChildren<ShieldsController>(true);
 
             _animator = null;
             _renderTransform = transform.Find("PlayerRender") ?? transform.Find("Render") ?? transform.Find("EnemyRender");

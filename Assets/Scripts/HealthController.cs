@@ -7,7 +7,7 @@ using Runtime.Scripts.Optional;
 using Runtime.Scripts.Effective;
 using Runtime.Scripts.Player;
 using Runtime.Scripts.Enemy;
-using Runtime.Scripts.Shield;
+using Runtime.Scripts.Shields;
 using Runtime.Scripts.Singleton;
 
 namespace Runtime.Scripts.Health
@@ -338,7 +338,7 @@ namespace Runtime.Scripts.Health
 
             int finalDamage = damage;
 
-            var shield = GetComponent<ShieldController>() ?? GetComponentInParent<ShieldController>();
+            var shield = GetComponent<ShieldsController>() ?? GetComponentInParent<ShieldsController>();
             if (shield != null && shield.IsShieldActive)
             {
                 finalDamage = Mathf.RoundToInt(shield.ProcessIncomingDamage(finalDamage));

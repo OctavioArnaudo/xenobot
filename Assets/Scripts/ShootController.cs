@@ -7,7 +7,7 @@ using Runtime.Scripts.Player;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Projectile;
 using Runtime.Scripts.Balance;
-using Runtime.Scripts.Ammo;
+using Runtime.Scripts.Ammos;
 using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Hud;
 using Runtime.Scripts.Inventory;
@@ -172,7 +172,7 @@ namespace Runtime.Scripts.Shoot
             foreach (var kvp in inv.GetMyBag())
             {
                 var def = kvp.Value.def;
-                if (def != null && def.itemPrefab != null && kvp.Value.qty > 0 && def.itemPrefab.GetComponentInChildren<AmmoController>() != null)
+                if (def != null && def.itemPrefab != null && kvp.Value.qty > 0 && def.itemPrefab.GetComponentInChildren<AmmosController>() != null)
                     return true;
             }
             return false;
@@ -186,7 +186,7 @@ namespace Runtime.Scripts.Shoot
             {
                 var def = kvp.Value.def;
                 if (def == null || def.itemPrefab == null || kvp.Value.qty <= 0) continue;
-                var ammo = def.itemPrefab.GetComponentInChildren<AmmoController>();
+                var ammo = def.itemPrefab.GetComponentInChildren<AmmosController>();
                 if (ammo == null) continue;
                 InventoryController.RemoveItem(def.itemName);
                 AddAmmo(ammo.EffectiveAmmoAmount, ammo.EffectiveDamageMultiplier);
