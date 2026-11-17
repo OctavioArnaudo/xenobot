@@ -18,6 +18,9 @@ namespace Editor.Scripts.Balance
             var bm = go.AddComponent<BalanceManager>();
 
             RegisterEnemies();
+            RegisterEnemiesMelee();
+            RegisterEnemiesRange();
+            RegisterEnemiesHybrid();
             RegisterLifes();
             RegisterShields();
             RegisterIrons();
@@ -66,6 +69,15 @@ namespace Editor.Scripts.Balance
 
         [MenuItem("Tools/Balance/EnemiesPrefab")]
         static void RegisterEnemies() => RegisterContainerHosts("EnemiesPrefab");
+
+        [MenuItem("Tools/Balance/EnemiesMeleePrefab")]
+        static void RegisterEnemiesMelee() => RegisterContainerHostsWithType("EnemiesMeleePrefab", HostType.Melee);
+
+        [MenuItem("Tools/Balance/EnemiesRangePrefab")]
+        static void RegisterEnemiesRange() => RegisterContainerHostsWithType("EnemiesRangePrefab", HostType.Range);
+
+        [MenuItem("Tools/Balance/EnemiesHybridPrefab")]
+        static void RegisterEnemiesHybrid() => RegisterContainerHostsWithType("EnemiesHybridPrefab", HostType.Hybrid);
 
         static BalanceManager GetOrCreateBalanceManager()
         {
@@ -124,21 +136,45 @@ namespace Editor.Scripts.Balance
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(bm.gameObject.scene);
         }
 
+        static void RegisterContainerHostsWithType(string containerName, HostType hostType)
+        {
+            var bm = GetOrCreateBalanceManager();
+            var container = GameObject.Find(containerName);
+            if (container == null) return;
+
+            SerializedObject so = new SerializedObject(bm);
+            var spProp = so.FindProperty("hostSpawnPoints");
+
+            foreach (Transform child in container.transform)
+            {
+                if (child == null) continue;
+                int idx = spProp.arraySize;
+                spProp.InsertArrayElementAtIndex(idx);
+                var elem = spProp.GetArrayElementAtIndex(idx);
+                elem.FindPropertyRelative("pointTransform").objectReferenceValue = child;
+                elem.FindPropertyRelative("enemyTypeToSpawn").enumValueIndex = (int)hostType;
+            }
+
+            so.ApplyModifiedProperties();
+            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(bm.gameObject.scene);
+        }
+
         static void PopulateBalanceManager(BalanceManager bm)
         {
             var hostPoints = new List<HostSpawnPointData>();
             var itemPoints = new List<ItemSpawnPointData>();
             var propPoints = new List<PropSpawnPointData>();
 
-            string[] hostContainers = { "EnemiesPrefab" };
+            string[] hostContainers = { "EnemiesPrefab", "EnemiesMeleePrefab", "EnemiesRangePrefab", "EnemiesHybridPrefab" };
             foreach (var hc in hostContainers)
             {
                 var c = GameObject.Find(hc);
                 if (c != null)
                 {
+                    HostType hType = hc.Contains("Range") ? HostType.Range : hc.Contains("Hybrid") ? HostType.Hybrid : HostType.Melee;
                     foreach (Transform child in c.transform)
                     {
-                        hostPoints.Add(new HostSpawnPointData { pointTransform = child, enemyTypeToSpawn = HostType.Melee, customPrefab = null });
+                        hostPoints.Add(new HostSpawnPointData { pointTransform = child, enemyTypeToSpawn = hType, customPrefab = null });
                     }
                 }
             }
