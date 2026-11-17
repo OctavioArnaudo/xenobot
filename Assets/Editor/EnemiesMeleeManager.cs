@@ -6,11 +6,11 @@ using Runtime.Scripts.Balance;
 using Runtime.Scripts.Melee;
 using Runtime.Scripts.Health;
 
-namespace Editor.Scripts.Enemy
+namespace Editor.Scripts.Enemies
 {
     public static class EnemiesMeleeManager
     {
-        [MenuItem("Tools/Enemies/MeleePrefab")]
+        [MenuItem("Tools/Enemies/EnemiesMeleePrefab")]
         static void GenerateMeleeEnemies()
         {
             var containerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemiesPrefab.prefab");

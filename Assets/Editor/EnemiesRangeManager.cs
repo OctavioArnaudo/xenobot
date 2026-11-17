@@ -6,11 +6,11 @@ using Runtime.Scripts.Balance;
 using Runtime.Scripts.Shoot;
 using Runtime.Scripts.Health;
 
-namespace Editor.Scripts.Enemy
+namespace Editor.Scripts.Enemies
 {
     public static class EnemiesRangeManager
     {
-        [MenuItem("Tools/Enemies/RangePrefab")]
+        [MenuItem("Tools/Enemies/EnemiesRangePrefab")]
         static void GenerateRangeEnemies()
         {
             var containerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemiesPrefab.prefab");

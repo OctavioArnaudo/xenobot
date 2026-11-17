@@ -7,11 +7,11 @@ using Runtime.Scripts.Shoot;
 using Runtime.Scripts.Melee;
 using Runtime.Scripts.Health;
 
-namespace Editor.Scripts.Enemy
+namespace Editor.Scripts.Enemies
 {
     public static class EnemiesHybridManager
     {
-        [MenuItem("Tools/Enemies/HybridPrefab")]
+        [MenuItem("Tools/Enemies/EnemyHybridPrefab")]
         static void GenerateHybridEnemies()
         {
             var containerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/EnemiesPrefab.prefab");
