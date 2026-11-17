@@ -67,6 +67,7 @@ namespace Runtime.Scripts.Player
         public float Gravity;
         public Optional<float> gravity;
         [Tooltip("Gravedad extra al caer")] public float FallGravityMultiplier = 2f;
+        [Tooltip("Velocidad de deslizamiento en bordes muy empinados")] public float SteepSlopeSlideSpeed = 8f;
         #endregion
 
         #region Variables: Aiming & Combat UI
@@ -213,6 +214,9 @@ namespace Runtime.Scripts.Player
         private float _verticalVelocity;
         private Vector3 _kb;
         private float _terminalVelocity = 53.0f;
+
+        private Vector3 _groundNormal = Vector3.up;
+        private bool _isOnSteepSlope = false;
 
         private int _jumpsRemaining;
 
@@ -937,15 +941,56 @@ namespace Runtime.Scripts.Player
         #region Movement Logic
         private void GroundedCheck()
         {
-            if (_verticalVelocity > 0.1f) { Grounded = false; return; }
-
-            Vector3 spherePos = transform.position + Vector3.up * GroundedRadius;
+            if (_verticalVelocity > 0.1f)
+            {
+                Grounded = false;
+                _isOnSteepSlope = false;
+                _groundNormal = Vector3.up;
+                return;
+            }
 
             LayerMask mask = GroundLayers;
             if (mask == 0) mask = ~((1 << 3) | (1 << 2));
 
-            Grounded = Physics.CheckSphere(spherePos, GroundedRadius * 1.1f, mask, QueryTriggerInteraction.Ignore)
-                     || (_controller != null && _controller.isGrounded);
+            float maxSlope = _controller != null ? _controller.slopeLimit : 45f;
+            Vector3 origin = transform.position + Vector3.up * (GroundedRadius + 0.15f);
+
+            if (Physics.SphereCast(origin, GroundedRadius, Vector3.down, out RaycastHit hit, 0.25f, mask, QueryTriggerInteraction.Ignore))
+            {
+                _groundNormal = hit.normal;
+                float slopeAngle = Vector3.Angle(_groundNormal, Vector3.up);
+
+                if (slopeAngle <= maxSlope)
+                {
+                    Grounded = true;
+                    _isOnSteepSlope = false;
+                }
+                else
+                {
+                    // Borde muy empinado: no cuenta como suelo firme para saltar ni escalar
+                    Grounded = false;
+                    _isOnSteepSlope = true;
+                }
+            }
+            else
+            {
+                Grounded = false;
+                _isOnSteepSlope = false;
+                _groundNormal = Vector3.up;
+            }
+        }
+
+        private void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            float maxSlope = _controller != null ? _controller.slopeLimit : 45f;
+            float angle = Vector3.Angle(hit.normal, Vector3.up);
+
+            // Detecta contacto lateral contra una pared o borde empinado del terreno
+            if (angle > maxSlope && angle < 89f)
+            {
+                _groundNormal = hit.normal;
+                _isOnSteepSlope = true;
+            }
         }
 
         private void CameraRotation()
@@ -1002,8 +1047,31 @@ namespace Runtime.Scripts.Player
                 aim ? Mathf.Min(RotationSmoothTime, 0.06f) : RotationSmoothTime);
             transform.rotation = Quaternion.Euler(0.0f, rotation, 0.0f);
 
+            Vector3 horizontalMove = _moveDir.normalized * _speed;
+            Vector3 slideVelocity = Vector3.zero;
+
+            if (_isOnSteepSlope)
+            {
+                // Bloquea el empuje horizontal hacia arriba contra la pendiente empinada
+                Vector3 horizontalNormal = new Vector3(_groundNormal.x, 0f, _groundNormal.z).normalized;
+                float pushIntoSlope = Vector3.Dot(horizontalMove, -horizontalNormal);
+                if (pushIntoSlope > 0f)
+                {
+                    horizontalMove += horizontalNormal * pushIntoSlope;
+                }
+
+                // Desliza al jugador hacia abajo siguiendo la inclinación del terreno
+                Vector3 slopeDirection = Vector3.ProjectOnPlane(Vector3.down, _groundNormal).normalized;
+                slideVelocity = slopeDirection * SteepSlopeSlideSpeed;
+            }
+
             _kb = Vector3.MoveTowards(_kb, Vector3.zero, 35f * Time.deltaTime);
-            _controller.Move(_moveDir.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime + _kb * Time.deltaTime);
+            _controller.Move(
+                horizontalMove * Time.deltaTime
+                + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime
+                + slideVelocity * Time.deltaTime
+                + _kb * Time.deltaTime
+            );
         }
 
         public void ApplyKnockback(Vector3 push)
