@@ -1072,8 +1072,8 @@ namespace Runtime.Scripts.Player {
             float forwardBackSpeed = Mathf.Abs(normalizedMove.y) * speedFactor;
             float strafeSpeed = normalizedMove.x * speedFactor;
 
-            if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, forwardBackSpeed, 0.1f, Time.deltaTime);
-            if (_hasAnimIDSpeedX) _animator.SetFloat(_animIDSpeedX, strafeSpeed, 0.1f, Time.deltaTime);
+            if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, forwardBackSpeed, 0.03f, Time.deltaTime);
+            if (_hasAnimIDSpeedX) _animator.SetFloat(_animIDSpeedX, strafeSpeed, 0.03f, Time.deltaTime);
             if (_hasAnimIDIsGrounded) _animator.SetBool(_animIDIsGrounded, Grounded);
         }
 
