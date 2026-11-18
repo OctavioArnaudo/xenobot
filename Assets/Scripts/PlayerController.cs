@@ -20,14 +20,12 @@ using Runtime.Scripts.Shields;
 using Runtime.Scripts.Skills;
 using UnityEngine;
 
-namespace Runtime.Scripts.Player
-{
+namespace Runtime.Scripts.Player {
     [RequireComponent(typeof(CharacterController))]
 #if ENABLE_INPUT_SYSTEM
     [RequireComponent(typeof(PlayerInput))]
 #endif
-    public class PlayerController : CSingletonNB<PlayerController>
-    {
+    public class PlayerController : CSingletonNB<PlayerController> {
         private const float DEFAULT_MOVE_SPEED = 2.0f;
         private const float DEFAULT_SPRINT_SPEED = 5.335f;
         private const float DEFAULT_SPRINT_HOLD_THRESHOLD = 0.25f;
@@ -126,8 +124,7 @@ namespace Runtime.Scripts.Player
 
         #region Variables: Respawn
         [System.Serializable]
-        public struct SceneSpawnConfig
-        {
+        public struct SceneSpawnConfig {
             public string SceneName;
             public string SpawnPointTag;
         }
@@ -161,10 +158,8 @@ namespace Runtime.Scripts.Player
         #endregion
 
         #region Effective Statistics Resolvers
-        public float EffectiveMoveSpeed
-        {
-            get
-            {
+        public float EffectiveMoveSpeed {
+            get {
                 var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
                 return moveSpeed.Get(MoveSpeed, DEFAULT_MOVE_SPEED, stats.moveSpeed);
             }
@@ -175,10 +170,8 @@ namespace Runtime.Scripts.Player
         public float EffectiveRotationSmoothTime => rotationSmoothTime.Get(RotationSmoothTime, DEFAULT_ROTATION_SMOOTH_TIME);
         public float EffectiveSpeedChangeRate => speedChangeRate.Get(SpeedChangeRate, DEFAULT_SPEED_CHANGE_RATE);
 
-        public float EffectiveJumpHeight
-        {
-            get
-            {
+        public float EffectiveJumpHeight {
+            get {
                 var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
                 return jumpHeight.Get(JumpHeight, DEFAULT_JUMP_HEIGHT, stats.jumpHeight);
             }
@@ -186,10 +179,8 @@ namespace Runtime.Scripts.Player
 
         public float EffectiveDoubleJumpHeight => doubleJumpHeight.Get(DoubleJumpHeight, DEFAULT_DOUBLE_JUMP_HEIGHT);
 
-        public int EffectiveMaxJumps
-        {
-            get
-            {
+        public int EffectiveMaxJumps {
+            get {
                 var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
                 return maxJumps.Get(MaxJumps, DEFAULT_MAX_JUMPS, stats.maxJumps);
             }
@@ -224,10 +215,12 @@ namespace Runtime.Scripts.Player
         private float _shiftHoldTimer;
 
         private static readonly int _animIDSpeed = Animator.StringToHash("Speed");
+        private static readonly int _animIDSpeedX = Animator.StringToHash("SpeedX");
         private static readonly int _animIDIsGrounded = Animator.StringToHash("isGrounded");
         private static readonly int _animIDJump = Animator.StringToHash("Jump");
 
         private bool _hasAnimIDSpeed;
+        private bool _hasAnimIDSpeedX;
         private bool _hasAnimIDIsGrounded;
         private bool _hasAnimIDJump;
 
@@ -268,15 +261,12 @@ namespace Runtime.Scripts.Player
         #endregion
 
         #region Lifecycle
-        protected override void Awake()
-        {
+        protected override void Awake() {
             base.Awake();
 
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-            {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening) {
                 var nObj = GetComponent<NetworkObject>();
-                if (nObj == null || nObj.InScenePlaced == true)
-                {
+                if (nObj == null || nObj.InScenePlaced == true) {
                     gameObject.SetActive(false);
                     Destroy(gameObject);
                     return;
@@ -285,8 +275,7 @@ namespace Runtime.Scripts.Player
 
             _controller = GetComponent<CharacterController>();
             _health = GetComponent<HealthController>();
-            if (_health != null)
-            {
+            if (_health != null) {
                 _health.OnDeath.AddListener(OnPlayerDeath);
             }
 
@@ -301,8 +290,7 @@ namespace Runtime.Scripts.Player
             RefreshInputActions();
 #endif
 
-            if (CanExecuteLocalLogic)
-            {
+            if (CanExecuteLocalLogic) {
                 if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == "BiomaScene")
                     SetCursorState(cursorLocked);
                 else
@@ -310,8 +298,7 @@ namespace Runtime.Scripts.Player
             }
         }
 
-        private void Start()
-        {
+        private void Start() {
             _cinemachineTargetYaw = CinemachineCameraTarget.transform.rotation.eulerAngles.y;
             _animator = GetComponentInChildren<Animator>();
             _hasAnimator = _animator != null;
@@ -322,31 +309,25 @@ namespace Runtime.Scripts.Player
             _cameraStartingRotation = CinemachineCameraTarget.transform.rotation;
             _startingPosition = transform.position;
 
-            if (!IsNetworkActive)
-            {
+            if (!IsNetworkActive) {
                 SetupPlayerLocal();
                 TeleportToSceneSpawn(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
             }
         }
 
-        public override void OnNetworkSpawn()
-        {
-            if (BalanceManager.Instance != null)
-            {
+        public override void OnNetworkSpawn() {
+            if (BalanceManager.Instance != null) {
                 BalanceManager.Instance.RegisterNetworkPlayer(gameObject);
             }
 
-            if (IsOwner)
-            {
+            if (IsOwner) {
                 GameObject[] playersInScene = GameObject.FindGameObjectsWithTag("Player");
-                foreach (var p in playersInScene)
-                {
+                foreach (var p in playersInScene) {
                     if (p == gameObject) continue;
 
                     NetworkObject nObj = p.GetComponent<NetworkObject>();
 
-                    if (nObj == null || nObj.InScenePlaced == true)
-                    {
+                    if (nObj == null || nObj.InScenePlaced == true) {
                         foreach (var cam in p.GetComponentsInChildren<Camera>()) cam.enabled = false;
                         var vcam = p.GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
                         if (vcam != null) vcam.enabled = false;
@@ -369,8 +350,7 @@ namespace Runtime.Scripts.Player
 
                 UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
             }
-            else
-            {
+            else {
                 DisableLocalComponents();
                 if (_controller != null) _controller.enabled = false;
                 var vcam = GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>();
@@ -380,16 +360,13 @@ namespace Runtime.Scripts.Player
             }
         }
 
-        public override void OnNetworkDespawn()
-        {
+        public override void OnNetworkDespawn() {
             if (IsOwner)
                 UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
         }
 
-        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
-        {
-            if (IsOwner || !IsNetworkActive)
-            {
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode) {
+            if (IsOwner || !IsNetworkActive) {
                 _gameCursor = false;
                 SetupCamera();
                 TeleportToSceneSpawn(scene.name);
@@ -399,14 +376,12 @@ namespace Runtime.Scripts.Player
             }
         }
 
-        private void TeleportToSceneSpawn(string sceneName)
-        {
+        private void TeleportToSceneSpawn(string sceneName) {
             var config = SceneSpawns.Find(s => s.SceneName == sceneName);
             if (string.IsNullOrEmpty(config.SpawnPointTag)) return;
 
             GameObject[] spawnPoints = GameObject.FindGameObjectsWithTag(config.SpawnPointTag);
-            if (spawnPoints.Length > 0)
-            {
+            if (spawnPoints.Length > 0) {
                 int index = (int)(OwnerClientId % (ulong)spawnPoints.Length);
                 Transform targetSpawn = spawnPoints[index].transform;
                 if (_controller != null) _controller.enabled = false;
@@ -417,10 +392,8 @@ namespace Runtime.Scripts.Player
             }
         }
 
-        public override void OnDestroy()
-        {
-            if (_health != null)
-            {
+        public override void OnDestroy() {
+            if (_health != null) {
                 _health.OnDeath.RemoveListener(OnPlayerDeath);
             }
             base.OnDestroy();
@@ -428,34 +401,29 @@ namespace Runtime.Scripts.Player
 
         private bool _isDead = false;
 
-        private void OnPlayerDeath()
-        {
+        private void OnPlayerDeath() {
             if (_isDead) return;
             _isDead = true;
 
             SpawnDeathVisuals();
 
             var defeatMenu = FindFirstObjectByType<DefeatMenu>();
-            if (defeatMenu != null)
-            {
+            if (defeatMenu != null) {
                 defeatMenu.TriggerDefeat();
             }
 
-            if (IsNetworkActive && IsServer)
-            {
+            if (IsNetworkActive && IsServer) {
                 if (TryGetComponent<NetworkObject>(out var netObj) && netObj.IsSpawned)
                     netObj.Despawn(true);
                 else
                     Destroy(gameObject);
             }
-            else if (!IsNetworkActive)
-            {
+            else if (!IsNetworkActive) {
                 Destroy(gameObject);
             }
         }
 
-        private void SpawnDeathVisuals()
-        {
+        private void SpawnDeathVisuals() {
             GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.transform.position = transform.position + Vector3.up * 1.0f;
             sphere.transform.localScale = Vector3.one * 1.2f;
@@ -469,20 +437,16 @@ namespace Runtime.Scripts.Player
             Destroy(sphere, 0.25f);
         }
 
-        private void Update()
-        {
-            if (!CanExecuteLocalLogic)
-            {
-                if (_renderTransform != null)
-                {
+        private void Update() {
+            if (!CanExecuteLocalLogic) {
+                if (_renderTransform != null) {
                     _renderTransform.localPosition = new Vector3(0, -0.05f, 0);
                     _renderTransform.localRotation = Quaternion.identity;
                 }
                 return;
             }
 
-            if (_health != null && _health.EffectiveCurrentHealth <= 0)
-            {
+            if (_health != null && _health.EffectiveCurrentHealth <= 0) {
                 OnPlayerDeath();
                 return;
             }
@@ -502,20 +466,17 @@ namespace Runtime.Scripts.Player
             UpdateAnimatorParameters();
         }
 
-        private void LateUpdate()
-        {
+        private void LateUpdate() {
             if (!CanExecuteLocalLogic) return;
             UpdateCameraTargetPosition();
             CameraRotation();
         }
 
-        private void UpdateCameraTargetPosition()
-        {
+        private void UpdateCameraTargetPosition() {
             if (CinemachineCameraTarget == null) return;
 
             Animator anim = GetComponentInChildren<Animator>();
-            if (anim != null)
-            {
+            if (anim != null) {
                 Transform bone = anim.GetBoneTransform(HumanBodyBones.UpperChest) ??
                                anim.GetBoneTransform(HumanBodyBones.Chest) ??
                                anim.GetBoneTransform(HumanBodyBones.Neck) ??
@@ -524,8 +485,7 @@ namespace Runtime.Scripts.Player
                                anim.transform.Find("Chest") ??
                                anim.transform.Find("head");
 
-                if (bone != null)
-                {
+                if (bone != null) {
                     CinemachineCameraTarget.transform.position = bone.position + Vector3.up * 0.1f;
                 }
             }
@@ -533,11 +493,9 @@ namespace Runtime.Scripts.Player
         #endregion
 
         #region Setup & Configuration
-        private void SetupPlayerLocal()
-        {
+        private void SetupPlayerLocal() {
 #if ENABLE_INPUT_SYSTEM
-            if (_playerInput != null)
-            {
+            if (_playerInput != null) {
                 _playerInput.enabled = true;
                 _playerInput.ActivateInput();
             }
@@ -546,19 +504,16 @@ namespace Runtime.Scripts.Player
             SetCursorState(cursorLocked);
         }
 
-        private void DisableLocalComponents()
-        {
+        private void DisableLocalComponents() {
 #if ENABLE_INPUT_SYSTEM
-            if (_playerInput != null)
-            {
+            if (_playerInput != null) {
                 _playerInput.DeactivateInput();
                 _playerInput.enabled = false;
             }
 #endif
         }
 
-        private Unity.Cinemachine.CinemachineThirdPersonFollow Tpf()
-        {
+        private Unity.Cinemachine.CinemachineThirdPersonFollow Tpf() {
             var f = _vcamCache.GetComponent<Unity.Cinemachine.CinemachineThirdPersonFollow>();
             if (f == null) return null;
             var o = f.AvoidObstacles;
@@ -570,20 +525,17 @@ namespace Runtime.Scripts.Player
             return f;
         }
 
-        private void SetupCamera()
-        {
+        private void SetupCamera() {
             _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
             GameObject root = transform.root.gameObject;
 
             _vcamCache = root.GetComponentInChildren<Unity.Cinemachine.CinemachineCamera>(true);
             if (_vcamCache == null) _vcamCache = FindFirstObjectByType<Unity.Cinemachine.CinemachineCamera>();
 
-            if (_vcamCache != null)
-            {
+            if (_vcamCache != null) {
                 _vcam3rdPerson = Tpf();
 
-                if (CinemachineCameraTarget != null)
-                {
+                if (CinemachineCameraTarget != null) {
                     _vcamCache.Follow = CinemachineCameraTarget.transform;
                     _vcamCache.LookAt = CinemachineCameraTarget.transform;
                     _vcamCache.enabled = CanExecuteLocalLogic;
@@ -592,8 +544,7 @@ namespace Runtime.Scripts.Player
             }
         }
 
-        public void RefreshFunctionalComponents()
-        {
+        public void RefreshFunctionalComponents() {
             _jetpack = GetComponentInChildren<PropulsionController>(true);
             _shooter = GetComponentInChildren<ShootController>(true);
             _melee = GetComponentInChildren<MeleeController>(true);
@@ -602,8 +553,7 @@ namespace Runtime.Scripts.Player
             _animator = null;
             _renderTransform = transform.Find("PlayerRender") ?? transform.Find("Render") ?? transform.Find("EnemyRender");
 
-            if (_renderTransform != null)
-            {
+            if (_renderTransform != null) {
                 _animator = _renderTransform.GetComponentInChildren<Animator>(true);
                 _renderTransform.localPosition = new Vector3(0, -0.05f, 0);
                 _renderTransform.localRotation = Quaternion.identity;
@@ -614,8 +564,7 @@ namespace Runtime.Scripts.Player
             if (_animator == null) _animator = GetComponent<Animator>();
 
             _hasAnimator = _animator != null;
-            if (_hasAnimator)
-            {
+            if (_hasAnimator) {
                 _animator.enabled = true;
                 _animator.applyRootMotion = false;
                 AssignAnimationIDs();
@@ -623,15 +572,13 @@ namespace Runtime.Scripts.Player
             SetupCamera();
         }
 
-        public void RefreshBodyReferences()
-        {
+        public void RefreshBodyReferences() {
             RefreshFunctionalComponents();
         }
         #endregion
 
         #region Input & Aiming Combat Logic
-        private void RefreshInputActions()
-        {
+        private void RefreshInputActions() {
             if (_playerInput == null || _playerInput.actions == null) return;
 
             _moveAction = _playerInput.actions.FindAction("Move") ?? _playerInput.actions.FindAction("Player/Move");
@@ -646,25 +593,21 @@ namespace Runtime.Scripts.Player
             _nextWeaponAction = _playerInput.actions.FindAction("NextWeapon") ?? _playerInput.actions.FindAction("Player/NextWeapon");
         }
 
-        private void UpdateInputState()
-        {
+        private void UpdateInputState() {
             if (_moveAction != null) move = _moveAction.ReadValue<Vector2>();
             if (_lookAction != null) look = _lookAction.ReadValue<Vector2>();
 
-            if (_jumpAction != null)
-            {
+            if (_jumpAction != null) {
                 if (_jumpAction.WasPressedThisFrame()) jump = true;
                 jumpHeld = _jumpAction.IsPressed();
                 _isJumpHeld = jumpHeld;
             }
 
-            if (_sprintAction != null && _sprintAction.IsPressed())
-            {
+            if (_sprintAction != null && _sprintAction.IsPressed()) {
                 _shiftHoldTimer += Time.deltaTime;
                 sprint = _shiftHoldTimer >= SprintHoldThreshold;
             }
-            else
-            {
+            else {
                 _shiftHoldTimer = 0f;
                 sprint = false;
             }
@@ -686,51 +629,40 @@ namespace Runtime.Scripts.Player
             bool aimIsHeld = (_aimAction != null && _aimAction.IsPressed()) ||
                              (Mouse.current != null && Mouse.current.rightButton.isPressed);
 
-            if (Keyboard.current != null && Cursor.lockState == CursorLockMode.Locked)
-            {
+            if (Keyboard.current != null && Cursor.lockState == CursorLockMode.Locked) {
                 var k = Keyboard.current;
-                if (k.digit1Key.wasPressedThisFrame)
-                {
+                if (k.digit1Key.wasPressedThisFrame) {
                     meleeMode = true;
                     if (_shield != null) _shield.SetShieldState(false);
                 }
-                else if (k.digit2Key.wasPressedThisFrame)
-                {
+                else if (k.digit2Key.wasPressedThisFrame) {
                     meleeMode = false;
                     if (_shield != null) _shield.SetShieldState(false);
                 }
                 else if (k.digit3Key.wasPressedThisFrame) scopeMode = !scopeMode;
             }
 
-            if (meleeMode)
-            {
+            if (meleeMode) {
                 aim = false;
                 scope = false;
 
-                if (_shield != null && SkillProgression.Can(this, Skill.Shield))
-                {
-                    if (toggleAim)
-                    {
-                        if (aimPressedThisFrame)
-                        {
+                if (_shield != null && SkillProgression.Can(this, Skill.Shield)) {
+                    if (toggleAim) {
+                        if (aimPressedThisFrame) {
                             bool newState = !_shield.IsShieldActive;
                             _shield.SetShieldState(newState);
                         }
                     }
-                    else
-                    {
+                    else {
                         _shield.SetShieldState(aimIsHeld);
                     }
                 }
             }
-            else
-            {
-                if (toggleAim)
-                {
+            else {
+                if (toggleAim) {
                     if (aimPressedThisFrame) aim = !aim;
                 }
-                else
-                {
+                else {
                     aim = aimIsHeld;
                 }
                 scope = aim && scopeMode;
@@ -744,21 +676,17 @@ namespace Runtime.Scripts.Player
             if (_crouchAction != null && _crouchAction.WasPressedThisFrame()) crouch = true;
             if (_reloadAction != null && _reloadAction.WasPressedThisFrame()) reload = true;
 
-            if (_nextWeaponAction != null)
-            {
+            if (_nextWeaponAction != null) {
                 float val = _nextWeaponAction.ReadValue<float>();
                 switchWeapon = val > 0 ? 1 : (val < 0 ? -1 : 0);
             }
 
             selectWeapon = 0;
-            if (Keyboard.current != null)
-            {
-                for (int i = 1; i <= 9; i++)
-                {
+            if (Keyboard.current != null) {
+                for (int i = 1; i <= 9; i++) {
                     var wk = Key.Digit1 + (i - 1);
                     if (i <= 3) continue;
-                    if (Keyboard.current[wk].wasPressedThisFrame)
-                    {
+                    if (Keyboard.current[wk].wasPressedThisFrame) {
                         selectWeapon = i;
                         break;
                     }
@@ -766,8 +694,7 @@ namespace Runtime.Scripts.Player
             }
         }
 
-        private void ClearInput()
-        {
+        private void ClearInput() {
             move = Vector2.zero;
             look = Vector2.zero;
             jump = jumpHeld = _isJumpHeld = sprint = false;
@@ -776,10 +703,8 @@ namespace Runtime.Scripts.Player
             if (_shield != null && meleeMode) _shield.SetShieldState(false);
         }
 
-        private void HandleAimingAndCombat()
-        {
-            if (crosshairUI != null)
-            {
+        private void HandleAimingAndCombat() {
+            if (crosshairUI != null) {
                 crosshairUI.SetActive(!(_gameCursor && Cursor.visible));
             }
 
@@ -790,17 +715,14 @@ namespace Runtime.Scripts.Player
             float normalDist = shoulderDistance * ZoomController.Factor;
             float targetFOV = scope ? aimFOV : Mathf.Lerp(normalFOV, shoulderAimFOV, az);
 
-            if (_vcamCache != null)
-            {
+            if (_vcamCache != null) {
                 _vcamCache.Lens.FieldOfView = Mathf.Lerp(_vcamCache.Lens.FieldOfView, targetFOV, Time.deltaTime * zs);
 
-                if (_vcam3rdPerson == null)
-                {
+                if (_vcam3rdPerson == null) {
                     _vcam3rdPerson = Tpf();
                 }
 
-                if (_vcam3rdPerson != null)
-                {
+                if (_vcam3rdPerson != null) {
                     float targetDistance = scope ? aimCameraDistance : Mathf.Lerp(normalDist, shoulderAimDistance, az);
                     Vector3 targetShoulderOffset = scope ? aimShoulderOffset : Vector3.Lerp(shoulderOffset, shoulderAimOffset, az) + Vector3.up * cameraRise;
                     _vcam3rdPerson.CameraSide = 1f;
@@ -810,14 +732,12 @@ namespace Runtime.Scripts.Player
                 }
             }
 
-            if (_mainCamera != null && _mainCamera.TryGetComponent<Camera>(out var camComp))
-            {
+            if (_mainCamera != null && _mainCamera.TryGetComponent<Camera>(out var camComp)) {
                 camComp.fieldOfView = Mathf.Lerp(camComp.fieldOfView, targetFOV, Time.deltaTime * zs);
             }
 
             // Gancho independiente: se ejecuta al presionar F sin importar si se está apuntando o el modo de combate
-            if (hook)
-            {
+            if (hook) {
                 TryFireHook();
                 hook = false;
             }
@@ -825,21 +745,17 @@ namespace Runtime.Scripts.Player
             if (_melee != null) _melee.enabled = meleeMode;
             if (_shooter != null) _shooter.enabled = !meleeMode;
 
-            if (meleeMode)
-            {
+            if (meleeMode) {
                 if (_melee != null && fire) _melee.PerformMeleeAction();
             }
-            else
-            {
-                if (_shooter != null && (_shooter.isUnlocked || _shooter.Projectile != null) && (_shooter.HoldToFire ? fireHeld : fire))
-                {
+            else {
+                if (_shooter != null && (_shooter.isUnlocked || _shooter.Projectile != null) && (_shooter.HoldToFire ? fireHeld : fire)) {
                     _shooter.TryFire(aim);
                 }
             }
         }
 
-        private void TryFireHook()
-        {
+        private void TryFireHook() {
             if (!HasHook) return;
 
             Transform spawnTransform = hookMuzzle != null ? hookMuzzle : (_shooter != null && _shooter.Muzzle != null ? _shooter.Muzzle.transform : transform);
@@ -849,29 +765,24 @@ namespace Runtime.Scripts.Player
             GameObject hookGO = Instantiate(hookProjectilePrefab, spawnPos, Quaternion.LookRotation(aimDirection));
             HookProjectileController hookComp = hookGO.GetComponent<HookProjectileController>();
 
-            if (hookComp != null)
-            {
+            if (hookComp != null) {
                 hookComp.Launch(gameObject, aimDirection, spawnTransform);
             }
         }
 
 #if ENABLE_INPUT_SYSTEM
-        public void OnJump(InputValue value)
-        {
+        public void OnJump(InputValue value) {
             _isJumpHeld = value.isPressed;
             if (CanExecuteLocalLogic && value.isPressed) jump = true;
         }
 
-        public void OnLook(InputValue value)
-        {
-            if (cursorInputForLook && CanExecuteLocalLogic)
-            {
+        public void OnLook(InputValue value) {
+            if (cursorInputForLook && CanExecuteLocalLogic) {
                 LookInput(value.Get<Vector2>());
             }
         }
 
-        public void OnSprint(InputValue value)
-        {
+        public void OnSprint(InputValue value) {
             if (CanExecuteLocalLogic) SprintInput(value.isPressed);
         }
 #endif
@@ -881,32 +792,26 @@ namespace Runtime.Scripts.Player
         public void JumpInput(bool newJumpState) { if (newJumpState) jump = true; }
         public void SprintInput(bool newSprintState) => sprint = newSprintState;
 
-        private void OnApplicationFocus(bool hasFocus)
-        {
+        private void OnApplicationFocus(bool hasFocus) {
             if (CanExecuteLocalLogic && !MenuGate.Busy) SetCursorState(cursorLocked);
         }
 
-        private void SetCursorState(bool newState)
-        {
+        private void SetCursorState(bool newState) {
             Cursor.lockState = newState ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !newState;
         }
         #endregion
 
         #region Network Shooting Bridge
-        public void RequestFire(GameObject prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team, bool enableHoming)
-        {
+        public void RequestFire(GameObject prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team, bool enableHoming) {
             enableHoming = enableHoming && !aim;
-            if (IsNetworkActive)
-            {
+            if (IsNetworkActive) {
                 FireServerRpc(direction, spawnPos, damage, team, enableHoming);
             }
-            else
-            {
+            else {
                 GameObject projObj = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
                 ProjectileController projectile = projObj.GetComponent<ProjectileController>();
-                if (projectile != null)
-                {
+                if (projectile != null) {
                     projectile.enableHomingTracking = enableHoming;
                     projectile.Launch(gameObject, direction, damage, team);
                 }
@@ -914,22 +819,18 @@ namespace Runtime.Scripts.Player
         }
 
         [ServerRpc]
-        private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool enableHoming)
-        {
+        private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool enableHoming) {
             GameObject projectilePrefab = null;
 
             var shooter = GetComponentInChildren<ShootController>();
-            if (shooter != null)
-            {
+            if (shooter != null) {
                 projectilePrefab = shooter.Projectile;
             }
 
-            if (projectilePrefab != null)
-            {
+            if (projectilePrefab != null) {
                 GameObject projObj = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
                 ProjectileController projectile = projObj.GetComponent<ProjectileController>();
-                if (projectile != null)
-                {
+                if (projectile != null) {
                     projectile.enableHomingTracking = enableHoming;
                     projectile.Launch(gameObject, direction, damage, team);
                 }
@@ -940,10 +841,8 @@ namespace Runtime.Scripts.Player
         #endregion
 
         #region Movement Logic
-        private void GroundedCheck()
-        {
-            if (_verticalVelocity > 0.1f)
-            {
+        private void GroundedCheck() {
+            if (_verticalVelocity > 0.1f) {
                 Grounded = false;
                 _isOnSteepSlope = false;
                 _groundNormal = Vector3.up;
@@ -956,48 +855,40 @@ namespace Runtime.Scripts.Player
             float maxSlope = _controller != null ? _controller.slopeLimit : 45f;
             Vector3 origin = transform.position + Vector3.up * (GroundedRadius + 0.15f);
 
-            if (Physics.SphereCast(origin, GroundedRadius, Vector3.down, out RaycastHit hit, 0.25f, mask, QueryTriggerInteraction.Ignore))
-            {
+            if (Physics.SphereCast(origin, GroundedRadius, Vector3.down, out RaycastHit hit, 0.25f, mask, QueryTriggerInteraction.Ignore)) {
                 _groundNormal = hit.normal;
                 float slopeAngle = Vector3.Angle(_groundNormal, Vector3.up);
 
-                if (slopeAngle <= maxSlope)
-                {
+                if (slopeAngle <= maxSlope) {
                     Grounded = true;
                     _isOnSteepSlope = false;
                 }
-                else
-                {
+                else {
                     // Borde muy empinado: no cuenta como suelo firme para saltar ni escalar
                     Grounded = false;
                     _isOnSteepSlope = true;
                 }
             }
-            else
-            {
+            else {
                 Grounded = false;
                 _isOnSteepSlope = false;
                 _groundNormal = Vector3.up;
             }
         }
 
-        private void OnControllerColliderHit(ControllerColliderHit hit)
-        {
+        private void OnControllerColliderHit(ControllerColliderHit hit) {
             float maxSlope = _controller != null ? _controller.slopeLimit : 45f;
             float angle = Vector3.Angle(hit.normal, Vector3.up);
 
             // Detecta contacto lateral contra una pared o borde empinado del terreno
-            if (angle > maxSlope && angle < 89f)
-            {
+            if (angle > maxSlope && angle < 89f) {
                 _groundNormal = hit.normal;
                 _isOnSteepSlope = true;
             }
         }
 
-        private void CameraRotation()
-        {
-            if (IsRespawning)
-            {
+        private void CameraRotation() {
+            if (IsRespawning) {
                 _cinemachineTargetYaw = 0f;
                 _cinemachineTargetPitch = 0f;
                 CinemachineCameraTarget.transform.position = _cameraStartingPosition;
@@ -1006,8 +897,7 @@ namespace Runtime.Scripts.Player
                 return;
             }
 
-            if (look.sqrMagnitude >= _threshold && !LockCameraPosition)
-            {
+            if (look.sqrMagnitude >= _threshold && !LockCameraPosition) {
                 float deltaTimeMultiplier = (IsCurrentDeviceMouse) ? 0.5f : Time.deltaTime;
 
                 _cinemachineTargetYaw += look.x * deltaTimeMultiplier * LookSensitivity.x * 2f;
@@ -1017,8 +907,7 @@ namespace Runtime.Scripts.Player
             _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);
             _cinemachineTargetPitch = ClampAngle(_cinemachineTargetPitch, BottomClamp, TopClamp);
 
-            if (CinemachineCameraTarget != null)
-            {
+            if (CinemachineCameraTarget != null) {
                 CinemachineCameraTarget.transform.rotation = Quaternion.Euler(
                     _cinemachineTargetPitch + CameraAngleOverride,
                     _cinemachineTargetYaw,
@@ -1026,8 +915,7 @@ namespace Runtime.Scripts.Player
             }
         }
 
-        private void Move()
-        {
+        private void Move() {
             float targetSpeed = aim ? MoveSpeed * aimMoveSpeedMultiplier : (sprint ? SprintSpeed : MoveSpeed);
             if (move == Vector2.zero) targetSpeed = 0.0f;
 
@@ -1051,13 +939,11 @@ namespace Runtime.Scripts.Player
             Vector3 horizontalMove = _moveDir.normalized * _speed;
             Vector3 slideVelocity = Vector3.zero;
 
-            if (_isOnSteepSlope)
-            {
+            if (_isOnSteepSlope) {
                 // Bloquea el empuje horizontal hacia arriba contra la pendiente empinada
                 Vector3 horizontalNormal = new Vector3(_groundNormal.x, 0f, _groundNormal.z).normalized;
                 float pushIntoSlope = Vector3.Dot(horizontalMove, -horizontalNormal);
-                if (pushIntoSlope > 0f)
-                {
+                if (pushIntoSlope > 0f) {
                     horizontalMove += horizontalNormal * pushIntoSlope;
                 }
 
@@ -1075,49 +961,40 @@ namespace Runtime.Scripts.Player
             );
         }
 
-        public void ApplyKnockback(Vector3 push)
-        {
+        public void ApplyKnockback(Vector3 push) {
             if (IsNetworkActive && IsServer) KnockbackClientRpc(push); else Knock(push);
         }
 
         [ClientRpc]
         private void KnockbackClientRpc(Vector3 push) => Knock(push);
 
-        private void Knock(Vector3 push)
-        {
+        private void Knock(Vector3 push) {
             CombatFx.Flash(gameObject);
             if (!CanExecuteLocalLogic) return;
             _kb = new Vector3(push.x, 0f, push.z);
             _verticalVelocity = Mathf.Max(_verticalVelocity, push.y);
         }
 
-        private void JumpAndGravity()
-        {
-            if (_jetpack != null && _jetpack.ProcessFlight(_isJumpHeld, Grounded, ref _verticalVelocity))
-            {
+        private void JumpAndGravity() {
+            if (_jetpack != null && _jetpack.ProcessFlight(_isJumpHeld, Grounded, ref _verticalVelocity)) {
                 jump = false;
                 return;
             }
 
-            if (Grounded)
-            {
-                if (_verticalVelocity < 0.0f)
-                {
+            if (Grounded) {
+                if (_verticalVelocity < 0.0f) {
                     _verticalVelocity = -8f;
                     _jumpsRemaining = EnableDoubleJump ? 2 : 1;
                 }
 
-                if (jump && _jumpsRemaining > 0)
-                {
+                if (jump && _jumpsRemaining > 0) {
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
                     _jumpsRemaining--;
                     if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
                 }
             }
-            else
-            {
-                if (jump && EnableDoubleJump && _jumpsRemaining > 0)
-                {
+            else {
+                if (jump && EnableDoubleJump && _jumpsRemaining > 0) {
                     _verticalVelocity = Mathf.Sqrt(DoubleJumpHeight * -2f * Gravity);
                     _jumpsRemaining--;
                     if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
@@ -1132,18 +1009,15 @@ namespace Runtime.Scripts.Player
         #endregion
 
         #region Respawn Logic
-        private void HandleRespawn()
-        {
+        private void HandleRespawn() {
             if (transform.position.y < yThreshold) Respawn();
         }
 
-        public void Respawn()
-        {
+        public void Respawn() {
             if (_controller != null) _controller.enabled = false;
             transform.position = _startingPosition;
             transform.rotation = Quaternion.Euler(0f, 90f, 0f);
-            if (_controller != null)
-            {
+            if (_controller != null) {
                 _controller.enabled = true;
                 _verticalVelocity = 0f;
             }
@@ -1151,8 +1025,7 @@ namespace Runtime.Scripts.Player
             if (respawnSound != null) AudioSource.PlayClipAtPoint(respawnSound, transform.position);
         }
 
-        public void ResetCameraRotation(float targetYaw)
-        {
+        public void ResetCameraRotation(float targetYaw) {
             _cinemachineTargetYaw = targetYaw;
             _cinemachineTargetPitch = 0f;
             if (CinemachineCameraTarget != null)
@@ -1161,20 +1034,17 @@ namespace Runtime.Scripts.Player
         #endregion
 
         #region Animation Helpers
-        private void AssignAnimationIDs()
-        {
-            if (_hasAnimator)
-            {
+        private void AssignAnimationIDs() {
+            if (_hasAnimator) {
                 _hasAnimIDSpeed = HasParameter(_animator, _animIDSpeed);
+                _hasAnimIDSpeedX = HasParameter(_animator, _animIDSpeedX);
                 _hasAnimIDIsGrounded = HasParameter(_animator, _animIDIsGrounded);
                 _hasAnimIDJump = HasParameter(_animator, _animIDJump);
             }
         }
 
-        private void UpdateAnimatorParameters()
-        {
-            if (!_hasAnimator || _animator == null || !_animator.gameObject.activeInHierarchy)
-            {
+        private void UpdateAnimatorParameters() {
+            if (!_hasAnimator || _animator == null || !_animator.gameObject.activeInHierarchy) {
                 RefreshFunctionalComponents();
                 if (!_hasAnimator) return;
             }
@@ -1182,31 +1052,32 @@ namespace Runtime.Scripts.Player
             if (!_animator.enabled) _animator.enabled = true;
             _animator.applyRootMotion = false;
 
-            if (_renderTransform != null)
-            {
+            if (_renderTransform != null) {
                 _renderTransform.localPosition = new Vector3(0, -0.05f, 0);
                 _renderTransform.localRotation = Quaternion.identity;
             }
 
             float speedFactor = 0f;
-            if (_animationBlend > 0.01f)
-            {
-                if (sprint)
-                {
+            if (_animationBlend > 0.01f) {
+                if (sprint) {
                     speedFactor = Mathf.Lerp(0.5f, 1.0f, (_animationBlend - MoveSpeed) / Mathf.Max(0.1f, SprintSpeed - MoveSpeed));
                 }
-                else
-                {
+                else {
                     speedFactor = Mathf.Lerp(0.1f, 0.5f, _animationBlend / MoveSpeed);
                 }
             }
 
-            if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, speedFactor);
+            // Mantiene el comportamiento original de Speed al avanzar/retroceder y separa el eje lateral SpeedX
+            Vector2 normalizedMove = move.sqrMagnitude > 1f ? move.normalized : move;
+            float forwardBackSpeed = Mathf.Abs(normalizedMove.y) * speedFactor;
+            float strafeSpeed = normalizedMove.x * speedFactor;
+
+            if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, forwardBackSpeed, 0.1f, Time.deltaTime);
+            if (_hasAnimIDSpeedX) _animator.SetFloat(_animIDSpeedX, strafeSpeed, 0.1f, Time.deltaTime);
             if (_hasAnimIDIsGrounded) _animator.SetBool(_animIDIsGrounded, Grounded);
         }
 
-        private bool HasParameter(Animator animator, int paramHash)
-        {
+        private bool HasParameter(Animator animator, int paramHash) {
             foreach (AnimatorControllerParameter param in animator.parameters)
                 if (param.nameHash == paramHash) return true;
             return false;
@@ -1214,25 +1085,21 @@ namespace Runtime.Scripts.Player
         #endregion
 
         #region Audio Helpers
-        private void OnFootstep(AnimationEvent animationEvent)
-        {
-            if (animationEvent.animatorClipInfo.weight > 0.5f && FootstepAudioClips.Length > 0)
-            {
+        private void OnFootstep(AnimationEvent animationEvent) {
+            if (animationEvent.animatorClipInfo.weight > 0.5f && FootstepAudioClips.Length > 0) {
                 var index = Random.Range(0, FootstepAudioClips.Length);
                 AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(_controller.center), FootstepAudioVolume);
             }
         }
 
-        private void OnLand(AnimationEvent animationEvent)
-        {
+        private void OnLand(AnimationEvent animationEvent) {
             if (animationEvent.animatorClipInfo.weight > 0.5f && LandingAudioClip != null)
                 AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
         }
         #endregion
 
         #region Math Helpers
-        private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
-        {
+        private static float ClampAngle(float lfAngle, float lfMin, float lfMax) {
             if (lfAngle < -360f) lfAngle += 360f;
             if (lfAngle > 360f) lfAngle -= 360f;
             return Mathf.Clamp(lfAngle, lfMin, lfMax);
@@ -1240,8 +1107,7 @@ namespace Runtime.Scripts.Player
         #endregion
 
         #region Debug
-        private void OnDrawGizmosSelected()
-        {
+        private void OnDrawGizmosSelected() {
             Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
             Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
             Gizmos.color = Grounded ? transparentGreen : transparentRed;
