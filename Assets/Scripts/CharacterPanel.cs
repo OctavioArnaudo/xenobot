@@ -531,6 +531,7 @@ namespace Runtime.Scripts.Inventory
             }
             _desc = Txt(area, 17, Green, TextAlignmentOptions.TopLeft, FontStyles.Normal);
             _desc.raycastTarget = false;
+            _desc.textWrappingMode = TextWrappingModes.Normal; // el texto baja de renglon dentro del panel
             Fit(_desc.rectTransform, 0f, 0f, 1f, 1f);
             _desc.gameObject.SetActive(false);
         }
