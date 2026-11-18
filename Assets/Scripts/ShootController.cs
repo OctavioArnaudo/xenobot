@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Runtime.Scripts.Optional;
@@ -336,8 +336,8 @@ namespace Runtime.Scripts.Shoot
             return true;
         }
 
-        // isAimed = true (Click derecho / Apuntando) -> Daño 100%, Sin Tracking.
-        // isAimed = false (Click izquierdo / Cadera) -> Daño reducido (65%), Con Tracking si la habilidad esta desbloqueada.
+        // isAimed = true (Click derecho / Apuntando) -> Daï¿½o 100%, Sin Tracking.
+        // isAimed = false (Click izquierdo / Cadera) -> Daï¿½o reducido (65%), Con Tracking si la habilidad esta desbloqueada.
         public bool TryFire(bool isAimed = false)
         {
             if (!isUnlocked) return false;
@@ -402,26 +402,39 @@ namespace Runtime.Scripts.Shoot
             if (MuzzleFlash) MuzzleFlash.Play();
         }
 
+        private static readonly RaycastHit[] s_AimHits = new RaycastHit[32];
+
         private Vector3 GetAimDirection(Vector3 muzzlePos)
         {
-            if (AimCamera == null) return transform.forward;
+            // La cruz que ve el jugador es la de la cï¿½mara principal, no la de una cï¿½mara hija.
+            Camera cam = Camera.main != null ? Camera.main : AimCamera;
+            if (cam == null) return transform.forward;
 
-            Ray ray = AimCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0));
-            RaycastHit[] hits = Physics.RaycastAll(ray, EffectiveAimDistance, AimLayers);
-            System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
-
+            Ray ray = cam.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
             Vector3 target = ray.GetPoint(EffectiveAimDistance);
-            Transform root = OwnerEntity.transform;
+            Transform owner = OwnerEntity.transform;
 
-            foreach (var hit in hits)
+            // Ignora lo que quede entre la cï¿½mara y la boca del arma.
+            float skip = Mathf.Max(0f, Vector3.Dot(muzzlePos - ray.origin, ray.direction));
+            Ray fromMuzzle = new Ray(ray.origin + ray.direction * skip, ray.direction);
+            int n = Physics.RaycastNonAlloc(fromMuzzle, s_AimHits, Mathf.Max(0.01f, EffectiveAimDistance - skip), AimLayers, QueryTriggerInteraction.Collide);
+
+            // Mismo criterio que la bala: cuenta todo sï¿½lido y los triggers con vida (enemigos); no cuenta al dueï¿½o.
+            float best = float.MaxValue;
+            for (int i = 0; i < n; i++)
             {
-                if (hit.transform.root == root || hit.collider.isTrigger) continue;
+                var hit = s_AimHits[i];
+                if (hit.distance >= best || hit.transform.IsChildOf(owner)) continue;
+                if (hit.collider.isTrigger && hit.collider.GetComponentInParent<HealthController>() == null) continue;
+                best = hit.distance;
                 target = hit.point;
-                break;
             }
 
+#if UNITY_EDITOR
+            Debug.DrawLine(muzzlePos, target, Color.red, 1f);
+#endif
             Vector3 dir = target - muzzlePos;
-            return dir.sqrMagnitude < 0.01f ? AimCamera.transform.forward : dir.normalized;
+            return dir.sqrMagnitude < 0.01f ? cam.transform.forward : dir.normalized;
         }
 
         private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float dmg, Team team, bool isServer, bool enableHoming)

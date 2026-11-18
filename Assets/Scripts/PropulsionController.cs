@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Runtime.Scripts.Optional;
 using Runtime.Scripts.Effective;
@@ -29,10 +28,6 @@ namespace Runtime.Scripts.Propulsion
         public bool infiniteFuel = false; // Combustible infinito
         public bool allowRegen = true;    // Recarga automática
 
-        [Header("Control Settings")]
-        [Tooltip("Tiempo en segundos que se debe mantener presionada la tecla Espacio en el aire para activar el jetpack.")]
-        public float JetpackHoldThreshold = 0.25f;
-
         [Header("Manual Flight & Fuel Overrides")]
         public float MaxFuel;
         public Optional<float> maxFuel;
@@ -58,9 +53,10 @@ namespace Runtime.Scripts.Propulsion
         private PlayerController m_Player;
         private HealthController m_Health;
         private bool m_IsUsingJetpack = false;
-        private bool m_JetpackDepleted = false;
 
-        private float m_SpaceHoldTimer = 0f; // Temporizador para la pulsación sostenida de Espacio
+        private static readonly int FlyingHash = Animator.StringToHash("isFlying");
+        private Animator m_Anim;
+        private bool m_AnimResolved;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
@@ -109,11 +105,6 @@ namespace Runtime.Scripts.Propulsion
         }
 
         private void OnValidate()
-        {
-            UpdateInspectorValues();
-        }
-
-        void Update()
         {
             UpdateInspectorValues();
         }
@@ -208,74 +199,62 @@ namespace Runtime.Scripts.Propulsion
             }
         }
 
+        /// <summary>Segundo salto en el aire: activa el jetpack si hay combustible. Si devuelve false, el doble salto normal sigue vigente.</summary>
+        public bool TryStartFlight()
+        {
+            if (!isUnlocked) return false;
+            if (m_Player == null) RefreshReferences();
+            if (m_Player == null || (IsNetworkActive && !m_Player.IsOwner)) return false;
+            if (!infiniteFuel && JetpackFuel <= 0f) return false;
+            SetFlying(true);
+            return true;
+        }
+
         public bool ProcessFlight(bool isJumpHeld, bool isGrounded, ref float verticalVelocity)
         {
             if (!isUnlocked) return false;
             if (m_Player == null) RefreshReferences();
-            if (m_Player == null) return false;
+            if (m_Player == null || (IsNetworkActive && !m_Player.IsOwner)) return false;
 
-            bool isOwner = IsNetworkActive ? m_Player.IsOwner : true;
-            if (!isOwner) return false;
+            float dt = Time.deltaTime;
 
-            // Detectar la barra espaciadora
-            bool isSpacePressed = Keyboard.current != null && Keyboard.current.spaceKey.isPressed;
-
-            m_IsUsingJetpack = false;
-
-            // Si está en el suelo, reiniciar estados y recargar combustible
             if (isGrounded)
             {
-                m_JetpackDepleted = false;
-                m_SpaceHoldTimer = 0f;
-                if (allowRegen) AddFuel(EffectiveFuelRegen * Time.deltaTime);
+                SetFlying(false);
+                if (allowRegen) AddFuel(EffectiveFuelRegen * dt);
                 return false;
             }
 
-            // Calcular tiempo en que se mantiene presionado el Espacio en el aire
-            if (isSpacePressed)
+            if (m_IsUsingJetpack && (!isJumpHeld || (!infiniteFuel && JetpackFuel <= 0f))) SetFlying(false);
+
+            if (!m_IsUsingJetpack)
             {
-                m_SpaceHoldTimer += Time.deltaTime;
-            }
-            else
-            {
-                m_SpaceHoldTimer = 0f;
-                m_JetpackDepleted = false;
+                if (allowRegen) AddFuel(EffectiveFuelRegen * 0.2f * dt);
+                return false;
             }
 
-            if (!infiniteFuel && JetpackFuel <= 0) m_JetpackDepleted = true;
+            if (verticalVelocity < -2f) verticalVelocity = Mathf.MoveTowards(verticalVelocity, 0f, dt * 20f);
+            float force = verticalVelocity > 0.5f ? EffectiveHoverForce : EffectiveJetpackForce;
+            verticalVelocity = Mathf.Min(verticalVelocity + force * dt, EffectiveMaxUpwardVelocity);
 
-            // Se activa solo si se mantiene Espacio por encima del umbral (ej. 0.25s) y hay combustible
-            bool shouldFly = isSpacePressed && m_SpaceHoldTimer >= JetpackHoldThreshold;
-
-            if (shouldFly && (infiniteFuel || (!m_JetpackDepleted && JetpackFuel > 0)))
-            {
-                m_IsUsingJetpack = true;
-                if (verticalVelocity < -2f) verticalVelocity = Mathf.MoveTowards(verticalVelocity, 0, Time.deltaTime * 20f);
-                float currentForce = (verticalVelocity > 0.5f) ? EffectiveHoverForce : EffectiveJetpackForce;
-                verticalVelocity += currentForce * Time.deltaTime;
-                if (verticalVelocity > EffectiveMaxUpwardVelocity) verticalVelocity = EffectiveMaxUpwardVelocity;
-
-                if (!infiniteFuel) UseFuel(EffectiveFuelConsumption * Time.deltaTime);
-            }
-            else if (allowRegen)
-            {
-                AddFuel((EffectiveFuelRegen * 0.2f) * Time.deltaTime);
-            }
-
-            Animator anim = m_Player != null ? m_Player.GetComponentInChildren<Animator>() : GetComponentInChildren<Animator>();
-            if (anim != null && HasParameter(anim, "isFlying"))
-            {
-                anim.SetBool("isFlying", m_IsUsingJetpack);
-            }
-
-            return m_IsUsingJetpack;
+            if (!infiniteFuel) UseFuel(EffectiveFuelConsumption * dt);
+            return true;
         }
 
-        private bool HasParameter(Animator animator, string paramName)
+        private void SetFlying(bool on)
         {
-            foreach (AnimatorControllerParameter param in animator.parameters)
-                if (param.name == paramName) return true;
-            return false;
+            if (m_IsUsingJetpack == on) return;
+            m_IsUsingJetpack = on;
+
+            if (!m_AnimResolved)
+            {
+                m_AnimResolved = true;
+                var anim = m_Player != null ? m_Player.GetComponentInChildren<Animator>() : GetComponentInChildren<Animator>();
+                if (anim != null)
+                    foreach (var p in anim.parameters)
+                        if (p.nameHash == FlyingHash) { m_Anim = anim; break; }
+            }
+            if (m_Anim != null) m_Anim.SetBool(FlyingHash, on);
         }
 
         public bool IsFlying => m_IsUsingJetpack;
