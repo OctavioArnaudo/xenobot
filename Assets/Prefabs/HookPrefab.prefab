@@ -9,8 +9,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6487535912312561568}
-  - component: {fileID: 5363168276443191164}
   - component: {fileID: 4673861859820024552}
+  - component: {fileID: 5363168276443191164}
   - component: {fileID: 3946975087585576935}
   - component: {fileID: 8105056581563040321}
   m_Layer: 0
@@ -35,24 +35,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &5363168276443191164
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7521646789853620970}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9b7109c41bc209b49a13d64c89c47719, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HookController
-  generateOnStart: 1
-  bodyColor: {r: 0.12, g: 0.14, b: 0.18, a: 1}
-  metallicDetailsColor: {r: 0.35, g: 0.38, b: 0.42, a: 1}
-  copperColor: {r: 0.8, g: 0.38, b: 0.15, a: 1}
-  gripColor: {r: 0.08, g: 0.08, b: 0.09, a: 1}
-  glowColor: {r: 0, g: 2.9750001, b: 3.5, a: 3.5}
 --- !u!114 &4673861859820024552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -65,14 +47,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2536653779
+  GlobalObjectIdHash: 1587056821
   InScenePlacedSourceGlobalObjectIdHash: 1587056821
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -80,6 +62,25 @@ MonoBehaviour:
   AutoObjectParentSync: 1
   SyncOwnerTransformWhenParented: 1
   AllowOwnerToParent: 0
+--- !u!114 &5363168276443191164
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7521646789853620970}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b7109c41bc209b49a13d64c89c47719, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HookController
+  ShowTopMostFoldoutHeaderGroup: 1
+  generateOnStart: 1
+  bodyColor: {r: 0.12, g: 0.14, b: 0.18, a: 1}
+  metallicDetailsColor: {r: 0.35, g: 0.38, b: 0.42, a: 1}
+  copperColor: {r: 0.8, g: 0.38, b: 0.15, a: 1}
+  gripColor: {r: 0.08, g: 0.08, b: 0.09, a: 1}
+  glowColor: {r: 0, g: 2.9750001, b: 3.5, a: 3.5}
 --- !u!114 &3946975087585576935
 MonoBehaviour:
   m_ObjectHideFlags: 0
