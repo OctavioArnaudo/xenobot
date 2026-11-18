@@ -14,6 +14,7 @@ using Runtime.Scripts.Effective;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Projectile;
 using Runtime.Scripts.Shields;
+using Runtime.Scripts.Items;
 
 namespace Runtime.Scripts.Enemy
 {
@@ -462,6 +463,21 @@ namespace Runtime.Scripts.Enemy
             if (_hasAnimGrounded) m_Animator.SetBool(_animIDIsGrounded, isTerrestrial);
         }
 
+        private static ItemsData s_exp;
+
+        // Todo enemigo suelta un orbe de experiencia al morir (solo servidor / offline).
+        private void DropExp()
+        {
+            if (IsNetworkActive && !IsServer) return;
+            if (s_exp == null) s_exp = Resources.Load<ItemsData>("Crafting/Items/Data/Item_Experience");
+            if (s_exp == null || s_exp.itemPrefab == null) return;
+            Vector3 pos = transform.position + Vector3.up * 0.5f;
+            GameObject go = BalanceManager.Instance != null
+                ? BalanceManager.Instance.SpawnFromPool(s_exp.itemPrefab, pos, Quaternion.identity)
+                : Instantiate(s_exp.itemPrefab, pos, Quaternion.identity);
+            if (go != null && IsNetworkActive && go.TryGetComponent<NetworkObject>(out var n) && !n.IsSpawned) n.Spawn();
+        }
+
         private void OnDamageTaken(int damage)
         {
             _damageTakenInPhase += damage;
@@ -476,6 +492,7 @@ namespace Runtime.Scripts.Enemy
 
             ReleaseMeleeAttackToken();
             StopMoving();
+            DropExp();
 
             if (m_Spawn != null)
             {

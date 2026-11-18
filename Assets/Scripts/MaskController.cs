@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using Unity.Netcode;
 
 using System.Linq;
@@ -9,6 +10,7 @@ using Runtime.Scripts.Health;
 using Runtime.Scripts.Pickup;
 using Runtime.Scripts.Costume;
 using Runtime.Scripts.Skills;
+using Runtime.Scripts.Gate;
 
 namespace Runtime.Scripts.Mask
 {
@@ -26,6 +28,8 @@ namespace Runtime.Scripts.Mask
 
         [Header("Settings de Máscara")]
         public string renderTag = "Render";
+        public Key toggleKey = Key.Digit4; // activa / desactiva el visor
+        [Range(5f, 150f)] public float visorRange = 30f; // alcance del visor (m)
 
         public MaskKind Kind;
         public Optional<MaskKind> kind;
@@ -55,20 +59,22 @@ namespace Runtime.Scripts.Mask
 #if UNITY_EDITOR
             UpdateInspectorValues();
 #endif
+            if (!_isEquipped || MenuGate.Busy || Keyboard.current == null) return;
+            if (Keyboard.current[toggleKey].wasPressedThisFrame) VisorOn = _visorOn = !_visorOn;
         }
 
+        public static bool VisorOn; // lo lee el HUD para encender la placa del visor
+        private bool _visorOn;
         private bool _isEquipped = false;
         private GameObject _playerRoot;
         private Camera _mainCamCache;
 
-        // Visual textures & styles for HUD Overlay
-        private Texture2D _texOverlay, _texFrame, _texHeat, _texTargetBox;
         private SkillProgression _sp;
         private HealthController[] _healths;
         private PickupController[] _pickups;
         private float _scanT;
-        private GUIStyle _hudHeaderStyle, _hudValueStyle, _hudTargetStyle;
-        private bool _stylesReady;
+        private GUIStyle _tagEnemy, _tagObj;
+        private Texture2D _texTint, _texFrame;
 
         private void Awake()
         {
@@ -85,6 +91,7 @@ namespace Runtime.Scripts.Mask
             if (!_isEquipped) return;
 
             _isEquipped = false;
+            VisorOn = false;
             if (_sp != null) _sp.SetMask(MaskKind.None);
 
             if (gameObject != null)
@@ -273,52 +280,37 @@ namespace Runtime.Scripts.Mask
         public override void OnDestroy()
         {
             if (_isEquipped && _sp != null) _sp.SetMask(MaskKind.None);
+            if (_isEquipped) VisorOn = false;
             _isEquipped = false;
             base.OnDestroy();
         }
 
-        // --- VISOR (mascara Rango, nivel 2): calor + stats de enemigos y escaner de objetos ---
+        // --- VISOR (mascara Rango, nivel 2): carteles con solo el nombre de enemigos y objetos cercanos ---
 
-        static readonly Color Heat = new Color(1f, 0.35f, 0f), Gold = new Color(1f, 0.85f, 0f);
-
-        private void EnsureGUIAssets()
+        private static GUIStyle Style(Color c)
         {
-            if (_stylesReady) return;
-
-            _texOverlay = MakeTex(new Color(0.1f, 0.035f, 0f, 0.25f));
-            _texFrame = MakeTex(new Color(Heat.r, Heat.g, Heat.b, 0.7f));
-            _texHeat = MakeTex(new Color(Heat.r, Heat.g, Heat.b, 0.2f));
-            _texTargetBox = MakeTex(new Color(Gold.r, Gold.g, Gold.b, 0.2f));
-
-            _hudHeaderStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, fontStyle = FontStyle.Bold, alignment = TextAnchor.UpperLeft };
-            _hudHeaderStyle.normal.textColor = Heat;
-
-            _hudValueStyle = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleLeft };
-            _hudValueStyle.normal.textColor = Color.white;
-
-            _hudTargetStyle = new GUIStyle(GUI.skin.label) { fontSize = 10, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
-            _hudTargetStyle.normal.textColor = Gold;
-
-            _stylesReady = true;
-        }
-
-        private Texture2D MakeTex(Color c)
-        {
-            var t = new Texture2D(1, 1);
-            t.SetPixel(0, 0, c);
-            t.Apply();
-            return t;
+            var s = new GUIStyle(GUI.skin.label) { fontSize = 11, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            s.normal.textColor = c;
+            return s;
         }
 
         private void OnGUI()
         {
-            if (!_isEquipped || Event.current.type != EventType.Repaint) return;
+            // Apagado, o con cualquier menu (TAB / pausa) abierto: no se dibuja nada encima de la UI.
+            if (!_isEquipped || !_visorOn || MenuGate.Busy || Cursor.visible || Event.current.type != EventType.Repaint) return;
             if (_sp == null || !_sp.Has(Skill.Visor)) return;
 
             if (_mainCamCache == null) _mainCamCache = Camera.main;
             if (_mainCamCache == null) return;
 
-            EnsureGUIAssets();
+            if (_texTint == null)
+            {
+                _texTint = Solid(new Color(0.1f, 0.035f, 0f, 0.25f));
+                _texFrame = Solid(new Color(1f, 0.35f, 0f, 0.7f));
+            }
+            DrawFrame();
+
+            if (_tagEnemy == null) { _tagEnemy = Style(new Color(1f, 0.35f, 0f)); _tagObj = Style(new Color(1f, 0.85f, 0f)); }
 
             if (Time.unscaledTime >= _scanT)
             {
@@ -327,67 +319,52 @@ namespace Runtime.Scripts.Mask
                 _pickups = Object.FindObjectsByType<PickupController>(FindObjectsSortMode.None);
             }
 
-            DrawFrame();
-            DrawEnemies();
-            DrawObjects();
+            Vector3 center = _playerRoot != null ? _playerRoot.transform.position : transform.position;
+
+            if (_healths != null)
+                foreach (var h in _healths)
+                {
+                    if (h != null && h.EffectiveCurrentHealth > 0 && !h.CompareTag("Player") && !(_playerRoot != null && h.transform.IsChildOf(_playerRoot.transform)))
+                        Tag(center, h.transform.position + Vector3.up * 1.2f, h.name, _tagEnemy);
+                }
+
+            if (_pickups != null)
+                foreach (var p in _pickups)
+                {
+                    if (p != null && p.gameObject.activeInHierarchy)
+                        Tag(center, p.transform.position + Vector3.up * 0.5f, p.item != null ? p.item.itemName : p.name, _tagObj);
+                }
         }
 
+        private static Texture2D Solid(Color c)
+        {
+            var t = new Texture2D(1, 1);
+            t.SetPixel(0, 0, c);
+            t.Apply();
+            return t;
+        }
+
+        // Tinte suave + cuatro esquinas: indica que el visor esta abierto.
         private void DrawFrame()
         {
-            GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), _texOverlay);
-
-            const int t = 3, c = 40, m = 20;
+            const float t = 3f, c = 40f, m = 20f;
             float w = Screen.width, h = Screen.height;
-
-            GUI.DrawTexture(new Rect(m, m, c, t), _texFrame);
-            GUI.DrawTexture(new Rect(m, m, t, c), _texFrame);
-            GUI.DrawTexture(new Rect(w - m - c, m, c, t), _texFrame);
-            GUI.DrawTexture(new Rect(w - m - t, m, t, c), _texFrame);
-            GUI.DrawTexture(new Rect(m, h - m - t, c, t), _texFrame);
-            GUI.DrawTexture(new Rect(m, h - m - c, t, c), _texFrame);
-            GUI.DrawTexture(new Rect(w - m - c, h - m - t, c, t), _texFrame);
-            GUI.DrawTexture(new Rect(w - m - t, h - m - c, t, c), _texFrame);
-
-            GUI.Label(new Rect(30, 25, 400, 25), "[ VISOR - SCANNER ACTIVO ]", _hudHeaderStyle);
+            GUI.DrawTexture(new Rect(0, 0, w, h), _texTint);
+            foreach (float x in new[] { m, w - m - c })
+                foreach (float y in new[] { m, h - m - t })
+                    GUI.DrawTexture(new Rect(x, y, c, t), _texFrame);
+            foreach (float x in new[] { m, w - m - t })
+                foreach (float y in new[] { m, h - m - c })
+                    GUI.DrawTexture(new Rect(x, y, t, c), _texFrame);
         }
 
-        private void DrawEnemies()
+        // Cartel minimalista: solo el nombre, y solo si esta cerca del player.
+        private void Tag(Vector3 center, Vector3 worldPos, string label, GUIStyle style)
         {
-            if (_healths == null) return;
-            foreach (var h in _healths)
-            {
-                if (h == null || h.gameObject == _playerRoot || h.EffectiveCurrentHealth <= 0) continue;
-
-                Vector3 sp = _mainCamCache.WorldToScreenPoint(h.transform.position + Vector3.up * 1.2f);
-                if (sp.z < 0) continue;
-
-                float y = Screen.height - sp.y;
-                float dist = Vector3.Distance(_mainCamCache.transform.position, h.transform.position);
-
-                Rect box = new Rect(sp.x - 60, y - 35, 120, 70);
-                GUI.DrawTexture(box, _texHeat);
-                GUI.Label(box, $"{h.gameObject.name}\nHP: {h.EffectiveCurrentHealth}/{h.EffectiveMaxHealth}\nEQUIPO: {h.EffectiveTeam}\nDIST: {dist:F1}m", _hudValueStyle);
-            }
-        }
-
-        private void DrawObjects()
-        {
-            if (_pickups == null) return;
-            foreach (var p in _pickups)
-            {
-                if (p == null || !p.gameObject.activeInHierarchy) continue;
-
-                Vector3 sp = _mainCamCache.WorldToScreenPoint(p.transform.position + Vector3.up * 0.5f);
-                if (sp.z < 0) continue;
-
-                float y = Screen.height - sp.y;
-                float dist = Vector3.Distance(_mainCamCache.transform.position, p.transform.position);
-                string itemName = p.item != null ? p.item.itemName : p.gameObject.name.Replace("(Clone)", "");
-
-                Rect box = new Rect(sp.x - 50, y - 20, 100, 40);
-                GUI.DrawTexture(box, _texTargetBox);
-                GUI.Label(box, $"{itemName}\n{dist:F1}m", _hudTargetStyle);
-            }
+            if ((worldPos - center).sqrMagnitude > visorRange * visorRange) return;
+            Vector3 sp = _mainCamCache.WorldToScreenPoint(worldPos);
+            if (sp.z < 0f) return;
+            GUI.Label(new Rect(sp.x - 60f, Screen.height - sp.y - 10f, 120f, 20f), label.Replace("(Clone)", "").Trim(), style);
         }
     }
 }

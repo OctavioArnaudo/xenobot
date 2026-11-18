@@ -385,7 +385,8 @@ namespace Runtime.Scripts.Hud
         readonly RectTransform[] _fill = new RectTransform[4];
         readonly TextMeshProUGUI[] _barTxt = new TextMeshProUGUI[4];
         readonly float[] _lastF = new float[4];
-        readonly Image[] _plate = new Image[6], _ring = new Image[6], _ic = new Image[6]; // 0 melee, 1 disparo, 2 mira, 3 jetpack, 4 gancho, 5 escudo
+        readonly Image[] _plate = new Image[10], _ring = new Image[10], _ic = new Image[10]; // 0 melee, 1 disparo, 2 mira, 3 jetpack, 4 gancho, 5 escudo
+        SkillProgression _sp;
         Image _glow, _jDot; // aviso rojo del boton J: historia nueva sin leer
         bool _lit;
         static Sprite s_scope, s_ring, s_glow, s_fist, s_gun, s_jet, s_hook, s_shield;
@@ -461,6 +462,23 @@ namespace Runtime.Scripts.Hud
             Lit(3, pr != null && pr.isUnlocked);
             Lit(4, pcs != null && pcs.HasHook);
             Lit(5, sh != null && sh.isUnlocked && !sh.InCooldown);
+            Lit(6, Runtime.Scripts.Mask.MaskController.VisorOn);
+
+            // Placas 0-1 (melee / disparo) siempre; 2-5 (mira, jetpack, gancho, escudo, visor, rastreo, golpe triple, slam) solo si la mascara equipada las habilita,
+            // con fondo violeta (Range) o naranja (Melee). Se recentran segun cuantas haya.
+            if (_sp == null) _sp = GetComponent<SkillProgression>();
+            Color mc = _sp != null && _sp.Active == MaskKind.Melee ? new Color(0.9f, 0.45f, 0.05f) : new Color(0.4f, 0.12f, 0.6f);
+            Skill[] map = { Skill.Scope, Skill.Scope, Skill.Scope, Skill.Jetpack, Skill.Hook, Skill.Shield, Skill.Visor, Skill.Tracking, Skill.Triple, Skill.Slam };
+            int n = 2, k = 0;
+            for (int i = 2; i < 10; i++) if (_sp != null && _sp.Has(map[i])) n++;
+            for (int i = 0; i < 10; i++)
+            {
+                bool vis = i < 2 || (_sp != null && _sp.Has(map[i]));
+                _plate[i].gameObject.SetActive(vis);
+                if (!vis) continue;
+                _plate[i].rectTransform.anchoredPosition = new Vector2((k++ - (n - 1) * 0.5f) * 76f, 130f);
+                _plate[i].color = i < 2 ? new Color(0.02f, 0.03f, 0.03f) : mc;
+            }
         }
 
         static void Top(RectTransform t, float size, float y)
@@ -517,8 +535,8 @@ namespace Runtime.Scripts.Hud
 
             // Fila centrada sobre la zona media del tablero: 1 melee, 2 disparo, 3 mira, jetpack (SPC), gancho (F), escudo (RMB)
             const float PlateW = 68f, PlateH = 76f, PlateGap = 8f, RowY = 130f;
-            string[] hint = { "1", "2", "3", "SPC", "F", "RMB" };
-            for (int i = 0; i < 6; i++)
+            string[] hint = { "1", "2", "3", "SPC", "F", "RMB", "4", "2", "1", "AIR" };
+            for (int i = 0; i < 10; i++)
             {
                 int id = i;
                 var r = Rnd(Img(_uiRoot.transform, new Color(0.02f, 0.03f, 0.03f)));
@@ -539,9 +557,9 @@ namespace Runtime.Scripts.Hud
                 _ring[i].raycastTarget = false;
                 Top(ring, 50f, -3f);   // icono arriba, tecla debajo
                 ring.gameObject.SetActive(false);
-                var ic = Img(r, i < 3 ? new Color(0.8f, 0.9f, 0.8f) : new Color(0.8f, 0.9f, 0.8f, 0.3f));
+                var ic = Img(r, i < 3 || i > 5 ? new Color(0.8f, 0.9f, 0.8f) : new Color(0.8f, 0.9f, 0.8f, 0.3f));
                 _ic[i] = ic.GetComponent<Image>();
-                _ic[i].sprite = i == 0 ? FistSprite() : i == 1 ? GunSprite() : i == 2 ? ScopeSprite() : i == 3 ? JetSprite() : i == 4 ? HookSprite() : ShieldSprite();
+                _ic[i].sprite = i == 0 ? FistSprite() : i == 1 ? GunSprite() : i == 2 ? ScopeSprite() : i == 3 ? JetSprite() : i == 4 ? HookSprite() : i == 5 ? ShieldSprite() : i == 6 ? SkillProgression.Icon(MaskKind.Range, 0) : i == 7 ? SkillProgression.Icon(MaskKind.Range, 3) : i == 8 ? SkillProgression.Icon(MaskKind.Melee, 0) : SkillProgression.Icon(MaskKind.Melee, 3);
                 _ic[i].raycastTarget = false;
                 Top(ic, 36f, -10f);
                 var n = Txt(r, 16, Amber, TextAlignmentOptions.Center, FontStyles.Bold);

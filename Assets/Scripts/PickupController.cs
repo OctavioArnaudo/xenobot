@@ -6,6 +6,7 @@ using Runtime.Scripts.Balance;
 using Runtime.Scripts.Items;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Spawn;
+using Runtime.Scripts.Experience;
 
 namespace Runtime.Scripts.Pickup
 {
@@ -344,13 +345,14 @@ namespace Runtime.Scripts.Pickup
         {
             ResolveItemsDataIfNeeded();
 
-            if (item != null && inv != null && item.isPickable)
+            bool direct = GetComponentInChildren<ExperienceController>(true) != null; // la experiencia nunca entra al inventario
+            if (!direct && item != null && inv != null && item.isPickable)
             {
                 Give(inv, item, IsNetworkActive);
             }
             else
             {
-                if (item == null || inv == null || !item.isPickable)
+                if (!direct && (item == null || inv == null || !item.isPickable))
                     Debug.LogWarning($"[Pickup] '{name}' no se guardo en el inventario: item={(item != null)}, inventario={(inv != null)}, isPickable={(item != null && item.isPickable)}", this);
                 var pickupActions = GetComponentsInChildren<IItemPickupAction>(true);
                 foreach (var act in pickupActions) act.OnPickupItem(player);
