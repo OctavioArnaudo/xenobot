@@ -17,6 +17,7 @@ using Runtime.Scripts.Defeat;
 using Runtime.Scripts.Zoom;
 using Runtime.Scripts.Gate;
 using Runtime.Scripts.Shields;
+using Runtime.Scripts.Skills;
 using UnityEngine;
 
 namespace Runtime.Scripts.Player
@@ -95,7 +96,7 @@ namespace Runtime.Scripts.Player
         [Tooltip("True = Modo Melee (1), False = Modo Rango (2).")] public bool meleeMode;
         public bool scopeMode;
         public bool HasMelee => _melee != null;
-        public bool HasHook => hookProjectilePrefab != null;
+        public bool HasHook => hookProjectilePrefab != null && SkillProgression.Can(this, Skill.Hook);
 
         [Header("Hook Settings")]
         public GameObject hookProjectilePrefab;
@@ -706,7 +707,7 @@ namespace Runtime.Scripts.Player
                 aim = false;
                 scope = false;
 
-                if (_shield != null)
+                if (_shield != null && SkillProgression.Can(this, Skill.Shield))
                 {
                     if (toggleAim)
                     {
@@ -839,7 +840,7 @@ namespace Runtime.Scripts.Player
 
         private void TryFireHook()
         {
-            if (hookProjectilePrefab == null) return;
+            if (!HasHook) return;
 
             Transform spawnTransform = hookMuzzle != null ? hookMuzzle : (_shooter != null && _shooter.Muzzle != null ? _shooter.Muzzle.transform : transform);
             Vector3 spawnPos = spawnTransform.position;

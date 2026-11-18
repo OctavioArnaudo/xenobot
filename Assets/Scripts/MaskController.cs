@@ -8,16 +8,10 @@ using Runtime.Scripts.Effective;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Pickup;
 using Runtime.Scripts.Costume;
+using Runtime.Scripts.Skills;
 
 namespace Runtime.Scripts.Mask
 {
-    public enum VisorType
-    {
-        VisorTermico,      // Visor Térmico (Detección de calor de personajes/enemigos en rojo/naranja)
-        VisorEstadisticas, // Visor de Estadísticas (HUD táctico cían con HP, Nivel, Atk/Def sobre objetivos)
-        VisorObjetos       // Visor de Objetos (Escáner de loot, pickups y objetos en amarillo/oro)
-    }
-
     /// <summary>
     /// Controlador de Máscaras y Visores tácticos.
     /// Superpone el visor/máscara sobre la cabeza del personaje sin reemplazar su cuerpo base.
@@ -25,7 +19,7 @@ namespace Runtime.Scripts.Mask
     /// </summary>
     public class MaskController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction
     {
-        private const VisorType DEFAULT_VISOR_TYPE = VisorType.VisorTermico;
+        private const MaskKind DEFAULT_KIND = MaskKind.Range;
         private static readonly Vector3 DEFAULT_HEAD_BONE_OFFSET = new Vector3(0f, 0.05f, 0.08f);
         private static readonly Vector3 DEFAULT_ROOT_HEAD_OFFSET = new Vector3(0f, 1.40f, 0.15f);
         private static readonly Vector3 DEFAULT_HEAD_SCALE = new Vector3(0.35f, 0.35f, 0.35f);
@@ -33,20 +27,20 @@ namespace Runtime.Scripts.Mask
         [Header("Settings de Máscara")]
         public string renderTag = "Render";
 
-        public VisorType VisorType;
-        public Optional<VisorType> visorType;
+        public MaskKind Kind;
+        public Optional<MaskKind> kind;
         public Vector3 HeadOffset;
         public Optional<Vector3> headOffset;
         public Vector3 HeadScale;
         public Optional<Vector3> headScale;
 
-        public VisorType EffectiveVisorType => visorType.Get(VisorType, DEFAULT_VISOR_TYPE);
+        public MaskKind EffectiveKind => kind.Get(Kind, DEFAULT_KIND);
         public Vector3 EffectiveHeadOffset => headOffset.Get(HeadOffset, DEFAULT_HEAD_BONE_OFFSET);
         public Vector3 EffectiveHeadScale => headScale.Get(HeadScale, DEFAULT_HEAD_SCALE);
 
         private void UpdateInspectorValues()
         {
-            VisorType = EffectiveVisorType;
+            Kind = EffectiveKind;
             HeadOffset = EffectiveHeadOffset;
             HeadScale = EffectiveHeadScale;
         }
@@ -68,7 +62,11 @@ namespace Runtime.Scripts.Mask
         private Camera _mainCamCache;
 
         // Visual textures & styles for HUD Overlay
-        private Texture2D _texOverlay, _texFrame, _texTargetBox;
+        private Texture2D _texOverlay, _texFrame, _texHeat, _texTargetBox;
+        private SkillProgression _sp;
+        private HealthController[] _healths;
+        private PickupController[] _pickups;
+        private float _scanT;
         private GUIStyle _hudHeaderStyle, _hudValueStyle, _hudTargetStyle;
         private bool _stylesReady;
 
@@ -87,6 +85,7 @@ namespace Runtime.Scripts.Mask
             if (!_isEquipped) return;
 
             _isEquipped = false;
+            if (_sp != null) _sp.SetMask(MaskKind.None);
 
             if (gameObject != null)
             {
@@ -162,6 +161,9 @@ namespace Runtime.Scripts.Mask
             gameObject.SetActive(true);
             _isEquipped = true;
 
+            _sp = _playerRoot.GetComponent<SkillProgression>() ?? _playerRoot.GetComponentInChildren<SkillProgression>(true);
+            if (_sp != null) _sp.SetMask(EffectiveKind);
+
             // 8. Limpiar componentes de mundo
             if (TryGetComponent<PickupController>(out var p)) Destroy(p);
             if (TryGetComponent<Rigidbody>(out var rb)) Destroy(rb);
@@ -220,16 +222,8 @@ namespace Runtime.Scripts.Mask
             return player.transform;
         }
 
-        private Color GetColorForVisor(VisorType visor)
-        {
-            switch (visor)
-            {
-                case VisorType.VisorTermico: return new Color(1f, 0.35f, 0f, 0.85f);
-                case VisorType.VisorEstadisticas: return new Color(0f, 0.9f, 1f, 0.85f);
-                case VisorType.VisorObjetos: return new Color(1f, 0.85f, 0f, 0.85f);
-                default: return Color.cyan;
-            }
-        }
+        // Mismos colores que la progresion del panel: cian = Rango, magenta = Melee
+        private Color GetMaskColor() => EffectiveKind == MaskKind.Melee ? new Color(1f, 0.25f, 0.8f, 0.85f) : new Color(0.1f, 0.85f, 1f, 0.85f);
 
         [ContextMenu("Re-Generate Mask Mesh")]
         public void GenerateMaskMesh()
@@ -264,7 +258,7 @@ namespace Runtime.Scripts.Mask
             {
                 Shader shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Unlit/Color") ?? Shader.Find("Standard");
                 Material mat = new Material(shader);
-                Color col = GetColorForVisor(EffectiveVisorType);
+                Color col = GetMaskColor();
                 mat.color = col;
                 if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", col);
                 if (mat.HasProperty("_EmissionColor"))
@@ -278,45 +272,32 @@ namespace Runtime.Scripts.Mask
 
         public override void OnDestroy()
         {
+            if (_isEquipped && _sp != null) _sp.SetMask(MaskKind.None);
             _isEquipped = false;
             base.OnDestroy();
         }
 
-        // --- VISOR HUD OVERLAY RENDERING (OnGUI) ---
+        // --- VISOR (mascara Rango, nivel 2): calor + stats de enemigos y escaner de objetos ---
+
+        static readonly Color Heat = new Color(1f, 0.35f, 0f), Gold = new Color(1f, 0.85f, 0f);
 
         private void EnsureGUIAssets()
         {
             if (_stylesReady) return;
 
-            Color visorCol = GetColorForVisor(EffectiveVisorType);
+            _texOverlay = MakeTex(new Color(0.1f, 0.035f, 0f, 0.25f));
+            _texFrame = MakeTex(new Color(Heat.r, Heat.g, Heat.b, 0.7f));
+            _texHeat = MakeTex(new Color(Heat.r, Heat.g, Heat.b, 0.2f));
+            _texTargetBox = MakeTex(new Color(Gold.r, Gold.g, Gold.b, 0.2f));
 
-            _texOverlay = MakeTex(new Color(visorCol.r * 0.1f, visorCol.g * 0.1f, visorCol.b * 0.1f, 0.25f));
-            _texFrame = MakeTex(new Color(visorCol.r, visorCol.g, visorCol.b, 0.7f));
-            _texTargetBox = MakeTex(new Color(visorCol.r, visorCol.g, visorCol.b, 0.2f));
+            _hudHeaderStyle = new GUIStyle(GUI.skin.label) { fontSize = 13, fontStyle = FontStyle.Bold, alignment = TextAnchor.UpperLeft };
+            _hudHeaderStyle.normal.textColor = Heat;
 
-            _hudHeaderStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 13,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.UpperLeft
-            };
-            _hudHeaderStyle.normal.textColor = visorCol;
-
-            _hudValueStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 11,
-                fontStyle = FontStyle.Normal,
-                alignment = TextAnchor.MiddleLeft
-            };
+            _hudValueStyle = new GUIStyle(GUI.skin.label) { fontSize = 11, alignment = TextAnchor.MiddleLeft };
             _hudValueStyle.normal.textColor = Color.white;
 
-            _hudTargetStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 10,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter
-            };
-            _hudTargetStyle.normal.textColor = visorCol;
+            _hudTargetStyle = new GUIStyle(GUI.skin.label) { fontSize = 10, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter };
+            _hudTargetStyle.normal.textColor = Gold;
 
             _stylesReady = true;
         }
@@ -332,123 +313,80 @@ namespace Runtime.Scripts.Mask
         private void OnGUI()
         {
             if (!_isEquipped || Event.current.type != EventType.Repaint) return;
+            if (_sp == null || !_sp.Has(Skill.Visor)) return;
 
             if (_mainCamCache == null) _mainCamCache = Camera.main;
             if (_mainCamCache == null) return;
 
             EnsureGUIAssets();
 
-            VisorType visor = EffectiveVisorType;
-
-            // 1. Marco de Visor y Título HUD en Pantalla Completa
-            DrawVisorScreenOverlay(visor);
-
-            // 2. Renderizado de Objetivos según tipo de visor
-            switch (visor)
+            if (Time.unscaledTime >= _scanT)
             {
-                case VisorType.VisorTermico:
-                    DrawThermalOverlay();
-                    break;
-                case VisorType.VisorEstadisticas:
-                    DrawStatsOverlay();
-                    break;
-                case VisorType.VisorObjetos:
-                    DrawObjectsOverlay();
-                    break;
+                _scanT = Time.unscaledTime + 0.25f;
+                _healths = Object.FindObjectsByType<HealthController>(FindObjectsSortMode.None);
+                _pickups = Object.FindObjectsByType<PickupController>(FindObjectsSortMode.None);
             }
+
+            DrawFrame();
+            DrawEnemies();
+            DrawObjects();
         }
 
-        private void DrawVisorScreenOverlay(VisorType visor)
+        private void DrawFrame()
         {
             GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), _texOverlay);
 
-            int frameThickness = 3;
-            int cornerSize = 40;
+            const int t = 3, c = 40, m = 20;
+            float w = Screen.width, h = Screen.height;
 
-            GUI.DrawTexture(new Rect(20, 20, cornerSize, frameThickness), _texFrame);
-            GUI.DrawTexture(new Rect(20, 20, frameThickness, cornerSize), _texFrame);
+            GUI.DrawTexture(new Rect(m, m, c, t), _texFrame);
+            GUI.DrawTexture(new Rect(m, m, t, c), _texFrame);
+            GUI.DrawTexture(new Rect(w - m - c, m, c, t), _texFrame);
+            GUI.DrawTexture(new Rect(w - m - t, m, t, c), _texFrame);
+            GUI.DrawTexture(new Rect(m, h - m - t, c, t), _texFrame);
+            GUI.DrawTexture(new Rect(m, h - m - c, t, c), _texFrame);
+            GUI.DrawTexture(new Rect(w - m - c, h - m - t, c, t), _texFrame);
+            GUI.DrawTexture(new Rect(w - m - t, h - m - c, t, c), _texFrame);
 
-            GUI.DrawTexture(new Rect(Screen.width - 20 - cornerSize, 20, cornerSize, frameThickness), _texFrame);
-            GUI.DrawTexture(new Rect(Screen.width - 20 - frameThickness, 20, frameThickness, cornerSize), _texFrame);
-
-            GUI.DrawTexture(new Rect(20, Screen.height - 20 - frameThickness, cornerSize, frameThickness), _texFrame);
-            GUI.DrawTexture(new Rect(20, Screen.height - 20 - cornerSize, frameThickness, cornerSize), _texFrame);
-
-            GUI.DrawTexture(new Rect(Screen.width - 20 - cornerSize, Screen.height - 20 - frameThickness, cornerSize, frameThickness), _texFrame);
-            GUI.DrawTexture(new Rect(Screen.width - 20 - frameThickness, Screen.height - 20 - cornerSize, frameThickness, cornerSize), _texFrame);
-
-            string title = $"[ VISOR: {visor.ToString().ToUpper()} - SCANNER ACTIVO ]";
-            GUI.Label(new Rect(30, 25, 400, 25), title, _hudHeaderStyle);
+            GUI.Label(new Rect(30, 25, 400, 25), "[ VISOR - SCANNER ACTIVO ]", _hudHeaderStyle);
         }
 
-        private void DrawThermalOverlay()
+        private void DrawEnemies()
         {
-            var healths = Object.FindObjectsByType<HealthController>(FindObjectsSortMode.None);
-            foreach (var h in healths)
+            if (_healths == null) return;
+            foreach (var h in _healths)
             {
                 if (h == null || h.gameObject == _playerRoot || h.EffectiveCurrentHealth <= 0) continue;
 
-                Vector3 worldPos = h.transform.position + Vector3.up * 1.0f;
-                Vector3 screenPos = _mainCamCache.WorldToScreenPoint(worldPos);
+                Vector3 sp = _mainCamCache.WorldToScreenPoint(h.transform.position + Vector3.up * 1.2f);
+                if (sp.z < 0) continue;
 
-                if (screenPos.z < 0) continue;
-
-                float guiY = Screen.height - screenPos.y;
+                float y = Screen.height - sp.y;
                 float dist = Vector3.Distance(_mainCamCache.transform.position, h.transform.position);
 
-                Rect box = new Rect(screenPos.x - 30, guiY - 30, 60, 60);
-                GUI.DrawTexture(box, _texTargetBox);
-
-                string heatLabel = $"[HEAT: {h.EffectiveCurrentHealth} HP]\n{dist:F1}m";
-                GUI.Label(new Rect(screenPos.x - 60, guiY + 32, 120, 30), heatLabel, _hudTargetStyle);
+                Rect box = new Rect(sp.x - 60, y - 35, 120, 70);
+                GUI.DrawTexture(box, _texHeat);
+                GUI.Label(box, $"{h.gameObject.name}\nHP: {h.EffectiveCurrentHealth}/{h.EffectiveMaxHealth}\nEQUIPO: {h.EffectiveTeam}\nDIST: {dist:F1}m", _hudValueStyle);
             }
         }
 
-        private void DrawStatsOverlay()
+        private void DrawObjects()
         {
-            var healths = Object.FindObjectsByType<HealthController>(FindObjectsSortMode.None);
-            foreach (var h in healths)
-            {
-                if (h == null || h.gameObject == _playerRoot || h.EffectiveCurrentHealth <= 0) continue;
-
-                Vector3 worldPos = h.transform.position + Vector3.up * 1.2f;
-                Vector3 screenPos = _mainCamCache.WorldToScreenPoint(worldPos);
-
-                if (screenPos.z < 0) continue;
-
-                float guiY = Screen.height - screenPos.y;
-                float dist = Vector3.Distance(_mainCamCache.transform.position, h.transform.position);
-
-                Rect box = new Rect(screenPos.x - 60, guiY - 35, 120, 70);
-                GUI.DrawTexture(box, _texTargetBox);
-
-                string statsLabel = $"{h.gameObject.name}\nHP: {h.EffectiveCurrentHealth}/{h.EffectiveMaxHealth}\nEQUIPO: {h.EffectiveTeam}\nDIST: {dist:F1}m";
-                GUI.Label(box, statsLabel, _hudValueStyle);
-            }
-        }
-
-        private void DrawObjectsOverlay()
-        {
-            var pickups = Object.FindObjectsByType<PickupController>(FindObjectsSortMode.None);
-            foreach (var p in pickups)
+            if (_pickups == null) return;
+            foreach (var p in _pickups)
             {
                 if (p == null || !p.gameObject.activeInHierarchy) continue;
 
-                Vector3 worldPos = p.transform.position + Vector3.up * 0.5f;
-                Vector3 screenPos = _mainCamCache.WorldToScreenPoint(worldPos);
+                Vector3 sp = _mainCamCache.WorldToScreenPoint(p.transform.position + Vector3.up * 0.5f);
+                if (sp.z < 0) continue;
 
-                if (screenPos.z < 0) continue;
-
-                float guiY = Screen.height - screenPos.y;
+                float y = Screen.height - sp.y;
                 float dist = Vector3.Distance(_mainCamCache.transform.position, p.transform.position);
-
                 string itemName = p.item != null ? p.item.itemName : p.gameObject.name.Replace("(Clone)", "");
 
-                Rect box = new Rect(screenPos.x - 50, guiY - 20, 100, 40);
+                Rect box = new Rect(sp.x - 50, y - 20, 100, 40);
                 GUI.DrawTexture(box, _texTargetBox);
-
-                string itemLabel = $"📦 {itemName}\n{dist:F1}m";
-                GUI.Label(box, itemLabel, _hudTargetStyle);
+                GUI.Label(box, $"{itemName}\n{dist:F1}m", _hudTargetStyle);
             }
         }
     }

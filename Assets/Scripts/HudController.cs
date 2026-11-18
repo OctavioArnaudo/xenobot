@@ -17,6 +17,7 @@ using Runtime.Scripts.Balance;
 using Runtime.Scripts.Settings;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Narrative;
+using Runtime.Scripts.Skills;
 using static Runtime.Scripts.Gate.MenuGate;
 
 namespace Runtime.Scripts.Hud
@@ -457,7 +458,7 @@ namespace Runtime.Scripts.Hud
                 Lit(i, pcs != null && (i == 0 ? pcs.meleeMode : i == 1 ? !pcs.meleeMode : pcs.scopeMode));
             }
             var pr = GetPropulsion(); var sh = GetShield();
-            Lit(3, pr != null && pr.MaxJetpack > 0);
+            Lit(3, pr != null && pr.isUnlocked);
             Lit(4, pcs != null && pcs.HasHook);
             Lit(5, sh != null && sh.isUnlocked && !sh.InCooldown);
         }
@@ -600,7 +601,7 @@ namespace Runtime.Scripts.Hud
             Bar(0, m_PlayerHealth.EffectiveCurrentHealth, m_PlayerHealth.EffectiveMaxHealth,
                 $"{m_PlayerHealth.EffectiveCurrentHealth}/{m_PlayerHealth.EffectiveMaxHealth}");
 
-            if (prop != null && prop.MaxJetpack > 0) Bar(1, prop.JetpackFuel, prop.MaxJetpack, $"{prop.JetpackFuel:F0}/{prop.MaxJetpack:F0}");
+            if (prop != null && prop.isUnlocked) Bar(1, prop.JetpackFuel, prop.MaxJetpack, $"{prop.JetpackFuel:F0}/{prop.MaxJetpack:F0}");
             else Bar(1, 0f, 1f, "N/A");
 
             if (shooter != null)
@@ -644,7 +645,7 @@ namespace Runtime.Scripts.Hud
         public string BarText(int i) => _barTxt[i] != null ? _barTxt[i].text : null;
         public string TimeStr => _cachedTimeStr;
 
-        /// <summary>Skills base del jugador: disparo, recarga, cuerpo a cuerpo, escudo, gancho, sprint, jetpack y mira telescopica.</summary>
+        /// <summary>Skills base del jugador: disparo, recarga, cuerpo a cuerpo, escudo, gancho, sprint, dash, jetpack y mira telescopica (estos tres ultimos segun desbloqueo).</summary>
         public void CollectSkills(System.Collections.Generic.List<string> names, System.Collections.Generic.List<string> keys)
         {
             var pc = GetPlayer();
@@ -661,8 +662,9 @@ namespace Runtime.Scripts.Hud
             if (shield != null && shield.isUnlocked) { names.Add("Escudo"); keys.Add("RMB"); }
             if (pc != null && pc.HasHook) { names.Add("Gancho"); keys.Add("F"); }
             names.Add("Sprint"); keys.Add("Shift");
-            if (prop != null && prop.MaxJetpack > 0) { names.Add("Jetpack"); keys.Add("SPC (Hold)"); }
-            names.Add(pc != null && pc.scopeMode ? "Mira telescopica (ON)" : "Mira telescopica"); keys.Add("3");
+            names.Add("Dash"); keys.Add("Shift (tap)");
+            if (prop != null && prop.isUnlocked) { names.Add("Jetpack"); keys.Add("SPC (Hold)"); }
+            if (SkillProgression.Can(this, Skill.Scope)) { names.Add(pc != null && pc.scopeMode ? "Mira telescopica (ON)" : "Mira telescopica"); keys.Add("3"); }
         }
 
         // Sprites dibujados por codigo, una sola vez y compartidos.

@@ -10,11 +10,11 @@ namespace Runtime.Scripts.Gate
     /// </summary>
     public static class PanelSkin
     {
-        public enum Kind { Inventory, Viewer, Stats, Skills, Arrow, Card }
+        public enum Kind { Inventory, Viewer, Stats, Skills, Arrow, Card, Strip }
 
         struct Def { public int w, h; public float cell; public int seed; public Vector2[] outer, inner; }
 
-        static readonly Sprite[] s_sprites = new Sprite[6];
+        static readonly Sprite[] s_sprites = new Sprite[7];
         static readonly Vector3 L = new Vector3(-0.5f, 0.55f, 0.67f).normalized;
         static readonly Vector2 L2 = new Vector2(-0.67f, 0.74f);
 
@@ -81,6 +81,16 @@ namespace Runtime.Scripts.Gate
                         seed = 89,
                         outer = P(0.02f, 0.97f, 0.55f, 1f, 0.98f, 0.98f, 1f, 0.5f, 0.97f, 0.02f, 0.45f, 0f, 0.02f, 0.03f, 0f, 0.5f),
                         inner = P(0.075f, 0.925f, 0.925f, 0.93f, 0.93f, 0.07f, 0.07f, 0.065f)
+                    };
+                case Kind.Strip: // tira de progresion de la mascara: mismo metal, hueco alargado
+                    return new Def
+                    {
+                        w = 312,
+                        h = 58,
+                        cell = 24f,
+                        seed = 97,
+                        outer = P(0.01f, 0.92f, 0.5f, 1f, 0.99f, 0.93f, 1f, 0.5f, 0.99f, 0.07f, 0.5f, 0f, 0.01f, 0.08f, 0f, 0.5f),
+                        inner = P(0.04f, 0.86f, 0.96f, 0.87f, 0.95f, 0.13f, 0.05f, 0.12f)
                     };
                 default: // flecha hacia la derecha (la izquierda es la misma con escala X negativa)
                     return new Def

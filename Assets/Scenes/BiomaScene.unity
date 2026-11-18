@@ -46382,10 +46382,6 @@ PrefabInstance:
       propertyPath: m_ClearFlags
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 3048046792638108112, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: far clip plane
-      value: 5000
-      objectReference: {fileID: 0}
     - target: {fileID: 3281595573793558308, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: m_InScenePlaced
       value: 1
@@ -46410,18 +46406,6 @@ PrefabInstance:
       propertyPath: cameraCollision.m_Bits
       value: 128
       objectReference: {fileID: 0}
-    - target: {fileID: 4211845453476388235, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4211845453476388235, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4211845453476388235, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 4579385987849053243, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: healthBarSize.x
       value: 2.2
@@ -46433,18 +46417,6 @@ PrefabInstance:
     - target: {fileID: 4579385987849053243, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: healthBarOffset.y
       value: 0.21
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889432586557793886, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0.19995117
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889432586557793886, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4889432586557793886, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -8
       objectReference: {fileID: 0}
     - target: {fileID: 5406775581845984314, guid: 1f7ee2a8dac82144593a77b19c4db4e4, type: 3}
       propertyPath: m_CastShadows
@@ -255795,6 +255767,18 @@ PrefabInstance:
     - target: {fileID: 2490401838459581095, guid: f7debfe1864af9143a5a044b5386c73e, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2827371307890845118, guid: f7debfe1864af9143a5a044b5386c73e, type: 3}
+      propertyPath: Kind
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2827371307890845118, guid: f7debfe1864af9143a5a044b5386c73e, type: 3}
+      propertyPath: kind.use
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2827371307890845118, guid: f7debfe1864af9143a5a044b5386c73e, type: 3}
+      propertyPath: kind.value
+      value: 2
       objectReference: {fileID: 0}
     - target: {fileID: 3540194439657624024, guid: f7debfe1864af9143a5a044b5386c73e, type: 3}
       propertyPath: m_IsActive

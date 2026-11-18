@@ -7,6 +7,7 @@ using UnityEngine.UI;
 using Runtime.Scripts.Gate;
 using Runtime.Scripts.Hud;
 using Runtime.Scripts.Items;
+using Runtime.Scripts.Skills;
 using static Runtime.Scripts.Gate.MenuGate;
 
 namespace Runtime.Scripts.Inventory
@@ -46,6 +47,7 @@ namespace Runtime.Scripts.Inventory
         }
 
         sealed class Row { public GameObject go; public Image dot; public TextMeshProUGUI name, key; }
+        sealed class Node { public Image bg, icon; public TextMeshProUGUI lvl; public GameObject sel; }
 
         InventoryController _inv;
         HudController _hud;
@@ -55,6 +57,18 @@ namespace Runtime.Scripts.Inventory
         readonly RectTransform[] _fill = new RectTransform[4];
         readonly float[] _lastF = { -1f, -1f, -1f, -1f };
         readonly TextMeshProUGUI[] _val = new TextMeshProUGUI[9];
+
+        // progresion de la mascara: tira sobre el visor + descripcion en SKILLS
+        SkillProgression _sp;
+        MaskKind _pk;
+        RectTransform _prog, _pfill;
+        CanvasGroup _pg;
+        Image _pfillImg;
+        TextMeshProUGUI _desc;
+        readonly Node[] _node = new Node[SkillProgression.Count];
+        readonly int[] _nst = { -1, -1, -1, -1 };
+        int _nsel = -1;
+        float _pa, _pt;
 
         Camera _cam;
         RenderTexture _rt;
@@ -111,7 +125,7 @@ namespace Runtime.Scripts.Inventory
         /// <summary>Esc (via MenuGate): si hay un objeto seleccionado lo deselecciona y devuelve true, para que Esc no cierre el panel.</summary>
         public static bool TryDeselect()
         {
-            if (s_inst == null || s_inst._sel < 0) return false;
+            if (s_inst == null || (s_inst._sel < 0 && s_inst._nsel < 0)) return false;
             s_inst.Unpick();
             return true;
         }
@@ -140,6 +154,7 @@ namespace Runtime.Scripts.Inventory
             BuildViewer(lay);
             BuildStats(lay);
             BuildSkills(lay);
+            BuildProgress(lay);
 
             var x = Btn(lay, "X", 26, new Vector2(44f, 44f), () => InventoryController.Toggle());
             x.anchorMin = x.anchorMax = x.pivot = new Vector2(1f, 0f);
@@ -247,7 +262,7 @@ namespace Runtime.Scripts.Inventory
             Anim();
         }
 
-        void Unpick() { if (_sel < 0) return; _sel = -1; _selDef = null; _tgt = 0f; } // se encoge de vuelta al slot
+        void Unpick() { UnpickNode(); if (_sel < 0) return; _sel = -1; _selDef = null; _tgt = 0f; } // se encoge de vuelta al slot
 
         void Shut() { _sel = -1; _selDef = null; _a = _tgt = 0f; LiveStop(); if (_card != null) _card.gameObject.SetActive(false); }
 
@@ -462,7 +477,7 @@ namespace Runtime.Scripts.Inventory
 
         void BuildStats(RectTransform lay)
         {
-            var f = Frame(lay, PanelSkin.Kind.Stats, new Vector2(1f, 1f), new Vector2(470f, 390f));
+            var f = Frame(lay, PanelSkin.Kind.Stats, new Vector2(1f, 0f), new Vector2(470f, 390f));
             Title(f, "STATS", 0.84f);
             var area = Blank(f);
             Fit(area, 0.09f, 0.09f, 0.91f, 0.80f, 6f);
@@ -493,7 +508,7 @@ namespace Runtime.Scripts.Inventory
 
         void BuildSkills(RectTransform lay)
         {
-            var f = Frame(lay, PanelSkin.Kind.Skills, new Vector2(1f, 0f), new Vector2(470f, 390f));
+            var f = Frame(lay, PanelSkin.Kind.Skills, new Vector2(1f, 1f), new Vector2(470f, 390f));
             Title(f, "SKILLS", 0.84f);
             var area = Blank(f);
             Fit(area, 0.09f, 0.08f, 0.91f, 0.80f, 6f);
@@ -514,6 +529,154 @@ namespace Runtime.Scripts.Inventory
                 row.gameObject.SetActive(false);
                 _row[i] = r;
             }
+            _desc = Txt(area, 17, Green, TextAlignmentOptions.TopLeft, FontStyles.Normal);
+            _desc.raycastTarget = false;
+            Fit(_desc.rectTransform, 0f, 0f, 1f, 1f);
+            _desc.gameObject.SetActive(false);
+        }
+
+        // ---------------- progresion de la mascara ----------------
+
+        void BuildProgress(RectTransform lay)
+        {
+            _prog = Blank(lay);
+            _prog.anchorMin = _prog.anchorMax = new Vector2(0.5f, 1f);
+            _prog.pivot = new Vector2(0.5f, 0f);
+            _prog.sizeDelta = new Vector2(520f, 132f);
+            _prog.anchoredPosition = Vector2.zero;
+            _pg = _prog.gameObject.AddComponent<CanvasGroup>();
+
+            var f = Frame(_prog, PanelSkin.Kind.Strip, new Vector2(0.5f, 0f), new Vector2(520f, 96f));
+            f.anchoredPosition = new Vector2(0f, 36f);
+
+            var area = Blank(f);
+            Fit(area, 0.06f, 0.16f, 0.94f, 0.84f);
+
+            var ln = Img(area, new Color(0.03f, 0.1f, 0.05f));
+            Fit(ln, 0.125f, 0.5f, 0.875f, 0.5f);
+            ln.offsetMin = new Vector2(0f, -3f);
+            ln.offsetMax = new Vector2(0f, 3f);
+            _pfill = Img(ln, SkillBase);
+            _pfillImg = _pfill.GetComponent<Image>();
+            Fit(_pfill, 0f, 0f, 0f, 1f);
+
+            for (int i = 0; i < SkillProgression.Count; i++)
+            {
+                var n = new Node();
+                var root = Blank(area);
+                float x = (i + 0.5f) / SkillProgression.Count;
+                root.anchorMin = root.anchorMax = new Vector2(x, 0.5f);
+                root.pivot = new Vector2(0.5f, 0.5f);
+                root.sizeDelta = new Vector2(52f, 52f);
+                root.anchoredPosition = Vector2.zero;
+
+                var sel = Rnd(Img(root, Green));
+                Fit(sel, 0f, 0f, 1f, 1f);
+                sel.offsetMin = new Vector2(-4f, -4f);
+                sel.offsetMax = new Vector2(4f, 4f);
+                n.sel = sel.gameObject;
+                n.sel.SetActive(false);
+
+                var bg = Rnd(Img(root, SlotOff));
+                Fit(bg, 0f, 0f, 1f, 1f);
+                n.bg = bg.GetComponent<Image>();
+                n.bg.raycastTarget = true;
+                var b = bg.gameObject.AddComponent<Button>();
+                b.transition = Selectable.Transition.None;
+                int k = i;
+                b.onClick.AddListener(() => PickNode(k));
+
+                var ic = Img(bg, Color.white);
+                n.icon = ic.GetComponent<Image>();
+                Fit(ic, 0f, 0f, 1f, 1f, 8f);
+
+                n.lvl = Txt(bg, 14, Amber, TextAlignmentOptions.BottomRight, FontStyles.Bold);
+                n.lvl.raycastTarget = false;
+                n.lvl.text = SkillProgression.Req(i).ToString();
+                Fit(n.lvl.rectTransform, 0f, 0f, 1f, 1f, 3f);
+                _node[i] = n;
+            }
+
+            // flecha centrada, hacia abajo
+            var a = Img(_prog, new Color(0.8f, 0.8f, 0.8f));
+            a.GetComponent<Image>().sprite = PanelSkin.Get(PanelSkin.Kind.Arrow);
+            a.anchorMin = a.anchorMax = new Vector2(0.5f, 0f);
+            a.pivot = new Vector2(0.5f, 0.5f);
+            a.sizeDelta = new Vector2(40f, 26f);
+            a.anchoredPosition = new Vector2(0f, 20f);
+            a.localRotation = Quaternion.Euler(0f, 0f, -90f);
+
+            _prog.gameObject.SetActive(false);
+        }
+
+        void PickNode(int i)
+        {
+            if (_pk == MaskKind.None) return;
+            if (_nsel == i) { UnpickNode(); return; }
+            _nsel = i;
+            _desc.gameObject.SetActive(true);
+            RefreshSkills();
+            RefreshProg();
+        }
+
+        void UnpickNode()
+        {
+            if (_nsel < 0) return;
+            _nsel = -1;
+            _desc.gameObject.SetActive(false);
+            RefreshSkills();
+            RefreshProg();
+        }
+
+        string NodeText(int i)
+        {
+            bool on = _sp != null && _sp.Unlocked(i);
+            return "<color=#FFB000>" + SkillProgression.Name(_pk, i) + "</color>\n"
+                 + (on ? "ACTIVA" : "BLOQUEADA - nivel " + SkillProgression.Req(i)) + "\n\n"
+                 + SkillProgression.Desc(_pk, i);
+        }
+
+        void RefreshProg()
+        {
+            var k = _sp != null ? _sp.Active : MaskKind.None;
+            _pt = k != MaskKind.None ? 1f : 0f;
+            if (k == MaskKind.None && _nsel >= 0) UnpickNode();
+            if (k != _pk)
+            {
+                _pk = k;
+                for (int i = 0; i < _nst.Length; i++) _nst[i] = -1;
+                if (k != MaskKind.None)
+                    for (int i = 0; i < _node.Length; i++) _node[i].icon.sprite = SkillProgression.Icon(k, i);
+            }
+            if (k == MaskKind.None) return;
+
+            Color mc = k == MaskKind.Melee ? SkillMask : SkillBase;
+            int c = 0;
+            for (int i = 0; i < _node.Length; i++)
+            {
+                bool on = _sp.Unlocked(i);
+                if (on) c++;
+                int st = (on ? 1 : 0) | (i == _nsel ? 2 : 0);
+                if (st == _nst[i]) continue;
+                _nst[i] = st;
+                var n = _node[i];
+                n.bg.color = on ? SlotOn : SlotOff;
+                n.icon.color = on ? mc : new Color(0.4f, 0.4f, 0.4f, 0.6f);
+                n.lvl.color = on ? mc : Amber;
+                n.sel.SetActive(i == _nsel);
+            }
+            _pfillImg.color = mc;
+            _pfill.anchorMax = new Vector2(c <= 1 ? 0f : (c - 1f) / (_node.Length - 1f), 1f);
+            if (_nsel >= 0) Set(_desc, NodeText(_nsel));
+        }
+
+        void AnimProg()
+        {
+            float e = _pa * _pa * (3f - 2f * _pa);
+            _pg.alpha = _pa;
+            _prog.localScale = new Vector3(1f, e, 1f);
+            bool on = _pa > 0f;
+            if (_prog.gameObject.activeSelf != on) _prog.gameObject.SetActive(on);
         }
 
         // ---------------- helpers de UI ----------------
@@ -596,6 +759,11 @@ namespace Runtime.Scripts.Inventory
         {
             _inv = inv;
             Shut();
+            _sp = inv != null ? inv.GetComponent<SkillProgression>() : null;
+            _nsel = -1;
+            _desc.gameObject.SetActive(false);
+            _pa = _pt = 0f;
+            AnimProg();
             gameObject.SetActive(open);
             if (open)
             {
@@ -608,6 +776,7 @@ namespace Runtime.Scripts.Inventory
                 RefreshSlots();
                 RefreshStats();
                 RefreshSkills();
+                RefreshProg();
                 _cam.enabled = true;
             }
             else
@@ -634,12 +803,17 @@ namespace Runtime.Scripts.Inventory
         {
             if (_inv == null) { gameObject.SetActive(false); return; }
             float dt = Time.unscaledDeltaTime;
-            if (_sel >= 0 && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) Unpick();
+            if ((_sel >= 0 || _nsel >= 0) && Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame) Unpick();
             if (_a != _tgt)
             {
                 _a = Mathf.MoveTowards(_a, _tgt, dt * 8f);
                 Anim();
                 if (_a <= 0f) { _card.gameObject.SetActive(false); LiveStop(); }
+            }
+            if (_pa != _pt)
+            {
+                _pa = Mathf.MoveTowards(_pa, _pt, dt * 6f);
+                AnimProg();
             }
             if (_live != null)
             {
@@ -651,7 +825,7 @@ namespace Runtime.Scripts.Inventory
 
             _tick += dt;
             if (_tick >= 0.25f) { _tick = 0f; RefreshSlots(); RefreshStats(); }
-            if (Time.unscaledTime >= _syncT) { _syncT = Time.unscaledTime + 0.5f; SyncPreview(); RefreshSkills(); }
+            if (Time.unscaledTime >= _syncT) { _syncT = Time.unscaledTime + 0.5f; SyncPreview(); RefreshSkills(); RefreshProg(); }
             PlaceCam();
         }
 
@@ -729,7 +903,7 @@ namespace Runtime.Scripts.Inventory
             for (int i = 0; i < Rows; i++)
             {
                 var r = _row[i];
-                bool on = i < _names.Count;
+                bool on = _nsel < 0 && i < _names.Count;
                 if (r.go.activeSelf != on) r.go.SetActive(on);
                 if (!on) continue;
                 Set(r.name, _names[i]);

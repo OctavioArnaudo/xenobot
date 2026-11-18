@@ -16,6 +16,7 @@ using Runtime.Scripts.Mask;
 using Runtime.Scripts.Pickup;
 using Runtime.Scripts.Crafting;
 using Runtime.Scripts.Singleton;
+using Runtime.Scripts.Skills;
 
 namespace Runtime.Scripts.Inventory
 {
@@ -318,7 +319,7 @@ namespace Runtime.Scripts.Inventory
             return false;
         }
 
-        /// <summary>Skills que aportan los equipos puestos (mascaras y armas).</summary>
+        /// <summary>Skills que aportan los equipos puestos: nodos desbloqueados de la mascara (SkillProgression) y armas.</summary>
         public void CollectEquipSkills(List<string> names, List<string> keys)
         {
             foreach (var kv in _equippedInstances)
@@ -328,9 +329,10 @@ namespace Runtime.Scripts.Inventory
                 var mask = go.GetComponentInChildren<MaskController>(true);
                 if (mask != null)
                 {
-                    var v = mask.EffectiveVisorType;
-                    names.Add(v == VisorType.VisorTermico ? "Visor termico" : v == VisorType.VisorEstadisticas ? "Visor de estadisticas" : "Visor de objetos");
-                    keys.Add("Mascara");
+                    var sp = GetComponent<SkillProgression>();
+                    var kind = mask.EffectiveKind;
+                    for (int i = 0; sp != null && i < SkillProgression.Count; i++)
+                        if (sp.Unlocked(i)) { names.Add(SkillProgression.Name(kind, i)); keys.Add("Mascara"); }
                 }
                 else if (go.GetComponentInChildren<WeaponController>(true) != null)
                 {

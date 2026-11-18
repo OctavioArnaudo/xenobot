@@ -12,6 +12,7 @@ using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Hud;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Items;
+using Runtime.Scripts.Skills;
 
 namespace Runtime.Scripts.Shoot
 {
@@ -336,7 +337,7 @@ namespace Runtime.Scripts.Shoot
         }
 
         // isAimed = true (Click derecho / Apuntando) -> Daño 100%, Sin Tracking.
-        // isAimed = false (Click izquierdo / Cadera) -> Daño reducido (65%), Con Tracking ligero.
+        // isAimed = false (Click izquierdo / Cadera) -> Daño reducido (65%), Con Tracking si la habilidad esta desbloqueada.
         public bool TryFire(bool isAimed = false)
         {
             if (!isUnlocked) return false;
@@ -348,7 +349,7 @@ namespace Runtime.Scripts.Shoot
             Vector3 origin = Muzzle.transform.position;
 
             float damageMultiplier = isAimed ? 1.0f : 0.65f;
-            bool enableHoming = !isAimed; // Solo activo si NO está apuntando (es decir, click izquierdo)
+            bool enableHoming = !isAimed && SkillProgression.Can(this, Skill.Tracking);
 
             ExecuteFire(GetAimDirection(origin), origin, damageMultiplier, enableHoming);
             return true;
