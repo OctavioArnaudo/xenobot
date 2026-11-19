@@ -116,12 +116,79 @@ namespace Runtime.Scripts.Projectile
         }
     }
 
+    /// <summary>
+    /// Pool de balas en red: el manejador de Netcode crea y "destruye" las balas en TODOS los peers (servidor y clientes)
+    /// reutilizando instancias, asi nadie hace Instantiate/Destroy por disparo.
+    /// </summary>
+    public static class ProjectilePool
+    {
+        private sealed class Handler : INetworkPrefabInstanceHandler
+        {
+            private readonly GameObject m_Prefab;
+            private readonly Stack<GameObject> m_Free = new Stack<GameObject>();
+
+            public Handler(GameObject prefab) { m_Prefab = prefab; }
+
+            public GameObject Take(Vector3 pos, Quaternion rot)
+            {
+                GameObject g = null;
+                while (m_Free.Count > 0 && (g = m_Free.Pop()) == null) { }
+                if (g == null) g = Object.Instantiate(m_Prefab);
+                g.transform.SetPositionAndRotation(pos, rot);
+                g.SetActive(true);
+                if (g.TryGetComponent(out ProjectileController p)) p.PrepareForSpawn(pos, rot);
+                return g;
+            }
+
+            public NetworkObject Instantiate(ulong ownerClientId, Vector3 position, Quaternion rotation)
+                => Take(position, rotation).GetComponent<NetworkObject>();
+
+            public void Destroy(NetworkObject networkObject)
+            {
+                networkObject.gameObject.SetActive(false);
+                m_Free.Push(networkObject.gameObject);
+            }
+        }
+
+        private static readonly Dictionary<GameObject, Handler> s_Handlers = new Dictionary<GameObject, Handler>();
+        private static NetworkManager s_Manager;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() { s_Handlers.Clear(); s_Manager = null; }
+
+        /// <summary>Registra un manejador por cada prefab de red que sea una bala. Idempotente; llamar en cada peer.</summary>
+        public static void RegisterAll()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsListening) return;
+            if (s_Manager != nm) { s_Manager = nm; s_Handlers.Clear(); }   // sesion de red nueva: registrar de nuevo
+
+            foreach (var np in nm.NetworkConfig.Prefabs.Prefabs)
+            {
+                GameObject prefab = np.Prefab;
+                if (prefab == null || prefab.GetComponent<ProjectileController>() == null || s_Handlers.ContainsKey(prefab)) continue;
+
+                var h = new Handler(prefab);
+                s_Handlers[prefab] = h;
+                nm.PrefabHandler.AddHandler(prefab, h);
+            }
+        }
+
+        /// <summary>Solo servidor: bala lista para Launch() y luego NetworkObject.Spawn().</summary>
+        public static GameObject Get(GameObject prefab, Vector3 pos, Quaternion rot)
+            => s_Handlers.TryGetValue(prefab, out var h) ? h.Take(pos, rot) : Object.Instantiate(prefab, pos, rot);
+    }
+
     [RequireComponent(typeof(Rigidbody))]
     [RequireComponent(typeof(SphereCollider))]
     public class ProjectileController : NetworkBehaviour, IPoolRecyclable
     {
         public event System.Action OnEntityRecycled;
         private static readonly List<ProjectileController> s_ActiveProjectiles = new List<ProjectileController>();
+        private static readonly RaycastHit[] s_Hits = new RaycastHit[16];
+        private sealed class ByDistance : IComparer<RaycastHit> { public int Compare(RaycastHit a, RaycastHit b) => a.distance.CompareTo(b.distance); }
+        private static readonly ByDistance s_ByDistance = new ByDistance();
+        private static readonly Dictionary<Color, Material> s_FallbackMats = new Dictionary<Color, Material>();
         private const int MAX_SIMULTANEOUS_PROJECTILES = 40;
 
         private const ProjectileType DEFAULT_TYPE = ProjectileType.BalaFuego;
@@ -182,6 +249,7 @@ namespace Runtime.Scripts.Projectile
         private GameObject m_Owner;
         public Team m_OwnerTeam;
         private bool m_HasHit = false;
+        private bool m_DamageFromLaunch;
         private Transform m_HomingTarget;
         private float m_LifeTimer = 0f;
 
@@ -194,7 +262,8 @@ namespace Runtime.Scripts.Projectile
 
         public ProjectileType EffectiveType => type.GetValue(DEFAULT_TYPE);
         public bool EffectiveAutoRandomize => autoRandomize.GetValue(DEFAULT_AUTO_RANDOMIZE);
-        public float EffectiveSpeed => speed.GetValue(EffectiveType == ProjectileType.RayoContinuo ? DEFAULT_SPEED * 2.2f : DEFAULT_SPEED);
+        private const float SPEED_MULTIPLIER = 2f;
+        public float EffectiveSpeed => SPEED_MULTIPLIER * speed.GetValue(EffectiveType == ProjectileType.RayoContinuo ? DEFAULT_SPEED * 2.2f : DEFAULT_SPEED);
         public float EffectiveDamage
         {
             get
@@ -337,10 +406,11 @@ namespace Runtime.Scripts.Projectile
 
             DetonateOwnerAttachedBombs(owner);
 
-            if (dmg > 0f && !damage.use)
+            if (dmg > 0f && (!damage.use || m_DamageFromLaunch))
             {
                 damage.use = true;
                 damage.value = dmg;
+                m_DamageFromLaunch = true;
             }
 
             if (m_Owner != null)
@@ -370,10 +440,11 @@ namespace Runtime.Scripts.Projectile
             m_Direction = direction;
             m_OwnerTeam = team;
             enableHomingTracking = homing;
-            if (dmg > 0f && !damage.use)
+            if (dmg > 0f && (!damage.use || m_DamageFromLaunch))
             {
                 damage.use = true;
                 damage.value = dmg;
+                m_DamageFromLaunch = true;
             }
 
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(ownerNetworkObjectId, out var ownerNetObj))
@@ -429,14 +500,18 @@ namespace Runtime.Scripts.Projectile
             var c = core.GetComponent<Collider>();
             if (c != null) DestroyImmediate(c);
 
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
-            Material mat = new Material(shader);
             Color col = EffectiveColor;
-            mat.color = col;
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", col);
+            if (!s_FallbackMats.TryGetValue(col, out Material mat))
+            {
+                Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+                mat = new Material(shader);
+                mat.color = col;
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", col);
+                s_FallbackMats[col] = mat;
+            }
 
             var mr = core.GetComponent<MeshRenderer>();
-            mr.material = mat;
+            mr.sharedMaterial = mat;
 
             TrailRenderer trail = core.AddComponent<TrailRenderer>();
             if (trail != null)
@@ -444,7 +519,7 @@ namespace Runtime.Scripts.Projectile
                 trail.time = (type == ProjectileType.RayoContinuo) ? 0.4f : 0.25f;
                 trail.startWidth = (type == ProjectileType.RayoContinuo) ? 0.2f : 0.15f;
                 trail.endWidth = 0f;
-                trail.material = mat;
+                trail.sharedMaterial = mat;
                 trail.startColor = col;
                 trail.endColor = new Color(col.r, col.g, col.b, 0f);
             }
@@ -507,11 +582,12 @@ namespace Runtime.Scripts.Projectile
 
             if (moveDistance > 0.001f && (!IsNetworkActive || IsServer))
             {
-                RaycastHit[] hits = Physics.SphereCastAll(transform.position, 0.5f, m_Direction, moveDistance, ~0, QueryTriggerInteraction.Collide);
-                System.Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+                int n = Physics.SphereCastNonAlloc(transform.position, 0.5f, m_Direction, s_Hits, moveDistance, ~0, QueryTriggerInteraction.Collide);
+                System.Array.Sort(s_Hits, 0, n, s_ByDistance);
 
-                foreach (var hit in hits)
+                for (int i = 0; i < n; i++)
                 {
+                    var hit = s_Hits[i];
                     if (m_HasHit) break;
                     if (m_Owner != null && (hit.collider.gameObject == m_Owner || hit.collider.transform.IsChildOf(m_Owner.transform))) continue;
 
@@ -694,7 +770,7 @@ namespace Runtime.Scripts.Projectile
 
             if (IsNetworkActive && IsSpawned)
             {
-                if (IsServer) NetworkObject.Despawn(true);
+                if (IsServer) NetworkObject.Despawn(true);   // con el manejador registrado, Despawn(true) devuelve la bala al pool en todos los peers
             }
             else
             {

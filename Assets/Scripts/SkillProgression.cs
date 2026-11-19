@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
 using Runtime.Scripts.Hud;
@@ -25,20 +25,20 @@ namespace Runtime.Scripts.Skills
 
         static readonly string[] Names =
         {
-            "Visor", "Jetpack", "Mira telescópica", "Balas rastreadoras",
+            "Visor", "Jetpack", "Mira telescï¿½pica", "Balas rastreadoras",
             "Golpe triple", "Escudo", "Gancho", "Ground slam"
         };
 
         static readonly string[] Descs =
         {
-            "Visor táctico: resalta el calor de los enemigos, muestra su vida, nivel y equipo, y marca los objetos cercanos.",
-            "Mantén ESPACIO en el aire para volar. Consume combustible, que se recarga en el suelo.",
-            "Apunta con clic derecho y pulsa 3. La rueda del ratón cambia el aumento (3 pasos).",
-            "Disparar desde la cadera guía las balas hacia el enemigo más cercano. Apuntando vuelan rectas.",
-            "Cada tercer golpe acertado seguido hace el doble de daño. Fallar reinicia la cuenta.",
-            "Mantén clic derecho en modo melee para bloquear el daño. Se agota y se recarga.",
+            "Visor tï¿½ctico: resalta el calor de los enemigos, muestra su vida, nivel y equipo, y marca los objetos cercanos.",
+            "Segundo salto en el aire: activa el jetpack. Manten el salto para volar; consume combustible, que se recarga en el suelo.",
+            "Apunta con clic derecho y pulsa 3. La rueda del ratï¿½n cambia el aumento (3 pasos).",
+            "Disparar desde la cadera guï¿½a las balas hacia el enemigo mï¿½s cercano. Apuntando vuelan rectas.",
+            "Cada tercer golpe acertado seguido hace el doble de daï¿½o. Fallar reinicia la cuenta.",
+            "Mantï¿½n clic derecho en modo melee para bloquear el daï¿½o. Se agota y se recarga.",
             "Tecla F: engancha a un enemigo y lo arrastra hacia ti aturdido, o te impulsa hacia el suelo.",
-            "Mantén clic en el aire para caer en picada. Daña y empuja a los enemigos en un radio."
+            "Mantï¿½n clic en el aire para caer en picada. Daï¿½a y empuja a los enemigos en un radio."
         };
 
         static readonly Sprite[] s_icons = new Sprite[8];

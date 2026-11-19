@@ -57,6 +57,8 @@ namespace Runtime.Scripts.Propulsion
         private static readonly int FlyingHash = Animator.StringToHash("isFlying");
         private Animator m_Anim;
         private bool m_AnimResolved;
+        private static readonly float[] FlameX = { -0.28f, -0.12f, 0.12f, 0.28f };
+        private ParticleSystem[] m_Flames;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
@@ -117,6 +119,7 @@ namespace Runtime.Scripts.Propulsion
             m_OfflineMaxJetpack = EffectiveMaxFuel;
             m_OfflineJetpack = m_OfflineMaxJetpack;
             RefreshReferences();
+            BuildFlames();
         }
 
         public override void OnNetworkSpawn()
@@ -134,6 +137,7 @@ namespace Runtime.Scripts.Propulsion
             m_Health = player.GetComponent<HealthController>();
             m_CharController = player.GetComponent<CharacterController>();
             RefreshReferences();
+            ReparentFlames();
             Debug.Log("[PropulsionController] Lógica de vuelo activada para el jugador.");
         }
 
@@ -255,6 +259,95 @@ namespace Runtime.Scripts.Propulsion
                         if (p.nameHash == FlyingHash) { m_Anim = anim; break; }
             }
             if (m_Anim != null) m_Anim.SetBool(FlyingHash, on);
+
+            if (m_Flames == null) BuildFlames();
+            if (on) ReparentFlames();
+            foreach (var ps in m_Flames)
+            {
+                if (on)
+                {
+                    if (!ps.gameObject.activeSelf) ps.gameObject.SetActive(true);
+                    ps.Clear(true);
+                    ps.Play(true);
+                }
+                else ps.Stop(true, ParticleSystemStopBehavior.StopEmitting);
+            }
+        }
+
+        // Reutiliza el pool: mueve las 4 llamas existentes al jugador (sin crear nada nuevo).
+        private void ReparentFlames()
+        {
+            if (m_Flames == null || m_Player == null) return;
+            Transform parent = m_Player.transform;
+            for (int i = 0; i < m_Flames.Length; i++)
+            {
+                Transform t = m_Flames[i].transform;
+                if (t.parent == parent) continue;
+                t.SetParent(parent, false);
+                t.localPosition = new Vector3(FlameX[i], 0.9f, -0.3f);
+                t.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            }
+        }
+
+        // Pool fijo: 4 llamas creadas una vez (en Awake) y reutilizadas con Play/Stop; nada se dibuja ni se crea durante el vuelo.
+        private void BuildFlames()
+        {
+            if (m_Player == null) RefreshReferences();
+            Transform parent = m_Player != null ? m_Player.transform : transform;
+
+            var shader = Shader.Find("Universal Render Pipeline/Particles/Unlit") ?? Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
+            var mat = new Material(shader);
+
+            var g = new Gradient();
+            g.SetKeys(
+                new[] { new GradientColorKey(new Color(1f, 0.85f, 0f), 0f), new GradientColorKey(new Color(1f, 0.25f, 0f), 1f) },
+                new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
+            var shrink = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0f));
+
+            m_Flames = new ParticleSystem[FlameX.Length];
+            for (int i = 0; i < FlameX.Length; i++)
+            {
+                var go = new GameObject("JetpackFlame" + i);
+                go.transform.SetParent(parent, false);
+                go.transform.localPosition = new Vector3(FlameX[i], 0.9f, -0.3f);
+                go.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+
+                var ps = go.AddComponent<ParticleSystem>();
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+                var main = ps.main;
+                main.loop = true;
+                main.playOnAwake = false;
+                main.simulationSpace = ParticleSystemSimulationSpace.World;
+                main.startLifetime = 0.3f;
+                main.startSpeed = 5f;
+                main.startSize = 0.22f;
+                main.startColor = new Color(1f, 0.4f, 0f);
+                main.maxParticles = 24;
+
+                var emission = ps.emission;
+                emission.rateOverTime = 28f;
+
+                var shape = ps.shape;
+                shape.shapeType = ParticleSystemShapeType.Cone;
+                shape.angle = 8f;
+                shape.radius = 0.05f;
+
+                var size = ps.sizeOverLifetime;
+                size.enabled = true;
+                size.size = shrink;
+
+                var fade = ps.colorOverLifetime;
+                fade.enabled = true;
+                fade.color = g;
+
+                go.GetComponent<ParticleSystemRenderer>().sharedMaterial = mat;
+
+                // Warm-up: inicializa el sistema ya con su configuración final para que el primer Play() real emita.
+                ps.Play(true);
+                ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                m_Flames[i] = ps;
+            }
         }
 
         public bool IsFlying => m_IsUsingJetpack;

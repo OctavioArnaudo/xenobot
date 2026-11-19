@@ -440,9 +440,11 @@ namespace Runtime.Scripts.Shoot
         private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float dmg, Team team, bool isServer, bool enableHoming)
         {
             Quaternion rot = Quaternion.LookRotation(direction);
-            GameObject go = BalanceManager.Instance != null
-                ? BalanceManager.Instance.SpawnFromPool(Projectile, spawnPos, rot)
-                : Instantiate(Projectile, spawnPos, rot);
+            GameObject go = isServer
+                ? ProjectilePool.Get(Projectile, spawnPos, rot)
+                : BalanceManager.Instance != null
+                    ? BalanceManager.Instance.SpawnFromPool(Projectile, spawnPos, rot)
+                    : Instantiate(Projectile, spawnPos, rot);
 
             var proj = go.GetComponent<ProjectileController>();
             if (proj != null)

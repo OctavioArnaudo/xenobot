@@ -333,6 +333,7 @@ namespace Runtime.Scripts.Player
 
         public override void OnNetworkSpawn()
         {
+            ProjectilePool.RegisterAll();
             if (BalanceManager.Instance != null)
             {
                 BalanceManager.Instance.RegisterNetworkPlayer(gameObject);
@@ -928,7 +929,8 @@ namespace Runtime.Scripts.Player
 
             if (projectilePrefab != null)
             {
-                GameObject projObj = Instantiate(projectilePrefab, spawnPos, Quaternion.LookRotation(direction));
+                Quaternion rot = Quaternion.LookRotation(direction);
+                GameObject projObj = ProjectilePool.Get(projectilePrefab, spawnPos, rot);
                 ProjectileController projectile = projObj.GetComponent<ProjectileController>();
                 if (projectile != null)
                 {

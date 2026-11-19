@@ -11,6 +11,7 @@ using Runtime.Scripts.Player;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Hud;
+using Runtime.Scripts.Skills;
 
 namespace Runtime.Scripts.Melee
 {
@@ -272,7 +273,7 @@ namespace Runtime.Scripts.Melee
 
                 bool isAirborne = (m_Player != null) ? !m_Player.Grounded : (m_CharacterController != null && !m_CharacterController.isGrounded);
 
-                if (isAirborne && m_HoldTimer >= EffectiveSlamHoldDuration)
+                if (isAirborne && m_HoldTimer >= EffectiveSlamHoldDuration && SkillProgression.Can(this, Skill.Slam))
                 {
                     m_IsHoldingClick = false;
                     StartGroundSlam();
@@ -400,7 +401,7 @@ namespace Runtime.Scripts.Melee
             if (Time.time < m_NextAttackTime || m_IsSlamming) return;
 
             // Si está en el aire y acaba de pulsar clic, damos margen al Ground Slam si mantiene presionado
-            if (m_Player != null && !m_Player.Grounded && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            if (m_Player != null && !m_Player.Grounded && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame && SkillProgression.Can(this, Skill.Slam))
             {
                 return;
             }
@@ -572,7 +573,8 @@ namespace Runtime.Scripts.Melee
 
         private void ExecuteMeleeDamageServer()
         {
-            float finalDamage = EffectiveAttackDamage;
+            var sp = GetComponentInParent<SkillProgression>();
+            float finalDamage = EffectiveAttackDamage * (sp != null ? sp.SwingMul() : 1f);
             // Usamos ~0 para no dejar fuera a enemigos por configuración de LayerMask; ProcessHitTarget filtra por HealthController y Team
             int mask = ~0;
 
@@ -607,6 +609,8 @@ namespace Runtime.Scripts.Melee
             }
 
             if (IsPlayerSide) HitBreakables(attackCenter, EffectiveAttackRange, finalDamage);
+
+            if (sp != null) sp.SwingResult(hitTargets.Count > 0);
         }
 
         private void ProcessHitTarget(Collider hit, float finalDamage, HashSet<GameObject> processedTargets)
