@@ -18,6 +18,7 @@ using Runtime.Scripts.Zoom;
 using Runtime.Scripts.Gate;
 using Runtime.Scripts.Shields;
 using Runtime.Scripts.Skills;
+using Runtime.Scripts.Audio;
 using UnityEngine;
 
 namespace Runtime.Scripts.Player
@@ -1114,6 +1115,7 @@ namespace Runtime.Scripts.Player
                     _verticalVelocity = Mathf.Sqrt(JumpHeight * JUMP_BOOST * -2f * Gravity);
                     _jumpsRemaining--;
                     if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
+                    PlayJump();
                 }
             }
             else
@@ -1123,6 +1125,7 @@ namespace Runtime.Scripts.Player
                     _verticalVelocity = Mathf.Sqrt(DoubleJumpHeight * JUMP_BOOST * -2f * Gravity);
                     _jumpsRemaining--;
                     if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
+                    PlayJump();
                 }
             }
 
@@ -1131,6 +1134,18 @@ namespace Runtime.Scripts.Player
 
             jump = false;
         }
+
+        private void PlayJump()
+        {
+            AudioManager.Play(Sfx.Jump, transform.position);
+            if (IsNetworkActive) JumpSfxServerRpc();
+        }
+
+        [ServerRpc]
+        private void JumpSfxServerRpc() => JumpSfxClientRpc();
+
+        [ClientRpc]
+        private void JumpSfxClientRpc() { if (!IsOwner) AudioManager.Play(Sfx.Jump, transform.position); }
         #endregion
 
         #region Respawn Logic

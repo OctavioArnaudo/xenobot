@@ -8,6 +8,7 @@ using Runtime.Scripts.Optional;
 using Runtime.Scripts.Player;
 using Runtime.Scripts.Shoot;
 using Runtime.Scripts.Crystals;
+using Runtime.Scripts.Audio;
 
 namespace Runtime.Scripts.Projectile
 {
@@ -424,6 +425,7 @@ namespace Runtime.Scripts.Projectile
             }
 
             RefreshVisuals();
+            if (!IsNetworkActive) PlayShotSound();
 
             if (IsNetworkActive && IsServer)
             {
@@ -462,7 +464,10 @@ namespace Runtime.Scripts.Projectile
             }
 
             RefreshVisuals();
+            PlayShotSound();
         }
+
+        private void PlayShotSound() => AudioManager.Play(m_OwnerTeam == Team.Enemy ? Sfx.EnemyShoot : Sfx.Shoot, transform.position);
 
         private void RefreshVisuals()
         {

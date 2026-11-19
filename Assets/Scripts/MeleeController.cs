@@ -13,6 +13,7 @@ using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Hud;
 using Runtime.Scripts.Skills;
 using Runtime.Scripts.Crystals;
+using Runtime.Scripts.Audio;
 
 namespace Runtime.Scripts.Melee
 {
@@ -477,10 +478,7 @@ namespace Runtime.Scripts.Melee
                 Instantiate(slamVfxPrefab, impactPosition, Quaternion.identity);
             }
 
-            if (slamSound != null)
-            {
-                AudioSource.PlayClipAtPoint(slamSound, impactPosition);
-            }
+            AudioManager.Play(Sfx.HitHeavy, impactPosition);
         }
 
         private void ExecuteGroundSlamDamageServer(Vector3 impactPosition)
@@ -659,10 +657,7 @@ namespace Runtime.Scripts.Melee
 
         private void TriggerMeleeVisualEffect(Vector3 position, Vector3 direction)
         {
-            if (meleeHitSound != null)
-            {
-                AudioSource.PlayClipAtPoint(meleeHitSound, position);
-            }
+            AudioManager.Play(CompareTag("Enemy") ? Sfx.EnemyHit : Sfx.HitLight, position);
 
             CombatFx.Slash(position, direction, EffectiveAttackRange * .9f, CompareTag("Enemy") ? new Color(1f, .25f, .2f, .9f) : new Color(.7f, .95f, 1f, .9f));
         }
