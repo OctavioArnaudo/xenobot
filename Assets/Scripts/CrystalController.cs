@@ -11,8 +11,9 @@ namespace Runtime.Scripts.Crystals
     public class CrystalController : NetworkBehaviour, IItemPickupAction
     {
         private const float DEFAULT_SCALE = 2.0f;
+        public float RenderScale = 2.0f;
         public Optional<float> renderScale;
-        public float EffectiveRenderScale => renderScale.Get(2.0f, DEFAULT_SCALE);
+        public float EffectiveRenderScale => renderScale.Get(RenderScale, DEFAULT_SCALE);
 
         void Awake()
         {

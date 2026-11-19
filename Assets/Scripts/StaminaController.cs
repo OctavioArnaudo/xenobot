@@ -17,15 +17,19 @@ namespace Runtime.Scripts.Stamina
         private const float DEFAULT_DURATION = 10.0f;
         private const float DEFAULT_SCALE = 1.5f;
 
+        public float SpeedBoostMultiplier = 1.5f;
         public Optional<float> speedBoostMultiplier;
+        public float JumpBoostMultiplier = 1.4f;
         public Optional<float> jumpBoostMultiplier;
+        public float BoostDuration = 10.0f;
         public Optional<float> boostDuration;
+        public float RenderScale = 1.5f;
         public Optional<float> renderScale;
 
-        public float EffectiveSpeedBoost => speedBoostMultiplier.Get(1.5f, DEFAULT_SPEED_BOOST);
-        public float EffectiveJumpBoost => jumpBoostMultiplier.Get(1.4f, DEFAULT_JUMP_BOOST);
-        public float EffectiveDuration => boostDuration.Get(10.0f, DEFAULT_DURATION);
-        public float EffectiveScale => renderScale.Get(1.5f, DEFAULT_SCALE);
+        public float EffectiveSpeedBoost => speedBoostMultiplier.Get(SpeedBoostMultiplier, DEFAULT_SPEED_BOOST);
+        public float EffectiveJumpBoost => jumpBoostMultiplier.Get(JumpBoostMultiplier, DEFAULT_JUMP_BOOST);
+        public float EffectiveDuration => boostDuration.Get(BoostDuration, DEFAULT_DURATION);
+        public float EffectiveScale => renderScale.Get(RenderScale, DEFAULT_SCALE);
 
         void Awake()
         {
