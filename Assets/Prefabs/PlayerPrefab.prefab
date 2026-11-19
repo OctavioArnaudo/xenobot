@@ -407,7 +407,7 @@ MonoBehaviour:
   shoulderAimDistance: 2.5
   cameraCollision:
     serializedVersion: 2
-    m_Bits: 128
+    m_Bits: 0
   shoulderAimFOV: 50
   aimZoomStrength: 0.3
   aimZoomSpeed: 5
@@ -729,7 +729,6 @@ MonoBehaviour:
   isUnlocked: 1
   infiniteFuel: 0
   allowRegen: 0
-  JetpackHoldThreshold: 0.15
   MaxFuel: 120
   maxFuel:
     use: 0
