@@ -1,8 +1,9 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 using Unity.Netcode;
 using Runtime.Scripts.Optional;
 using Runtime.Scripts.Effective;
 using Runtime.Scripts.Health;
+using Runtime.Scripts.Player;
 
 namespace Runtime.Scripts.Hook
 {
@@ -22,11 +23,11 @@ namespace Runtime.Scripts.Hook
     public class HookProjectileController : NetworkBehaviour
     {
         private const float DEFAULT_STUN_DURATION = 2.5f;
-        private const float MAX_LIFETIME = 3.0f; // Tiempo de vida máximo de seguridad (3 segundos)
+        private const float MAX_LIFETIME = 3.0f; // Tiempo de vida mï¿½ximo de seguridad (3 segundos)
 
         [Header("Hook Settings")]
         public float flySpeed = 35f;
-        public float maxDistance = 30f;
+        public float maxDistance = 40f;
         public float pullSpeed = 22f;
         public float stopDistance = 1.8f;
 
@@ -64,6 +65,7 @@ namespace Runtime.Scripts.Hook
         private Vector3 m_TargetGroundPos;
         private CharacterController m_PlayerController;
 
+        private Transform m_Homing; // enemigo rastreado
         private bool m_IsPulling = false;
         private bool m_HasHit = false;
         private float m_LifeTimer = 0f; // Temporizador para el tiempo de vida
@@ -91,13 +93,14 @@ namespace Runtime.Scripts.Hook
             m_LifeTimer = 0f; // Reiniciamos el temporizador al lanzar
 
             transform.rotation = Quaternion.LookRotation(m_Direction);
+            m_Homing = FindHomingTarget();
 
             if (m_OwnerPlayer != null)
             {
                 m_PlayerController = m_OwnerPlayer.GetComponent<CharacterController>();
             }
 
-            // Ignorar colisiones entre el proyectil y el jugador que lo disparó
+            // Ignorar colisiones entre el proyectil y el jugador que lo disparï¿½
             Collider myCollider = GetComponent<Collider>();
             Collider ownerCollider = m_OwnerPlayer != null ? m_OwnerPlayer.GetComponent<Collider>() : null;
             if (myCollider != null && ownerCollider != null)
@@ -120,7 +123,7 @@ namespace Runtime.Scripts.Hook
 #endif
             UpdateLineVisuals();
 
-            // Control de tiempo de vida máximo (3 segundos)
+            // Control de tiempo de vida mï¿½ximo (3 segundos)
             m_LifeTimer += Time.deltaTime;
             if (m_LifeTimer >= MAX_LIFETIME)
             {
@@ -130,6 +133,31 @@ namespace Runtime.Scripts.Hook
 
             if (!m_HasHit)
             {
+                if (m_Homing != null)
+                {
+                    if (!m_Homing.gameObject.activeInHierarchy) m_Homing = null;
+                    else
+                    {
+                        Vector3 to = m_Homing.position + Vector3.up - transform.position;
+                        if (to.sqrMagnitude < 1f) { TryAttachHook(m_Homing.gameObject, transform.position); return; }
+                        m_Direction = to.normalized;
+                        transform.rotation = Quaternion.LookRotation(m_Direction);
+                    }
+                }
+
+                float step = flySpeed * Time.deltaTime;
+                if (Physics.Raycast(transform.position, m_Direction, out var rh, step + 0.3f, ~0, QueryTriggerInteraction.Ignore)
+                    && !rh.transform.IsChildOf(m_OwnerPlayer.transform))
+                {
+                    if (rh.collider.GetComponentInParent<HealthController>() == null && Vector3.Angle(rh.normal, Vector3.up) < 15f)
+                    {
+                        DestroyHook(); // suelo horizontal: no funciona
+                        return;
+                    }
+                    TryAttachHook(rh.collider.gameObject, rh.point);
+                    return;
+                }
+
                 transform.position += m_Direction * (flySpeed * Time.deltaTime);
 
                 if (Vector3.Distance(m_StartPos, transform.position) >= maxDistance)
@@ -142,7 +170,7 @@ namespace Runtime.Scripts.Hook
                 // CASO A: Arrastrar al ENEMIGO hacia el JUGADOR
                 if (m_CurrentMode == HookMode.PullEnemyToPlayer)
                 {
-                    // Si el objetivo ya no existe, fue destruido o su vida llegó a 0, liberamos el gancho
+                    // Si el objetivo ya no existe, fue destruido o su vida llegï¿½ a 0, liberamos el gancho
                     if (m_CaughtTarget == null || (m_CaughtHealth != null && m_CaughtHealth.EffectiveCurrentHealth <= 0))
                     {
                         ReleaseTargetAndDestroy();
@@ -204,6 +232,26 @@ namespace Runtime.Scripts.Hook
             }
         }
 
+        // Rastreo: enemigo vivo mas cercano a la mira dentro del alcance; si no hay ninguno, vuela recto.
+        private Transform FindHomingTarget()
+        {
+            var me = m_OwnerPlayer != null ? m_OwnerPlayer.GetComponent<HealthController>() : null;
+            float best = float.MaxValue;
+            Transform target = null;
+            foreach (var h in FindObjectsByType<HealthController>(FindObjectsSortMode.None))
+            {
+                if (h == null || h.EffectiveCurrentHealth <= 0) continue;
+                if (m_OwnerPlayer != null && h.transform.IsChildOf(m_OwnerPlayer.transform)) continue;
+                if (me != null && h.EffectiveTeam == me.EffectiveTeam) continue;
+                Vector3 to = h.transform.position + Vector3.up - transform.position;
+                float d = to.magnitude;
+                if (d < 0.5f || d > maxDistance) continue;
+                float score = Vector3.Angle(m_Direction, to) + d * 0.1f;
+                if (score < best) { best = score; target = h.transform; }
+            }
+            return target;
+        }
+
         private void UpdateLineVisuals()
         {
             if (lineRenderer == null) return;
@@ -216,7 +264,7 @@ namespace Runtime.Scripts.Hook
             lineRenderer.SetPosition(1, transform.position);
         }
 
-        private void OnTriggerEnter(Collider other) => TryAttachHook(other.gameObject, other.ClosestPoint(transform.position));
+        private void OnTriggerEnter(Collider other) => TryAttachHook(other.gameObject, transform.position);
         private void OnCollisionEnter(Collision collision) => TryAttachHook(collision.gameObject, collision.contacts.Length > 0 ? collision.contacts[0].point : transform.position);
 
         private void TryAttachHook(GameObject hitObj, Vector3 impactPoint)
@@ -226,7 +274,7 @@ namespace Runtime.Scripts.Hook
 
             m_HasHit = true;
 
-            // 1. Verificar si impactó a un enemigo con salud
+            // 1. Verificar si impactï¿½ a un enemigo con salud
             HealthController health = hitObj.GetComponentInParent<HealthController>() ?? hitObj.GetComponent<HealthController>();
 
             if (health != null && health.EffectiveCurrentHealth > 0)
@@ -241,31 +289,23 @@ namespace Runtime.Scripts.Hook
                 if (hookHitSound != null) AudioSource.PlayClipAtPoint(hookHitSound, impactPoint);
                 if (hitVfxPrefab != null) Instantiate(hitVfxPrefab, impactPoint, Quaternion.LookRotation(-m_Direction));
             }
-            // 2. Verificar si impactó a una superficie con la etiqueta "Ground"
-            else if (hitObj.CompareTag("Ground"))
-            {
-                m_CurrentMode = HookMode.PullPlayerToGround;
-                m_TargetGroundPos = impactPoint;
-                m_IsPulling = true;
-
-                Rigidbody rb = GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    rb.linearVelocity = Vector3.zero;
-                    rb.isKinematic = true;
-                }
-
-                Collider col = GetComponent<Collider>();
-                if (col != null) col.enabled = false;
-
-                if (hookHitSound != null) AudioSource.PlayClipAtPoint(hookHitSound, impactPoint);
-                if (hitVfxPrefab != null) Instantiate(hitVfxPrefab, impactPoint, Quaternion.LookRotation(-m_Direction));
-            }
-            // 3. Si no es ninguna de las dos cosas, se destruye
+            // 2. Verificar si impactï¿½ a una superficie con la etiqueta "Ground"
             else
             {
+                var pc = m_OwnerPlayer.GetComponentInParent<PlayerController>();
+                if (pc != null)
+                {
+                    Vector3 to = impactPoint - m_OwnerPlayer.transform.position;
+                    Vector3 h = new Vector3(to.x, 0f, to.z);
+                    float vy = Mathf.Sqrt(2f * Mathf.Abs(pc.Gravity) * (Mathf.Max(to.y, 0f) + 3f));
+                    float vh = Mathf.Sqrt(70f * (h.magnitude + 2f)); // 70 = 2 x decaimiento de _kb (35)
+                    pc.Launch((h.normalized * vh + Vector3.up * vy) * 1.41f); // x1.41 = doble distancia y altura
+                }
+
+                if (hookHitSound != null) AudioSource.PlayClipAtPoint(hookHitSound, impactPoint);
                 DestroyHook();
             }
+
         }
 
         private void DisableTargetMovement(GameObject target)

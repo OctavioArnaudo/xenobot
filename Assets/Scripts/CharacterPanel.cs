@@ -34,6 +34,8 @@ namespace Runtime.Scripts.Inventory
         };
         static readonly string[] StatName = { "HP", "JET", "AMMO", "SHIELD", "ATK", "DEF", "LVL", "EXP", "TIME" };
         static readonly Color SkillBase = new Color(0.1f, 0.85f, 1f), SkillMask = new Color(1f, 0.25f, 0.8f);
+        static readonly Color PlateMelee = new Color(0.9f, 0.45f, 0.05f), PlateRange = new Color(0.4f, 0.12f, 0.6f); // iguales a las placas del HUD
+        static Color Dim(Color c, float f) => new Color(c.r * f, c.g * f, c.b * f, 1f);
 
         sealed class Slot
         {
@@ -63,7 +65,7 @@ namespace Runtime.Scripts.Inventory
         MaskKind _pk;
         RectTransform _prog, _pfill;
         CanvasGroup _pg;
-        Image _pfillImg;
+        Image _pfillImg, _ptint;
         TextMeshProUGUI _desc;
         readonly Node[] _node = new Node[SkillProgression.Count];
         readonly int[] _nst = { -1, -1, -1, -1 };
@@ -543,15 +545,22 @@ namespace Runtime.Scripts.Inventory
             _prog = Blank(lay);
             _prog.anchorMin = _prog.anchorMax = new Vector2(0.5f, 1f);
             _prog.pivot = new Vector2(0.5f, 0f);
-            _prog.sizeDelta = new Vector2(520f, 132f);
+            _prog.sizeDelta = new Vector2(624f, 144f);
             _prog.anchoredPosition = Vector2.zero;
             _pg = _prog.gameObject.AddComponent<CanvasGroup>();
 
-            var f = Frame(_prog, PanelSkin.Kind.Strip, new Vector2(0.5f, 0f), new Vector2(520f, 96f));
+            var f = Frame(_prog, PanelSkin.Kind.Strip, new Vector2(0.5f, 0f), new Vector2(624f, 108f));
             f.anchoredPosition = new Vector2(0f, 36f);
 
             var area = Blank(f);
             Fit(area, 0.06f, 0.16f, 0.94f, 0.84f);
+
+            var tint = Rnd(Img(area, SlotOff));   // fondo de la barra: se tine segun la mascara
+            Fit(tint, 0f, 0f, 1f, 1f);
+            tint.offsetMin = new Vector2(-14f, -6f);
+            tint.offsetMax = new Vector2(14f, 6f);
+            _ptint = tint.GetComponent<Image>();
+            _ptint.raycastTarget = false;
 
             var ln = Img(area, new Color(0.03f, 0.1f, 0.05f));
             Fit(ln, 0.125f, 0.5f, 0.875f, 0.5f);
@@ -568,7 +577,7 @@ namespace Runtime.Scripts.Inventory
                 float x = (i + 0.5f) / SkillProgression.Count;
                 root.anchorMin = root.anchorMax = new Vector2(x, 0.5f);
                 root.pivot = new Vector2(0.5f, 0.5f);
-                root.sizeDelta = new Vector2(52f, 52f);
+                root.sizeDelta = new Vector2(60f, 60f);
                 root.anchoredPosition = Vector2.zero;
 
                 var sel = Rnd(Img(root, Green));
@@ -651,7 +660,8 @@ namespace Runtime.Scripts.Inventory
             }
             if (k == MaskKind.None) return;
 
-            Color mc = k == MaskKind.Melee ? SkillMask : SkillBase;
+            Color mc = k == MaskKind.Melee ? PlateMelee : PlateRange;
+            _ptint.color = Dim(mc, 0.5f);
             int c = 0;
             for (int i = 0; i < _node.Length; i++)
             {
@@ -661,12 +671,12 @@ namespace Runtime.Scripts.Inventory
                 if (st == _nst[i]) continue;
                 _nst[i] = st;
                 var n = _node[i];
-                n.bg.color = on ? SlotOn : SlotOff;
-                n.icon.color = on ? mc : new Color(0.4f, 0.4f, 0.4f, 0.6f);
-                n.lvl.color = on ? mc : Amber;
+                n.bg.color = on ? mc : Dim(mc, 0.35f);
+                n.icon.color = on ? Color.white : new Color(0.7f, 0.7f, 0.7f, 0.5f);
+                n.lvl.color = on ? Color.white : Amber;
                 n.sel.SetActive(i == _nsel);
             }
-            _pfillImg.color = mc;
+            _pfillImg.color = Color.white;
             _pfill.anchorMax = new Vector2(c <= 1 ? 0f : (c - 1f) / (_node.Length - 1f), 1f);
             if (_nsel >= 0) Set(_desc, NodeText(_nsel));
         }

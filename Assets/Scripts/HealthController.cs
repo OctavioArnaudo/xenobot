@@ -389,6 +389,8 @@ namespace Runtime.Scripts.Health
             CurrentHealth = newHealth;
         }
 
+        private ShieldsController m_ShieldRef;
+
         public void TakeDamage(int damage)
         {
             // Ignorar daño si está en periodo de Iframes (invulnerable)
@@ -396,7 +398,8 @@ namespace Runtime.Scripts.Health
 
             int finalDamage = damage;
 
-            var shield = GetComponent<ShieldsController>() ?? GetComponentInParent<ShieldsController>();
+            if (m_ShieldRef == null) m_ShieldRef = GetComponent<ShieldsController>() ?? GetComponentInParent<ShieldsController>() ?? GetComponentInChildren<ShieldsController>(true);
+            var shield = m_ShieldRef;
             if (shield != null && shield.IsShieldActive)
             {
                 finalDamage = Mathf.RoundToInt(shield.ProcessIncomingDamage(finalDamage));

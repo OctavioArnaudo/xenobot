@@ -32,6 +32,7 @@ namespace Runtime.Scripts.Shields
         private const float DEFAULT_MAX_SHIELD_DURATION = 10.0f;
         private const float DEFAULT_COOLDOWN_DURATION = 5.0f;
         private const bool DEFAULT_INFINITE_SHIELD = false;
+        private const float REGEN_MULT = 2f; // recarga pasiva x2
 
         [Header("Shield Settings")]
         public bool isUnlocked = true; // Permiso para usar el escudo
@@ -341,7 +342,7 @@ namespace Runtime.Scripts.Shields
                 float maxHealthVal = EffectiveMaxShieldHealth;
                 if (m_CurrentShieldHealth < maxHealthVal)
                 {
-                    m_CurrentShieldHealth = Mathf.Min(maxHealthVal, m_CurrentShieldHealth + (shieldRegenRate * Time.deltaTime));
+                    m_CurrentShieldHealth = Mathf.Min(maxHealthVal, m_CurrentShieldHealth + (shieldRegenRate * REGEN_MULT * Time.deltaTime));
                 }
             }
 

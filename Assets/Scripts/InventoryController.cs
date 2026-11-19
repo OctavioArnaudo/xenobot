@@ -14,9 +14,10 @@ using Runtime.Scripts.Jetpack;
 using Runtime.Scripts.Weapon;
 using Runtime.Scripts.Mask;
 using Runtime.Scripts.Pickup;
-using Runtime.Scripts.Crystals;
+using Runtime.Scripts.Crafting;
 using Runtime.Scripts.Singleton;
 using Runtime.Scripts.Skills;
+using Runtime.Scripts.Crystals;
 
 namespace Runtime.Scripts.Inventory
 {
@@ -330,7 +331,7 @@ namespace Runtime.Scripts.Inventory
                 if (mask != null)
                 {
                     var sp = GetComponent<SkillProgression>();
-                    var kind = mask.EffectiveKind;
+                    var kind = sp != null ? sp.Active : MaskKind.None; // solo la mascara activa
                     for (int i = 0; sp != null && i < SkillProgression.Count; i++)
                         if (sp.Unlocked(i)) { names.Add(SkillProgression.Name(kind, i)); keys.Add("Mascara"); }
                 }

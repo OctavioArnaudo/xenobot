@@ -663,13 +663,11 @@ namespace Runtime.Scripts.Hud
         public string BarText(int i) => _barTxt[i] != null ? _barTxt[i].text : null;
         public string TimeStr => _cachedTimeStr;
 
-        /// <summary>Skills base del jugador: disparo, recarga, cuerpo a cuerpo, escudo, gancho, sprint, dash, jetpack y mira telescopica (estos tres ultimos segun desbloqueo).</summary>
+        /// <summary>Skills generales (no dependen de mascara): disparo, recarga, cuerpo a cuerpo, sprint y dash. Las de mascara salen de InventoryController.CollectEquipSkills.</summary>
         public void CollectSkills(System.Collections.Generic.List<string> names, System.Collections.Generic.List<string> keys)
         {
             var pc = GetPlayer();
             var shooter = GetShooter();
-            var shield = GetShield();
-            var prop = GetPropulsion();
 
             if (shooter != null && (shooter.isUnlocked || shooter.Projectile != null))
             {
@@ -677,12 +675,8 @@ namespace Runtime.Scripts.Hud
                 names.Add("Recarga"); keys.Add("R");
             }
             if (pc != null && pc.HasMelee) { names.Add("Cuerpo a cuerpo"); keys.Add("1+LMB"); }
-            if (shield != null && shield.isUnlocked) { names.Add("Escudo"); keys.Add("RMB"); }
-            if (pc != null && pc.HasHook) { names.Add("Gancho"); keys.Add("F"); }
             names.Add("Sprint"); keys.Add("Shift");
             names.Add("Dash"); keys.Add("Shift (tap)");
-            if (prop != null && prop.isUnlocked) { names.Add("Jetpack"); keys.Add("SPC (Hold)"); }
-            if (SkillProgression.Can(this, Skill.Scope)) { names.Add(pc != null && pc.scopeMode ? "Mira telescopica (ON)" : "Mira telescopica"); keys.Add("3"); }
         }
 
         // Sprites dibujados por codigo, una sola vez y compartidos.

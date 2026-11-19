@@ -35,6 +35,7 @@ namespace Runtime.Scripts.Player
         private const float DEFAULT_SPEED_CHANGE_RATE = 10.0f;
         private const float DEFAULT_JUMP_HEIGHT = 1.2f;
         private const float DEFAULT_DOUBLE_JUMP_HEIGHT = 1.2f;
+        private const float JUMP_BOOST = 1.8f; // multiplica la altura de ambos saltos
         private const int DEFAULT_MAX_JUMPS = 2;
         private const float DEFAULT_GRAVITY = -15.0f;
         private const float DEFAULT_GROUNDED_RADIUS = 0.15f;
@@ -695,12 +696,10 @@ namespace Runtime.Scripts.Player
                 if (k.digit1Key.wasPressedThisFrame)
                 {
                     meleeMode = true;
-                    if (_shield != null) _shield.SetShieldState(false);
                 }
                 else if (k.digit2Key.wasPressedThisFrame)
                 {
                     meleeMode = false;
-                    if (_shield != null) _shield.SetShieldState(false);
                 }
                 else if (k.digit3Key.wasPressedThisFrame) scopeMode = !scopeMode;
             }
@@ -712,18 +711,8 @@ namespace Runtime.Scripts.Player
 
                 if (_shield != null && SkillProgression.Can(this, Skill.Shield))
                 {
-                    if (toggleAim)
-                    {
-                        if (aimPressedThisFrame)
-                        {
-                            bool newState = !_shield.IsShieldActive;
-                            _shield.SetShieldState(newState);
-                        }
-                    }
-                    else
-                    {
-                        _shield.SetShieldState(aimIsHeld);
-                    }
+                    // Un clic lo activa y permanece hasta agotarse (ShieldsController lo apaga solo).
+                    if (aimPressedThisFrame && !_shield.IsShieldActive) _shield.SetShieldState(true);
                 }
             }
             else
@@ -776,7 +765,6 @@ namespace Runtime.Scripts.Player
             jump = jumpHeld = _isJumpHeld = sprint = false;
             fire = fireHeld = fireReleased = aim = scope = hook = crouch = reload = false;
             switchWeapon = selectWeapon = 0;
-            if (_shield != null && meleeMode) _shield.SetShieldState(false);
         }
 
         private void HandleAimingAndCombat()
@@ -841,9 +829,13 @@ namespace Runtime.Scripts.Player
             }
         }
 
+        private float _nextHook;
+
         private void TryFireHook()
         {
             if (!HasHook) return;
+            if (Time.time < _nextHook) return;
+            _nextHook = Time.time + 0.4f;
 
             Transform spawnTransform = hookMuzzle != null ? hookMuzzle : (_shooter != null && _shooter.Muzzle != null ? _shooter.Muzzle.transform : transform);
             Vector3 spawnPos = spawnTransform.position;
@@ -1080,6 +1072,8 @@ namespace Runtime.Scripts.Player
             );
         }
 
+        public void Launch(Vector3 v) { _kb = new Vector3(v.x, 0f, v.z); _verticalVelocity = v.y; }
+
         public void ApplyKnockback(Vector3 push)
         {
             if (IsNetworkActive && IsServer) KnockbackClientRpc(push); else Knock(push);
@@ -1117,7 +1111,7 @@ namespace Runtime.Scripts.Player
 
                 if (jump && _jumpsRemaining > 0)
                 {
-                    _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
+                    _verticalVelocity = Mathf.Sqrt(JumpHeight * JUMP_BOOST * -2f * Gravity);
                     _jumpsRemaining--;
                     if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
                 }
@@ -1126,7 +1120,7 @@ namespace Runtime.Scripts.Player
             {
                 if (jump && EnableDoubleJump && _jumpsRemaining > 0)
                 {
-                    _verticalVelocity = Mathf.Sqrt(DoubleJumpHeight * -2f * Gravity);
+                    _verticalVelocity = Mathf.Sqrt(DoubleJumpHeight * JUMP_BOOST * -2f * Gravity);
                     _jumpsRemaining--;
                     if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
                 }

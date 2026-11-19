@@ -470,6 +470,8 @@ namespace Runtime.Scripts.Melee
                 anim.SetTrigger("groundSlamImpact");
             }
 
+            SlamWave.Play(impactPosition, EffectiveSlamRadius);
+
             if (slamVfxPrefab != null)
             {
                 Instantiate(slamVfxPrefab, impactPosition, Quaternion.identity);
@@ -730,6 +732,65 @@ namespace Runtime.Scripts.Melee
         {
             if (ownerMeleeController != null && hit != null && hit.gameObject != null)
                 ownerMeleeController.TryContactDamageFromHitbox(hit.gameObject, hit.point);
+        }
+    }
+
+    /// <summary>Onda de choque del Ground Slam: pool fijo de 4 anillos (LineRenderer) reutilizados; sin Instantiate ni alloc por impacto.</summary>
+    public sealed class SlamWave : MonoBehaviour
+    {
+        private const int Pts = 48;
+        private const float Life = 0.45f;
+        private static readonly SlamWave[] s_Pool = new SlamWave[4];
+        private static int s_Next;
+
+        private LineRenderer m_Line;
+        private readonly Vector3[] m_Pos = new Vector3[Pts];
+        private Vector3 m_Center;
+        private float m_Radius, m_T;
+
+        public static void Play(Vector3 center, float radius)
+        {
+            var w = s_Pool[s_Next];
+            if (w == null) s_Pool[s_Next] = w = Create();
+            s_Next = (s_Next + 1) % s_Pool.Length;
+            w.m_Center = center + Vector3.up * 0.1f;
+            w.m_Radius = Mathf.Max(0.5f, radius);
+            w.m_T = 0f;
+            w.gameObject.SetActive(true);
+        }
+
+        private static SlamWave Create()
+        {
+            var go = new GameObject("SlamWave");
+            DontDestroyOnLoad(go);
+            var w = go.AddComponent<SlamWave>();
+            var lr = go.AddComponent<LineRenderer>();
+            lr.useWorldSpace = true;
+            lr.loop = true;
+            lr.positionCount = Pts;
+            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            lr.receiveShadows = false;
+            lr.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
+            w.m_Line = lr;
+            go.SetActive(false);
+            return w;
+        }
+
+        private void Update()
+        {
+            m_T += Time.deltaTime / Life;
+            if (m_T >= 1f) { gameObject.SetActive(false); return; }
+
+            float r = m_Radius * (1f - (1f - m_T) * (1f - m_T));
+            for (int i = 0; i < Pts; i++)
+            {
+                float a = i * (Mathf.PI * 2f / Pts);
+                m_Pos[i] = m_Center + new Vector3(Mathf.Cos(a) * r, 0f, Mathf.Sin(a) * r);
+            }
+            m_Line.SetPositions(m_Pos);
+            m_Line.widthMultiplier = Mathf.Lerp(0.6f, 0.05f, m_T);
+            var c = new Color(1f, 0.55f, 0.1f, 1f - m_T);
+            m_Line.startColor = m_Line.endColor = c;
         }
     }
 }
