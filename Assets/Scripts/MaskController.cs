@@ -78,10 +78,29 @@ namespace Runtime.Scripts.Mask
 
         private void Awake()
         {
-            if (transform.Find("MaskRender") == null)
+            // Solo genera el cubo de respaldo si el prefab no trae ningún modelo propio (sin depender del nombre).
+            if (GetComponentInChildren<Renderer>(true) == null)
             {
                 GenerateMaskMesh();
             }
+            CenterModel();
+        }
+
+        // Centra el modelo en la raíz usando sus bounds: gira sobre su centro en el escenario y encaja en la cabeza sin offsets de compensación.
+        private void CenterModel()
+        {
+            bool has = false;
+            Bounds b = default;
+            foreach (var r in GetComponentsInChildren<Renderer>())
+            {
+                if (r.name == "LootMsg" || (r.transform.parent != null && r.transform.parent.name == "LootMsg")) continue;
+                if (!has) { b = r.bounds; has = true; } else b.Encapsulate(r.bounds);
+            }
+            if (!has) return;
+
+            Vector3 d = transform.position - b.center;
+            foreach (Transform c in transform)
+                if (c.name != "LootMsg") c.position += d;
         }
 
         public void OnUseItem(GameObject player) => ApplyEffect(player);
