@@ -94025,6 +94025,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1828330832}
+  - component: {fileID: 1828330833}
   m_Layer: 0
   m_Name: AudioManager
   m_TagString: Untagged
@@ -94047,6 +94048,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1828330833
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1828330831}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 43e046352ff9ca2438979c78798195e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Runtime.Scripts.Audio.AudioManager
+  sfx: []
+  music:
+  - id: 1
+    clip: {fileID: 8300000, guid: cfa3827d4df640c498cb53ce92620eb3, type: 3}
+    volume: 0.29
+  - id: 2
+    clip: {fileID: 8300000, guid: ca7b8ab6efc98914698ce19308050db6, type: 3}
+    volume: 0.29
+  fade: 3
 --- !u!4 &1828716053 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6694845557577243120, guid: 6c18a2e628b8844448a143b7e3949921, type: 3}

@@ -251,6 +251,7 @@ namespace Runtime.Scripts.Narrative
             if (waited < 0.75f || (netPending && waited < 5f)) return; // tope 5 s: si no spawnea, seguimos en local
 
             _ready = true;
+            SceneDoor.Reset(); // el juego empieza afuera: musica Exterior y puertas reiniciadas
             _hist = new List<string>[pairs.Count];
             for (int i = 0; i < _hist.Length; i++) _hist[i] = new List<string>();
             _had = new bool[pairs.Count];

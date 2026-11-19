@@ -39,6 +39,13 @@ public class SceneDoor : MonoBehaviour
         }
     }
 
+    /// <summary>Llamar al respawn y al iniciar la escena: el jugador vuelve afuera.</summary>
+    public static void Reset()
+    {
+        Inside = false;
+        AudioManager.PlayMusic(Music.Exterior);
+    }
+
     public static void Move(Transform t, Vector3 p, Quaternion r)
     {
         bool cc = t.TryGetComponent(out CharacterController ch);
