@@ -48,7 +48,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2953776419
+  GlobalObjectIdHash: 921067398
   InScenePlacedSourceGlobalObjectIdHash: 2385884697
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -119,10 +119,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Crafting.Scripts.MaskController
   ShowTopMostFoldoutHeaderGroup: 1
   renderTag: Render
-  VisorType: 0
-  visorType:
-    use: 0
-    value: 0
+  toggleKey: 44
+  visorRange: 30
+  Kind: 2
+  kind:
+    use: 1
+    value: 2
   HeadOffset: {x: -3.84, y: 1.13, z: 0.98}
   headOffset:
     use: 1

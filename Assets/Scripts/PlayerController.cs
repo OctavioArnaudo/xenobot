@@ -1013,9 +1013,10 @@ namespace Runtime.Scripts.Player
             if (look.sqrMagnitude >= _threshold && !LockCameraPosition)
             {
                 float deltaTimeMultiplier = (IsCurrentDeviceMouse) ? 0.5f : Time.deltaTime;
+                float zoomSens = scope ? Mathf.Clamp(aimFOV / normalFOV, 0.08f, 1f) : 1f; // sensibilidad proporcional al zoom de la mira
 
-                _cinemachineTargetYaw += look.x * deltaTimeMultiplier * LookSensitivity.x * 2f;
-                _cinemachineTargetPitch += look.y * deltaTimeMultiplier * LookSensitivity.y * 2f;
+                _cinemachineTargetYaw += look.x * deltaTimeMultiplier * LookSensitivity.x * 2f * zoomSens;
+                _cinemachineTargetPitch += look.y * deltaTimeMultiplier * LookSensitivity.y * 2f * zoomSens;
             }
 
             _cinemachineTargetYaw = ClampAngle(_cinemachineTargetYaw, float.MinValue, float.MaxValue);

@@ -92,7 +92,7 @@ namespace Runtime.Scripts.Mask
 
             _isEquipped = false;
             VisorOn = false;
-            if (_sp != null) _sp.SetMask(MaskKind.None);
+            ClearMask();
 
             if (gameObject != null)
             {
@@ -101,6 +101,9 @@ namespace Runtime.Scripts.Mask
         }
 
         public void OnDropItem(GameObject player) => OnQuitItem(player);
+
+        // Solo limpia si la mascara activa sigue siendo la de este objeto (evita que una mascara vieja borre a la nueva).
+        private void ClearMask() { if (_sp != null && _sp.Active == EffectiveKind) _sp.SetMask(MaskKind.None); }
 
         public void ApplyEffect(GameObject player)
         {
@@ -279,7 +282,7 @@ namespace Runtime.Scripts.Mask
 
         public override void OnDestroy()
         {
-            if (_isEquipped && _sp != null) _sp.SetMask(MaskKind.None);
+            if (_isEquipped) ClearMask();
             if (_isEquipped) VisorOn = false;
             _isEquipped = false;
             base.OnDestroy();
