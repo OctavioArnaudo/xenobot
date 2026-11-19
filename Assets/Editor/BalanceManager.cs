@@ -43,31 +43,31 @@ namespace Editor.Scripts.Balance
             UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(go.scene);
         }
 
-        [MenuItem("Tools/Balance/LifesPrefab")]
+        [MenuItem("Tools/Balance/BalancePrefab.LifesPrefab")]
         static void RegisterLifes() => RegisterByComponent<LifesController>("LifesPrefab", ItemType.Consumible, "Assets/Prefabs/LifePrefab.prefab");
 
-        [MenuItem("Tools/Balance/ShieldsPrefab")]
+        [MenuItem("Tools/Balance/BalancePrefab.ShieldsPrefab")]
         static void RegisterShields() => RegisterByComponent<ShieldsController>("ShieldsPrefab", ItemType.Thing, "Assets/Prefabs/ShieldPrefab.prefab");
 
-        [MenuItem("Tools/Balance/IronsPrefab")]
+        [MenuItem("Tools/Balance/BalancePrefab.IronsPrefab")]
         static void RegisterIrons() => RegisterByComponent<IronsController>("IronsPrefab", ItemType.Resource, "Assets/Prefabs/IronPrefab.prefab");
 
-        [MenuItem("Tools/Balance/AmmosPrefab")]
+        [MenuItem("Tools/Balance/BalancePrefab.AmmosPrefab")]
         static void RegisterAmmos() => RegisterByComponent<AmmosController>("AmmosPrefab", ItemType.Consumible, "Assets/Prefabs/AmmoPrefab.prefab");
 
-        [MenuItem("Tools/Balance/FuelsPrefab")]
+        [MenuItem("Tools/Balance/BalancePrefab.FuelsPrefab")]
         static void RegisterFuels() => RegisterByComponent<FuelsController>("FuelsPrefab", ItemType.Consumible, "Assets/Prefabs/FuelPrefab.prefab");
 
-        [MenuItem("Tools/Balance/EnemiesPrefab")]
+        [MenuItem("Tools/Balance/BalancePrefab.EnemiesPrefab")]
         static void RegisterEnemies() => RegisterHostsGeneral();
 
-        [MenuItem("Tools/Balance/EnemiesMeleePrefab")]
+        [MenuItem("Tools/Balance/BalancePrefab.EnemiesMeleePrefab")]
         static void RegisterEnemiesMelee() => RegisterContainerHostsWithType("EnemiesMeleePrefab", HostType.Melee, "Assets/Prefabs/EnemyMeleePrefab (1).prefab");
 
-        [MenuItem("Tools/Balance/EnemiesRangePrefab")]
+        [MenuItem("Tools/Balance/BalancePrefab.EnemiesRangePrefab")]
         static void RegisterEnemiesRange() => RegisterContainerHostsWithType("EnemiesRangePrefab", HostType.Range, "Assets/Prefabs/EnemyRangePrefab (1).prefab");
 
-        [MenuItem("Tools/Balance/EnemiesHybridPrefab")]
+        [MenuItem("Tools/Balance/BalancePrefab.EnemiesHybridPrefab")]
         static void RegisterEnemiesHybrid() => RegisterContainerHostsWithType("EnemiesHybridPrefab", HostType.Hybrid, "Assets/Prefabs/EnemyHybridPrefab (1).prefab");
 
         static BalanceManager GetOrCreateBalanceManager()
