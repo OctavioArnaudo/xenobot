@@ -66,6 +66,7 @@ namespace Runtime.Scripts.Crystals
 
     // Fragmento recolectable (0-2 = gemas): se acerca solo al jugador local. Con red, la recogida la arbitra el servidor (CrystalNet.ClaimRpc):
     // gana el primero en reclamar y el resto ve desaparecer su copia. Sin red, se recoge directo.
+    [RequireComponent(typeof(CrystalController))]
     public class CrystalPickup : MonoBehaviour
     {
         public static readonly Dictionary<int, CrystalPickup> ById = new Dictionary<int, CrystalPickup>();
@@ -365,6 +366,8 @@ namespace Runtime.Scripts.Crystals
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
                 rb.interpolation = RigidbodyInterpolation.Interpolate;
                 t.AddComponent<CrystalPickup>().color = c;
+                t.AddComponent<CrystalController>();
+                t.AddComponent<NetworkObject>();
                 tpl[c] = t;
 
                 items[c] = ItemsData.Create(Names[c], t);
