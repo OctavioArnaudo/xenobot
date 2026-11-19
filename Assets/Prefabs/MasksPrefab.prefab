@@ -47,7 +47,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2385884697
+  GlobalObjectIdHash: 1622122613
   InScenePlacedSourceGlobalObjectIdHash: 2385884697
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -130,6 +130,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 8892388672932767583, guid: ce94998347ebd47488f282a06477ffea, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8892388672932767583, guid: ce94998347ebd47488f282a06477ffea, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8892388672932767583, guid: ce94998347ebd47488f282a06477ffea, type: 3}
+      propertyPath: m_ReflectionProbeUsage
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -150,19 +162,19 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1359.77
+      value: -293
       objectReference: {fileID: 0}
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 334.41
+      value: 204.48
       objectReference: {fileID: 0}
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -26.47998
+      value: -1068
       objectReference: {fileID: 0}
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.1648238
       objectReference: {fileID: 0}
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalRotation.x
@@ -170,7 +182,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: -0.9863231
       objectReference: {fileID: 0}
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalRotation.z
@@ -182,7 +194,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
+      value: -161.026
       objectReference: {fileID: 0}
     - target: {fileID: 823946852360649940, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
@@ -199,6 +211,10 @@ PrefabInstance:
     - target: {fileID: 7349165637636185266, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
       propertyPath: m_Name
       value: MaskPrefab (ObjetoClave2)
+      objectReference: {fileID: 0}
+    - target: {fileID: 8349920114768079060, guid: 93b66f037f17fc647a10d5cb52ee4759, type: 3}
+      propertyPath: visorRange
+      value: 112
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -219,16 +235,28 @@ PrefabInstance:
     m_TransformParent: {fileID: 1961220955648061191}
     m_Modifications:
     - target: {fileID: 3772765388619512562, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.4331
+      objectReference: {fileID: 0}
+    - target: {fileID: 3772765388619512562, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.4331
+      objectReference: {fileID: 0}
+    - target: {fileID: 3772765388619512562, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.4331
+      objectReference: {fileID: 0}
+    - target: {fileID: 3772765388619512562, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1341
+      value: -294
       objectReference: {fileID: 0}
     - target: {fileID: 3772765388619512562, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 334.41
+      value: 203.7
       objectReference: {fileID: 0}
     - target: {fileID: 3772765388619512562, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -31
+      value: -1034
       objectReference: {fileID: 0}
     - target: {fileID: 3772765388619512562, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_LocalRotation.w
@@ -258,13 +286,21 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6220167797272930570, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: rotationSpeed
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6541982445443734164, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: m_Name
       value: MaskPrefab (ObjetoClave5)
       objectReference: {fileID: 0}
     - target: {fileID: 8646177470548912538, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
+      propertyPath: m_InScenePlaced
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8646177470548912538, guid: fd2d92ac39d1e294a8665e1783dfa494, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 2953776419
+      value: 2373552565
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
