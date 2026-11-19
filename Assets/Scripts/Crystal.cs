@@ -367,7 +367,6 @@ namespace Runtime.Scripts.Crystals
                 rb.interpolation = RigidbodyInterpolation.Interpolate;
                 t.AddComponent<CrystalPickup>().color = c;
                 t.AddComponent<CrystalController>();
-                t.AddComponent<NetworkObject>();
                 tpl[c] = t;
 
                 items[c] = ItemsData.Create(Names[c], t);

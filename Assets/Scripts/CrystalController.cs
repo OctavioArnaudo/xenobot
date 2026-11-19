@@ -1,5 +1,4 @@
 using UnityEngine;
-using Unity.Netcode;
 using Runtime.Scripts.Items;
 using Runtime.Scripts.Pickup;
 using Runtime.Scripts.Health;
@@ -8,8 +7,7 @@ using Runtime.Scripts.Effective;
 
 namespace Runtime.Scripts.Crystals
 {
-    [RequireComponent(typeof(NetworkObject))]
-    public class CrystalController : NetworkBehaviour, IItemUseAction, IItemDropAction, IItemPickupAction
+    public class CrystalController : MonoBehaviour, IItemUseAction, IItemDropAction, IItemPickupAction
     {
         private const float DEFAULT_SCALE = 2.0f;
         public float RenderScale = 2.0f;
