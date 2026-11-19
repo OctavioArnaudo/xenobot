@@ -6,6 +6,7 @@ using UnityEngine.InputSystem;
 using Runtime.Scripts.Singleton;
 using Runtime.Scripts.Levels;
 using Runtime.Scripts.Settings;
+using Runtime.Scripts.Audio;
 
 namespace Runtime.Scripts.Victory
 {
@@ -47,6 +48,8 @@ namespace Runtime.Scripts.Victory
             if (_isDisplayed) return;
 
             _isDisplayed = true;
+            AudioManager.PlayMusic(Music.None);
+            AudioManager.Play(Sfx.MissionComplete);
             BuildUI();
             UpdateLevelsData();
         }

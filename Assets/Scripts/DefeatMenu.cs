@@ -5,6 +5,7 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using UnityEngine.InputSystem;
 using Runtime.Scripts.Levels;
+using Runtime.Scripts.Audio;
 
 namespace Runtime.Scripts.Defeat
 {
@@ -64,6 +65,8 @@ namespace Runtime.Scripts.Defeat
             if (_isDisplayed) return;
 
             _isDisplayed = true;
+            AudioManager.PlayMusic(Music.None);
+            AudioManager.Play(Sfx.GameOver);
             BuildUI();
             UpdateLevelsData();
         }

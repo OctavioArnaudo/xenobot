@@ -15,6 +15,7 @@ using Runtime.Scripts.Balance;
 using Runtime.Scripts.Projectile;
 using Runtime.Scripts.Shields;
 using Runtime.Scripts.Items;
+using Runtime.Scripts.Audio;
 
 namespace Runtime.Scripts.Enemy
 {
@@ -481,6 +482,7 @@ namespace Runtime.Scripts.Enemy
         private void OnDamageTaken(int damage)
         {
             _damageTakenInPhase += damage;
+            AudioManager.Play(Sfx.EnemyHit, transform.position);
         }
 
         private bool _isEnemyDead = false;
@@ -602,6 +604,24 @@ namespace Runtime.Scripts.Enemy
 
             float speed = m_Agent != null ? m_Agent.velocity.magnitude : 0;
             UpdateAnimator(speed, true);
+            StepSfx(speed);
+        }
+
+        // Pasos por distancia recorrida (sin animation events) y tope de cadencia de ataque.
+        float _stepDist, _nextAtkSfx;
+        void StepSfx(float speed)
+        {
+            if (speed < 0.5f || GetCurrentCategory() != EnemyCategory.Melee) return;
+            _stepDist += speed * Time.deltaTime;
+            if (_stepDist < 1.8f) return;
+            _stepDist = 0f;
+            AudioManager.Play(Sfx.EnemyStep, transform.position);
+        }
+        void AtkSfx(Sfx id)
+        {
+            if (Time.time < _nextAtkSfx) return;
+            _nextAtkSfx = Time.time + 0.5f;
+            AudioManager.Play(id, transform.position);
         }
 
         private void SetPhase(int index)
@@ -1389,7 +1409,7 @@ namespace Runtime.Scripts.Enemy
                 case EnemyCategory.Melee:
                     if (m_Melee != null && isMeleeRange)
                     {
-                        m_Melee.PerformMeleeAction(m_Target.position);
+                        { m_Melee.PerformMeleeAction(m_Target.position); AtkSfx(Sfx.HitHeavy); }
                     }
                     ReleaseMeleeAttackToken();
                     break;
@@ -1397,20 +1417,20 @@ namespace Runtime.Scripts.Enemy
                 case EnemyCategory.Ranged:
                     if (m_Shooter != null && isShootRange)
                     {
-                        m_Shooter.FireAt(aimPos);
+                        { m_Shooter.FireAt(aimPos); AtkSfx(Sfx.EnemyShoot); }
                     }
                     break;
 
                 case EnemyCategory.Hybrid:
                     if (isMeleeRange && m_Melee != null)
                     {
-                        m_Melee.PerformMeleeAction(m_Target.position);
+                        { m_Melee.PerformMeleeAction(m_Target.position); AtkSfx(Sfx.HitHeavy); }
                         ReleaseMeleeAttackToken();
                     }
                     else if (isShootRange && m_Shooter != null)
                     {
                         ReleaseMeleeAttackToken();
-                        m_Shooter.FireAt(aimPos);
+                        { m_Shooter.FireAt(aimPos); AtkSfx(Sfx.EnemyShoot); }
                     }
                     else
                     {

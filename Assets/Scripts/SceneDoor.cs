@@ -1,4 +1,6 @@
 using UnityEngine;
+using Unity.Netcode;
+using Runtime.Scripts.Audio;
 
 // Puerta entre exterior e interior en la MISMA escena (el interior esta lejos, en otra altura).
 // Entrada (exit = false): trigger en el edificio. point = ReturnPoint exterior, dest = PlayerSpawn del interior.
@@ -22,14 +24,17 @@ public class SceneDoor : MonoBehaviour
     {
         var t = c.attachedRigidbody != null ? c.attachedRigidbody.transform : c.transform;
         if (Time.time < until || !t.CompareTag("Player")) return;
+        var no = t.GetComponentInParent<NetworkObject>();
+        if (no != null && no.IsSpawned && !no.IsOwner) return; // solo el dueño cruza: los demas jugadores no cambian mi musica ni mi cooldown
         if (!exit && dest == null) return;
         until = Time.time + 1f;
-        if (exit) { Inside = false; Move(t, backPos, backRot); }
+        if (exit) { Inside = false; AudioManager.PlayMusic(Music.Exterior); Move(t, backPos, backRot); }
         else
         {
             backPos = point.position;
             backRot = point.rotation;
             Inside = true;
+            AudioManager.PlayMusic(Music.Lab);
             Move(t, dest.position, dest.rotation);
         }
     }

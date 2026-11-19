@@ -14,6 +14,7 @@ using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Items;
 using Runtime.Scripts.Missions;
 using Runtime.Scripts.Gate;
+using Runtime.Scripts.Audio;
 
 namespace Runtime.Scripts.Narrative
 {
@@ -460,7 +461,7 @@ namespace Runtime.Scripts.Narrative
         /// <summary>Marca como completada una misión ya añadida.</summary>
         public void Complete(MissionData m)
         {
-            foreach (var t in _active) if (t.mission == m) { t.done = true; Goal(); return; }
+            foreach (var t in _active) if (t.mission == m) { if (!t.done) AudioManager.Play(Sfx.MissionComplete); t.done = true; Goal(); return; }
         }
 
         void Tutorials(InventoryController inv)
@@ -475,7 +476,7 @@ namespace Runtime.Scripts.Narrative
                 var m = t.mission;
                 if (t.done || !Prereqs(m)) continue;
                 bool items = Any(m.inventoryRequirements) || Any(m.craftingRequirements);
-                if (items ? Have(m, inv) : t.at != null && Near(t.at, p, t.radius)) { t.done = true; Goal(); }
+                if (items ? Have(m, inv) : t.at != null && Near(t.at, p, t.radius)) { t.done = true; AudioManager.Play(Sfx.MissionComplete); Goal(); }
             }
         }
 

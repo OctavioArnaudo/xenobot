@@ -8,6 +8,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
+using Runtime.Scripts.Audio;
 
 namespace Runtime.Scripts.Gate
 {
@@ -35,18 +36,21 @@ namespace Runtime.Scripts.Gate
         public static bool EscConsumed => _escFrame == Time.frameCount;
 
         /// <summary>Toma el control sin pedir permiso (men� de pausa: va por encima de todo).</summary>
-        public static void Take(string key) => _owner = key;
+        public static void Take(string key) { if (_owner == null) AudioManager.Play(Sfx.MenuOpen); _owner = key; }
 
         public static bool TryOpen(string key)
         {
             if (_owner != null && _owner != key) return false;
+            if (_owner == null) AudioManager.Play(Sfx.MenuOpen);
             _owner = key;
             return true;
         }
 
         public static void Close(string key)
         {
-            if (_owner == key) _owner = null;
+            if (_owner != key) return;
+            _owner = null;
+            AudioManager.Play(Sfx.MenuClose);
         }
 
         // Solo estos men�s se cierran con Esc. Pausa, di�logos, consolas y panel J gestionan su propio Esc.
