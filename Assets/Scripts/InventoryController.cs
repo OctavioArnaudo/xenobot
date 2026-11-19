@@ -14,7 +14,7 @@ using Runtime.Scripts.Jetpack;
 using Runtime.Scripts.Weapon;
 using Runtime.Scripts.Mask;
 using Runtime.Scripts.Pickup;
-using Runtime.Scripts.Crafting;
+using Runtime.Scripts.Crystals;
 using Runtime.Scripts.Singleton;
 using Runtime.Scripts.Skills;
 

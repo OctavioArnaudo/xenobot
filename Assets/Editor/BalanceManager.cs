@@ -5,7 +5,7 @@ using Runtime.Scripts.Balance;
 using Runtime.Scripts.Pickup;
 using Runtime.Scripts.Melee;
 using Runtime.Scripts.Shoot;
-using Runtime.Scripts.Health;
+using Runtime.Scripts.Crystals;
 using Runtime.Scripts.Irons;
 using Runtime.Scripts.Lifes;
 using Runtime.Scripts.Shields;

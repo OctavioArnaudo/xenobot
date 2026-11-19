@@ -12,6 +12,7 @@ using Runtime.Scripts.Balance;
 using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Hud;
 using Runtime.Scripts.Skills;
+using Runtime.Scripts.Crystals;
 
 namespace Runtime.Scripts.Melee
 {

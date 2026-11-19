@@ -6,6 +6,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Events;
+using Runtime.Scripts.Crystals;
 
 [RequireComponent(typeof(NavMeshAgent), typeof(HealthController))]
 public class ChargerAI : NetworkBehaviour

@@ -1,6 +1,5 @@
 using UnityEngine;
 using Unity.Netcode;
-
 using System.Collections.Generic;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Enemy;
@@ -8,6 +7,7 @@ using Runtime.Scripts.Balance;
 using Runtime.Scripts.Optional;
 using Runtime.Scripts.Player;
 using Runtime.Scripts.Shoot;
+using Runtime.Scripts.Crystals;
 
 namespace Runtime.Scripts.Projectile
 {
