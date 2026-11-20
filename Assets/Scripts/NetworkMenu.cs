@@ -326,6 +326,11 @@ namespace Runtime.Scripts.Network
 
             if (maxPlayers <= 1)
             {
+                if (NetworkManager.Singleton != null)
+                {
+                    if (NetworkManager.Singleton.IsListening) NetworkManager.Singleton.Shutdown();
+                    Destroy(NetworkManager.Singleton.gameObject);
+                }
                 SceneManager.LoadScene(biomaSceneName);
                 return;
             }
