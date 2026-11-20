@@ -5,6 +5,7 @@ using TMPro;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
 using UnityEngine.Video;
+using UnityEngine.InputSystem;
 using System.Collections;
 
 namespace Runtime.Scripts.Main
@@ -78,7 +79,11 @@ namespace Runtime.Scripts.Main
 
                 while (!finished && vp.isPlaying)
                 {
-                    if (Input.anyKeyDown || Input.GetMouseButtonDown(0)) break;
+                    if ((Keyboard.current != null && Keyboard.current.anyKey.wasPressedThisFrame) ||
+                        (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame))
+                    {
+                        break;
+                    }
                     yield return null;
                 }
 
