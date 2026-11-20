@@ -379,7 +379,7 @@ namespace Runtime.Scripts.Network
                         await Unity.Services.Authentication.AuthenticationService.Instance.SignInAnonymouslyAsync();
                     }
 
-                    int maxPlayers = PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 4);
+                    maxPlayers = PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 4);
                     var allocation = await Unity.Services.Relay.RelayService.Instance.CreateAllocationAsync(maxPlayers - 1);
                     string joinCode = await Unity.Services.Relay.RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
 
