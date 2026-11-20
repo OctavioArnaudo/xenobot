@@ -693,10 +693,12 @@ namespace Runtime.Scripts.Player
                 if (k.digit1Key.wasPressedThisFrame)
                 {
                     meleeMode = true;
+                    if (_shield != null) _shield.SetShieldState(false);
                 }
                 else if (k.digit2Key.wasPressedThisFrame)
                 {
                     meleeMode = false;
+                    if (_shield != null) _shield.SetShieldState(false);
                 }
                 else if (k.digit3Key.wasPressedThisFrame) scopeMode = !scopeMode;
             }
@@ -706,14 +708,16 @@ namespace Runtime.Scripts.Player
                 aim = false;
                 scope = false;
 
-                if (_shield != null && SkillProgression.Can(this, Skill.Shield))
+                if (_shield != null)
                 {
-                    // Un clic lo activa y permanece hasta agotarse (ShieldsController lo apaga solo).
-                    if (aimPressedThisFrame && !_shield.IsShieldActive) _shield.SetShieldState(true);
+                    bool canUseShield = SkillProgression.Can(this, Skill.Shield) && aimIsHeld;
+                    _shield.SetShieldState(canUseShield);
                 }
             }
             else
             {
+                if (_shield != null) _shield.SetShieldState(false);
+
                 if (toggleAim)
                 {
                     if (aimPressedThisFrame) aim = !aim;
@@ -762,6 +766,7 @@ namespace Runtime.Scripts.Player
             jump = jumpHeld = _isJumpHeld = sprint = false;
             fire = fireHeld = fireReleased = aim = scope = hook = crouch = reload = false;
             switchWeapon = selectWeapon = 0;
+            if (_shield != null) _shield.SetShieldState(false);
         }
 
         private void HandleAimingAndCombat()
@@ -1089,15 +1094,6 @@ namespace Runtime.Scripts.Player
 
         private void JumpAndGravity()
         {
-            if (jump && !Grounded && EnableDoubleJump && _jumpsRemaining > 0 && _jetpack != null && _jetpack.TryStartFlight())
-                _jumpsRemaining--;
-
-            if (_jetpack != null && _jetpack.ProcessFlight(_isJumpHeld, Grounded, ref _verticalVelocity))
-            {
-                jump = false;
-                return;
-            }
-
             if (Grounded)
             {
                 if (_verticalVelocity < 0.0f)
@@ -1116,6 +1112,7 @@ namespace Runtime.Scripts.Player
             }
             else
             {
+                // 1. Primero consume el doble salto si todavía queda disponible
                 if (jump && EnableDoubleJump && _jumpsRemaining > 0)
                 {
                     _verticalVelocity = Mathf.Sqrt(DoubleJumpHeight * JUMP_BOOST * -2f * Gravity);
@@ -1123,6 +1120,17 @@ namespace Runtime.Scripts.Player
                     if (_hasAnimIDJump) _animator.SetTrigger(_animIDJump);
                     PlayJump();
                 }
+                // 2. Si ya no quedan saltos (doble salto gastado), cualquier pulsación de salto en el aire enciende/reactiva el jetpack
+                else if (jump && _jumpsRemaining <= 0 && _jetpack != null && !_jetpack.IsFlying)
+                {
+                    _jetpack.TryStartFlight();
+                }
+            }
+
+            if (_jetpack != null && _jetpack.ProcessFlight(_isJumpHeld, Grounded, ref _verticalVelocity))
+            {
+                jump = false;
+                return;
             }
 
             if (_verticalVelocity > -_terminalVelocity)

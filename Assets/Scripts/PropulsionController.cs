@@ -203,7 +203,7 @@ namespace Runtime.Scripts.Propulsion
             }
         }
 
-        /// <summary>Segundo salto en el aire: activa el jetpack si hay combustible. Si devuelve false, el doble salto normal sigue vigente.</summary>
+        /// <summary>Enciende el jetpack en el aire si está desbloqueado y queda combustible.</summary>
         public bool TryStartFlight()
         {
             if (!isUnlocked) return false;
@@ -229,7 +229,10 @@ namespace Runtime.Scripts.Propulsion
                 return false;
             }
 
-            if (m_IsUsingJetpack && (!isJumpHeld || (!infiniteFuel && JetpackFuel <= 0f))) SetFlying(false);
+            if (m_IsUsingJetpack && (!isJumpHeld || (!infiniteFuel && JetpackFuel <= 0f)))
+            {
+                SetFlying(false);
+            }
 
             if (!m_IsUsingJetpack)
             {

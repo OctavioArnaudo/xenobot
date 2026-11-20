@@ -12,6 +12,7 @@ using Runtime.Scripts.Enemy;
 using Runtime.Scripts.Balance;
 using Runtime.Scripts.Pickup;
 using Runtime.Scripts.Player;
+using Runtime.Scripts.Skills;
 
 namespace Runtime.Scripts.Shields
 {
@@ -22,7 +23,7 @@ namespace Runtime.Scripts.Shields
     }
 
     /// <summary>
-    /// Sistema de escudo de energía esférico controlado externamente por PlayerController según el modo de combate.
+    /// Sistema de escudo de energía esférico controlado por Hold (mantener clic derecho) o por IA.
     /// </summary>
     [ExecuteAlways]
     public class ShieldsController : NetworkBehaviour, IItemUseAction, IItemQuitAction, IItemDropAction, IItemPickupAction
@@ -84,7 +85,7 @@ namespace Runtime.Scripts.Shields
         public ShieldInputMode inputMode = ShieldInputMode.HoldToActivate;
         public bool autoUnlockOnStart = false;
         public bool autoActivateOnStart = false;
-        public bool toggleOnUse = true;
+        public bool toggleOnUse = false;
 
         [Header("Visuals & Audio")]
         public bool generateDefaultVisuals = true;
@@ -104,6 +105,7 @@ namespace Runtime.Scripts.Shields
 
         private Animator m_Animator;
         private HealthController m_Health;
+        private PlayerController m_PlayerController;
 
         private float m_CurrentShieldHealth;
         private float m_ActiveTimer;
@@ -120,6 +122,7 @@ namespace Runtime.Scripts.Shields
         );
 
         private bool m_OfflineShieldActive = false;
+        private bool m_DesiredShieldState = false;
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && IsSpawned;
 
@@ -130,6 +133,14 @@ namespace Runtime.Scripts.Shields
                 if (m_Health != null) return m_Health.EffectiveTeam == Team.Enemy;
                 return CompareTag("Enemy") || GetComponent<EnemyController>() != null || GetComponentInParent<EnemyController>() != null;
             }
+        }
+
+        private bool HasShieldSkillUnlocked()
+        {
+            if (IsEnemy) return isUnlocked;
+            if (m_PlayerController == null) m_PlayerController = GetComponentInParent<PlayerController>() ?? GetComponent<PlayerController>();
+            bool skillAllowed = m_PlayerController == null || SkillProgression.Can(m_PlayerController, Skill.Shield);
+            return isUnlocked && skillAllowed;
         }
 
         // --- Effective Statistics Resolvers ---
@@ -228,7 +239,7 @@ namespace Runtime.Scripts.Shields
         public bool EffectiveInfiniteShield => infiniteShield.Get(InfiniteShield, DEFAULT_INFINITE_SHIELD);
 
         // --- State Properties ---
-        public bool IsShieldActive => isUnlocked && (!InCooldown || EffectiveInfiniteShield) && (IsNetworkActive ? m_IsShieldActive.Value : m_OfflineShieldActive);
+        public bool IsShieldActive => HasShieldSkillUnlocked() && (!InCooldown || EffectiveInfiniteShield) && (IsNetworkActive ? m_IsShieldActive.Value : m_OfflineShieldActive);
         public bool InCooldown => !EffectiveInfiniteShield && m_CooldownTimer > 0f;
         public float CooldownRemaining => EffectiveInfiniteShield ? 0f : Mathf.Max(0f, m_CooldownTimer);
         public float CooldownProgress => InCooldown ? Mathf.Clamp01(1f - (m_CooldownTimer / Mathf.Max(0.01f, EffectiveCooldownDuration))) : 1f;
@@ -250,7 +261,7 @@ namespace Runtime.Scripts.Shields
             if (Application.isPlaying)
             {
                 if (autoUnlockOnStart) isUnlocked = true;
-                if (autoActivateOnStart) SetShieldState(true);
+                if (autoActivateOnStart && inputMode != ShieldInputMode.HoldToActivate) SetShieldState(true);
             }
             else
             {
@@ -287,6 +298,7 @@ namespace Runtime.Scripts.Shields
         {
             m_Animator = GetComponentInChildren<Animator>();
             m_Health = GetComponentInParent<HealthController>() ?? GetComponentInChildren<HealthController>() ?? GetComponent<HealthController>();
+            m_PlayerController = GetComponentInParent<PlayerController>() ?? GetComponent<PlayerController>();
         }
 
         private void InitVisuals()
@@ -326,9 +338,27 @@ namespace Runtime.Scripts.Shields
                 GenerateShieldMesh();
             }
 
-            UpdateVisualsState();
+            if (!Application.isPlaying)
+            {
+                UpdateVisualsState();
+                return;
+            }
 
-            if (!Application.isPlaying) return;
+            // Control directo de Hold para el jugador local: activo SOLO si la habilidad está desbloqueada y se mantiene clic derecho en modo Melee
+            if (!IsEnemy && inputMode == ShieldInputMode.HoldToActivate)
+            {
+                if (m_PlayerController == null) m_PlayerController = GetComponentInParent<PlayerController>() ?? GetComponent<PlayerController>();
+
+                bool isLocalOwner = !IsNetworkActive || IsOwner || (m_PlayerController != null && m_PlayerController.IsOwner);
+                if (isLocalOwner && m_PlayerController != null)
+                {
+                    bool rightClickHeld = Mouse.current != null && Mouse.current.rightButton.isPressed;
+                    bool canHoldShield = HasShieldSkillUnlocked() && m_PlayerController.meleeMode && !Cursor.visible && rightClickHeld;
+                    SetShieldState(canHoldShield);
+                }
+            }
+
+            UpdateVisualsState();
 
             if (EffectiveInfiniteShield)
             {
@@ -336,7 +366,7 @@ namespace Runtime.Scripts.Shields
                 m_CooldownTimer = 0f;
             }
 
-            // Regeneración pasiva del escudo cuando NO está activo (2 puntos por segundo)
+            // Regeneración pasiva del escudo cuando NO está activo
             if (!IsShieldActive && !EffectiveInfiniteShield)
             {
                 float maxHealthVal = EffectiveMaxShieldHealth;
@@ -354,7 +384,6 @@ namespace Runtime.Scripts.Shields
                     m_CooldownTimer = 0f;
                     m_ActiveTimer = 0f;
                     m_CurrentShieldHealth = EffectiveMaxShieldHealth;
-                    Debug.Log("<color=green>[ShieldController]</color> Recarga de escudo completa.");
                 }
             }
 
@@ -432,6 +461,8 @@ namespace Runtime.Scripts.Shields
 
         private void OnDisable()
         {
+            m_OfflineShieldActive = false;
+            m_DesiredShieldState = false;
             if (Application.isPlaying && shieldVisualObject != null) shieldVisualObject.SetActive(false);
         }
 
@@ -528,21 +559,21 @@ namespace Runtime.Scripts.Shields
             m_CooldownTimer = EffectiveCooldownDuration;
             m_ActiveTimer = 0f;
             SetShieldState(false);
-            Debug.Log($"<color=cyan>[ShieldController]</color> Iniciando recarga de escudo ({EffectiveCooldownDuration}s)...");
         }
 
         public void SetShieldState(bool active)
         {
-            if (!isUnlocked && active) return;
-
-            if (active && InCooldown && !EffectiveInfiniteShield) return;
-
-            if (active && m_CurrentShieldHealth <= 0f && !EffectiveInfiniteShield)
+            if (active)
             {
-                return;
+                if (!HasShieldSkillUnlocked()) return;
+                if (InCooldown && !EffectiveInfiniteShield) return;
+                if (m_CurrentShieldHealth <= 0f && !EffectiveInfiniteShield) return;
             }
 
-            if (IsShieldActive == active) return;
+            bool currentReplicatedState = IsNetworkActive ? m_IsShieldActive.Value : m_OfflineShieldActive;
+            if (currentReplicatedState == active && m_DesiredShieldState == active) return;
+
+            m_DesiredShieldState = active;
 
             if (active)
             {
@@ -551,7 +582,11 @@ namespace Runtime.Scripts.Shields
 
             if (IsNetworkActive)
             {
-                if (IsServer)
+                if (IsOwner)
+                {
+                    m_IsShieldActive.Value = active;
+                }
+                else if (IsServer)
                 {
                     m_IsShieldActive.Value = active;
                 }
