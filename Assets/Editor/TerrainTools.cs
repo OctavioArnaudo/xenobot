@@ -24,7 +24,7 @@ static class TerrainTools
             Undo.RecordObject(t, "Fix Tree Distance");
             t.drawTreesAndFoliage = true;
             t.treeDistance = 900f;
-            t.treeBillboardDistance = 250f;
+            t.treeBillboardDistance = t.treeDistance;
             t.treeCrossFadeLength = 20f;
             t.treeMaximumFullLODCount = 150;
             t.detailObjectDistance = 70f;
@@ -51,7 +51,7 @@ static class TerrainTools
         Debug.Log(sb.ToString());
     }
 
-    // 2) Borra TODOS los arboles de los terrenos seleccionados (seleccionar TerrainsPrefab sirve).
+    // 2) Borra TODOS los arboles de los terrenos seleccionados.
     [MenuItem("Tools/Terrain/2 Clear Trees (seleccion)")]
     static void ClearTrees()
     {
@@ -65,7 +65,7 @@ static class TerrainTools
         Debug.Log($"[Terrain] Arboles borrados en {ts.Length} terrenos.");
     }
 
-    // 3) Pasto automatico por pendiente y ruido (textura de pasto generada una sola vez).
+    // 3) Pasto automatico por pendiente y ruido.
     [MenuItem("Tools/Terrain/3 Fill Grass (seleccion)")]
     static void Grass()
     {
@@ -109,14 +109,12 @@ static class TerrainTools
         EditorUtility.ClearProgressBar();
     }
 
-    // 4) Une los bordes de TODOS los terrenos de la escena (no depende de la seleccion).
-    //    Detecta vecinos por solapamiento (cualquier tamano/resolucion), alinea posiciones, iguala la altura
-    //    mundial del borde y suaviza una franja. Escribe un informe completo en la Console.
+    // 4) Une los bordes de TODOS los terrenos de la escena.
     [MenuItem("Tools/Terrain/4 Stitch Edges (todos)")]
     static void Stitch()
     {
-        const float MaxGap = 200f;       // hueco maximo entre terrenos que se sigue considerando vecino
-        const int Band = 32, Passes = 3; // franja suavizada (muestras) y pasadas para esquinas
+        const float MaxGap = 200f;
+        const int Band = 32, Passes = 3;
 
         var ts = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
         int n = ts.Length;
@@ -149,7 +147,6 @@ static class TerrainTools
             if (right[i] < 0 && up[i] < 0 && left[i] < 0 && down[i] < 0) sb.AppendLine($"  SIN VECINOS: {Id(ts[i])} (a mas de {MaxGap}m o sin solape)");
         }
 
-        // 1) Posiciones exactas (solo si los tamanos coinciden), en orden de grilla.
         foreach (int i in Enumerable.Range(0, n).OrderBy(k => ts[k].transform.position.z).ThenBy(k => ts[k].transform.position.x))
         {
             Vector3 a = ts[i].transform.position, s = ts[i].terrainData.size;
@@ -157,7 +154,6 @@ static class TerrainTools
             if (up[i] >= 0 && SameSize(ts[i], ts[up[i]])) Snap(ts[up[i]], a.x, a.z + s.z);
         }
 
-        // 2) Alturas.
         var H = new float[n][,];
         for (int i = 0; i < n; i++)
         {
@@ -178,7 +174,6 @@ static class TerrainTools
             ts[i].allowAutoConnect = true;
         }
 
-        // 3) Vecinos.
         for (int i = 0; i < n; i++)
             ts[i].SetNeighbors(left[i] >= 0 ? ts[left[i]] : null, up[i] >= 0 ? ts[up[i]] : null,
                                right[i] >= 0 ? ts[right[i]] : null, down[i] >= 0 ? ts[down[i]] : null);
@@ -206,8 +201,6 @@ static class TerrainTools
         return Mathf.Lerp(Mathf.Lerp(H[y0, x0], H[y0, x1], fx), Mathf.Lerp(H[y1, x0], H[y1, x1], fx), fy);
     }
 
-    // Lleva el borde de 'a' (side 0=derecha 1=izquierda 2=arriba 3=abajo) a la altura mundial media con 'b',
-    // y reparte el ajuste en una franja con caida suave.
     static void Pull(Terrain a, float[,] A, Terrain b, float[,] B, int side, int band)
     {
         int ra = A.GetLength(0);
@@ -235,11 +228,9 @@ static class TerrainTools
         }
     }
 
-    // 5) Pinta TODOS los terrenos con 4 capas (pasto, barro oscuro, tierra, tierra seca clara) segun altura,
-    //    pendiente y curvatura: valles/bajos oscuros, crestas claras, laderas de tierra. Continuo entre planchas.
-    //    Las texturas se generan una vez en Assets/Textures/TerrainPaint (puedes reemplazarlas por las tuyas).
-    const float CavGain = 10f;                    // sensibilidad a valles/crestas
-    const float SlopeMin = 18f, SlopeMax = 42f;   // grados: de pasto a tierra de ladera
+    // 5) Pinta TODOS los terrenos con 4 capas segun altura, pendiente y curvatura.
+    const float CavGain = 10f;
+    const float SlopeMin = 18f, SlopeMax = 42f;
 
     [MenuItem("Tools/Terrain/5 Paint Terrain (todos)")]
     static void Paint()
@@ -342,7 +333,6 @@ static class TerrainTools
         return res;
     }
 
-    // Textura tileable procedural (albedo + normal derivada del relieve).
     static void Gen(string dir, string name, Color c0, Color c1, float crack, float streak, float grain)
     {
         const int S = 512;
@@ -388,7 +378,6 @@ static class TerrainTools
         imp.SaveAndReimport();
     }
 
-    // Ruido de valor periodico (tileable); px/py = periodo por eje.
     static int Mod(int a, int m) => ((a % m) + m) % m;
     static float Hash(int x, int y)
     {
@@ -409,12 +398,12 @@ static class TerrainTools
         return sum / tot;
     }
 
-    // 6) Rellena TODOS los terrenos con pinos oscuros, deformes e intrincados (4 variantes, tamano aleatorio, en
-    //    manchas de bosque) y agrega un segundo pasto: yuyos finos. Reemplaza los arboles actuales.
-    //    Mallas y prefabs se generan una vez en Assets/Prefabs/ForestFast (borra esa carpeta para regenerarlos).
-    const float TreeSpacing = 10f;   // metros entre arboles (menos = mas denso)
-    const float MaxTreeSlope = 30f;  // no crecen en pendientes mayores
-    const float ClearRadius = 2.5f;  // evita arboles dentro de edificios u objetos con collider
+    // 6) Rellena TODOS los terrenos con pinos + prefabs propios de ForestFast y yuyos finos. Reemplaza los arboles actuales.
+    //    Los modelos de ForestFast se generan con la malla muy reducida (ver ForestModelQuality) y 3 LOD; la barra 'Resolucion Bosque' de ViewDistance los regula despues.
+    const float TreeSpacing = 10f;
+    const float MaxTreeSlope = 30f;
+    const float ClearRadius = 2.5f;
+    const float ForestAmount = 1f / 12f;   // fraccion del bosque que se genera (pinos + modelos ForestFast + gigantes). Mantiene el reparto por parches.
 
     [MenuItem("Tools/Terrain/6 Fill Forest + Weeds (todos)")]
     static void Forest()
@@ -423,7 +412,7 @@ static class TerrainTools
         var ts = Object.FindObjectsByType<Terrain>(FindObjectsSortMode.None);
         Physics.SyncTransforms();
         var buf = new Collider[8];
-        int total = 0;
+        int total = 0; var cnt = new int[protos.Length];
         WorldSpan(ts, out float lo, out float hi);
 
         for (int i = 0; i < ts.Length; i++)
@@ -432,6 +421,7 @@ static class TerrainTools
             EditorUtility.DisplayProgressBar("Bosque", t.name, (float)i / ts.Length);
             Undo.RegisterCompleteObjectUndo(td, "Forest");
             td.treePrototypes = protos;
+            int kinds = Kinds(protos.Length);
 
             var list = new List<TreeInstance>();
             var rnd = new System.Random(1234 + i);
@@ -442,6 +432,7 @@ static class TerrainTools
                     float lx = x + ((float)rnd.NextDouble() - 0.5f) * TreeSpacing * 0.9f;
                     float lz = z + ((float)rnd.NextDouble() - 0.5f) * TreeSpacing * 0.9f;
                     if (lx < 0 || lz < 0 || lx > sz.x || lz > sz.z) continue;
+                    if (rnd.NextDouble() > ForestAmount) continue;
                     float u = lx / sz.x, v = lz / sz.z, wx = p.x + lx, wz = p.z + lz;
 
                     float patch = Mathf.PerlinNoise(wx * 0.008f + 5f, wz * 0.008f + 9f);
@@ -449,32 +440,36 @@ static class TerrainTools
                     if (td.GetSteepness(u, v) > MaxTreeSlope) continue;
                     if (Blocked(new Vector3(wx, p.y + td.GetInterpolatedHeight(u, v) + 2f, wz), buf)) continue;
 
+                    int rv = rnd.Next(Normal);
                     float a = (float)rnd.NextDouble(), b = (float)rnd.NextDouble();
                     float size = Mathf.Lerp(0.6f, 1.7f, a * a);
-                    list.Add(new TreeInstance
+                    var ti = new TreeInstance
                     {
                         position = new Vector3(u, 0f, v),
-                        prototypeIndex = rnd.Next(Normal),
                         heightScale = size,
                         widthScale = size * Mathf.Lerp(0.8f, 1.25f, b),
                         rotation = (float)rnd.NextDouble() * Mathf.PI * 2f,
                         color = new Color32(255, 255, 255, 255),
                         lightmapColor = new Color32(255, 255, 255, 255)
-                    });
+                    };
+                    Kind(ref ti, wx, wz, kinds, rv);
+                    list.Add(ti);
                 }
-            list.AddRange(Giants(t, i, lo, hi, buf));
+            list.AddRange(Giants(t, i, lo, hi, buf).Where(_ => rnd.NextDouble() <= ForestAmount));
             td.SetTreeInstances(list.ToArray(), true);
+            foreach (var x in list) cnt[x.prototypeIndex]++;
             total += list.Count;
         }
 
         AddWeeds(ts);
+        var vd = Object.FindFirstObjectByType<ViewDistance>();
+        if (vd != null) ForestRes.Apply(vd.resolucionBosque);
         EditorUtility.ClearProgressBar();
         UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
-        Debug.Log($"[Terrain] Bosque: {total} pinos en {ts.Length} terrenos + yuyos finos.");
+        Debug.Log($"[Terrain] Bosque: {total} arboles en {ts.Length} terrenos + yuyos finos. Modelos ForestFast al {ForestModelQuality:P0} de vertices (LOD0). Reparto: " + string.Join(", ", protos.Select((q, k) => (q.prefab != null ? q.prefab.name : "NULO") + " " + cnt[k])));
     }
 
-    // 7) Cambia solo los prefabs de pino por la version liviana (LOD0/1/2, sin sombras lejanas) y aplica los
-    //    ajustes de 1. Mantiene los arboles actuales y agrega pinos gigantes (5x) solo en lo bajo.
+    // 7) Cambia solo los prefabs de pino por la version liviana y agrega pinos gigantes solo en lo bajo.
     [MenuItem("Tools/Terrain/7 Optimize Pines (mantiene arboles)")]
     static void Optimize()
     {
@@ -483,24 +478,35 @@ static class TerrainTools
         WorldSpan(ts, out float lo, out float hi);
         Physics.SyncTransforms();
         var buf = new Collider[8];
-        int n = 0;
+        int n = 0, kept = 0; var cnt = new int[protos.Length];
         for (int i = 0; i < ts.Length; i++)
         {
             var td = ts[i].terrainData;
             Undo.RegisterCompleteObjectUndo(td, "Optimize Pines");
-            var keep = td.treeInstances.Where(x => x.prototypeIndex < Normal).ToList();
+            var keep = td.treeInstances.Where(x => x.prototypeIndex < Normal || x.prototypeIndex >= Normal + 2).ToList();
             td.treePrototypes = protos;
+            int kinds = Kinds(protos.Length); Vector3 tp = ts[i].transform.position, tz = td.size;
+            for (int k = 0; k < keep.Count; k++)
+            {
+                var ti = keep[k];
+                if (ti.prototypeIndex >= Normal + 2) continue;
+                Kind(ref ti, tp.x + ti.position.x * tz.x, tp.z + ti.position.z * tz.z, kinds, ti.prototypeIndex);
+                keep[k] = ti;
+            }
+            kept += keep.Count;
             var g = Giants(ts[i], i, lo, hi, buf);
             keep.AddRange(g); n += g.Count;
             td.SetTreeInstances(keep.ToArray(), true);
+            foreach (var x in keep) cnt[x.prototypeIndex]++;
         }
+        if (kept == 0) Debug.LogWarning("[Terrain] La opcion 7 solo reasigna arboles existentes y no habia ninguno: usa la 6 para generar el bosque.");
         Debug.Log($"[Terrain] {n} pinos gigantes agregados.");
         Fix();
+        Debug.Log("[Terrain] Reparto final: " + string.Join(", ", protos.Select((q, k) => (q.prefab != null ? q.prefab.name : "NULO") + " " + cnt[k])));
     }
 
-    // ---- Pinos gigantes: prototipo 4, escala ~5x, solo en el tramo mas bajo del relieve. ----
-    const int Normal = 4;                              // prototipos 0-3 = pinos, 4 = gigante (5x), 5 = coloso (15x)
-    const float GiantSpacing = 35f, ColossusSpacing = 120f, GiantLow = 0.3f;   // GiantLow: fraccion de altura mundial donde nacen
+    const int Normal = 4;
+    const float GiantSpacing = 35f, ColossusSpacing = 120f, GiantLow = 0.3f;
 
     static void WorldSpan(Terrain[] ts, out float lo, out float hi)
     {
@@ -551,12 +557,9 @@ static class TerrainTools
         return list;
     }
 
-    // 8) Crateres de bombas: manchones oscuros pintados en el alphamap (capa Mud, sin costo extra), sin arboles ni
-    //    pasto adentro, y una columna de humo permanente por cada uno. El humo es UNA malla estatica horneada
-    //    (54 vertices, sin particulas, sin CPU): se ve desde lejos como cola inclinada por el viento.
-    //    Ejecutar despues de 5/6/7 (esos pisan la pintura y los arboles). Re-ejecutar regenera los crateres.
+    // 8) Crateres de bombas + humo (despues de 5/6/7).
     const int CraterCount = 12;
-    const float CraterGap = 200f, WindYaw = 70f;   // separacion minima (m) y direccion del viento (grados)
+    const float CraterGap = 200f, WindYaw = 70f;
     const string BombDir = "Assets/Prefabs/Bombs";
 
     [MenuItem("Tools/Terrain/8 Bomb Craters + Smoke (todos)")]
@@ -634,7 +637,7 @@ static class TerrainTools
                     float k = Mathf.Clamp01((1f - Mathf.Sqrt(dx * dx + dz * dz) / edge) * 3f);
                     if (k <= 0f) continue;
                     for (int l = 0; l < L; l++) m[y, x, l] *= 1f - k;
-                    m[y, x, 1] += k;   // capa 1 = Mud (la mas oscura)
+                    m[y, x, 1] += k;
                 }
             td.SetAlphamaps(x0, y0, m);
         }
@@ -654,8 +657,6 @@ static class TerrainTools
             }
     }
 
-    // Columna de humo de altura 1: 3 planos cruzados, 8 segmentos, inclinada y ensanchada hacia arriba.
-    // El degradado (gris oscuro -> claro, opaco -> transparente) va en el color de vertice.
     static Mesh SmokeMesh()
     {
         const string path = BombDir + "/Smoke.asset";
@@ -703,14 +704,12 @@ static class TerrainTools
                 px[y * S + x] = new Color(1f, 1f, 1f, Mathf.Clamp01(e * Fbm(u, v, 3, 6, 3) * 1.4f));
             }
         Save(tp, px, S, false);
-        // Sprites/Default: sin luz, mezcla alfa, funciona igual en URP y built-in, soporta instancing.
         m = new Material(Shader.Find("Sprites/Default")) { mainTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(tp), enableInstancing = true };
         AssetDatabase.CreateAsset(m, path);
         return m;
     }
 
-    // 9) Pasto alto y muy denso en las zonas bajas: tercer detalle (billboards, sin mallas). Se suma al pasto existente.
-    //    Ejecutar antes de 8 (los crateres lo borran dentro de su radio).
+    // 9) Pasto alto y muy denso en las zonas bajas. Ejecutar antes de 8.
     [MenuItem("Tools/Terrain/9 Fill Tall Grass (zonas bajas)")]
     static void TallGrass()
     {
@@ -795,10 +794,8 @@ static class TerrainTools
         return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
     }
 
-    // 13) Cuenco de bordes: eleva TODOS los bordes del mapa (union de los terrenos) con colinas irregulares que suben hacia
-    //     el limite. Si falta altura de terreno (size.y), la amplia reescalando las alturas. Ejecutar UNA vez, despues de 4 y
-    //     antes de 5/6/7/9. Crea el marcador "BorderHills" (borralo para poder volver a ejecutar; sumaria otra vez).
-    const float RimWidth = 140f, RimHeight = 60f;   // ancho medio (m) y altura media (m) de las colinas
+    // 13) Cuenco de bordes. Ejecutar UNA vez, despues de 4 y antes de 5/6/7/9.
+    const float RimWidth = 140f, RimHeight = 60f;
 
     [MenuItem("Tools/Terrain/13 Border Hills (todos)")]
     static void BorderHills()
@@ -828,7 +825,7 @@ static class TerrainTools
                 for (int x = 0; x < r; x++) H[y, x] = (H[y, x] * sz.y + add[y, x]) / ny;
             if (ny != sz.y) td.size = new Vector3(sz.x, ny, sz.z);
             td.SetHeights(0, 0, H);
-            td.SetTreeInstances(td.treeInstances, true);   // reasienta los arboles existentes
+            td.SetTreeInstances(td.treeInstances, true);
         }
         EditorUtility.ClearProgressBar();
         var mk = new GameObject("BorderHills");
@@ -837,9 +834,7 @@ static class TerrainTools
         Debug.Log($"[Terrain] Colinas de borde sobre {ts.Length} terrenos. Mapa X {m.xMin:F0}..{m.xMax:F0}, Z {m.yMin:F0}..{m.yMax:F0}. Lo que estuviera a menos de ~{RimWidth:F0} m del limite queda enterrado.");
     }
 
-    // 14) Corona de arboles en las colinas de 13: pinos densos hacia el borde, con gigantes y colosos que dan la impresion
-    //     de bosque que sigue mas alla del mapa. AGREGA a los arboles actuales (ejecutar despues de 6 o 7, que los borran).
-    //     Crea el marcador "BorderTrees" (borralo para repetir).
+    // 14) Corona de arboles en las colinas de 13 (ejecutar despues de 6 o 7).
     [MenuItem("Tools/Terrain/14 Border Trees (todos)")]
     static void BorderTrees()
     {
@@ -863,6 +858,7 @@ static class TerrainTools
             var list = new List<TreeInstance>(td.treeInstances);
             int before = list.Count;
             var rnd = new System.Random(4242 + i);
+            int kinds = Kinds(td.treePrototypes.Length);
             Vector3 p = t.transform.position, sz = td.size;
             for (float z = 0; z < sz.z; z += Sp)
                 for (float x = 0; x < sz.x; x += Sp)
@@ -872,7 +868,7 @@ static class TerrainTools
                     float wx = p.x + lx, wz = p.z + lz, zone = RimW(wx, wz) * 0.65f;
                     float d = EdgeDist(m, wx, wz);
                     if (d > zone) continue;
-                    float k = 1f - d / zone;                                  // 1 en el borde, 0 en el limite interior
+                    float k = 1f - d / zone;
                     if ((float)rnd.NextDouble() > 0.25f + 0.75f * k) continue;
                     float u = lx / sz.x, v = lz / sz.z;
                     if (td.GetSteepness(u, v) > 60f) continue;
@@ -881,7 +877,7 @@ static class TerrainTools
                     if (roll < 0.04f * k) { proto = Normal + 1; s = Rf(rnd, 9f, 13f); slim = 0.5f; }
                     else if (roll < 0.22f * k) { proto = Normal; s = Rf(rnd, 3.5f, 5.5f); slim = 0.7f; }
                     else { proto = rnd.Next(Normal); s = Mathf.Lerp(1.4f, 2.8f, k) * Rf(rnd, 0.8f, 1.2f); slim = Rf(rnd, 0.8f, 1.25f); }
-                    list.Add(new TreeInstance
+                    var ti = new TreeInstance
                     {
                         position = new Vector3(u, 0f, v),
                         prototypeIndex = proto,
@@ -890,7 +886,9 @@ static class TerrainTools
                         rotation = (float)rnd.NextDouble() * Mathf.PI * 2f,
                         color = new Color32(255, 255, 255, 255),
                         lightmapColor = new Color32(255, 255, 255, 255)
-                    });
+                    };
+                    if (proto < Normal) Kind(ref ti, wx, wz, kinds, proto);
+                    list.Add(ti);
                 }
             td.SetTreeInstances(list.ToArray(), true);
             total += list.Count - before;
@@ -910,15 +908,13 @@ static class TerrainTools
             Vector3 p = t.transform.position, s = t.terrainData.size;
             x0 = Mathf.Min(x0, p.x); z0 = Mathf.Min(z0, p.z); x1 = Mathf.Max(x1, p.x + s.x); z1 = Mathf.Max(z1, p.z + s.z);
         }
-        return Rect.MinMaxRect(x0, z0, x1, z1);   // yMin/yMax = Z
+        return Rect.MinMaxRect(x0, z0, x1, z1);
     }
 
     static float EdgeDist(Rect m, float x, float z) => Mathf.Min(Mathf.Min(x - m.xMin, m.xMax - x), Mathf.Min(z - m.yMin, m.yMax - z));
 
-    // Ancho local de la colina: varia a lo largo del borde.
     static float RimW(float x, float z) => RimWidth * (0.6f + 0.8f * Mathf.PerlinNoise(x * 0.006f + 3f, z * 0.006f + 7f));
 
-    // Altura (m) agregada en un punto: cuenco que sube hacia el limite, con altura y rugosidad irregulares.
     static float Rise(Rect m, float x, float z)
     {
         float d = EdgeDist(m, x, z);
@@ -936,7 +932,6 @@ static class TerrainTools
         return false;
     }
 
-    // Segundo tipo de pasto: yuyos finos y altos, en manchas distintas al pasto base (se conserva el existente).
     static void AddWeeds(Terrain[] ts)
     {
         var tex = WeedTex();
@@ -1017,12 +1012,15 @@ static class TerrainTools
     // ---- Pinos procedurales: tronco torcido + copas en estrella irregulares y caidas + ramas finas. LOD0/LOD1. ----
     static TreePrototype[] Pines()
     {
-        const string dir = "Assets/Prefabs/ForestFast";
+        const string dir = ForestDir;
         Directory.CreateDirectory(dir);
         var bark = Mat(dir, "Bark", new Color(0.09f, 0.06f, 0.045f));
         var needles = Mat(dir, "Needles", new Color(0.035f, 0.10f, 0.055f));
-        var res = new TreePrototype[Normal + 2];
-        for (int v = 0; v < res.Length; v++)
+        var custom = Custom();
+        var res = new TreePrototype[Normal + 2 + custom.Length];
+        if (custom.Length == 0) Debug.LogWarning($"[Terrain] No hay prefabs propios en '{ForestDir}' (el nombre de carpeta debe ser exacto). Solo pinos.");
+        else Debug.Log("[Terrain] Prefabs propios detectados (" + custom.Length + "): " + string.Join(", ", custom.Select(Path.GetFileNameWithoutExtension)));
+        for (int v = 0; v < Normal + 2; v++)
         {
             string pp = $"{dir}/Pine{v}.prefab";
             var go = AssetDatabase.LoadAssetAtPath<GameObject>(pp);
@@ -1031,18 +1029,348 @@ static class TerrainTools
                 var root = new GameObject($"Pine{v}");
                 var r0 = Part(root, "LOD0", Build(v, 0), dir, bark, needles);
                 var r1 = Part(root, "LOD1", Build(v, 1), dir, bark, needles);
-                var r2 = Part(root, "LOD2", Build(v, 2), dir, bark, needles);
                 var g = root.AddComponent<LODGroup>();
-                float k = v == Normal ? 3.3f : v > Normal ? 9f : 1f;   // el gigante cambia de LOD a la misma distancia que un pino normal
-                g.SetLODs(new[] { new LOD(0.15f * k, new[] { r0 }), new LOD(0.04f * k, new[] { r1 }), new LOD(0.012f, new[] { r2 }) });
+                float k = v == Normal ? 3.3f : v > Normal ? 9f : 1f;
+                g.SetLODs(new[] { new LOD(0.15f * k, new[] { r0 }), new LOD(0.012f, new[] { r1 }) });
                 g.RecalculateBounds();
                 go = PrefabUtility.SaveAsPrefabAsset(root, pp);
                 Object.DestroyImmediate(root);
             }
             res[v] = new TreePrototype { prefab = go };
         }
+        for (int i = 0; i < custom.Length; i++)
+            res[Normal + 2 + i] = new TreePrototype { prefab = AssetDatabase.LoadAssetAtPath<GameObject>(custom[i]) };
         AssetDatabase.SaveAssets();
         return res;
+    }
+
+    // ---- Prefabs propios: todo .prefab de ForestFast que no se llame Pine* entra al reparto (indices Normal+2 en adelante). ----
+    const string ForestDir = "Assets/Prefabs/ForestFast";
+    const float PatchSize = 70f;
+    const float CustomHeight = 9f;   // altura (m) a la que se normalizan TUS prefabs (los pinos miden 8-15 m). Bajalo para plantas mas chicas.
+
+    static string[] Custom()
+    {
+        var ok = new List<string>();
+        if (!AssetDatabase.IsValidFolder(ForestDir)) return ok.ToArray();
+        foreach (var f in AssetDatabase.FindAssets("t:Prefab", new[] { ForestDir }).Select(AssetDatabase.GUIDToAssetPath).OrderBy(x => x))
+        {
+            var n = Path.GetFileNameWithoutExtension(f);
+            if (f.Contains("/Static/") || (n.StartsWith("Pine") && n.Skip(4).All(char.IsDigit))) continue;
+            var go = AssetDatabase.LoadAssetAtPath<GameObject>(f);
+            var p = go == null ? null : TreeCopy(go, n);
+            if (p != null) ok.Add(p); else Debug.LogWarning($"[Terrain] '{n}' omitido: no tiene ninguna malla (MeshRenderer o SkinnedMeshRenderer).");
+        }
+        return ok.ToArray();
+    }
+
+    // ---- REDUCCION DE RESOLUCION DE LOS MODELOS DE FORESTFAST (solo tus prefabs, no los pinos procedurales) ----
+    // Cada copia para terreno lleva 3 LODs con la malla decimada (agrupacion de vertices):
+    //   LOD0 = ForestModelQuality de los vertices originales, LOD1 = 40% de eso, LOD2 = 15% de eso (ultimo nivel, el mas barato).
+    // 1 = sin reduccion. 0.25 = deja un cuarto de la malla. 0.05-0.1 = reduccion masiva (el follaje en tarjetas puede perder hojas).
+    // Para cambiarlo: modifica la constante y corre de nuevo la 6 (las copias viejas se borran solas).
+    // Hace falta "Read/Write Enabled" en el import de los modelos; si no, avisa en consola y deja esa malla sin reducir.
+    // Despues de generar, la barra "Resolucion Bosque" de ViewDistance regula en el Editor cuan pronto se pasa a los LOD baratos.
+    const float ForestModelQuality = 0.25f;
+
+    // Texturas: tamano maximo (px) de las texturas del LOD0 de cada modelo; LOD1 = la mitad, LOD2 = un cuarto (minimo 32). 0 = no tocar texturas.
+    // Se crean COPIAS de las texturas en ForestFast/Static con ese Max Size (tus originales quedan intactas) y materiales nuevos que las usan.
+    // Solo se reducen texturas que sean archivos del proyecto (no las embebidas en un FBX) y que sean mas grandes que el limite.
+    const int ForestTextureSize = 128;
+
+    // Copia lista para el terreno (ForestFast/Static/<nombre>_Tree2_q<pct>.prefab): mallas estaticas decimadas en 3 LOD, LODGroup que oculta al ~0.1%,
+    // y escala normalizada a CustomHeight metros (se escalan los hijos: el terreno ignora la escala de la raiz).
+    static string TreeCopy(GameObject src, string n)
+    {
+        int pct = Mathf.RoundToInt(Mathf.Clamp(ForestModelQuality, 0.01f, 1f) * 100f);
+        string dir = ForestDir + "/Static", path = $"{dir}/{n}_Tree2_q{pct}.prefab";
+        if (File.Exists(path)) return path;
+        var skins = src.GetComponentsInChildren<SkinnedMeshRenderer>(true).Where(r => r.sharedMesh != null).ToArray();
+        if (skins.Length == 0 && !src.GetComponentsInChildren<MeshRenderer>(true).Any(r => r.TryGetComponent(out MeshFilter mf) && mf.sharedMesh != null)) return null;
+        Directory.CreateDirectory(dir);
+        CleanStale(dir, n);
+
+        var root = Object.Instantiate(src); root.name = n + "_Tree2_q" + pct;
+        var skinSet = root.GetComponentsInChildren<SkinnedMeshRenderer>(true).Where(r => r.sharedMesh != null).ToArray();
+        for (int i = 0; i < skinSet.Length; i++)
+        {
+            var smr = skinSet[i];
+            var m = new Mesh { name = $"{n}_Tree{i}" };
+            smr.BakeMesh(m);
+            AssetDatabase.CreateAsset(m, AssetDatabase.GenerateUniqueAssetPath($"{dir}/{m.name}.asset"));
+            var c = new GameObject("Baked" + i);
+            c.transform.SetParent(root.transform, false);
+            c.transform.localPosition = root.transform.InverseTransformPoint(smr.transform.position);
+            c.transform.localRotation = Quaternion.Inverse(root.transform.rotation) * smr.transform.rotation;
+            Vector3 a = smr.transform.lossyScale, b = root.transform.lossyScale;
+            c.transform.localScale = new Vector3(a.x / b.x, a.y / b.y, a.z / b.z);
+            c.AddComponent<MeshFilter>().sharedMesh = m;
+            var r = c.AddComponent<MeshRenderer>();
+            r.sharedMaterials = smr.sharedMaterials;
+            r.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+            r.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+            Object.DestroyImmediate(smr);
+        }
+        foreach (var a in root.GetComponentsInChildren<Animator>(true)) Object.DestroyImmediate(a);
+
+        var lv = BuildLods(root, n, dir, pct, out int vOrig, out int vNew);
+        if (lv == null) { Object.DestroyImmediate(root); return null; }
+        var lg = root.AddComponent<LODGroup>();
+        lg.SetLODs(new[]
+        {
+            new LOD(ViewDistance.ForestLod0, lv[0].ToArray()),
+            new LOD(ViewDistance.ForestLod1, lv[1].ToArray()),
+            new LOD(ViewDistance.ForestCull, lv[2].ToArray())
+        });
+        lg.fadeMode = LODFadeMode.None;
+        root.transform.position = Vector3.zero;
+
+        // Normaliza la altura a CustomHeight (con el LOD0).
+        var rs = lv[0];
+        if (rs.Count > 0)
+        {
+            var bb = rs[0].bounds;
+            foreach (var r in rs) bb.Encapsulate(r.bounds);
+            if (bb.size.y > 0.001f)
+            {
+                float f = CustomHeight / bb.size.y;
+                foreach (Transform c in root.transform) { c.localScale *= f; c.localPosition *= f; }
+            }
+        }
+        lg.RecalculateBounds();
+
+        var prefab = PrefabUtility.SaveAsPrefabAsset(root, path);
+        Object.DestroyImmediate(root);
+        Debug.Log($"[Terrain] '{n}': copia para terreno creada en {path} (altura {CustomHeight} m). Vertices: {vOrig} -> LOD0 {vNew} ({ForestModelQuality:P0}). Texturas max {ForestTextureSize} px (0 = sin tocar)." + (skinSet.Length > 0 ? " Animacion horneada: queda en su pose base." : ""));
+        return prefab != null ? path : null;
+    }
+
+    // Borra copias/mallas viejas de este prefab (otra calidad o version anterior _Tree2) para no dejar basura en Static.
+    static void CleanStale(string dir, string n)
+    {
+        var rx = new System.Text.RegularExpressions.Regex($"^{System.Text.RegularExpressions.Regex.Escape(n)}_(Tree\\d*(_q\\d+)?|q\\d+_m\\d+_L\\d|mat_m\\d+_L\\d|t\\d+_.+)( \\d+)?\\.(prefab|asset|mat|png|jpg|jpeg|tga|psd|tif|tiff|exr|bmp)$");
+        foreach (var f in Directory.GetFiles(dir))
+            if (rx.IsMatch(Path.GetFileName(f))) AssetDatabase.DeleteAsset(f.Replace('\\', '/'));
+    }
+
+    // Deja en la copia solo los renderers del LOD0 original y crea LOD1/LOD2 como hijos con mallas mas simples.
+    static List<Renderer>[] BuildLods(GameObject root, string n, string dir, int pct, out int vOrig, out int vNew)
+    {
+        vOrig = 0; vNew = 0;
+        var oldLg = root.GetComponentInChildren<LODGroup>(true);
+        var set = new List<MeshRenderer>();
+        if (oldLg != null && oldLg.lodCount > 0)
+        {
+            set.AddRange(oldLg.GetLODs()[0].renderers.OfType<MeshRenderer>());
+            set.AddRange(root.GetComponentsInChildren<MeshRenderer>(true).Where(x => x.name.StartsWith("Baked")));
+        }
+        else set.AddRange(root.GetComponentsInChildren<MeshRenderer>(true));
+        set = set.Where(x => x != null).Distinct().ToList();
+
+        if (oldLg != null)
+        {
+            foreach (var l in oldLg.GetLODs().Skip(1))
+                foreach (var x in l.renderers)
+                {
+                    if (x == null || set.Any(s => s == x)) continue;
+                    if (x.gameObject == root || set.Any(s => s.transform.IsChildOf(x.transform))) Object.DestroyImmediate(x);
+                    else Object.DestroyImmediate(x.gameObject);
+                }
+            Object.DestroyImmediate(oldLg);
+        }
+
+        float q = Mathf.Clamp(ForestModelQuality, 0.01f, 1f);
+        float[] ratio = { q, Mathf.Max(0.01f, q * 0.4f), Mathf.Max(0.01f, q * 0.15f) };
+        var lv = new[] { new List<Renderer>(), new List<Renderer>(), new List<Renderer>() };
+        var matCache = new Dictionary<string, Material>();
+        int idx = 0;
+        foreach (var r0 in set)
+        {
+            if (r0 == null || !r0.TryGetComponent(out MeshFilter mf) || mf.sharedMesh == null) continue;
+            var om = mf.sharedMesh;
+            vOrig += om.vertexCount;
+            Mesh prev = om;
+            var baseMats = r0.sharedMaterials;
+            r0.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+            r0.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+            for (int L = 0; L < 3; L++)
+            {
+                var dm = Decimate(om, ratio[L], $"{dir}/{n}_q{pct}_m{idx}_L{L}.asset") ?? prev;
+                prev = dm;
+                if (L == 0) { mf.sharedMesh = dm; vNew += dm.vertexCount; r0.sharedMaterials = ShrinkMats(baseMats, n, dir, 0, matCache); lv[0].Add(r0); continue; }
+                var g = new GameObject($"{r0.name}_LOD{L}");
+                g.transform.SetParent(r0.transform.parent != null ? r0.transform.parent : root.transform, false);
+                g.transform.localPosition = r0.transform.localPosition;
+                g.transform.localRotation = r0.transform.localRotation;
+                g.transform.localScale = r0.transform.localScale;
+                g.AddComponent<MeshFilter>().sharedMesh = dm;
+                var nr = g.AddComponent<MeshRenderer>();
+                nr.sharedMaterials = ShrinkMats(baseMats, n, dir, L, matCache);
+                nr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                nr.receiveShadows = false;
+                nr.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off;
+                nr.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+                lv[L].Add(nr);
+            }
+            idx++;
+        }
+        return lv[0].Count == 0 ? null : lv;
+    }
+
+    // Materiales con texturas reducidas para el nivel L: copia cada textura grande (CopyAsset) y le baja el Max Size en el importador.
+    static Material[] ShrinkMats(Material[] src, string n, string dir, int L, Dictionary<string, Material> cache)
+    {
+        if (ForestTextureSize <= 0) return src;
+        int size = Mathf.Max(32, ForestTextureSize >> L);
+        var res = new Material[src.Length];
+        for (int i = 0; i < src.Length; i++)
+        {
+            var m = src[i];
+            if (m == null) continue;
+            string key = m.GetInstanceID() + "_" + L;
+            if (!cache.TryGetValue(key, out var nm))
+            {
+                nm = new Material(m) { name = $"{n}_mat_m{cache.Count}_L{L}" };
+                bool changed = false;
+                foreach (var pn in m.GetTexturePropertyNames())
+                {
+                    var tex = m.GetTexture(pn) as Texture2D;
+                    if (tex == null || (tex.width <= size && tex.height <= size)) continue;
+                    string sp = AssetDatabase.GetAssetPath(tex);
+                    if (string.IsNullOrEmpty(sp) || !(AssetImporter.GetAtPath(sp) is TextureImporter)) continue;
+                    string dp = $"{dir}/{n}_t{size}_{Path.GetFileNameWithoutExtension(sp)}_{AssetDatabase.AssetPathToGUID(sp).Substring(0, 6)}{Path.GetExtension(sp)}";
+                    if (!File.Exists(dp))
+                    {
+                        if (!AssetDatabase.CopyAsset(sp, dp)) continue;
+                        var imp = (TextureImporter)AssetImporter.GetAtPath(dp);
+                        imp.maxTextureSize = size;
+                        imp.SaveAndReimport();
+                    }
+                    nm.SetTexture(pn, AssetDatabase.LoadAssetAtPath<Texture2D>(dp));
+                    changed = true;
+                }
+                if (changed) AssetDatabase.CreateAsset(nm, $"{dir}/{nm.name}.mat");
+                else { Object.DestroyImmediate(nm); nm = m; }
+                cache[key] = nm;
+            }
+            res[i] = nm;
+        }
+        return res;
+    }
+
+    static long Cell(Vector3 p, Vector3 o, float cs)
+    {
+        long x = (long)((p.x - o.x) / cs), y = (long)((p.y - o.y) / cs), z = (long)((p.z - o.z) / cs);
+        return x | (y << 21) | (z << 42);
+    }
+
+    static int CountCells(Vector3[] P, Vector3 o, float cs)
+    {
+        var h = new HashSet<long>();
+        foreach (var p in P) h.Add(Cell(p, o, cs));
+        return h.Count;
+    }
+
+    // Reduccion por agrupacion de vertices: ratio = fraccion de vertices que se conserva. Devuelve la malla original si no hace falta/puede reducir,
+    // y null si al reducir desaparecen todos los triangulos.
+    static Mesh Decimate(Mesh src, float ratio, string path)
+    {
+        int vc = src.vertexCount, target = Mathf.Max(6, Mathf.RoundToInt(vc * Mathf.Clamp01(ratio)));
+        if (target >= vc) return src;
+        var P = src.vertices;
+        if (P.Length != vc) { Debug.LogWarning($"[Terrain] La malla '{src.name}' no es legible: activa Read/Write Enabled en el import del modelo para poder reducirla."); return src; }
+        var N = src.normals; var UV = src.uv; var CC = src.colors32;
+        bool hn = N.Length == vc, hu = UV.Length == vc, hc = CC.Length == vc;
+
+        var bd = new Bounds(P[0], Vector3.zero);
+        foreach (var p in P) bd.Encapsulate(p);
+        float ext = Mathf.Max(bd.size.x, Mathf.Max(bd.size.y, bd.size.z)), lo = ext / 1500f, hi = ext + 1e-3f;
+        for (int it = 0; it < 16; it++)
+        {
+            float cs = (lo + hi) * 0.5f;
+            if (CountCells(P, bd.min, cs) > target) lo = cs; else hi = cs;
+        }
+
+        var map = new Dictionary<long, int>(); var remap = new int[vc];
+        var pos = new List<Vector3>(); var nor = new List<Vector3>(); var uv = new List<Vector2>(); var col = new List<Vector4>(); var cnt = new List<int>();
+        for (int i = 0; i < vc; i++)
+        {
+            long k = Cell(P[i], bd.min, hi);
+            if (!map.TryGetValue(k, out int id))
+            {
+                id = pos.Count; map[k] = id;
+                pos.Add(Vector3.zero); nor.Add(Vector3.zero); uv.Add(Vector2.zero); col.Add(Vector4.zero); cnt.Add(0);
+            }
+            remap[i] = id; cnt[id]++;
+            pos[id] += P[i];
+            if (hn) nor[id] += N[i];
+            if (hu) uv[id] += UV[i];
+            if (hc) col[id] += (Vector4)(Color)CC[i];
+        }
+        var colors = new Color[pos.Count];
+        for (int i = 0; i < pos.Count; i++)
+        {
+            float inv = 1f / cnt[i];
+            pos[i] *= inv; uv[i] *= inv;
+            nor[i] = nor[i].sqrMagnitude > 1e-8f ? nor[i].normalized : Vector3.up;
+            Vector4 cv = col[i] * inv; colors[i] = new Color(cv.x, cv.y, cv.z, cv.w);
+        }
+
+        var tris = new List<int>[src.subMeshCount]; int tot = 0;
+        for (int s = 0; s < tris.Length; s++)
+        {
+            tris[s] = new List<int>();
+            var t = src.GetTriangles(s);
+            for (int k = 0; k + 2 < t.Length; k += 3)
+            {
+                int a = remap[t[k]], b = remap[t[k + 1]], c = remap[t[k + 2]];
+                if (a == b || b == c || a == c) continue;
+                tris[s].Add(a); tris[s].Add(b); tris[s].Add(c);
+            }
+            tot += tris[s].Count;
+        }
+        if (tot == 0) return null;
+
+        var m = new Mesh { name = Path.GetFileNameWithoutExtension(path), indexFormat = pos.Count > 65000 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16 };
+        m.SetVertices(pos);
+        if (hn) m.SetNormals(nor);
+        if (hu) m.SetUVs(0, uv);
+        if (hc) m.SetColors(colors);
+        m.subMeshCount = tris.Length;
+        for (int s = 0; s < tris.Length; s++) m.SetTriangles(tris[s], s, false);
+        m.RecalculateBounds();
+        if (hn && hu) m.RecalculateTangents();
+        AssetDatabase.CreateAsset(m, path);
+        return m;
+    }
+
+    static int Kinds(int cap) => 1 + Mathf.Max(0, cap - (Normal + 2));
+
+    const float PineShare = 0.7f;
+
+    static int Species(float wx, float wz, int kinds)
+    {
+        float x = wx / PatchSize, z = wz / PatchSize, best = float.MaxValue, r = 0f;
+        int cx = Mathf.FloorToInt(x), cz = Mathf.FloorToInt(z);
+        for (int dz = -1; dz <= 1; dz++)
+            for (int dx = -1; dx <= 1; dx++)
+            {
+                int ax = cx + dx, az = cz + dz;
+                float fx = ax + Hash(ax, az) - x, fz = az + Hash(az + 911, ax - 577) - z, d = fx * fx + fz * fz;
+                if (d < best) { best = d; r = Hash(ax + 31, az + 57); }
+            }
+        if (kinds == 1 || r < PineShare) return 0;
+        return 1 + Mathf.Min((int)((r - PineShare) / (1f - PineShare) * (kinds - 1)), kinds - 2);
+    }
+
+    static readonly float[] VarSize = { 0.75f, 0.92f, 1.1f, 1.3f };
+
+    static void Kind(ref TreeInstance t, float wx, float wz, int kinds, int v)
+    {
+        int sp = Species(wx, wz, kinds);
+        if (sp == 0) { t.prototypeIndex = v; return; }
+        t.prototypeIndex = Normal + 1 + sp;
+        t.heightScale *= VarSize[v]; t.widthScale *= VarSize[v];
     }
 
     static Material Mat(string dir, string name, Color c)
@@ -1068,7 +1396,7 @@ static class TerrainTools
         c.transform.SetParent(root.transform, false);
         c.AddComponent<MeshFilter>().sharedMesh = mesh;
         var r = c.AddComponent<MeshRenderer>();
-        bool near = n == "LOD0";   // lejos: 1 material, sin sombras, sin probes
+        bool near = n == "LOD0";
         r.sharedMaterials = near ? new[] { bark, needles } : new[] { needles };
         r.shadowCastingMode = near ? UnityEngine.Rendering.ShadowCastingMode.On : UnityEngine.Rendering.ShadowCastingMode.Off;
         r.receiveShadows = near;
@@ -1088,8 +1416,8 @@ static class TerrainTools
 
     static Mesh Build(int variant, int lod)
     {
-        var rt = new System.Random(900 + variant * 17);   // tronco y copas: identicos en LOD0 y LOD1
-        var rb = new System.Random(500 + variant * 31);   // ramas finas: solo LOD0
+        var rt = new System.Random(900 + variant * 17);
+        var rb = new System.Random(500 + variant * 31);
         float H = Rf(rt, 8f, 15f), amp = Rf(rt, 0.4f, 1.1f), lean = Rf(rt, -1.4f, 1.4f);
         float p1 = Rf(rt, 0f, 6.28f), p2 = Rf(rt, 0f, 6.28f), r0 = Rf(rt, 0.26f, 0.45f);
         const int N = 10;
@@ -1105,14 +1433,11 @@ static class TerrainTools
 
         var vB = new List<Vector3>(); var tB = new List<int>();
         var vF = new List<Vector3>(); var tF = new List<int>();
-        bool one = lod > 0;   // LOD1/2: un solo submesh = 1 draw call
-        if (lod < 2)
-        {
-            int m = lod == 0 ? N + 1 : 5;   // LOD1: solo la base del tronco (lo demas lo tapa la copa)
-            Tube(one ? vF : vB, one ? tF : tB, pts.Take(m).ToArray(), rad.Take(m).ToArray(), sides);
-        }
+        bool one = lod > 0;
+        int m = lod == 0 ? N + 1 : 5;
+        Tube(one ? vF : vB, one ? tF : tB, pts.Take(m).ToArray(), rad.Take(m).ToArray(), sides);
 
-        int tiers = lod == 2 ? 0 : rt.Next(8, 12);
+        int tiers = rt.Next(8, 12);
         for (int ti = 0; ti < tiers; ti++)
         {
             float f = Mathf.Lerp(0.26f, 0.97f, (ti + (float)rt.NextDouble() * 0.6f) / tiers);
@@ -1133,8 +1458,7 @@ static class TerrainTools
             }
             Vector3 apex = c + q * new Vector3(0f, size * 0.22f, 0f);
 
-            // Dos caras con vertices separados: iluminadas bien desde arriba y desde abajo.
-            if (lod == 1 && ti % 2 == 1) continue;   // LOD1: la mitad de los pisos
+            if (lod == 1 && ti % 2 == 1) continue;
             int a0 = vF.Count;
             vF.Add(apex); vF.AddRange(ring);
             vF.Add(apex); vF.AddRange(ring);
@@ -1144,19 +1468,6 @@ static class TerrainTools
                 int s1 = (s + 1) % cnt;
                 tF.AddRange(new[] { a0, a0 + 1 + s, a0 + 1 + s1 });
                 tF.AddRange(new[] { b0, b0 + 1 + s1, b0 + 1 + s });
-            }
-        }
-
-        if (lod == 2)   // LOD2: cono de 5 lados (10 triangulos)
-        {
-            Vector3 bs = PointAt(pts, 0.2f);
-            vF.Add(pts[N]); vF.Add(bs);
-            for (int s = 0; s < 5; s++)
-                vF.Add(bs + new Vector3(Mathf.Cos(Mathf.PI * 2f * s / 5f), 0f, Mathf.Sin(Mathf.PI * 2f * s / 5f)) * (2.2f * H / 11f));
-            for (int s = 0; s < 5; s++)
-            {
-                int a = 2 + s, b = 2 + (s + 1) % 5;
-                tF.AddRange(new[] { 0, b, a, 1, a, b });
             }
         }
 
@@ -1194,7 +1505,6 @@ static class TerrainTools
         return mesh;
     }
 
-    // Tubo de seccion poligonal siguiendo una curva (tronco y ramas).
     static void Tube(List<Vector3> v, List<int> t, Vector3[] pts, float[] rad, int sides)
     {
         int b = v.Count, n = pts.Length;
@@ -1250,16 +1560,11 @@ static class TerrainTools
         return AssetDatabase.LoadAssetAtPath<Texture2D>(path);
     }
 
-    // 10) Selecciona objetos en la Hierarchy y ejecuta:
-    //     10a Rusty Metal: solo pone la chapa oxidada.
-    //     10b Collider: MeshCollider con la forma exacta del modelo (reemplaza cualquier otro collider; convex solo si hay Rigidbody dinamico, Unity lo exige).
-    //     10c Quitar: saca la chapa oxidada (revierte al prefab, o material por defecto) y TODO MeshCollider de lo seleccionado.
-    //     La textura y el material se generan una vez en Assets/Textures/RustMetal (borra la carpeta para regenerarlos).
+    // 10) Selecciona objetos en la Hierarchy: 10a chapa oxidada, 10b MeshCollider exacto, 10c quitar ambos.
     const string MetalDir = "Assets/Textures/RustMetal";
     static readonly List<Renderer> RL = new List<Renderer>(), TL = new List<Renderer>();
     static readonly List<Collider> CL = new List<Collider>();
 
-    // Renderers con malla de la seleccion (listas reutilizadas, sin asignaciones por llamada).
     static List<Renderer> Rends()
     {
         RL.Clear();
@@ -1292,7 +1597,6 @@ static class TerrainTools
         Debug.Log($"[Metal] {rs.Count} renderers pintados.");
     }
 
-    // Destruye el collider; si viene del prefab/FBX (no se puede borrar) lo desactiva.
     static bool Kill(Collider c)
     {
         Undo.RecordObject(c, "Quitar collider");
@@ -1320,7 +1624,6 @@ static class TerrainTools
             mc.sharedMesh = m;
             mc.isTrigger = false;
             mc.convex = rb != null && !rb.isKinematic;
-            // Sin Weld/Cleaning: con escalas enormes o mallas diminutas el limpiado de PhysX funde vertices y deforma pasillos.
             mc.cookingOptions = MeshColliderCookingOptions.CookForFasterSimulation | MeshColliderCookingOptions.UseFastMidphase;
             if (mc.convex) hull++;
             EditorUtility.SetDirty(mc);
@@ -1356,7 +1659,7 @@ static class TerrainTools
         Debug.Log($"[Metal] {nm} sin chapa oxidada, {nd} colliders borrados, {nx} desactivados (venian del prefab/FBX; para borrarlos desactiva 'Generate Colliders' en el import del modelo).");
     }
 
-    static bool IsRust(Material m) => m != null && m.name.StartsWith("RustMetal");   // incluye RustMetal y RustMetalDeck
+    static bool IsRust(Material m) => m != null && m.name.StartsWith("RustMetal");
 
     static bool Rusty(Renderer r)
     {
@@ -1385,7 +1688,6 @@ static class TerrainTools
         return m;
     }
 
-    // Chapas 4x4 con costuras, remaches, oxido en manchas/bordes y algunos paneles con tinte cian. Tileable.
     static void MetalTex(string dp, string np)
     {
         const int S = 512, P = 128;
@@ -1424,9 +1726,7 @@ static class TerrainTools
         Save(np, nm, S, true);
     }
 
-    // 11) ASSET: plataforma OVALADA para base urbana futurista (losa de metal oxidado + cerco perimetral de malla de
-    //     alambre con 4 aberturas). Cada ejecucion genera una variante distinta (ovalo y deformacion al azar) como
-    //     Assets/Prefabs/UrbanBase/UrbanBase_####.prefab. Todo con collider solido; las aberturas quedan libres.
+    // 11) ASSET: plataforma OVALADA para base urbana futurista (losa + cerco de malla con 4 aberturas).
     const float BaseThick = 0.6f, FenceH = 3f, PanelW = 4f;
 
     [MenuItem("Tools/Terrain/11 Urban Base Platform (genera prefab)")]
@@ -1439,7 +1739,6 @@ static class TerrainTools
         float rx = Rf(rnd, 20f, 25f), rz = Rf(rnd, 12f, 16f);
         float a1 = Rf(rnd, 0.02f, 0.06f), a2 = Rf(rnd, 0.02f, 0.05f), p1 = Rf(rnd, 0f, 6.28f), p2 = Rf(rnd, 0f, 6.28f);
 
-        // Contorno oval con deformacion suave, remuestreado en tramos de ~PanelW.
         const int D = 720;
         var dense = new Vector2[D + 1];
         var cum = new float[D + 1];
@@ -1458,7 +1757,6 @@ static class TerrainTools
             S[j] = Vector2.Lerp(dense[k], dense[k + 1], Mathf.InverseLerp(cum[k], cum[k + 1], d));
         }
 
-        // Losa: tapa en abanico + pared lateral.
         var vt = new List<Vector3> { new Vector3(0, BaseThick, 0) };
         var uv = new List<Vector2> { Vector2.zero };
         var tr = new List<int>();
@@ -1495,7 +1793,6 @@ static class TerrainTools
         pg.AddComponent<MeshRenderer>().sharedMaterial = deck;
         pg.AddComponent<MeshCollider>().sharedMesh = mesh;
 
-        // Cerco siguiendo el contorno; 4 aberturas de 2 paneles (~8 m) repartidas con algo de azar.
         var open = new bool[M];
         for (int g = 0; g < 4; g++) { int s = (M * g / 4 + rnd.Next(-1, 2) + M) % M; open[s] = open[(s + 1) % M] = true; }
         float y = BaseThick + FenceH / 2;
@@ -1530,8 +1827,6 @@ static class TerrainTools
         Debug.Log($"[UrbanBase] {name}: oval {rx * 2:0}x{rz * 2:0} m, {M} paneles, en {dir}");
     }
 
-    // Enrejado como geometria real (barras finas visibles por ambos lados) en lugar de textura con alfa:
-    // se ve a cualquier distancia y todos los paneles salen en UNA sola malla (1 draw call).
     static void Lattice(Vector3 a, Vector3 b)
     {
         const float step = 0.25f, w = 0.02f;
@@ -1566,7 +1861,6 @@ static class TerrainTools
         return g;
     }
 
-    // Misma chapa oxidada de la herramienta 10, con tiling mayor para la losa grande.
     static Material DeckMat()
     {
         const string path = MetalDir + "/RustMetalDeck.mat";
@@ -1577,7 +1871,6 @@ static class TerrainTools
         return m;
     }
 
-    // Malla de alambre tipo eslabon (rombos), recorte por alfa, tileable.
     static Material WireMat()
     {
         const string path = MetalDir + "/WireMesh.mat", tp = MetalDir + "/WireMesh_D.png";
@@ -1616,8 +1909,7 @@ static class TerrainTools
         return m;
     }
 
-    // 12) INTERIOR DE LABORATORIO en la MISMA escena (requiere SceneDoor.cs FUERA de la carpeta Editor).
-    //     Ver el menu mas abajo. El interior queda lejos del mundo (InteriorOffset, +1200 m en X por laboratorio).
+    // 12) INTERIOR DE LABORATORIO en la MISMA escena (requiere SceneDoor.cs FUERA de Editor). Selecciona UN edificio.
     const string InteriorDir = "Assets/Prefabs/Interiors";
     static readonly Vector3 InteriorOffset = new Vector3(0f, 2000f, 0f);
     static readonly List<Vector3> IV = new List<Vector3>();
@@ -1625,25 +1917,16 @@ static class TerrainTools
     static readonly List<int> IT = new List<int>();
     static readonly List<Renderer> IR = new List<Renderer>();
 
-    // Tuneles: ancho 2*TW, alto TH (arco de radio TW arriba), NS tramos por tunel con costillas cada 4 tramos.
     const int NS = 49, TK = 16;
-    const float TW = 2f, TH = 4.5f, RibIn = 0.3f, SB = 0.5f, CB = 0.866025f;   // SB/CB = seno/coseno de 30 grados
-    static readonly Vector3[] TP = new Vector3[NS + 1], TS = new Vector3[NS + 1];   // centro y lateral de cada seccion
+    const float TW = 2f, TH = 4.5f, RibIn = 0.3f, SB = 0.5f, CB = 0.866025f;
+    static readonly Vector3[] TP = new Vector3[NS + 1], TS = new Vector3[NS + 1];
 
     [MenuItem("Tools/Terrain/12 Lab Interior (seleccion)", true)]
     static bool LabOk() => Selection.activeGameObject != null && !EditorUtility.IsPersistent(Selection.activeGameObject);
 
-    // 12) Interior de laboratorio en la MISMA escena: raiz "<Lab>_Interior" a InteriorOffset (+1200 m en X por cada laboratorio).
-    //     Selecciona UN edificio. Crea/reutiliza "Door_<lab>" (Trigger + ReturnPoint) y genera un interior DIFERENTE cada vez:
-    //     nodos en cuadricula (salas circulares, rectangulares, octogonales, irregulares o nudos minimos) unidos por tuneles
-    //     curvos, con lazos opcionales; 1 de cada 4 es una red de tuneles sola. Nodo 0 = entrada (PlayerSpawn + Exit).
-    //     Cada sala queda marcada en "Rooms" (escala = semiejes) para que el menu 15 pueda poblarlo.
-    //     Si ya existe "<Lab>_Interior" no regenera (borralo antes). Guarda la escena despues.
-    class LabNode { public int kind; public Vector2 c, h; public Vector2[] o; public bool[] g = new bool[64]; }   // kind: 0 circulo, 1 rectangulo, 2 octogono, 3 irregular, 4 nudo
+    class LabNode { public int kind; public Vector2 c, h; public Vector2[] o; public bool[] g = new bool[64]; }
     static readonly Vector2[] Dirs = { Vector2.right, Vector2.up, Vector2.left, Vector2.down };
 
-    // Contorno de 64 puntos CCW alrededor del origen; h = semiejes inscritos. Rectangulo y octogono tienen un punto exacto
-    // en el centro de cada lado, asi los tuneles (siempre en los ejes) salen perpendiculares a la pared.
     static Vector2[] Outline(System.Random rnd, int kind, Vector2 h)
     {
         var p = new Vector2[64];
@@ -1663,7 +1946,6 @@ static class TerrainTools
         return p;
     }
 
-    // Punto donde el rayo desde el origen en direccion d corta el contorno.
     static Vector2 RayEdge(Vector2[] p, Vector2 d)
     {
         for (int i = 0; i < p.Length; i++)
@@ -1695,13 +1977,12 @@ static class TerrainTools
         var door = dg != null ? dg.GetComponentInChildren<SceneDoor>(true) : null;
         if (door == null) door = MakeDoor(lab, bd, has);
 
-        // Disposicion aleatoria: celdas de S m; arbol de crecimiento + lazos opcionales. Celda (0,-1) reservada para la salida.
         var rnd = new System.Random();
         bool only = rnd.Next(4) == 0;
         int cnt = only ? rnd.Next(4, 11) : rnd.Next(2, 8);
         float S = only ? Rf(rnd, 32f, 56f) : 56f, J = only ? 3f : 5f;
         var cell = new List<Vector2Int> { Vector2Int.zero };
-        var ed = new List<Vector3Int>();   // (nodo a, nodo b, direccion de a hacia b)
+        var ed = new List<Vector3Int>();
         for (int tries = 0; cell.Count < cnt && tries < 500; tries++)
         {
             int a = rnd.Next(cell.Count), dr = rnd.Next(4);
@@ -1726,7 +2007,6 @@ static class TerrainTools
             nd[i] = new LabNode { kind = k, h = h, o = Outline(rnd, k, h), c = i == 0 ? Vector2.zero : new Vector2(cell[i].x, cell[i].y) * S + new Vector2(Rf(rnd, -J, J), Rf(rnd, -J, J)) };
         }
 
-        // Puertas de cada tunel (extremos hundidos 0.25 m en el muro) y aberturas en los muros.
         int ne = ed.Count;
         var p0 = new Vector2[ne]; var p3 = new Vector2[ne];
         for (int e = 0; e < ne; e++)
@@ -1739,7 +2019,6 @@ static class TerrainTools
         }
         Gap(nd[0].o, Vector2.zero, nd[0].g, Vector2.down, 1.5f);
 
-        // Una malla de muros y una de piso POR NODO (con sus tuneles salientes): cada trozo ve solo las luces cercanas.
         var walls = new Mesh[nd.Length]; var slabs = new Mesh[nd.Length]; var lamps = new List<Vector3>();
         for (int i = 0; i < nd.Length; i++)
         {
@@ -1795,7 +2074,6 @@ static class TerrainTools
         l.type = LightType.Point; l.range = range; l.intensity = 2f; l.color = new Color(0.75f, 0.9f, 1f); l.shadows = LightShadows.None;
     }
 
-    // Marca como abertura los segmentos del contorno cuyos 2 vertices caen dentro de un pasillo de semiancho hw hacia la direccion d.
     static void Gap(Vector2[] p, Vector2 c, bool[] gap, Vector2 d, float hw)
     {
         for (int i = 0; i < p.Length; i++)
@@ -1804,7 +2082,6 @@ static class TerrainTools
 
     static bool In(Vector2 v, Vector2 d, float hw) => Vector2.Dot(v, d) > 0f && Mathf.Abs(v.x * d.y - v.y * d.x) <= hw;
 
-    // Sala circular: piso con espesor 0.5 m (colision segura) y techo de una cara.
     static void Disc(Vector2[] r, Vector2 c2)
     {
         Vector3 c = new Vector3(c2.x, 0f, c2.y), up = Vector3.up * TH, dn = Vector3.down * 0.5f;
@@ -1818,7 +2095,6 @@ static class TerrainTools
         }
     }
 
-    // Eje del tunel: Bezier cubica de p0 (sale en direccion d) a p3 (llega en direccion d). TS = lateral de cada seccion.
     static void TunnelPath(Vector2 p0, Vector2 d, Vector2 p3)
     {
         float k = (p3 - p0).magnitude * 0.4f;
@@ -1833,8 +2109,6 @@ static class TerrainTools
         }
     }
 
-    // Punto m del perfil en la seccion i. Perfil: pared izq, arco de radio r (centro a TH-TW), pared der.
-    // sq = true proyecta el arco al cuadrado exterior (para rellenar las esquinas del marco).
     static Vector3 Sp(int i, int m, float r, bool sq)
     {
         Vector2 q;
@@ -1848,15 +2122,13 @@ static class TerrainTools
         return TP[i] + TS[i] * q.x + Vector3.up * q.y;
     }
 
-    static float Rr(int s) => s % 4 == 0 ? TW - RibIn : TW;   // tramos con costilla: radio interior menor
+    static float Rr(int s) => s % 4 == 0 ? TW - RibIn : TW;
 
-    // Anillo plano en la seccion i entre el perfil de radio a y el de radio b (b cuadrado si sq).
     static void Rim(int i, float a, float b, bool sq)
     {
         for (int m = 0; m <= TK + 1; m++) Both(Sp(i, m, a, false), Sp(i, m + 1, a, false), Sp(i, m + 1, b, sq), Sp(i, m, b, sq));
     }
 
-    // Tunel con costillas en arco (doble cara). floor = true genera solo el piso (va en la malla del piso).
     static void Tunnel(bool floor)
     {
         for (int s = 0; s < NS; s++)
@@ -1871,8 +2143,6 @@ static class TerrainTools
         Rim(NS, Rr(NS - 1), TW, true);
     }
 
-    // Trigger de entrada (escena exterior): grupo "Door_<lab>" en la raiz con "Trigger" (cubo unitario que se ubica y
-    // escala con las herramientas Move/Scale normales; se ve como caja translucida) y "ReturnPoint" (esfera + flecha).
     static SceneDoor MakeDoor(GameObject lab, Bounds b, bool has)
     {
         Vector3 p = has ? new Vector3(b.center.x, b.min.y + 1.5f, b.min.z) : lab.transform.position + Vector3.up * 1.5f;
@@ -1919,7 +2189,6 @@ static class TerrainTools
         return m;
     }
 
-    // Triangulo con vertices propios y UV por proyeccion de caja (1 tile cada 4 m).
     static void T3(Vector3 a, Vector3 b, Vector3 c)
     {
         Vector3 n = Vector3.Cross(b - a, c - a).normalized;
@@ -1941,7 +2210,6 @@ static class TerrainTools
         return Vector3.Cross(Vector3.up, new Vector3(p[b].x - p[a].x, 0f, p[b].y - p[a].y)).normalized;
     }
 
-    // Muro con espesor a lo largo de una polilinea (cerrada o abierta); gap[i] = segmento i sin muro (abertura).
     static void Wall(Vector2[] p, bool[] gap, bool closed, float h, float t)
     {
         int n = p.Length, segs = closed ? n : n - 1;
@@ -1961,10 +2229,7 @@ static class TerrainTools
         }
     }
 
-    // 15) ASSET: consola de nave espacial (1-3 modulos). Cada ejecucion genera una variante distinta como
-    //     Assets/Prefabs/Consoles/Console_####.prefab: carcasa, pantallas, botones, teclados, interruptores,
-    //     monitor superior opcional y cables que caen por detras y serpentean por el piso.
-    //     UNA sola malla con un submesh por material (pantallas y botones emisivos) y un solo BoxCollider.
+    // 15) ASSET: consola de nave (1-3 modulos). Con un interior seleccionado lo puebla; sin seleccion genera un prefab nuevo.
     static List<CombineInstance>[] CI;
     static Mesh CubeM;
 
@@ -1973,7 +2238,6 @@ static class TerrainTools
         CI[m].Add(new CombineInstance { mesh = CubeM, transform = p * Matrix4x4.TRS(new Vector3(x, y, z), Quaternion.identity, new Vector3(sx, sy, sz)) });
     }
 
-    // Menu 15: con un interior seleccionado lo puebla (ver 15b mas abajo); sin seleccion genera un prefab de consola nuevo.
     [MenuItem("Tools/Terrain/15 Console Panel (prefab / puebla interior)")]
     static void ConsolePanel()
     {
@@ -1989,7 +2253,7 @@ static class TerrainTools
     {
         const string dir = "Assets/Prefabs/Consoles";
         Directory.CreateDirectory(dir);
-        string[] nm = { "Body", "Dark", "Screen", "Red", "Amber", "Green", "Cyan", "Cable" };   // 2..6 = emisivos
+        string[] nm = { "Body", "Dark", "Screen", "Red", "Amber", "Green", "Cyan", "Cable" };
         Color[] cl = { Color.gray, new Color(.03f, .035f, .04f), new Color(.1f, .8f, .7f), new Color(1f, .1f, .1f), new Color(1f, .6f, 0f), new Color(.2f, 1f, .3f), new Color(.2f, .8f, 1f), new Color(.02f, .02f, .02f) };
         var mats = new Material[nm.Length];
         for (int i = 0; i < nm.Length; i++)
@@ -2007,7 +2271,7 @@ static class TerrainTools
         CI = new List<CombineInstance>[nm.Length];
         for (int i = 0; i < nm.Length; i++) CI[i] = new List<CombineInstance>();
 
-        const float MW = 0.9f;                       // ancho por modulo; frente = +Z, cables hacia -Z
+        const float MW = 0.9f;
         int n = rnd.Next(1, 4);
         float W = n * MW, x0 = -W / 2f;
         var I = Matrix4x4.identity;
@@ -2017,16 +2281,16 @@ static class TerrainTools
         for (int k = 0; k < n; k++)
         {
             float cx = x0 + (k + .5f) * MW;
-            var D = Matrix4x4.TRS(new Vector3(cx, 1f, .05f), Quaternion.Euler(25f, 0f, 0f), Vector3.one);   // cubierta inclinada
+            var D = Matrix4x4.TRS(new Vector3(cx, 1f, .05f), Quaternion.Euler(25f, 0f, 0f), Vector3.one);
             Cb(1, D, 0, 0, 0, MW - .04f, .06f, .66f);
             int kind = rnd.Next(3);
-            if (kind == 0)       // pantalla grande + fila de botones
+            if (kind == 0)
             {
                 Cb(1, D, 0, .035f, -.12f, .74f, .02f, .3f);
                 Cb(rnd.Next(2, 7), D, 0, .045f, -.12f, .68f, .02f, .24f);
                 for (int b = 0; b < 6; b++) Cb(rnd.Next(3, 7), D, -.3f + b * .12f, .05f, .22f, .06f, .04f, .06f);
             }
-            else if (kind == 1)  // teclado 3x4 + tira de pantalla + botones laterales
+            else if (kind == 1)
             {
                 Cb(1, D, 0, .035f, -.22f, .7f, .02f, .1f);
                 Cb(rnd.Next(2, 7), D, 0, .045f, -.22f, .64f, .02f, .06f);
@@ -2034,13 +2298,13 @@ static class TerrainTools
                     for (int c = 0; c < 3; c++) Cb(1, D, -.22f + c * .1f, .06f, -.08f + r * .1f, .08f, .05f, .08f);
                 for (int b = 0; b < 4; b++) Cb(rnd.Next(3, 7), D, .22f, .05f, -.08f + b * .1f, .06f, .04f, .06f);
             }
-            else                 // matriz de botones + interruptores
+            else
             {
                 for (int r = 0; r < 4; r++)
                     for (int c = 0; c < 6; c++) Cb(rnd.Next(4) == 0 ? 1 : rnd.Next(3, 7), D, -.3f + c * .12f, .05f, -.2f + r * .11f, .05f, .04f, .05f);
                 for (int b = 0; b < 5; b++) Cb(0, D, -.24f + b * .12f, .07f, .24f, .025f, .1f, .025f);
             }
-            if (rnd.Next(2) == 0)  // monitor superior
+            if (rnd.Next(2) == 0)
             {
                 var M = Matrix4x4.TRS(new Vector3(cx, 1.45f, -.15f), Quaternion.Euler(-10f, 0f, 0f), Vector3.one);
                 Cb(1, I, cx, 1.2f, -.22f, .1f, .2f, .1f);
@@ -2049,7 +2313,6 @@ static class TerrainTools
             }
         }
 
-        // Cables: nacen en la cara trasera, caen al piso y serpentean.
         var v = new List<Vector3>(); var t = new List<int>();
         int nc = rnd.Next(3, 7);
         for (int k = 0; k < nc; k++)
@@ -2097,10 +2360,8 @@ static class TerrainTools
         return go;
     }
 
-    // 15b) POBLAR INTERIOR: con "<Lab>_Interior" (o un hijo) seleccionado, el menu 15 pone 5 consolas contra las paredes
-    //      (prefabs de Assets/Prefabs/Consoles; genera los que falten hasta 5) y 2 plataformas de portal (malla PortalPlatform).
-    //      Sirve para interiores nuevos (marcadores "Rooms") y del generador anterior (2 salas circulares). Repetir reemplaza "Props".
-    const float PortalScale = 0.18f;   // la malla mide ~24 x 22 m: a 0.18 cabe en la altura del interior (4.5 m)
+    // 15b) POBLAR INTERIOR: 5 consolas contra las paredes y 2 plataformas de portal. Repetir reemplaza "Props".
+    const float PortalScale = 0.18f;
 
     static bool Far(Vector3 a, Vector3 b, float d) => new Vector2(a.x - b.x, a.z - b.z).sqrMagnitude > d * d;
 
@@ -2113,7 +2374,7 @@ static class TerrainTools
             float a = (k * 15f + 7f) * Mathf.Deg2Rad;
             if (!Physics.Raycast(o, new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)), out var hit, Mathf.Max(h.x, h.y) * 1.45f + 1f) || Mathf.Abs(hit.normal.y) > .3f) continue;
             Vector3 n = new Vector3(hit.normal.x, 0f, hit.normal.z).normalized, p = hit.point + n * .45f, s = Vector3.Cross(Vector3.up, n) * .6f, q = p + Vector3.up;
-            if (!Physics.Raycast(q, -n, 1f) || !Physics.Raycast(q + s, -n, 1f) || !Physics.Raycast(q - s, -n, 1f)) continue;   // pared continua detras (sin aberturas)
+            if (!Physics.Raycast(q, -n, 1f) || !Physics.Raycast(q + s, -n, 1f) || !Physics.Raycast(q - s, -n, 1f)) continue;
             p = root.InverseTransformPoint(p); p.y = 0f;
             if (avoid.All(v => Far(p, v.p, v.r))) l.Add((p, n));
         }
@@ -2136,7 +2397,7 @@ static class TerrainTools
         var mesh = AssetDatabase.FindAssets("PortalPlatform t:Mesh").Select(g => AssetDatabase.LoadAssetAtPath<Mesh>(AssetDatabase.GUIDToAssetPath(g))).FirstOrDefault(m => m);
         if (!mesh) return null;
         Directory.CreateDirectory(InteriorDir);
-        Color[] cl = { new Color(.12f, .13f, .15f), new Color(.2f, .22f, .26f), new Color(.2f, .8f, 1f), new Color(.6f, .3f, 1f) };   // submallas: base, arcos, anillo A, anillo B
+        Color[] cl = { new Color(.12f, .13f, .15f), new Color(.2f, .22f, .26f), new Color(.2f, .8f, 1f), new Color(.6f, .3f, 1f) };
         var ms = new Material[4];
         for (int i = 0; i < 4; i++)
         {
@@ -2164,10 +2425,10 @@ static class TerrainTools
 
     static void PopulateInterior(Transform root)
     {
-        var rc = new List<Vector3>(); var rh = new List<Vector2>();   // centro local y semiejes de cada sala
+        var rc = new List<Vector3>(); var rh = new List<Vector2>();
         var rg = root.Find("Rooms");
         if (rg != null) foreach (Transform r in rg) { rc.Add(r.localPosition); rh.Add(new Vector2(r.localScale.x, r.localScale.z)); }
-        else if (root.Find("Exit") is Transform ex0)   // generador anterior: 2 salas circulares
+        else if (root.Find("Exit") is Transform ex0)
         {
             float R = 0.4f - ex0.localPosition.z;
             rc.Add(Vector3.zero); rc.Add(new Vector3(0f, 0f, 2f * R + 13f)); rh.Add(new Vector2(R, R)); rh.Add(new Vector2(R, R));
@@ -2181,7 +2442,6 @@ static class TerrainTools
         Undo.RegisterCreatedObjectUndo(props, "Populate Interior");
         Physics.SyncTransforms();
 
-        // Portales: las 2 salas mas grandes (evita la de entrada); si solo cabe una sala grande, los 2 enfrentados en ella.
         var pr = Enumerable.Range(0, rc.Count).OrderBy(i => i == 0).ThenByDescending(i => Mathf.Min(rh[i].x, rh[i].y)).Where(i => Mathf.Min(rh[i].x, rh[i].y) >= 3.9f).Take(2).ToList();
         var pp = pr.Select(i => rc[i]).ToList();
         if (pr.Count == 1 && Mathf.Min(rh[pr[0]].x, rh[pr[0]].y) >= 7.5f) { Vector3 c = rc[pr[0]]; pp = new List<Vector3> { c + Vector3.left * 3.5f, c + Vector3.right * 3.5f }; }
@@ -2189,7 +2449,6 @@ static class TerrainTools
         var avoid = pp.Select(p => (p, 4.2f)).ToList();
         foreach (var nm in new[] { "PlayerSpawn", "Exit" }) { var t = root.Find(nm); if (t) avoid.Add((t.localPosition, 3.5f)); }
 
-        // Consolas: candidatos contra la pared (rayos desde el centro de cada sala), repartidos por salas de mayor a menor.
         var cand = Enumerable.Range(0, rc.Count).OrderByDescending(i => rh[i].x * rh[i].y)
             .Select(i => new Queue<(Vector3 pos, Vector3 n)>(Candidates(root, rc[i], rh[i], avoid).OrderBy(_ => Random.value))).ToList();
         var chosen = new List<(Vector3 pos, Vector3 n)>();
@@ -2221,12 +2480,7 @@ static class TerrainTools
         Debug.Log($"[Populate] '{root.name}': {chosen.Count}/5 consolas y {(pf == null ? 0 : pp.Count)}/2 portales." + (chosen.Count < 5 ? " Faltan consolas: no hay mas paredes libres o las colisiones aun no existen (guarda la escena y repite)." : ""));
     }
 
-    // 16) CRISTALES: racimos de puntas y estalagmitas PROCEDURALES (6 variantes de malla, sin FBX) de vidrio translucido y
-    //     luminoso (violeta, rojo, amarillo; la luz sale solo del material emisivo, sin Lights). Aparecen SOLO en laderas
-    //     inclinadas (>= CrystalMinSlope), sorteadas por todo el mapa, orientadas con la pendiente.
-    //     Requiere Crystal.cs fuera de Editor. Al romperse (Damage) sueltan gemas apilables.
-    //     ACUMULABLE: cada ejecucion AGREGA racimos nuevos (sin pisar los existentes); 17 borra todos.
-    //     CrystalScale = tamano de los racimos (4 = ~9-14 m de alto antes de la variacion por instancia).
+    // 16) CRISTALES en laderas inclinadas (requiere Crystal.cs fuera de Editor). Acumulable; 17 borra todos.
     const int CrystalSites = 400, CrystalVariants = 6;
     const float CrystalMinSlope = 30f, CrystalScale = 4f;
     const string CrDir = "Assets/Prefabs/CrystalsXL";
@@ -2239,7 +2493,6 @@ static class TerrainTools
         Directory.CreateDirectory(CrDir);
         string[] nm = { "Violet", "Red", "Yellow" };
         Color[] cl = { new Color(.6f, .1f, 1f), new Color(1f, .03f, .03f), new Color(1f, .85f, .02f) };
-        // Los assets se crean una sola vez y se reutilizan en las siguientes pasadas.
         bool fresh = !File.Exists($"{CrDir}/Crystal_Violet_0.prefab");
         var meshes = new Mesh[CrystalVariants];
         if (fresh) for (int i = 0; i < CrystalVariants; i++) meshes[i] = Spikes($"{CrDir}/Cluster{i}.asset", 10 + i, 5 + i % 5, (2.2f + i * .25f) * CrystalScale);
@@ -2258,7 +2511,7 @@ static class TerrainTools
         if (root == null) { root = new GameObject("Crystals"); Undo.RegisterCreatedObjectUndo(root, "Crystals"); }
         Physics.SyncTransforms();
         var sites = new List<Vector3>();
-        foreach (Transform ch in root.transform) sites.Add(ch.position);   // lo ya colocado cuenta para la separacion
+        foreach (Transform ch in root.transform) sites.Add(ch.position);
         var buf = new Collider[8]; var rnd = new System.Random();
         int quota = CrystalSites / ts.Length + 1, total = 0;
         foreach (var t in ts)
@@ -2289,7 +2542,6 @@ static class TerrainTools
         Debug.Log($"[Crystals] +{total} racimos nuevos, {root.transform.childCount} en total (pendiente >= {CrystalMinSlope} grados). Si salen pocos, baja CrystalMinSlope; ejecuta de nuevo para sumar mas.");
     }
 
-    // 18) Agrega (una sola vez) el objeto de red de los cristales: NetworkObject + CrystalNet. No toca los cristales existentes.
     [MenuItem("Tools/Terrain/18 Crystal Net (red de cristales)")]
     static void CrystalNetMenu() { EnsureCrystalNet(); UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty(); }
 
@@ -2302,18 +2554,16 @@ static class TerrainTools
         Debug.Log("[Crystals] CrystalNet creado. Guarda la escena.");
     }
 
-    // 17) Borra todos los cristales colocados por 16 y su carpeta de prefabs (sirve para repararlos).
     [MenuItem("Tools/Terrain/17 Clear Crystals")]
     static void ClearCrystals()
     {
         var old = GameObject.Find("Crystals");
         if (old != null) Undo.DestroyObjectImmediate(old);
-        AssetDatabase.DeleteAsset(CrDir);   // 16 regenera prefabs y mallas desde cero
+        AssetDatabase.DeleteAsset(CrDir);
         UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
         Debug.Log("[Crystals] Borrados (escena + prefabs).");
     }
 
-    // Vidrio: URP Lit transparente "premultiply" (la emision y el brillo no se atenuan con la transparencia).
     static Material Glass(string n, Color c)
     {
         string path = $"{CrDir}/Glass{n}.mat";
@@ -2336,7 +2586,6 @@ static class TerrainTools
         v.Add(a); v.Add(b); v.Add(c);
     }
 
-    // Racimo de n puntas facetadas (prisma de 5-7 lados que se afina hasta la punta), la primera es la mayor y central.
     static Mesh Spikes(string path, int seed, int n, float hmax)
     {
         var r = new System.Random(seed);
@@ -2371,7 +2620,6 @@ static class TerrainTools
         return mesh;
     }
 
-    // Racimo minable: malla + collider + Crystal.
     static GameObject CrPrefab(Mesh mesh, Material m, string path, int color)
     {
         var root = new GameObject(Path.GetFileNameWithoutExtension(path));
