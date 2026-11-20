@@ -1,5 +1,67 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &574849785482662712
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3299894503370115127}
+  m_Layer: 0
+  m_Name: LifePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3299894503370115127
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 574849785482662712}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.011368439, y: -0.9990405, z: -0.039007135, w: 0.016350823}
+  m_LocalPosition: {x: 1150, y: -91, z: 100}
+  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2490906782909351791}
+  m_LocalEulerAnglesHint: {x: -175.551, y: 1.9290009, z: -181.379}
+--- !u!1 &1835600720676002195
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1316802805762726198}
+  m_Layer: 0
+  m_Name: LifePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1316802805762726198
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1835600720676002195}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.011368439, y: -0.9990405, z: -0.039007135, w: 0.016350823}
+  m_LocalPosition: {x: 995, y: -99, z: 136}
+  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2490906782909351791}
+  m_LocalEulerAnglesHint: {x: -175.551, y: 1.9290009, z: -181.379}
 --- !u!1 &3018180477325074143
 GameObject:
   m_ObjectHideFlags: 0
@@ -155,6 +217,37 @@ Transform:
   m_Children: []
   m_Father: {fileID: 2490906782909351791}
   m_LocalEulerAnglesHint: {x: -175.551, y: 1.9290009, z: -181.379}
+--- !u!1 &6970143649744035076
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2697203208314942189}
+  m_Layer: 0
+  m_Name: LifePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2697203208314942189
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6970143649744035076}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.011368439, y: -0.9990405, z: -0.039007135, w: 0.016350823}
+  m_LocalPosition: {x: 903, y: -102, z: 303}
+  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2490906782909351791}
+  m_LocalEulerAnglesHint: {x: -175.551, y: 1.9290009, z: -181.379}
 --- !u!1 &7659217910812560702
 GameObject:
   m_ObjectHideFlags: 0
@@ -188,8 +281,11 @@ Transform:
   - {fileID: 2752978487952965033}
   - {fileID: 5006091191367585625}
   - {fileID: 6517020191804248261}
+  - {fileID: 1316802805762726198}
   - {fileID: 4262479450937965987}
+  - {fileID: 3299894503370115127}
   - {fileID: 3724338855171314567}
+  - {fileID: 2697203208314942189}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2951520821888011973
@@ -245,8 +341,12 @@ PrefabInstance:
       value: LifePrefab
       objectReference: {fileID: 0}
     - target: {fileID: 8589742133496918064, guid: 87936a3914e5937408fc8070585303c6, type: 3}
+      propertyPath: m_InScenePlaced
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8589742133496918064, guid: 87936a3914e5937408fc8070585303c6, type: 3}
       propertyPath: GlobalObjectIdHash
-      value: 848461821
+      value: 809730373
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

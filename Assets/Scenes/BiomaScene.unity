@@ -22270,6 +22270,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 5a47209066c008e43a6a433736061810, type: 3}
+--- !u!4 &433255259 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2490906782909351791, guid: e4645a5e4545f96449a1233565b56076, type: 3}
+  m_PrefabInstance: {fileID: 1978997863547290965}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &433856490 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 879784846445442436, guid: 5f688d735ab38ef46b4f2f9b048a00ba, type: 3}
@@ -66264,6 +66269,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3487741671186839748, guid: f11091ccb21dd134893a0b2bb43d5d14, type: 3}
   m_PrefabInstance: {fileID: 846517577}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1381263322
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1381263323}
+  m_Layer: 0
+  m_Name: LifePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1381263323
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1381263322}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.011368439, y: -0.9990405, z: -0.039007135, w: 0.016350823}
+  m_LocalPosition: {x: 1150, y: -91, z: 100}
+  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 433255259}
+  m_LocalEulerAnglesHint: {x: -175.551, y: 1.9290009, z: -181.379}
 --- !u!1 &1381288461 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 7468427049145942543, guid: 962e3d29d97624c4bb9702c27fca88b4, type: 3}
@@ -77815,6 +77851,37 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: c678b37ef721b734fb7012a40855c6c2, type: 3}
+--- !u!1 &1428109553
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1428109554}
+  m_Layer: 0
+  m_Name: LifePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1428109554
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1428109553}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.011368439, y: -0.9990405, z: -0.039007135, w: 0.016350823}
+  m_LocalPosition: {x: 903, y: -102, z: 303}
+  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 433255259}
+  m_LocalEulerAnglesHint: {x: -175.551, y: 1.9290009, z: -181.379}
 --- !u!4 &1429460183 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4584130717847521131, guid: b8ee143dd95f7854687c907a7eb05a28, type: 3}
@@ -95784,6 +95851,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 7250019383781665461, guid: b2d229d8e22b20a498bc0ed678261c77, type: 3}
   m_PrefabInstance: {fileID: 718118153}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1828224998
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1828224999}
+  m_Layer: 0
+  m_Name: LifePoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1828224999
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1828224998}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.011368439, y: -0.9990405, z: -0.039007135, w: 0.016350823}
+  m_LocalPosition: {x: 995, y: -99, z: 136}
+  m_LocalScale: {x: 4, y: 4, z: 4}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 433255259}
+  m_LocalEulerAnglesHint: {x: -175.551, y: 1.9290009, z: -181.379}
 --- !u!1 &1828330831
 GameObject:
   m_ObjectHideFlags: 0
@@ -111030,7 +111128,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 2490906782909351791, guid: e4645a5e4545f96449a1233565b56076, type: 3}
+      insertIndex: 4
+      addedObject: {fileID: 1828224999}
+    - targetCorrespondingSourceObject: {fileID: 2490906782909351791, guid: e4645a5e4545f96449a1233565b56076, type: 3}
+      insertIndex: 6
+      addedObject: {fileID: 1381263323}
+    - targetCorrespondingSourceObject: {fileID: 2490906782909351791, guid: e4645a5e4545f96449a1233565b56076, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1428109554}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e4645a5e4545f96449a1233565b56076, type: 3}
 --- !u!4 &1978997863547290966 stripped
@@ -111291,6 +111398,18 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 533761280}
     - target: {fileID: 6466432156898265303, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
+      propertyPath: itemSpawnPoints.Array.data[33].customPrefab
+      value: 
+      objectReference: {fileID: 251256926}
+    - target: {fileID: 6466432156898265303, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
+      propertyPath: itemSpawnPoints.Array.data[34].customPrefab
+      value: 
+      objectReference: {fileID: 251256926}
+    - target: {fileID: 6466432156898265303, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
+      propertyPath: itemSpawnPoints.Array.data[35].customPrefab
+      value: 
+      objectReference: {fileID: 251256926}
+    - target: {fileID: 6466432156898265303, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
       propertyPath: hostSpawnPoints.Array.data[0].pointTransform
       value: 
       objectReference: {fileID: 1581785450}
@@ -111506,6 +111625,18 @@ PrefabInstance:
       propertyPath: itemSpawnPoints.Array.data[32].pointTransform
       value: 
       objectReference: {fileID: 1857293744}
+    - target: {fileID: 6466432156898265303, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
+      propertyPath: itemSpawnPoints.Array.data[33].pointTransform
+      value: 
+      objectReference: {fileID: 1828224999}
+    - target: {fileID: 6466432156898265303, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
+      propertyPath: itemSpawnPoints.Array.data[34].pointTransform
+      value: 
+      objectReference: {fileID: 1381263323}
+    - target: {fileID: 6466432156898265303, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
+      propertyPath: itemSpawnPoints.Array.data[35].pointTransform
+      value: 
+      objectReference: {fileID: 1428109554}
     - target: {fileID: 7000910548287998250, guid: aa9b4da7e3ea8094b8cb86ce32a29bc1, type: 3}
       propertyPath: m_InScenePlaced
       value: 1
