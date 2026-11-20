@@ -7,6 +7,7 @@ using Runtime.Scripts.Items;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Spawn;
 using Runtime.Scripts.Experience;
+using Runtime.Scripts.Audio;
 
 namespace Runtime.Scripts.Pickup
 {
@@ -21,6 +22,8 @@ namespace Runtime.Scripts.Pickup
 
         [Header("Data Configuration")]
         public ItemsData item;
+        [Tooltip("Sonido al recoger. Vacio = usa el Sfx.Pickup por defecto del AudioManager.")]
+        public AudioClip pickupSound;
 
         public static int ActiveCount { get; private set; }
 
@@ -369,6 +372,7 @@ namespace Runtime.Scripts.Pickup
         // Un solo ParticleSystem reutilizado: sin alloc ni Material por recogida.
         private void SpawnHardcodedEffect()
         {
+            AudioManager.Play(Sfx.Pickup, pickupSound, transform.position); // corre en todos los clientes (ClientRpc)
             if (_fx == null) _fx = CreateFx();
             _fx.Emit(new ParticleSystem.EmitParams
             {

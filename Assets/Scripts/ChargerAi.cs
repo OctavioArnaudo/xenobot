@@ -1,4 +1,4 @@
-// Poner en Assets/Scripts (FUERA de Editor).
+ï»¿// Poner en Assets/Scripts (FUERA de Editor).
 using System.Collections.Generic;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Player;
@@ -7,11 +7,12 @@ using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Events;
 using Runtime.Scripts.Crystals;
+using Runtime.Scripts.Audio;
 
 [RequireComponent(typeof(NavMeshAgent), typeof(HealthController))]
 public class ChargerAI : NetworkBehaviour
 {
-    // Parámetros activos del Animator
+    // Parï¿½metros activos del Animator
     public const string PIsDead = "IsDead";
     public const string PAttack = "Attack";
     public const string PTakeDamage = "TakeDamage";
@@ -74,6 +75,7 @@ public class ChargerAI : NetworkBehaviour
         an.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
 
         onHurt = _ => {
+            Snd(Sfx.EnemyHit);
             // Una sola vez por golpe: no interrumpe la carga ni reinicia la animacion mientras suena
             if (s != S.Windup && s != S.Charge && Time.time >= hurtUntil)
             { hurtUntil = Time.time + hurtTime; an.SetTrigger(HTakeDamage); }
@@ -98,6 +100,19 @@ public class ChargerAI : NetworkBehaviour
         // El agente va APAGADO en el prefab: solo se activa si hay NavMesh cerca (sin warnings).
         if (!ag.isOnNavMesh) Place(); else Init();
     }
+
+    float stepDist;
+
+    // Sonido local + replica a clientes (la IA solo corre en el servidor; el RPC no se repite en el host).
+    void Snd(Sfx id)
+    {
+        Vector3 p = transform.position;
+        AudioManager.Play(id, p);
+        if (IsSpawned && IsServer) SndClientRpc((byte)id, p);
+    }
+
+    [ClientRpc(Delivery = RpcDelivery.Unreliable)]
+    void SndClientRpc(byte id, Vector3 p) { if (!IsServer) AudioManager.Play((Sfx)id, p); }
 
     void Init() { ag.isStopped = false; ag.speed = walkSpeed; ag.acceleration = walkAccel; }
 
@@ -148,6 +163,7 @@ public class ChargerAI : NetworkBehaviour
         if (s == S.Charge) currentSpeed = cv;
         else if (s == S.Wander) currentSpeed = ag.velocity.magnitude;
 
+        if (currentSpeed >= 1f && (stepDist += currentSpeed * Time.deltaTime) >= (s == S.Charge ? 5f : 2.5f)) { stepDist = 0f; Snd(Sfx.EnemyStep); }
         if (currentSpeed < 1f) an.SetFloat(HSpeed, 0f);   // detenido: Idle al instante, sin suavizado
         else an.SetFloat(HSpeed, currentSpeed, .1f, Time.deltaTime);
 
@@ -190,9 +206,10 @@ public class ChargerAI : NetworkBehaviour
     void Windup(Transform p, float t)
     {
         target = p; s = S.Windup; until = t + windupTime;
+        Snd(Sfx.ChargerWindup);
         ag.velocity = Vector3.zero; ag.ResetPath(); ag.isStopped = true;
         an.ResetTrigger(HTakeDamage);
-        // Durante la preparación se queda quieto encarando al objetivo (Speed baja a 0 = Walk/Idle)
+        // Durante la preparaciï¿½n se queda quieto encarando al objetivo (Speed baja a 0 = Walk/Idle)
     }
 
     void Face(Vector3 w)
@@ -238,7 +255,7 @@ public class ChargerAI : NetworkBehaviour
             if (!g || !g.activeInHierarchy || (g.transform.position + Vector3.up - p).sqrMagnitude > r2) continue;
             var h = g.GetComponentInParent<HealthController>();
             if (!h || h.EffectiveTeam != Team.Player) continue;
-            hitAt = t + .5f; h.TakeDamage(runDamage);
+            hitAt = t + .5f; h.TakeDamage(runDamage); Snd(Sfx.ChargerHit);
             var pc = g.GetComponentInParent<PlayerController>();
             if (pc) pc.ApplyKnockback(cdir * (knockback * .5f) + Vector3.up * 4f);
         }
@@ -260,7 +277,8 @@ public class ChargerAI : NetworkBehaviour
         s = S.Stun; until = Time.time + stunTime; readyAt = until + cooldown;
         ag.velocity = Vector3.zero; ag.ResetPath(); ag.isStopped = true;
 
-        // Dispara la animación de golpe al frenar/impactar contra el jugador o el obstáculo
+        Snd(Sfx.HitHeavy);
+        // Dispara la animaciï¿½n de golpe al frenar/impactar contra el jugador o el obstï¿½culo
         an.SetTrigger(HAttack);
 
         ShockRing.Play(c, shockRadius);

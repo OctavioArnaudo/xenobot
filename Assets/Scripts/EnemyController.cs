@@ -482,7 +482,7 @@ namespace Runtime.Scripts.Enemy
         private void OnDamageTaken(int damage)
         {
             _damageTakenInPhase += damage;
-            AudioManager.Play(Sfx.EnemyHit, transform.position);
+            Snd(Sfx.EnemyHit);
         }
 
         private bool _isEnemyDead = false;
@@ -615,14 +615,25 @@ namespace Runtime.Scripts.Enemy
             _stepDist += speed * Time.deltaTime;
             if (_stepDist < 1.8f) return;
             _stepDist = 0f;
-            AudioManager.Play(Sfx.EnemyStep, transform.position);
+            Snd(Sfx.EnemyStep);
         }
         void AtkSfx(Sfx id)
         {
             if (Time.time < _nextAtkSfx) return;
             _nextAtkSfx = Time.time + 0.5f;
-            AudioManager.Play(id, transform.position);
+            Snd(id);
         }
+
+        // Sonido local + replica a clientes (la IA solo corre en el servidor; el RPC no se repite en el host).
+        void Snd(Sfx id)
+        {
+            Vector3 p = transform.position;
+            AudioManager.Play(id, p);
+            if (IsSpawned && IsServer) SndClientRpc((byte)id, p);
+        }
+
+        [ClientRpc(Delivery = RpcDelivery.Unreliable)]
+        void SndClientRpc(byte id, Vector3 p) { if (!IsServer) AudioManager.Play((Sfx)id, p); }
 
         private void SetPhase(int index)
         {
