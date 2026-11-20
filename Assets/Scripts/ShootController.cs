@@ -14,10 +14,8 @@ using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Items;
 using Runtime.Scripts.Skills;
 
-namespace Runtime.Scripts.Shoot
-{
-    public class ShootController : NetworkBehaviour
-    {
+namespace Runtime.Scripts.Shoot {
+    public class ShootController : NetworkBehaviour {
         private const float DEFAULT_PLAYER_SHOOT_DAMAGE = 2f;
         private const float DEFAULT_PLAYER_FIRE_RATE = 8.0f;
         private const float DEFAULT_PLAYER_AIM_DISTANCE = 120f;
@@ -37,6 +35,7 @@ namespace Runtime.Scripts.Shoot
         public GameObject Muzzle;
         public GameObject Projectile;
         public Renderer[] visualsToRotate;
+        public Animator weaponAnimator;
 
         public float Damage;
         public Optional<float> damage;
@@ -84,10 +83,8 @@ namespace Runtime.Scripts.Shoot
 
         private bool IsNetworkActive => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening;
 
-        public GameObject OwnerEntity
-        {
-            get
-            {
+        public GameObject OwnerEntity {
+            get {
                 if (m_Player != null) return m_Player.gameObject;
                 if (m_Health != null) return m_Health.gameObject;
                 return transform.root.gameObject;
@@ -96,10 +93,8 @@ namespace Runtime.Scripts.Shoot
 
         public Team EffectiveTeam => m_Health != null ? m_Health.EffectiveTeam : (transform.root.CompareTag("Player") || GetComponentInParent<PlayerController>() != null ? Team.Player : (transform.root.CompareTag("Enemy") || GetComponentInParent<EnemyController>() != null ? Team.Enemy : Team.Neutral));
 
-        public float EffectiveDamage
-        {
-            get
-            {
+        public float EffectiveDamage {
+            get {
                 var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
                 return damage.Get(Damage, CalculateDynamicShootDamage(), stats.attackDamage);
             }
@@ -107,10 +102,8 @@ namespace Runtime.Scripts.Shoot
 
         public float EffectiveFireRate => fireRate.Get(FireRate, CalculateDynamicFireRate());
 
-        public float EffectiveAimDistance
-        {
-            get
-            {
+        public float EffectiveAimDistance {
+            get {
                 var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
                 float defaultDist = enemy != null ? DEFAULT_ENEMY_BASE_AIM_DISTANCE : DEFAULT_PLAYER_AIM_DISTANCE;
                 var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
@@ -118,10 +111,8 @@ namespace Runtime.Scripts.Shoot
             }
         }
 
-        public int EffectiveMaxAmmo
-        {
-            get
-            {
+        public int EffectiveMaxAmmo {
+            get {
                 var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
                 return maxAmmo.Get(MaxAmmo, DEFAULT_MAX_AMMO, stats.maxAmmo);
             }
@@ -130,35 +121,28 @@ namespace Runtime.Scripts.Shoot
         public float EffectiveReloadDuration => reloadDuration.Get(ReloadDuration, DEFAULT_RELOAD_DURATION);
         public bool EffectiveInfiniteAmmo => infiniteAmmo.Get(InfiniteAmmo, DEFAULT_INFINITE_AMMO);
 
-        public int EffectiveBurstShotsCapacity
-        {
-            get
-            {
+        public int EffectiveBurstShotsCapacity {
+            get {
                 var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
                 return burstShotsCapacity.Get(BurstShotsCapacity, DEFAULT_BURST_CAPACITY, stats.burstShotsCapacity);
             }
         }
 
-        public float EffectiveBurstCooldownDuration
-        {
-            get
-            {
+        public float EffectiveBurstCooldownDuration {
+            get {
                 var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
                 return burstCooldownDuration.Get(BurstCooldownDuration, DEFAULT_BURST_COOLDOWN, stats.burstCooldownDuration);
             }
         }
 
-        public float EffectiveTargetRecalibrationDelay
-        {
-            get
-            {
+        public float EffectiveTargetRecalibrationDelay {
+            get {
                 var stats = BalanceManager.Instance != null ? BalanceManager.Instance.GetEntityBalance(gameObject) : default;
                 return targetRecalibrationDelay.Get(TargetRecalibrationDelay, DEFAULT_RECALIBRATION_DELAY, stats.targetRecalibrationDelay);
             }
         }
 
-        public void AddAmmo(int amount, float damageMultiplier = 1.0f)
-        {
+        public void AddAmmo(int amount, float damageMultiplier = 1.0f) {
             currentAmmo = Mathf.Min(currentAmmo + amount, EffectiveMaxAmmo);
             currentAmmoDamageMultiplier = damageMultiplier;
             if (isReloading) { isReloading = false; m_ReloadTimer = 0f; }
@@ -166,12 +150,10 @@ namespace Runtime.Scripts.Shoot
 
         private InventoryController Inv => InventoryController.LocalInstance ?? GetComponent<InventoryController>() ?? GetComponentInParent<InventoryController>();
 
-        public bool HasAmmoInInventory()
-        {
+        public bool HasAmmoInInventory() {
             var inv = Inv;
             if (inv == null) return false;
-            foreach (var kvp in inv.GetMyBag())
-            {
+            foreach (var kvp in inv.GetMyBag()) {
                 var def = kvp.Value.def;
                 if (def != null && def.itemPrefab != null && kvp.Value.qty > 0 && def.itemPrefab.GetComponentInChildren<AmmosController>() != null)
                     return true;
@@ -179,12 +161,10 @@ namespace Runtime.Scripts.Shoot
             return false;
         }
 
-        public bool AutoReloadFromInventory()
-        {
+        public bool AutoReloadFromInventory() {
             var inv = Inv;
             if (inv == null) return false;
-            foreach (var kvp in inv.GetMyBag())
-            {
+            foreach (var kvp in inv.GetMyBag()) {
                 var def = kvp.Value.def;
                 if (def == null || def.itemPrefab == null || kvp.Value.qty <= 0) continue;
                 var ammo = def.itemPrefab.GetComponentInChildren<AmmosController>();
@@ -196,8 +176,7 @@ namespace Runtime.Scripts.Shoot
             return false;
         }
 
-        public bool TryReload()
-        {
+        public bool TryReload() {
             if (EffectiveInfiniteAmmo || isReloading || currentAmmo >= EffectiveMaxAmmo) return false;
             if (m_Player != null && !HasAmmoInInventory()) return false;
             isReloading = true;
@@ -207,10 +186,8 @@ namespace Runtime.Scripts.Shoot
 
         private PlayerController FindPlayer() => m_Player != null ? m_Player : (GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>());
 
-        private float CalculateDynamicShootDamage()
-        {
-            if (FindPlayer() != null || CompareTag("Player"))
-            {
+        private float CalculateDynamicShootDamage() {
+            if (FindPlayer() != null || CompareTag("Player")) {
                 var hud = GetComponent<HudController>() ?? GetComponentInParent<HudController>() ?? HudController.Instance;
                 int lvl = hud != null ? Mathf.Max(1, hud.Level) : 1;
                 return DEFAULT_PLAYER_SHOOT_DAMAGE + (lvl - 1);
@@ -218,15 +195,13 @@ namespace Runtime.Scripts.Shoot
             return DEFAULT_ENEMY_BASE_SHOOT_DAMAGE;
         }
 
-        private float CalculateDynamicFireRate()
-        {
+        private float CalculateDynamicFireRate() {
             if (FindPlayer() != null || CompareTag("Player")) return DEFAULT_PLAYER_FIRE_RATE;
 
             var enemy = GetComponent<EnemyController>() ?? GetComponentInParent<EnemyController>();
             if (enemy == null) return DEFAULT_ENEMY_BASE_FIRE_RATE;
 
-            switch (enemy.activeArchetype)
-            {
+            switch (enemy.activeArchetype) {
                 case AIArchetype.CargaFrenetica: return 10.0f;
                 case AIArchetype.AtaqueYHuida: return 6.5f;
                 case AIArchetype.FlanqueoYCobertura: return 6.0f;
@@ -237,17 +212,14 @@ namespace Runtime.Scripts.Shoot
 
         void Awake() => RefreshReferences();
 
-        public void ApplyEffect(GameObject player)
-        {
+        public void ApplyEffect(GameObject player) {
             m_Player = player.GetComponent<PlayerController>();
             m_Health = player.GetComponent<HealthController>();
             RefreshReferences();
         }
 
-        private void RefreshReferences()
-        {
-            if (GetComponent<EnemyController>() == null && GetComponentInParent<EnemyController>() == null)
-            {
+        private void RefreshReferences() {
+            if (GetComponent<EnemyController>() == null && GetComponentInParent<EnemyController>() == null) {
                 if (m_Player == null) m_Player = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
             }
             else m_Player = null;
@@ -258,14 +230,15 @@ namespace Runtime.Scripts.Shoot
             if (AimCamera == null && m_Player != null) AimCamera = m_Player.GetComponentInChildren<Camera>();
             if (AimCamera == null) AimCamera = Camera.main;
 
-            if (visualsToRotate == null || visualsToRotate.Length == 0)
-            {
+            if (weaponAnimator == null)
+                weaponAnimator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>() ?? GetComponentInParent<Animator>();
+
+            if (visualsToRotate == null || visualsToRotate.Length == 0) {
                 var mr = GetComponentInChildren<MeshRenderer>();
                 if (mr != null) visualsToRotate = new Renderer[] { mr };
             }
 
-            if (Muzzle == null)
-            {
+            if (Muzzle == null) {
                 Transform m = transform.Find("Muzzle") ?? transform.Find("muzzle");
                 Muzzle = m != null ? m.gameObject : gameObject;
             }
@@ -273,8 +246,7 @@ namespace Runtime.Scripts.Shoot
             if (!isUnlocked && Projectile != null) isUnlocked = true;
         }
 
-        private void UpdateInspectorValues()
-        {
+        private void UpdateInspectorValues() {
             Damage = EffectiveDamage;
             FireRate = EffectiveFireRate;
             AimDistance = EffectiveAimDistance;
@@ -285,18 +257,15 @@ namespace Runtime.Scripts.Shoot
 
         private void OnValidate() => UpdateInspectorValues();
 
-        void Update()
-        {
+        void Update() {
             UpdateInspectorValues();
 
-            if (transform != transform.root)
-            {
+            if (transform != transform.root) {
                 var root = transform.root.GetComponent<ShootController>();
                 if (root != null && root != this && root.isUnlocked) { enabled = false; return; }
             }
 
-            if (EffectiveInfiniteAmmo)
-            {
+            if (EffectiveInfiniteAmmo) {
                 currentAmmo = EffectiveMaxAmmo;
                 isReloading = false;
             }
@@ -315,11 +284,9 @@ namespace Runtime.Scripts.Shoot
             m_ReloadTimer = 0f;
         }
 
-        private bool CanFire()
-        {
+        private bool CanFire() {
             if (!isUnlocked) return false;
-            if (Projectile == null || Muzzle == null)
-            {
+            if (Projectile == null || Muzzle == null) {
                 RefreshReferences();
                 if (Projectile == null || Muzzle == null) return false;
             }
@@ -328,18 +295,16 @@ namespace Runtime.Scripts.Shoot
             if (Time.time < m_NextFireTime) return false;
 
             m_NextFireTime = Time.time + 1f / Mathf.Max(0.01f, EffectiveFireRate);
-            if (!EffectiveInfiniteAmmo)
-            {
+            if (!EffectiveInfiniteAmmo) {
                 currentAmmo = Mathf.Max(0, currentAmmo - 1);
                 if (currentAmmo <= 0) TryReload();
             }
             return true;
         }
 
-        // isAimed = true (Click derecho / Apuntando) -> Da�o 100%, Sin Tracking.
-        // isAimed = false (Click izquierdo / Cadera) -> Da�o reducido (65%), Con Tracking si la habilidad esta desbloqueada.
-        public bool TryFire(bool isAimed = false)
-        {
+        // isAimed = true (Click derecho / Apuntando) -> Daño 100%, Sin Tracking.
+        // isAimed = false (Click izquierdo / Cadera) -> Daño reducido (65%), Con Tracking si la habilidad esta desbloqueada.
+        public bool TryFire(bool isAimed = false) {
             if (!isUnlocked) return false;
 
             if (m_Player == null) m_Player = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
@@ -355,8 +320,7 @@ namespace Runtime.Scripts.Shoot
             return true;
         }
 
-        public bool FireAt(Vector3 target)
-        {
+        public bool FireAt(Vector3 target) {
             if (!CanFire()) return false;
 
             RotateVisualsTowards(target);
@@ -369,8 +333,7 @@ namespace Runtime.Scripts.Shoot
             return true;
         }
 
-        private void RotateVisualsTowards(Vector3 target)
-        {
+        private void RotateVisualsTowards(Vector3 target) {
             if (visualsToRotate == null) return;
             Vector3 dir = (target - transform.position).normalized;
             if (dir.sqrMagnitude <= 0.001f) return;
@@ -380,10 +343,8 @@ namespace Runtime.Scripts.Shoot
                 if (r != null) r.transform.rotation = Quaternion.Slerp(r.transform.rotation, rot, rotationSpeed * Time.deltaTime);
         }
 
-        private void ExecuteFire(Vector3 direction, Vector3 spawnPos, float customDamageMultiplier, bool enableHoming)
-        {
-            if (++m_CurrentBurstShots >= EffectiveBurstShotsCapacity)
-            {
+        private void ExecuteFire(Vector3 direction, Vector3 spawnPos, float customDamageMultiplier, bool enableHoming) {
+            if (++m_CurrentBurstShots >= EffectiveBurstShotsCapacity) {
                 m_CurrentBurstShots = 0;
                 m_BurstCooldownTimer = EffectiveBurstCooldownDuration + EffectiveTargetRecalibrationDelay;
             }
@@ -396,17 +357,31 @@ namespace Runtime.Scripts.Shoot
             else
                 SpawnProjectileLocally(direction, spawnPos, finalDamage, team, IsNetworkActive && NetworkManager.Singleton.IsServer, enableHoming);
 
-            Animator anim = GetComponentInChildren<Animator>();
-            if (anim != null && HasParameter(anim, "shoot")) anim.SetTrigger("shoot");
+            TriggerShootAnimation();
 
             if (MuzzleFlash) MuzzleFlash.Play();
         }
 
+        private void TriggerShootAnimation() {
+            if (weaponAnimator == null)
+                weaponAnimator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>() ?? GetComponentInParent<Animator>();
+
+            if (weaponAnimator == null) return;
+
+            if (HasParameter(weaponAnimator, "Shoot")) {
+                weaponAnimator.ResetTrigger("Shoot");
+                weaponAnimator.SetTrigger("Shoot");
+            }
+            else if (HasParameter(weaponAnimator, "shoot")) {
+                weaponAnimator.ResetTrigger("shoot");
+                weaponAnimator.SetTrigger("shoot");
+            }
+        }
+
         private static readonly RaycastHit[] s_AimHits = new RaycastHit[32];
 
-        private Vector3 GetAimDirection(Vector3 muzzlePos)
-        {
-            // La cruz que ve el jugador es la de la c�mara principal, no la de una c�mara hija.
+        private Vector3 GetAimDirection(Vector3 muzzlePos) {
+            // La cruz que ve el jugador es la de la cámara principal, no la de una cámara hija.
             Camera cam = Camera.main != null ? Camera.main : AimCamera;
             if (cam == null) return transform.forward;
 
@@ -414,15 +389,14 @@ namespace Runtime.Scripts.Shoot
             Vector3 target = ray.GetPoint(EffectiveAimDistance);
             Transform owner = OwnerEntity.transform;
 
-            // Ignora lo que quede entre la c�mara y la boca del arma.
+            // Ignora lo que quede entre la cámara y la boca del arma.
             float skip = Mathf.Max(0f, Vector3.Dot(muzzlePos - ray.origin, ray.direction));
             Ray fromMuzzle = new Ray(ray.origin + ray.direction * skip, ray.direction);
             int n = Physics.RaycastNonAlloc(fromMuzzle, s_AimHits, Mathf.Max(0.01f, EffectiveAimDistance - skip), AimLayers, QueryTriggerInteraction.Collide);
 
-            // Mismo criterio que la bala: cuenta todo s�lido y los triggers con vida (enemigos); no cuenta al due�o.
+            // Mismo criterio que la bala: cuenta todo sólido y los triggers con vida (enemigos); no cuenta al dueño.
             float best = float.MaxValue;
-            for (int i = 0; i < n; i++)
-            {
+            for (int i = 0; i < n; i++) {
                 var hit = s_AimHits[i];
                 if (hit.distance >= best || hit.transform.IsChildOf(owner)) continue;
                 if (hit.collider.isTrigger && hit.collider.GetComponentInParent<HealthController>() == null) continue;
@@ -437,8 +411,7 @@ namespace Runtime.Scripts.Shoot
             return dir.sqrMagnitude < 0.01f ? cam.transform.forward : dir.normalized;
         }
 
-        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float dmg, Team team, bool isServer, bool enableHoming)
-        {
+        private void SpawnProjectileLocally(Vector3 direction, Vector3 spawnPos, float dmg, Team team, bool isServer, bool enableHoming) {
             Quaternion rot = Quaternion.LookRotation(direction);
             GameObject go = isServer
                 ? ProjectilePool.Get(Projectile, spawnPos, rot)
@@ -447,23 +420,20 @@ namespace Runtime.Scripts.Shoot
                     : Instantiate(Projectile, spawnPos, rot);
 
             var proj = go.GetComponent<ProjectileController>();
-            if (proj != null)
-            {
+            if (proj != null) {
                 proj.enableHomingTracking = enableHoming;
                 proj.Launch(OwnerEntity, direction, dmg, team);
             }
 
-            if (isServer)
-            {
+            if (isServer) {
                 var net = go.GetComponent<NetworkObject>();
                 if (net != null) net.Spawn();
             }
         }
 
-        private static bool HasParameter(Animator animator, string name)
-        {
+        private static bool HasParameter(Animator animator, string name) {
             foreach (var p in animator.parameters)
-                if (p.name == name) return true;
+                if (p.name == name && p.type == AnimatorControllerParameterType.Trigger) return true;
             return false;
         }
     }

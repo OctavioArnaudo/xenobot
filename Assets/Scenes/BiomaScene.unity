@@ -53679,6 +53679,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: EnemyTurretPrefab
       objectReference: {fileID: 0}
+    - target: {fileID: 3365301288107942026, guid: a2c26560876692c4c99a32706c31e223, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8342135519767598705, guid: a2c26560876692c4c99a32706c31e223, type: 3}
       propertyPath: m_LocalPosition.x
       value: -1112.6345
@@ -97074,6 +97078,10 @@ PrefabInstance:
     - target: {fileID: 3365301288107942026, guid: a2c26560876692c4c99a32706c31e223, type: 3}
       propertyPath: m_Name
       value: EnemyTurretPrefab (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 3365301288107942026, guid: a2c26560876692c4c99a32706c31e223, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8342135519767598705, guid: a2c26560876692c4c99a32706c31e223, type: 3}
       propertyPath: m_LocalPosition.x
@@ -260534,6 +260542,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: JetpacksPrefab
       objectReference: {fileID: 0}
+    - target: {fileID: 5261087758254798180, guid: 2b52447479f355c4a86acb62cac4c8df, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9039043741824277889, guid: 2b52447479f355c4a86acb62cac4c8df, type: 3}
       propertyPath: m_InScenePlaced
       value: 1
@@ -262921,6 +262933,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: WeaponsPrefab
       objectReference: {fileID: 0}
+    - target: {fileID: 5243757480539361736, guid: b885afc6d26774946a3b5204f5e7c8ff, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7511053251971380092, guid: b885afc6d26774946a3b5204f5e7c8ff, type: 3}
       propertyPath: m_Mesh
       value: 
@@ -262932,6 +262948,10 @@ PrefabInstance:
     - target: {fileID: 8457425679769179097, guid: b885afc6d26774946a3b5204f5e7c8ff, type: 3}
       propertyPath: GlobalObjectIdHash
       value: 1588293279
+      objectReference: {fileID: 0}
+    - target: {fileID: 8457425679769179097, guid: b885afc6d26774946a3b5204f5e7c8ff, type: 3}
+      propertyPath: m_InScenePlacedDisabledByDefault
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8962360040329149131, guid: b885afc6d26774946a3b5204f5e7c8ff, type: 3}
       propertyPath: m_CastShadows
