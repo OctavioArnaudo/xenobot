@@ -81,7 +81,7 @@ public class ChargerAI : NetworkBehaviour
             { hurtUntil = Time.time + hurtTime; an.SetTrigger(HTakeDamage); }
         };
 
-        onDie = () => an.SetBool(HIsDead, true);
+        onDie = () => { Snd(Sfx.EnemyDeath); an.SetBool(HIsDead, true); };
     }
 
     void OnEnable()

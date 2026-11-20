@@ -5,6 +5,7 @@ using Unity.Netcode;
 using Runtime.Scripts.Inventory;
 using Runtime.Scripts.Items;
 using Runtime.Scripts.Pickup;
+using Runtime.Scripts.Audio;
 
 namespace Runtime.Scripts.Crystals
 {
@@ -151,6 +152,7 @@ namespace Runtime.Scripts.Crystals
         public void Grant()
         {
             if (inv == null) inv = (pl != null ? pl.GetComponentInChildren<InventoryController>() : null) ?? InventoryController.LocalInstance;
+            AudioManager.Play(Sfx.Pickup, transform.position);
             if (inv != null) PickupController.Give(inv, CrystalFragments.Item(color), NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening);
         }
     }
@@ -199,8 +201,8 @@ namespace Runtime.Scripts.Crystals
                 if (!cache.TryGetValue(t, out var e))
                 {
 #if UNITY_EDITOR
-                td = Instantiate(td); t.terrainData = td;
-                if (t.TryGetComponent<TerrainCollider>(out var tc)) tc.terrainData = td;
+                    td = Instantiate(td); t.terrainData = td;
+                    if (t.TryGetComponent<TerrainCollider>(out var tc)) tc.terrainData = td;
 #endif
                     cache[t] = e = new E { a = td.treeInstances, p = td.treePrototypes };
                     e.dead = new bool[e.a.Length];

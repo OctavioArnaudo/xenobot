@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Runtime.Scripts.Audio
 {
-    public enum Sfx { Shoot, HitLight, HitHeavy, EnemyShoot, EnemyHit, Step, EnemyStep, Jump, MenuOpen, MenuClose, MissionComplete, GameOver, Land, Respawn, Pickup, ChargerWindup, ChargerHit }
+    public enum Sfx { Shoot, HitLight, HitHeavy, EnemyShoot, EnemyHit, Step, EnemyStep, Jump, MenuOpen, MenuClose, MissionComplete, GameOver, Land, Respawn, Pickup, ChargerWindup, ChargerHit, EnemyHover, EnemyDeath }
     public enum Music { None, Exterior, Lab }
 
     /// <summary>
@@ -76,7 +76,7 @@ namespace Runtime.Scripts.Audio
                 clip = e.clips[UnityEngine.Random.Range(0, e.clips.Length)];
                 if (clip == null) return;
             }
-            float v = e != null ? e.volume : 1f, p = e != null ? UnityEngine.Random.Range(e.pitch.x, e.pitch.y) : 1f, r = e != null ? e.reach : 1f;
+            float v = e != null ? e.volume : 1f, p = e != null ? UnityEngine.Random.Range(e.pitch.x, e.pitch.y) : 1f, r = e != null && e.reach > 0f ? e.reach : 1f; // reach 0 (entradas viejas) = normal
             I.Fill(I._c[(int)id], clip, at, p, Mathf.Min(v, 1f), r);
             // Ganancia > 1: un segundo canal sincronizado suma el excedente (AudioSource.volume tope = 1).
             if (v > 1f) I.Fill(I._x[(int)id], clip, at, p, v - 1f, r);
