@@ -615,7 +615,7 @@ namespace Runtime.Scripts.Enemy
             _stepDist += speed * Time.deltaTime;
             if (_stepDist < 1.8f) return;
             _stepDist = 0f;
-            Snd(Sfx.EnemyStep);
+            Snd(Sfx.EnemyHover);
         }
         void AtkSfx(Sfx id)
         {
@@ -1428,7 +1428,7 @@ namespace Runtime.Scripts.Enemy
                 case EnemyCategory.Ranged:
                     if (m_Shooter != null && isShootRange)
                     {
-                        { m_Shooter.FireAt(aimPos); AtkSfx(Sfx.EnemyShoot); }
+                        m_Shooter.FireAt(aimPos);
                     }
                     break;
 
@@ -1441,7 +1441,7 @@ namespace Runtime.Scripts.Enemy
                     else if (isShootRange && m_Shooter != null)
                     {
                         ReleaseMeleeAttackToken();
-                        { m_Shooter.FireAt(aimPos); AtkSfx(Sfx.EnemyShoot); }
+                        m_Shooter.FireAt(aimPos);
                     }
                     else
                     {
