@@ -414,15 +414,23 @@ namespace Runtime.Scripts.Inventory
                 }
                 else
                 {
-                    Color fallbackColor = Color.gray;
-                    string nameLower = slot.def.itemName != null ? slot.def.itemName.ToLowerInvariant() : "";
-                    if (nameLower.Contains("iron")) fallbackColor = new Color(0.75f, 0.75f, 0.8f);
-                    else if (nameLower.Contains("exp") || nameLower.Contains("orb")) fallbackColor = new Color(1f, 0.85f, 0f);
-                    else if (nameLower.Contains("life") || nameLower.Contains("heart")) fallbackColor = new Color(0.8f, 0.1f, 0.1f);
-                    Rect iconRect = new Rect(cell.x + 12f * k, cell.y + 12f * k, cell.width - 24f * k, cell.height - 24f * k);
-                    GUI.DrawTexture(iconRect, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, fallbackColor, 0f, 6f * k);
-                    string initial = !string.IsNullOrEmpty(slot.def.itemName) ? slot.def.itemName.Substring(0, 1).ToUpper() : "?";
-                    GUI.Label(iconRect, initial, _titleSty);
+                    Texture2D tex3D = Get3DPreviewTexture(slot.def);
+                    if (tex3D != null)
+                    {
+                        GUI.DrawTexture(new Rect(cell.x + 6f * k, cell.y + 6f * k, cell.width - 12f * k, cell.height - 12f * k), tex3D);
+                    }
+                    else
+                    {
+                        Color fallbackColor = Color.gray;
+                        string nameLower = slot.def.itemName != null ? slot.def.itemName.ToLowerInvariant() : "";
+                        if (nameLower.Contains("iron")) fallbackColor = new Color(0.75f, 0.75f, 0.8f);
+                        else if (nameLower.Contains("exp") || nameLower.Contains("orb")) fallbackColor = new Color(1f, 0.85f, 0f);
+                        else if (nameLower.Contains("life") || nameLower.Contains("heart")) fallbackColor = new Color(0.8f, 0.1f, 0.1f);
+                        Rect iconRect = new Rect(cell.x + 12f * k, cell.y + 12f * k, cell.width - 24f * k, cell.height - 24f * k);
+                        GUI.DrawTexture(iconRect, Texture2D.whiteTexture, ScaleMode.StretchToFill, true, 0f, fallbackColor, 0f, 6f * k);
+                        string initial = !string.IsNullOrEmpty(slot.def.itemName) ? slot.def.itemName.Substring(0, 1).ToUpper() : "?";
+                        GUI.Label(iconRect, initial, _titleSty);
+                    }
                 }
                 GUI.Label(cell, QtyStr(slot.qty), _qtySty);
 
@@ -677,6 +685,82 @@ namespace Runtime.Scripts.Inventory
             Texture2D tex = spr.texture;
             Rect uv = new Rect(r.x / tex.width, r.y / tex.height, r.width / tex.width, r.height / tex.height);
             GUI.DrawTextureWithTexCoords(rect, tex, uv);
+        }
+
+        private static readonly Dictionary<int, Texture2D> s_Item3DPreviews = new Dictionary<int, Texture2D>();
+
+        public static Texture2D Get3DPreviewTexture(ItemsData item)
+        {
+            if (item == null || item.itemPrefab == null) return null;
+            int hash = item.GetHashCode();
+            if (s_Item3DPreviews.TryGetValue(hash, out Texture2D cached) && cached != null)
+                return cached;
+
+            Texture2D preview = Render3DPreview(item.itemPrefab);
+            if (preview != null) s_Item3DPreviews[hash] = preview;
+            return preview;
+        }
+
+        private static Texture2D Render3DPreview(GameObject prefab)
+        {
+            if (prefab == null) return null;
+
+            Vector3 stagePos = new Vector3(9999f, 9999f, 9999f);
+            GameObject obj = UnityEngine.Object.Instantiate(prefab, stagePos, Quaternion.identity);
+
+            foreach (var c in obj.GetComponentsInChildren<Collider>(true)) UnityEngine.Object.DestroyImmediate(c);
+            foreach (var rb in obj.GetComponentsInChildren<Rigidbody>(true)) UnityEngine.Object.DestroyImmediate(rb);
+            foreach (var mono in obj.GetComponentsInChildren<MonoBehaviour>(true)) UnityEngine.Object.DestroyImmediate(mono);
+
+            obj.transform.position = stagePos;
+            obj.transform.rotation = Quaternion.Euler(20f, 45f, 0f);
+
+            Bounds bounds = new Bounds(stagePos, Vector3.one);
+            var renderers = obj.GetComponentsInChildren<Renderer>();
+            if (renderers.Length > 0)
+            {
+                bounds = renderers[0].bounds;
+                for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+            }
+
+            GameObject camObj = new GameObject("PreviewCam");
+            Camera cam = camObj.AddComponent<Camera>();
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = new Color(0, 0, 0, 0);
+            cam.cullingMask = ~0;
+
+            float maxExtent = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
+            float dist = Mathf.Max(1.5f, maxExtent * 3.0f);
+            cam.transform.position = bounds.center + new Vector3(0, maxExtent * 0.5f, -dist);
+            cam.transform.LookAt(bounds.center);
+
+            GameObject lightObj = new GameObject("PreviewLight");
+            Light lt = lightObj.AddComponent<Light>();
+            lt.type = LightType.Directional;
+            lt.color = Color.white;
+            lt.intensity = 1.8f;
+            lightObj.transform.rotation = Quaternion.Euler(45f, -30f, 0f);
+
+            RenderTexture rt = RenderTexture.GetTemporary(128, 128, 16, RenderTextureFormat.ARGB32);
+            cam.targetTexture = rt;
+            cam.Render();
+
+            RenderTexture activeRt = RenderTexture.active;
+            RenderTexture.active = rt;
+
+            Texture2D tex = new Texture2D(128, 128, TextureFormat.RGBA32, false);
+            tex.ReadPixels(new Rect(0, 0, 128, 128), 0, 0);
+            tex.Apply();
+
+            RenderTexture.active = activeRt;
+            cam.targetTexture = null;
+            RenderTexture.ReleaseTemporary(rt);
+
+            UnityEngine.Object.DestroyImmediate(camObj);
+            UnityEngine.Object.DestroyImmediate(lightObj);
+            UnityEngine.Object.DestroyImmediate(obj);
+
+            return tex;
         }
     }
 }
