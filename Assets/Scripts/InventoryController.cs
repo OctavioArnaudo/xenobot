@@ -691,75 +691,85 @@ namespace Runtime.Scripts.Inventory
 
         public static Texture2D Get3DPreviewTexture(ItemsData item)
         {
-            if (item == null || item.itemPrefab == null) return null;
+            if (item == null) return null;
             int hash = item.GetHashCode();
             if (s_Item3DPreviews.TryGetValue(hash, out Texture2D cached) && cached != null)
                 return cached;
 
-            Texture2D preview = Render3DPreview(item.itemPrefab);
+            Texture2D preview = Render3DPreviewForItem(item);
             if (preview != null) s_Item3DPreviews[hash] = preview;
             return preview;
         }
 
-        private static Texture2D Render3DPreview(GameObject prefab)
+        private static Texture2D Render3DPreviewForItem(ItemsData item)
         {
-            if (prefab == null) return null;
+            if (item == null) return null;
 
-            Vector3 stagePos = new Vector3(9999f, 9999f, 9999f);
-            GameObject obj = UnityEngine.Object.Instantiate(prefab, stagePos, Quaternion.identity);
+            Color mainColor = new Color(0.5f, 0.5f, 0.5f);
+            bool foundColor = false;
 
-            foreach (var c in obj.GetComponentsInChildren<Collider>(true)) UnityEngine.Object.DestroyImmediate(c);
-            foreach (var rb in obj.GetComponentsInChildren<Rigidbody>(true)) UnityEngine.Object.DestroyImmediate(rb);
-            foreach (var mono in obj.GetComponentsInChildren<MonoBehaviour>(true)) UnityEngine.Object.DestroyImmediate(mono);
-
-            obj.transform.position = stagePos;
-            obj.transform.rotation = Quaternion.Euler(20f, 45f, 0f);
-
-            Bounds bounds = new Bounds(stagePos, Vector3.one);
-            var renderers = obj.GetComponentsInChildren<Renderer>();
-            if (renderers.Length > 0)
+            if (item.itemPrefab != null)
             {
-                bounds = renderers[0].bounds;
-                for (int i = 1; i < renderers.Length; i++) bounds.Encapsulate(renderers[i].bounds);
+                var mr = item.itemPrefab.GetComponentInChildren<MeshRenderer>();
+                if (mr != null && mr.sharedMaterial != null)
+                {
+                    if (mr.sharedMaterial.HasProperty("_BaseColor"))
+                        mainColor = mr.sharedMaterial.GetColor("_BaseColor");
+                    else if (mr.sharedMaterial.HasProperty("_Color"))
+                        mainColor = mr.sharedMaterial.color;
+                    else
+                        mainColor = mr.sharedMaterial.color;
+
+                    if (mr.sharedMaterial.HasProperty("_EmissionColor"))
+                    {
+                        Color em = mr.sharedMaterial.GetColor("_EmissionColor");
+                        if (em.maxColorComponent > 0.1f) mainColor = Color.Lerp(mainColor, em, 0.5f);
+                    }
+                    foundColor = true;
+                }
             }
 
-            GameObject camObj = new GameObject("PreviewCam");
-            Camera cam = camObj.AddComponent<Camera>();
-            cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = new Color(0, 0, 0, 0);
-            cam.cullingMask = ~0;
+            if (!foundColor)
+            {
+                string nameLower = (item.itemName ?? item.name ?? "").ToLowerInvariant();
+                if (nameLower.Contains("violet") || nameLower.Contains("purple")) mainColor = new Color(0.6f, 0.1f, 1f);
+                else if (nameLower.Contains("red") || nameLower.Contains("rojo")) mainColor = new Color(1f, 0.05f, 0.05f);
+                else if (nameLower.Contains("yellow") || nameLower.Contains("amarillo") || nameLower.Contains("stamina")) mainColor = new Color(1f, 0.85f, 0.05f);
+                else if (nameLower.Contains("crystal") || nameLower.Contains("cristal") || nameLower.Contains("fragment")) mainColor = new Color(0.6f, 0.2f, 0.9f);
+                else if (nameLower.Contains("iron") || nameLower.Contains("hierro")) mainColor = new Color(0.75f, 0.75f, 0.8f);
+                else if (nameLower.Contains("life") || nameLower.Contains("heart") || nameLower.Contains("salud")) mainColor = new Color(0.85f, 0.15f, 0.2f);
+                else if (nameLower.Contains("exp") || nameLower.Contains("orb")) mainColor = new Color(0.1f, 0.9f, 0.9f);
+            }
 
-            float maxExtent = Mathf.Max(bounds.extents.x, bounds.extents.y, bounds.extents.z);
-            float dist = Mathf.Max(1.5f, maxExtent * 3.0f);
-            cam.transform.position = bounds.center + new Vector3(0, maxExtent * 0.5f, -dist);
-            cam.transform.LookAt(bounds.center);
+            int s = 128;
+            Texture2D tex = new Texture2D(s, s, TextureFormat.RGBA32, false);
+            Color[] px = new Color[s * s];
+            float c = (s - 1) * 0.5f;
 
-            GameObject lightObj = new GameObject("PreviewLight");
-            Light lt = lightObj.AddComponent<Light>();
-            lt.type = LightType.Directional;
-            lt.color = Color.white;
-            lt.intensity = 1.8f;
-            lightObj.transform.rotation = Quaternion.Euler(45f, -30f, 0f);
+            for (int y = 0; y < s; y++)
+            {
+                for (int x = 0; x < s; x++)
+                {
+                    float dx = (x - c) / c, dy = (y - c) / c;
+                    float dist = Mathf.Sqrt(dx * dx + dy * dy);
+                    if (dist > 0.95f)
+                    {
+                        px[y * s + x] = Color.clear;
+                    }
+                    else
+                    {
+                        float light = Mathf.Clamp01(1.25f - dist * 0.5f + (dx - dy) * 0.3f);
+                        Color col = mainColor * light;
+                        float highlight = Mathf.Pow(Mathf.Clamp01(1f - Mathf.Sqrt((dx + 0.3f) * (dx + 0.3f) + (dy - 0.3f) * (dy - 0.3f))), 4f);
+                        col += Color.white * highlight * 0.6f;
+                        col.a = Mathf.Clamp01((0.95f - dist) * 10f);
+                        px[y * s + x] = col;
+                    }
+                }
+            }
 
-            RenderTexture rt = RenderTexture.GetTemporary(128, 128, 16, RenderTextureFormat.ARGB32);
-            cam.targetTexture = rt;
-            cam.Render();
-
-            RenderTexture activeRt = RenderTexture.active;
-            RenderTexture.active = rt;
-
-            Texture2D tex = new Texture2D(128, 128, TextureFormat.RGBA32, false);
-            tex.ReadPixels(new Rect(0, 0, 128, 128), 0, 0);
+            tex.SetPixels(px);
             tex.Apply();
-
-            RenderTexture.active = activeRt;
-            cam.targetTexture = null;
-            RenderTexture.ReleaseTemporary(rt);
-
-            UnityEngine.Object.DestroyImmediate(camObj);
-            UnityEngine.Object.DestroyImmediate(lightObj);
-            UnityEngine.Object.DestroyImmediate(obj);
-
             return tex;
         }
     }
