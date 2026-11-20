@@ -1,4 +1,5 @@
 ﻿// Poner en Assets/Scripts (FUERA de Editor).
+using System.Collections;
 using System.Collections.Generic;
 using Runtime.Scripts.Health;
 using Runtime.Scripts.Player;
@@ -10,9 +11,8 @@ using Runtime.Scripts.Crystals;
 using Runtime.Scripts.Audio;
 
 [RequireComponent(typeof(NavMeshAgent), typeof(HealthController))]
-public class ChargerAI : NetworkBehaviour
-{
-    // Par�metros activos del Animator
+public class ChargerAI : NetworkBehaviour {
+    // Parámetros activos del Animator
     public const string PIsDead = "IsDead";
     public const string PAttack = "Attack";
     public const string PTakeDamage = "TakeDamage";
@@ -43,6 +43,8 @@ public class ChargerAI : NetworkBehaviour
 
     [Header("Impacto")]
     public float shockRadius = 18f, hitRadius = 4.5f, stunTime = .9f;
+    public float shockwaveDelay = 0.3f;      // Delay para que la onda coincida con el golpe al suelo
+    public float groundHeightOffset = 0.1f;  // Altura respecto al suelo donde aparece la onda expansiva
     public int impactDamage = 100;
     public int runDamage = 40;   // dano por contacto durante la carga (antes del golpe)
     public float runHitRadius = 10f;   // alcance del dano durante la carga: mas grande = hay que esquivar mas
@@ -57,6 +59,7 @@ public class ChargerAI : NetworkBehaviour
     NavMeshQueryFilter qf;
     NavMeshAgent ag; Animator an; HealthController hp; Transform target;
     UnityAction<int> onHurt; UnityAction onDie;
+    Coroutine shockRoutine;
 
     static GameObject[] pl = System.Array.Empty<GameObject>();
     static float scanAt;
@@ -65,8 +68,7 @@ public class ChargerAI : NetworkBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() { pl = System.Array.Empty<GameObject>(); scanAt = 0f; }
 
-    void Awake()
-    {
+    void Awake() {
         ag = GetComponent<NavMeshAgent>();
         hp = GetComponent<HealthController>();
         an = GetComponentInChildren<Animator>();
@@ -77,15 +79,17 @@ public class ChargerAI : NetworkBehaviour
         onHurt = _ => {
             Snd(Sfx.EnemyHit);
             // Una sola vez por golpe: no interrumpe la carga ni reinicia la animacion mientras suena
-            if (s != S.Windup && s != S.Charge && Time.time >= hurtUntil)
-            { hurtUntil = Time.time + hurtTime; an.SetTrigger(HTakeDamage); }
+            if (s != S.Windup && s != S.Charge && Time.time >= hurtUntil) { hurtUntil = Time.time + hurtTime; an.SetTrigger(HTakeDamage); }
         };
 
-        onDie = () => { Snd(Sfx.EnemyDeath); an.SetBool(HIsDead, true); };
+        onDie = () => {
+            if (shockRoutine != null) { StopCoroutine(shockRoutine); shockRoutine = null; }
+            Snd(Sfx.EnemyDeath);
+            an.SetBool(HIsDead, true);
+        };
     }
 
-    void OnEnable()
-    {
+    void OnEnable() {
         hp.OnTakeDamage.AddListener(onHurt);
         hp.OnDeath.AddListener(onDie);
         qf = new NavMeshQueryFilter { agentTypeID = ag.agentTypeID, areaMask = NavMesh.AllAreas };
@@ -104,8 +108,7 @@ public class ChargerAI : NetworkBehaviour
     float stepDist;
 
     // Sonido local + replica a clientes (la IA solo corre en el servidor; el RPC no se repite en el host).
-    void Snd(Sfx id)
-    {
+    void Snd(Sfx id) {
         Vector3 p = transform.position;
         AudioManager.Play(id, p);
         if (IsSpawned && IsServer) SndClientRpc((byte)id, p);
@@ -116,35 +119,29 @@ public class ChargerAI : NetworkBehaviour
 
     void Init() { ag.isStopped = false; ag.speed = walkSpeed; ag.acceleration = walkAccel; }
 
-    bool Place()
-    {
+    bool Place() {
         if (!NavSafe.TryPlace(ag, transform.position, ref navRetry, 50f, 2f)) return false;
         Init(); return true;
     }
 
-    void OnDisable()
-    {
+    void OnDisable() {
+        if (shockRoutine != null) { StopCoroutine(shockRoutine); shockRoutine = null; }
         hp.OnTakeDamage.RemoveListener(onHurt);
         hp.OnDeath.RemoveListener(onDie);
     }
 
-    public override void OnNetworkSpawn()
-    {
+    public override void OnNetworkSpawn() {
         // En singleplayer local / editor sin servidor levantado no se deshabilita
-        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !IsServer)
-        {
+        if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && !IsServer) {
             ag.enabled = false;
             enabled = false;
         }
     }
 
-    void Update()
-    {
+    void Update() {
         float t = Time.time;
-        if (!ag.isOnNavMesh)
-        {
-            if (t >= next)
-            {
+        if (!ag.isOnNavMesh) {
+            if (t >= next) {
                 next = t + 2f;
                 if (tries++ >= 3) { enabled = false; return; }
                 if (Place()) tries = 0;
@@ -177,8 +174,7 @@ public class ChargerAI : NetworkBehaviour
         else if (t >= until) { ag.isStopped = false; ag.speed = walkSpeed; ag.acceleration = walkAccel; s = S.Wander; an.ResetTrigger(HAttack); an.CrossFadeInFixedTime(HWalk, .15f); }
     }
 
-    void Wander(float t)
-    {
+    void Wander(float t) {
         var p = Nearest();
         if (p && t >= readyAt) { Windup(p.transform, t); return; }
         if (ag.pathPending || (ag.hasPath && ag.remainingDistance > .8f)) { idleUntil = 0f; return; }
@@ -190,12 +186,10 @@ public class ChargerAI : NetworkBehaviour
         if (NavMesh.SamplePosition(from + new Vector3(r.x, 0f, r.y), out var h, 20f, qf)) ag.SetDestination(h.position);
     }
 
-    GameObject Nearest()
-    {
+    GameObject Nearest() {
         if (Time.time >= scanAt) { scanAt = Time.time + 1f; pl = GameObject.FindGameObjectsWithTag("Player"); }
         GameObject b = null; float m = detectRange * detectRange;
-        foreach (var g in pl)
-        {
+        foreach (var g in pl) {
             if (!g || !g.activeInHierarchy) continue;
             float d = (g.transform.position - transform.position).sqrMagnitude;
             if (d < m) { m = d; b = g; }
@@ -203,31 +197,27 @@ public class ChargerAI : NetworkBehaviour
         return b;
     }
 
-    void Windup(Transform p, float t)
-    {
+    void Windup(Transform p, float t) {
         target = p; s = S.Windup; until = t + windupTime;
         Snd(Sfx.ChargerWindup);
         ag.velocity = Vector3.zero; ag.ResetPath(); ag.isStopped = true;
         an.ResetTrigger(HTakeDamage);
-        // Durante la preparaci�n se queda quieto encarando al objetivo (Speed baja a 0 = Walk/Idle)
+        // Durante la preparación se queda quieto encarando al objetivo (Speed baja a 0 = Walk/Idle)
     }
 
-    void Face(Vector3 w)
-    {
+    void Face(Vector3 w) {
         Vector3 d = w - transform.position; d.y = 0f;
         if (d.sqrMagnitude > .01f) transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(d), 360f * Time.deltaTime);
     }
 
-    void Charge()
-    {
+    void Charge() {
         Vector3 d = target.position - transform.position; d.y = 0f;
         cdir = d.sqrMagnitude > .01f ? d.normalized : transform.forward;
         cv = 0f; cfrom = plowFrom = transform.position; chargeStart = Time.time; s = S.Charge;
         ag.ResetPath(); ag.isStopped = false;
     }
 
-    void Run(float t)
-    {
+    void Run(float t) {
         cv = Mathf.MoveTowards(cv, chargeSpeed, chargeAccel * Time.deltaTime);
         Face(transform.position + cdir);
         Vector3 before = transform.position;
@@ -239,19 +229,16 @@ public class ChargerAI : NetworkBehaviour
             Impact(transform.position + cdir * 1.5f);
     }
 
-    bool NearPlayer()
-    {
+    bool NearPlayer() {
         Vector3 p = transform.position + Vector3.up;
         foreach (var g in pl) if (g && g.activeInHierarchy && (g.transform.position + Vector3.up - p).sqrMagnitude < hitRadius * hitRadius) return true;
         return false;
     }
 
-    void RunHit(float t)
-    {
+    void RunHit(float t) {
         if (t < hitAt) return;
         Vector3 p = transform.position + Vector3.up; float r2 = runHitRadius * runHitRadius;
-        foreach (var g in pl)
-        {
+        foreach (var g in pl) {
             if (!g || !g.activeInHierarchy || (g.transform.position + Vector3.up - p).sqrMagnitude > r2) continue;
             var h = g.GetComponentInParent<HealthController>();
             if (!h || h.EffectiveTeam != Team.Player) continue;
@@ -261,8 +248,7 @@ public class ChargerAI : NetworkBehaviour
         }
     }
 
-    void Plow(float t)
-    {
+    void Plow(float t) {
         if (t < plowAt) return;
         plowAt = t + .05f;
         Vector3 off = transform.forward * 1.5f + Vector3.up;
@@ -272,20 +258,20 @@ public class ChargerAI : NetworkBehaviour
         for (int i = 0; i < n; i++) if (buf[i].TryGetComponent(out Smashable sm)) sm.Damage(smashDamage);
     }
 
-    void Impact(Vector3 c)
-    {
+    void Impact(Vector3 c) {
         s = S.Stun; until = Time.time + stunTime; readyAt = until + cooldown;
         ag.velocity = Vector3.zero; ag.ResetPath(); ag.isStopped = true;
 
-        Snd(Sfx.HitHeavy);
-        // Dispara la animaci�n de golpe al frenar/impactar contra el jugador o el obst�culo
+        // Dispara la animación de golpe al frenar/impactar contra el jugador o el obstáculo
         an.SetTrigger(HAttack);
 
-        ShockRing.Play(c, shockRadius);
-        CombatFx.Slash(c + Vector3.up, cdir, 5f, new Color(1f, .25f, .2f, .9f));
+        // Calculamos la posición a nivel del suelo/pies para la onda expansiva
+        Vector3 groundPos = GetGroundPosition(c);
 
-        foreach (var g in pl)
-        {
+        if (shockRoutine != null) StopCoroutine(shockRoutine);
+        shockRoutine = StartCoroutine(DelayedShockwaveRoutine(groundPos, cdir));
+
+        foreach (var g in pl) {
             if (!g || !g.activeInHierarchy) continue;
             float d = Vector3.Distance(g.transform.position + Vector3.up, c);
             if (d > shockRadius) continue;
@@ -304,32 +290,46 @@ public class ChargerAI : NetworkBehaviour
                 sm.Damage(smashDamage * (.4f + .6f * (1f - Mathf.Min(Vector3.Distance(buf[i].bounds.center, c) / shockRadius, 1f))));
     }
 
+    Vector3 GetGroundPosition(Vector3 pos) {
+        // Usamos el NavMesh o la base real del agente para ubicar la onda a la altura de los pies
+        float baseY = (ag != null && ag.isOnNavMesh) ? (transform.position.y - ag.baseOffset) : pos.y;
+        return new Vector3(pos.x, baseY + groundHeightOffset, pos.z);
+    }
+
+    IEnumerator DelayedShockwaveRoutine(Vector3 groundPos, Vector3 dir) {
+        if (shockwaveDelay > 0f)
+            yield return new WaitForSeconds(shockwaveDelay);
+
+        shockRoutine = null;
+        if (hp != null && hp.EffectiveCurrentHealth <= 0) yield break;
+
+        Snd(Sfx.HitHeavy);
+        ShockRing.Play(groundPos, shockRadius);
+        CombatFx.Slash(groundPos + Vector3.up * 0.6f, dir, 5f, new Color(1f, .25f, .2f, .9f));
+    }
+
 #if UNITY_EDITOR
-    void OnDrawGizmosSelected()
-    {
+    void OnDrawGizmosSelected() {
         Gizmos.color = Color.yellow; Gizmos.DrawWireSphere(transform.position, detectRange);
         Gizmos.color = Color.red; Gizmos.DrawWireSphere(transform.position, shockRadius);
     }
 #endif
 }
 
-public class ShockRing : MonoBehaviour
-{
+public class ShockRing : MonoBehaviour {
     static readonly Stack<ShockRing> pool = new Stack<ShockRing>();
     float t, r; Material mat;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
     static void ResetStatics() => pool.Clear();
 
-    public static void Play(Vector3 p, float radius)
-    {
+    public static void Play(Vector3 p, float radius) {
         var s = pool.Count > 0 ? pool.Pop() : Create();
         s.transform.position = p; s.r = radius; s.t = 0f;
         s.gameObject.SetActive(true);
     }
 
-    static ShockRing Create()
-    {
+    static ShockRing Create() {
         var g = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         Destroy(g.GetComponent<Collider>());
         var rd = g.GetComponent<Renderer>();
@@ -339,8 +339,7 @@ public class ShockRing : MonoBehaviour
         return s;
     }
 
-    void Update()
-    {
+    void Update() {
         if ((t += Time.deltaTime / .45f) >= 1f) { gameObject.SetActive(false); pool.Push(this); return; }
         transform.localScale = new Vector3(1f, .15f, 1f) * (2f * r * t);
         mat.color = new Color(1f, .6f, .2f, .6f * (1f - t));
