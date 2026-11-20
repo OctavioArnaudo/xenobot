@@ -33,8 +33,6 @@ namespace Runtime.Scripts.Projectile
         private float m_CorrosionTickTimer = 0f;
 
         private float m_BaseNavSpeed = -1f;
-        private float m_BaseMoveSpeed = -1f;
-        private float m_BaseSprintSpeed = -1f;
 
         private HealthController m_Health;
         private EnemyController m_Enemy;
@@ -47,6 +45,9 @@ namespace Runtime.Scripts.Projectile
 
         public void ApplyFreeze(float slowPerStack, float duration)
         {
+            // No inmovilizar ni alterar MoveSpeed del PlayerController
+            if (GetComponent<PlayerController>() != null || GetComponentInParent<PlayerController>() != null) return;
+
             m_FreezeStacks++;
             m_SlowPerStack = slowPerStack;
             m_FreezeTimer = duration;
@@ -103,16 +104,6 @@ namespace Runtime.Scripts.Projectile
             {
                 if (m_BaseNavSpeed <= 0f) m_BaseNavSpeed = navAgent.speed;
                 navAgent.speed = m_BaseNavSpeed * speedMultiplier;
-            }
-
-            var player = GetComponent<PlayerController>() ?? GetComponentInParent<PlayerController>();
-            if (player != null)
-            {
-                if (m_BaseMoveSpeed <= 0f) m_BaseMoveSpeed = player.MoveSpeed;
-                if (m_BaseSprintSpeed <= 0f) m_BaseSprintSpeed = player.SprintSpeed;
-
-                player.MoveSpeed = m_BaseMoveSpeed * speedMultiplier;
-                player.SprintSpeed = m_BaseSprintSpeed * speedMultiplier;
             }
         }
     }
@@ -340,11 +331,12 @@ namespace Runtime.Scripts.Projectile
 
             SphereCollider col = GetComponent<SphereCollider>();
             if (col == null) col = gameObject.AddComponent<SphereCollider>();
+            col.radius = 0.5f;
 
-            if (col != null)
+            // Garantiza que ningún collider del proyectil (raíz o hijos) bloquee físicamente al jugador
+            foreach (var c in GetComponentsInChildren<Collider>(true))
             {
-                col.isTrigger = true;
-                col.radius = 0.5f;
+                c.isTrigger = true;
             }
         }
 
@@ -357,8 +349,11 @@ namespace Runtime.Scripts.Projectile
             m_HomingTarget = null;
             enableHomingTracking = false;
 
-            var col = GetComponent<Collider>();
-            if (col != null) col.enabled = true;
+            foreach (var c in GetComponentsInChildren<Collider>(true))
+            {
+                c.isTrigger = true;
+                c.enabled = true;
+            }
 
             TrailRenderer[] trails = GetComponentsInChildren<TrailRenderer>();
             foreach (var tr in trails) tr.Clear();
@@ -730,8 +725,10 @@ namespace Runtime.Scripts.Projectile
                 s_ActiveAttachedBombs.Add(this);
             }
 
-            var col = GetComponent<Collider>();
-            if (col != null) col.enabled = false;
+            foreach (var c in GetComponentsInChildren<Collider>(true))
+            {
+                c.enabled = false;
+            }
         }
 
         public void DetonateStickyBomb()
@@ -771,6 +768,7 @@ namespace Runtime.Scripts.Projectile
         private void FinalizeImpact()
         {
             s_ActiveAttachedBombs.Remove(this);
+            s_ActiveProjectiles.Remove(this);
 
             if (impactVFX != null) Instantiate(impactVFX, transform.position, Quaternion.identity);
 
@@ -781,7 +779,7 @@ namespace Runtime.Scripts.Projectile
             else
             {
                 if (BalanceManager.Instance != null) BalanceManager.Instance.RecycleToPool(gameObject);
-                else gameObject.SetActive(false);
+                if (gameObject.activeSelf) gameObject.SetActive(false);
             }
         }
 
