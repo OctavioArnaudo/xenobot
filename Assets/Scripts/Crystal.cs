@@ -349,6 +349,7 @@ namespace Runtime.Scripts.Crystals
             phys = new PhysicsMaterial("CrystalFragment") { dynamicFriction = 0.2f, staticFriction = 0.2f, bounciness = 0.35f, frictionCombine = PhysicsMaterialCombine.Minimum, bounceCombine = PhysicsMaterialCombine.Maximum };
             var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
 
+            var masterItem = Resources.Load<ItemsData>("Crafting/Items/Data/Item_Crystal");
             var loadedItems = Resources.LoadAll<ItemsData>("Crafting/Items/Data/Item_Crystal");
 
             for (int c = 0; c < 3; c++)
@@ -373,13 +374,22 @@ namespace Runtime.Scripts.Crystals
                 t.AddComponent<CrystalController>();
                 tpl[c] = t;
 
-                if (loadedItems != null && c < loadedItems.Length && loadedItems[c] != null)
+                if (masterItem != null)
+                {
+                    items[c] = masterItem;
+                }
+                else if (loadedItems != null && c < loadedItems.Length && loadedItems[c] != null)
                 {
                     items[c] = loadedItems[c];
                 }
                 else
                 {
-                    items[c] = Resources.Load<ItemsData>($"Crafting/Items/Data/Item_Crystal_{c}") ?? ItemsData.Create(Names[c], t);
+                    items[c] = Resources.Load<ItemsData>($"Crafting/Items/Data/Item_Crystal_{c}") ?? ItemsData.Create("Item_Crystal", t);
+                }
+
+                if (items[c] != null)
+                {
+                    items[c].name = "Item_Crystal";
                 }
             }
         }
