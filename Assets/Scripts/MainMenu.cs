@@ -12,6 +12,8 @@ namespace Runtime.Scripts.Main
 {
     public class MainMenu : NetworkBehaviour
     {
+        private static bool introPlayed;
+
         [Header("Scene Configuration")]
         public string gameScene = "NetworkScene";
         public string levelsScene = "LevelsScene";
@@ -45,21 +47,19 @@ namespace Runtime.Scripts.Main
                     coverSprite = Resources.Load<Sprite>("main_menu");
             }
 
-            if (PlayerPrefs.GetInt("IntroPlayed", 0) == 1)
+            if (introPlayed)
             {
                 SetupUI();
             }
             else
             {
+                introPlayed = true;
                 StartCoroutine(PlayIntroAndSetupUI());
             }
         }
 
         private IEnumerator PlayIntroAndSetupUI()
         {
-            PlayerPrefs.SetInt("IntroPlayed", 1);
-            PlayerPrefs.Save();
-
             GameObject videoObj = new GameObject("IntroVideo");
             VideoPlayer vp = videoObj.AddComponent<VideoPlayer>();
             vp.playOnAwake = false;
