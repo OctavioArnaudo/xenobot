@@ -429,10 +429,9 @@ namespace Runtime.Scripts.Projectile
 
             if (IsNetworkActive && IsServer)
             {
-                if (m_Owner != null && m_Owner.TryGetComponent<NetworkObject>(out var ownerNetObj))
-                {
-                    SyncLaunchRpc(ownerNetObj.NetworkObjectId, m_Direction, EffectiveDamage, m_OwnerTeam, enableHomingTracking);
-                }
+                var ownerNetObj = m_Owner != null ? (m_Owner.GetComponent<NetworkObject>() ?? m_Owner.GetComponentInParent<NetworkObject>() ?? m_Owner.GetComponentInChildren<NetworkObject>()) : null;
+                ulong ownerId = ownerNetObj != null ? ownerNetObj.NetworkObjectId : 0;
+                SyncLaunchRpc(ownerId, m_Direction, EffectiveDamage, m_OwnerTeam, enableHomingTracking);
             }
         }
 
@@ -442,14 +441,14 @@ namespace Runtime.Scripts.Projectile
             m_Direction = direction;
             m_OwnerTeam = team;
             enableHomingTracking = homing;
-            if (dmg > 0f && (!damage.use || m_DamageFromLaunch))
+            if (dmg > 0f)
             {
                 damage.use = true;
                 damage.value = dmg;
                 m_DamageFromLaunch = true;
             }
 
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(ownerNetworkObjectId, out var ownerNetObj))
+            if (ownerNetworkObjectId != 0 && NetworkManager.Singleton != null && NetworkManager.Singleton.SpawnManager.SpawnedObjects.TryGetValue(ownerNetworkObjectId, out var ownerNetObj))
             {
                 m_Owner = ownerNetObj.gameObject;
                 if (m_Owner != null)
@@ -596,7 +595,7 @@ namespace Runtime.Scripts.Projectile
                     if (m_HasHit) break;
                     if (m_Owner != null && (hit.collider.gameObject == m_Owner || hit.collider.transform.IsChildOf(m_Owner.transform))) continue;
 
-                    HealthController targetHealth = hit.collider.GetComponentInParent<HealthController>() ?? hit.collider.GetComponent<HealthController>();
+                    HealthController targetHealth = hit.collider.GetComponentInParent<HealthController>() ?? hit.collider.GetComponent<HealthController>() ?? hit.collider.GetComponentInChildren<HealthController>() ?? (hit.collider.transform.root != null ? hit.collider.transform.root.GetComponent<HealthController>() : null);
 
                     if (hit.collider.isTrigger && targetHealth == null) continue;
 
@@ -667,7 +666,7 @@ namespace Runtime.Scripts.Projectile
             if (m_HasHit || m_IsAttached) return;
             if (m_Owner != null && (other.gameObject == m_Owner || other.transform.IsChildOf(m_Owner.transform))) return;
 
-            HealthController targetHealth = other.GetComponentInParent<HealthController>() ?? other.GetComponent<HealthController>();
+            HealthController targetHealth = other.GetComponentInParent<HealthController>() ?? other.GetComponent<HealthController>() ?? other.GetComponentInChildren<HealthController>() ?? (other.transform.root != null ? other.transform.root.GetComponent<HealthController>() : null);
 
             if (other.isTrigger && targetHealth == null) return;
 
@@ -747,8 +746,10 @@ namespace Runtime.Scripts.Projectile
         {
             if (target == null) return;
             if (target.gameObject == m_Owner || (m_Owner != null && target.transform.IsChildOf(m_Owner.transform))) return;
+            if (m_OwnerTeam != Team.Neutral && target.EffectiveTeam == m_OwnerTeam) return;
 
-            target.TakeDamage((int)EffectiveDamage);
+            int finalDmg = Mathf.Max(1, Mathf.RoundToInt(EffectiveDamage));
+            target.TakeDamage(finalDmg);
         }
 
         private void PerformExplosion()
