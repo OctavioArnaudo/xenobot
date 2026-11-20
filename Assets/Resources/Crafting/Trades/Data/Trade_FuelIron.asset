@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Trades.Data.TradeData
   inputs:
   - item: {fileID: 11400000, guid: c0a83873422c4563bd3ddbc53f11c8d7, type: 2}
-    amount: 3
+    amount: 1
     useRange: 0
-    minAmount: 3
-    maxAmount: 3
+    minAmount: 1
+    maxAmount: 1
     dropChance: 100
   outputs:
   - item: {fileID: 11400000, guid: cc730feca3d9438aa9e28397df2e6fe4, type: 2}
