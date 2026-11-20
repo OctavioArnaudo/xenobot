@@ -260,7 +260,6 @@ namespace Runtime.Scripts.Tank
             if (m_Agent != null)
             {
                 m_Agent.updateRotation = false;
-                EnemyCategory cat = GetCurrentCategory();
                 float groundOffset = 0.9f;
                 if (BalanceManager.Instance != null)
                 {
@@ -272,13 +271,8 @@ namespace Runtime.Scripts.Tank
                     if (cap != null) groundOffset = Mathf.Max(0.8f, -(cap.center.y - cap.height * 0.5f));
                 }
                 groundOffset = Mathf.Max(0.85f, groundOffset);
-
-                m_Agent.baseOffset = (cat == EnemyCategory.Melee) ? groundOffset : (groundOffset + EffectiveHoverHeight);
-
-                if (cat == EnemyCategory.Melee)
-                {
-                    m_Agent.stoppingDistance = 0.1f;
-                }
+                m_Agent.baseOffset = groundOffset;
+                m_Agent.stoppingDistance = 4.0f;
             }
 
             m_Animator = GetComponentInChildren<Animator>();
@@ -1459,17 +1453,19 @@ namespace Runtime.Scripts.Tank
         private void MoveTo(Vector3 position, float speed)
         {
             if (m_Agent == null) return;
+            if (!m_Agent.isOnNavMesh && !EnsureAgentOnNavMesh()) return;
 
-            if (!m_Agent.isOnNavMesh)
-            {
-                if (!EnsureAgentOnNavMesh()) return;
-            }
+            m_Agent.speed = speed;
+            m_Agent.isStopped = false;
+            m_Agent.SetDestination(position);
 
-            if (m_Agent.isOnNavMesh)
+            Vector3 worldDelta = m_Agent.steeringTarget - transform.position;
+            worldDelta.y = 0f;
+            if (worldDelta.sqrMagnitude > 0.01f)
             {
-                m_Agent.speed = speed;
-                m_Agent.isStopped = false;
-                m_Agent.SetDestination(position);
+                RotateBaseTowards(transform.position + worldDelta);
+                float angle = Vector3.Angle(transform.forward, worldDelta.normalized);
+                if (angle > 45f) m_Agent.speed = speed * 0.4f;
             }
         }
 
@@ -1481,7 +1477,7 @@ namespace Runtime.Scripts.Tank
         private void RotateBaseTowards(Vector3 position)
         {
             Vector3 direction = (position - transform.position);
-            if (GetCurrentCategory() == EnemyCategory.Melee) direction.y = 0;
+            direction.y = 0f;
 
             if (direction.sqrMagnitude > 0.001f)
             {
