@@ -1227,7 +1227,7 @@ namespace Runtime.Scripts.Tank
                 spawnedMinion.tag = "Enemy";
             }
 
-            var minionAI = spawnedMinion.GetComponent<EnemyController>();
+            var minionAI = spawnedMinion.GetComponent<EnemyTankController>();
             if (minionAI != null)
             {
                 // Configurar al esbirro invocado para que sea un atacante directo de apoyo
@@ -1324,7 +1324,7 @@ namespace Runtime.Scripts.Tank
 
         // --- Helper Methods ---
 
-        private static HashSet<EnemyController> s_ActiveMeleeAttackers = new HashSet<EnemyController>();
+        private static HashSet<EnemyTankController> s_ActiveMeleeAttackers = new HashSet<EnemyTankController>();
         private const int MAX_CONCURRENT_MELEE_ATTACKERS = 2;
 
         private bool RequestMeleeAttackToken()
