@@ -4,6 +4,8 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
 using Unity.Netcode;
+using UnityEngine.Video;
+using System.Collections;
 
 namespace Runtime.Scripts.Main
 {
@@ -42,6 +44,48 @@ namespace Runtime.Scripts.Main
                     coverSprite = Resources.Load<Sprite>("main_menu");
             }
 
+            if (PlayerPrefs.GetInt("IntroPlayed", 0) == 1)
+            {
+                SetupUI();
+            }
+            else
+            {
+                StartCoroutine(PlayIntroAndSetupUI());
+            }
+        }
+
+        private IEnumerator PlayIntroAndSetupUI()
+        {
+            PlayerPrefs.SetInt("IntroPlayed", 1);
+            PlayerPrefs.Save();
+
+            GameObject videoObj = new GameObject("IntroVideo");
+            VideoPlayer vp = videoObj.AddComponent<VideoPlayer>();
+            vp.playOnAwake = false;
+            vp.renderMode = VideoRenderMode.CameraFarPlane;
+            vp.targetCamera = Camera.main != null ? Camera.main : FindFirstObjectByType<Camera>();
+
+            VideoClip clip = Resources.Load<VideoClip>("Menus/VFX/main_menu");
+            if (clip != null)
+            {
+                vp.clip = clip;
+                vp.Prepare();
+                while (!vp.isPrepared) yield return null;
+                vp.Play();
+
+                bool finished = false;
+                vp.loopPointReached += (source) => finished = true;
+
+                while (!finished && vp.isPlaying)
+                {
+                    if (Input.anyKeyDown || Input.GetMouseButtonDown(0)) break;
+                    yield return null;
+                }
+
+                vp.Stop();
+            }
+
+            Destroy(videoObj);
             SetupUI();
         }
 
