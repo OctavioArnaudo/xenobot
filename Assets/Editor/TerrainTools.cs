@@ -26,7 +26,7 @@ static class TerrainTools
             t.treeDistance = 900f;
             t.treeBillboardDistance = t.treeDistance;
             t.treeCrossFadeLength = 20f;
-            t.treeMaximumFullLODCount = 150;
+            t.treeMaximumFullLODCount = ForestReduceAtDistance ? 150 : 10000;   // pasado este numero Unity dibuja los arboles como billboards/mallas simples
             t.detailObjectDistance = 70f;
             t.detailObjectDensity = 0.5f;
             t.basemapDistance = 120f;
@@ -421,6 +421,13 @@ static class TerrainTools
             EditorUtility.DisplayProgressBar("Bosque", t.name, (float)i / ts.Length);
             Undo.RegisterCompleteObjectUndo(td, "Forest");
             td.treePrototypes = protos;
+            if (!ForestReduceAtDistance)
+            {
+                // Sin simplificacion: todos los arboles como malla completa y sin billboards a distancia.
+                t.treeDistance = Mathf.Max(t.treeDistance, 900f);
+                t.treeBillboardDistance = t.treeDistance;
+                t.treeMaximumFullLODCount = 10000;
+            }
             int kinds = Kinds(protos.Length);
 
             var list = new List<TreeInstance>();
@@ -463,7 +470,7 @@ static class TerrainTools
 
         AddWeeds(ts);
         var vd = Object.FindFirstObjectByType<ViewDistance>();
-        if (vd != null) ForestRes.Apply(vd.resolucionBosque);
+        if (vd != null && ForestReduceAtDistance) ForestRes.Apply(vd.resolucionBosque);   // la barra 'Resolucion Bosque' recorta LOD: se omite si no se quiere simplificar
         EditorUtility.ClearProgressBar();
         UnityEditor.SceneManagement.EditorSceneManager.MarkAllScenesDirty();
         Debug.Log($"[Terrain] Bosque: {total} arboles en {ts.Length} terrenos + yuyos finos. Modelos ForestFast al {ForestModelQuality:P0} de vertices (LOD0). Reparto: " + string.Join(", ", protos.Select((q, k) => (q.prefab != null ? q.prefab.name : "NULO") + " " + cnt[k])));
@@ -1024,14 +1031,30 @@ static class TerrainTools
         {
             string pp = $"{dir}/Pine{v}.prefab";
             var go = AssetDatabase.LoadAssetAtPath<GameObject>(pp);
+            // Sin reduccion a distancia: si el pino viejo tiene LOD simple (LOD1 de 3 lados), se borra y se regenera solo con LOD0.
+            if (go != null && !ForestReduceAtDistance)
+            {
+                var og = go.GetComponent<LODGroup>();
+                if (og != null && og.lodCount > 1)
+                {
+                    AssetDatabase.DeleteAsset(pp);
+                    AssetDatabase.DeleteAsset($"{dir}/Pine{v}_LOD0.asset");
+                    AssetDatabase.DeleteAsset($"{dir}/Pine{v}_LOD1.asset");
+                    go = null;
+                }
+            }
             if (go == null)
             {
                 var root = new GameObject($"Pine{v}");
                 var r0 = Part(root, "LOD0", Build(v, 0), dir, bark, needles);
-                var r1 = Part(root, "LOD1", Build(v, 1), dir, bark, needles);
                 var g = root.AddComponent<LODGroup>();
                 float k = v == Normal ? 3.3f : v > Normal ? 9f : 1f;
-                g.SetLODs(new[] { new LOD(0.15f * k, new[] { r0 }), new LOD(0.012f, new[] { r1 }) });
+                if (ForestReduceAtDistance)
+                {
+                    var r1 = Part(root, "LOD1", Build(v, 1), dir, bark, needles);
+                    g.SetLODs(new[] { new LOD(0.15f * k, new[] { r0 }), new LOD(0.012f, new[] { r1 }) });
+                }
+                else g.SetLODs(new[] { new LOD(0f, new[] { r0 }) });   // un solo nivel, nunca se simplifica ni se oculta
                 g.RecalculateBounds();
                 go = PrefabUtility.SaveAsPrefabAsset(root, pp);
                 Object.DestroyImmediate(root);
@@ -1073,6 +1096,11 @@ static class TerrainTools
     // Despues de generar, la barra "Resolucion Bosque" de ViewDistance regula en el Editor cuan pronto se pasa a los LOD baratos.
     const float ForestModelQuality = 0.25f;
 
+    // false = los arboles de ForestFast NO se simplifican con la distancia: LOD1 y LOD2 usan la MISMA malla y texturas que LOD0 y nunca se ocultan
+    // (se ve el bosque completo a lo lejos). true = comportamiento anterior (mallas al 40% / 15%, texturas a 1/2 y 1/4, y ocultar al final).
+    // Si lo cambias, corre de nuevo la 6: la copia se regenera sola (lleva otro nombre).
+    const bool ForestReduceAtDistance = false;
+
     // Texturas: tamano maximo (px) de las texturas del LOD0 de cada modelo; LOD1 = la mitad, LOD2 = un cuarto (minimo 32). 0 = no tocar texturas.
     // Se crean COPIAS de las texturas en ForestFast/Static con ese Max Size (tus originales quedan intactas) y materiales nuevos que las usan.
     // Solo se reducen texturas que sean archivos del proyecto (no las embebidas en un FBX) y que sean mas grandes que el limite.
@@ -1083,14 +1111,15 @@ static class TerrainTools
     static string TreeCopy(GameObject src, string n)
     {
         int pct = Mathf.RoundToInt(Mathf.Clamp(ForestModelQuality, 0.01f, 1f) * 100f);
-        string dir = ForestDir + "/Static", path = $"{dir}/{n}_Tree2_q{pct}.prefab";
+        string sfx = ForestReduceAtDistance ? "" : "f";
+        string dir = ForestDir + "/Static", path = $"{dir}/{n}_Tree2_q{pct}{sfx}.prefab";
         if (File.Exists(path)) return path;
         var skins = src.GetComponentsInChildren<SkinnedMeshRenderer>(true).Where(r => r.sharedMesh != null).ToArray();
         if (skins.Length == 0 && !src.GetComponentsInChildren<MeshRenderer>(true).Any(r => r.TryGetComponent(out MeshFilter mf) && mf.sharedMesh != null)) return null;
         Directory.CreateDirectory(dir);
         CleanStale(dir, n);
 
-        var root = Object.Instantiate(src); root.name = n + "_Tree2_q" + pct;
+        var root = Object.Instantiate(src); root.name = n + "_Tree2_q" + pct + sfx;
         var skinSet = root.GetComponentsInChildren<SkinnedMeshRenderer>(true).Where(r => r.sharedMesh != null).ToArray();
         for (int i = 0; i < skinSet.Length; i++)
         {
@@ -1120,7 +1149,7 @@ static class TerrainTools
         {
             new LOD(ViewDistance.ForestLod0, lv[0].ToArray()),
             new LOD(ViewDistance.ForestLod1, lv[1].ToArray()),
-            new LOD(ViewDistance.ForestCull, lv[2].ToArray())
+            new LOD(ForestReduceAtDistance ? 0f : ViewDistance.ForestCull, lv[2].ToArray())
         });
         lg.fadeMode = LODFadeMode.None;
         root.transform.position = Vector3.zero;
@@ -1148,7 +1177,7 @@ static class TerrainTools
     // Borra copias/mallas viejas de este prefab (otra calidad o version anterior _Tree2) para no dejar basura en Static.
     static void CleanStale(string dir, string n)
     {
-        var rx = new System.Text.RegularExpressions.Regex($"^{System.Text.RegularExpressions.Regex.Escape(n)}_(Tree\\d*(_q\\d+)?|q\\d+_m\\d+_L\\d|mat_m\\d+_L\\d|t\\d+_.+)( \\d+)?\\.(prefab|asset|mat|png|jpg|jpeg|tga|psd|tif|tiff|exr|bmp)$");
+        var rx = new System.Text.RegularExpressions.Regex($"^{System.Text.RegularExpressions.Regex.Escape(n)}_(Tree\\d*(_q\\d+f?)?|q\\d+_m\\d+_L\\d|mat_m\\d+_L\\d|t\\d+_.+)( \\d+)?\\.(prefab|asset|mat|png|jpg|jpeg|tga|psd|tif|tiff|exr|bmp)$");
         foreach (var f in Directory.GetFiles(dir))
             if (rx.IsMatch(Path.GetFileName(f))) AssetDatabase.DeleteAsset(f.Replace('\\', '/'));
     }
@@ -1195,6 +1224,7 @@ static class TerrainTools
             r0.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
             for (int L = 0; L < 3; L++)
             {
+                if (L > 0 && !ForestReduceAtDistance) { lv[L].Add(r0); continue; }   // sin reduccion a distancia: mismo renderer (misma malla y texturas) en todos los LOD
                 var dm = Decimate(om, ratio[L], $"{dir}/{n}_q{pct}_m{idx}_L{L}.asset") ?? prev;
                 prev = dm;
                 if (L == 0) { mf.sharedMesh = dm; vNew += dm.vertexCount; r0.sharedMaterials = ShrinkMats(baseMats, n, dir, 0, matCache); lv[0].Add(r0); continue; }
