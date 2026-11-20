@@ -26,7 +26,7 @@ namespace Runtime.Scripts.Melee {
         private const float DEFAULT_PLAYER_MELEE_DAMAGE = 2f;
         private const float DEFAULT_PLAYER_MELEE_RANGE = 5.5f;
         private const float DEFAULT_PLAYER_MELEE_COOLDOWN = 0.8f;
-        private const float DEFAULT_MELEE_IMPACT_DELAY = 0.2f; // Delay por defecto antes del daño y VFX
+        private const float DEFAULT_MELEE_IMPACT_DELAY = 0.3f; // Delay por defecto antes del daño y VFX
         private const float DEFAULT_PLAYER_SLAM_DAMAGE = 2f;
         private const float DEFAULT_PLAYER_SLAM_RADIUS = 5.5f;
 
