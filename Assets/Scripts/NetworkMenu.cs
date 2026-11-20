@@ -335,15 +335,19 @@ namespace Runtime.Scripts.Network
                 return;
             }
 
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            if (NetworkManager.Singleton != null)
             {
-                NetworkManager.Singleton.Shutdown();
-                float timeout = 2f;
-                while (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && timeout > 0f)
+                if (NetworkManager.Singleton.IsListening)
                 {
-                    timeout -= Time.unscaledDeltaTime;
-                    await System.Threading.Tasks.Task.Yield();
+                    NetworkManager.Singleton.Shutdown();
+                    float timeout = 2f;
+                    while (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && timeout > 0f)
+                    {
+                        timeout -= Time.unscaledDeltaTime;
+                        await System.Threading.Tasks.Task.Yield();
+                    }
                 }
+                Destroy(NetworkManager.Singleton.gameObject);
             }
 
             ushort port = 7777;
@@ -433,15 +437,19 @@ namespace Runtime.Scripts.Network
         public async void OnClickSmartConnectClient()
         {
             SaveJoinSettings();
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
+            if (NetworkManager.Singleton != null)
             {
-                NetworkManager.Singleton.Shutdown();
-                float timeout = 2f;
-                while (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && timeout > 0f)
+                if (NetworkManager.Singleton.IsListening)
                 {
-                    timeout -= Time.unscaledDeltaTime;
-                    await System.Threading.Tasks.Task.Yield();
+                    NetworkManager.Singleton.Shutdown();
+                    float timeout = 2f;
+                    while (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening && timeout > 0f)
+                    {
+                        timeout -= Time.unscaledDeltaTime;
+                        await System.Threading.Tasks.Task.Yield();
+                    }
                 }
+                Destroy(NetworkManager.Singleton.gameObject);
             }
 
             string roomCode = _joinCodeInput != null ? _joinCodeInput.text.Trim().ToUpper() : "";
