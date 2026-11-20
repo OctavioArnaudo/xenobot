@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Runtime.Scripts.Audio
 {
-    public enum Sfx { Shoot, HitLight, HitHeavy, EnemyShoot, EnemyHit, Step, EnemyStep, Jump, MenuOpen, MenuClose, MissionComplete, GameOver }
+    public enum Sfx { Shoot, HitLight, HitHeavy, EnemyShoot, EnemyHit, Step, EnemyStep, Jump, MenuOpen, MenuClose, MissionComplete, GameOver, Land, Respawn }
     public enum Music { None, Exterior, Lab }
 
     /// <summary>
@@ -21,18 +21,26 @@ namespace Runtime.Scripts.Audio
         public float fade = 1f;
 
         static AudioManager I;
-        AudioSource _s, _m;
+        AudioSource _m;
         Music _cur;
         Coroutine _f;
+        AudioSource[] _c; // un canal fijo por efecto: el siguiente corta al anterior, nunca se solapan
 
         void Awake()
         {
             if (I != null) { Destroy(gameObject); return; }
             I = this;
             DontDestroyOnLoad(gameObject);
-            _s = gameObject.AddComponent<AudioSource>();
             _m = gameObject.AddComponent<AudioSource>();
             _m.loop = true;
+            _c = new AudioSource[Enum.GetValues(typeof(Sfx)).Length];
+            for (int i = 0; i < _c.Length; i++)
+            {
+                _c[i] = new GameObject("Sfx_" + (Sfx)i).AddComponent<AudioSource>();
+                _c[i].transform.SetParent(transform);
+                _c[i].playOnAwake = false;
+                _c[i].dopplerLevel = 0f;
+            }
         }
 
         public static void Play(Sfx id, Vector3? at = null)
@@ -43,8 +51,14 @@ namespace Runtime.Scripts.Audio
                 if (e.id != id || e.clips == null || e.clips.Length == 0) continue;
                 var c = e.clips[UnityEngine.Random.Range(0, e.clips.Length)];
                 if (c == null) return;
-                if (at.HasValue) AudioSource.PlayClipAtPoint(c, at.Value, e.volume);
-                else { I._s.pitch = UnityEngine.Random.Range(e.pitch.x, e.pitch.y); I._s.PlayOneShot(c, e.volume); }
+                var a = I._c[(int)id];
+                a.Stop();
+                a.transform.position = at ?? Vector3.zero;
+                a.spatialBlend = at.HasValue ? 1f : 0f;
+                a.clip = c;
+                a.pitch = UnityEngine.Random.Range(e.pitch.x, e.pitch.y);
+                a.volume = e.volume;
+                a.Play();
                 return;
             }
         }

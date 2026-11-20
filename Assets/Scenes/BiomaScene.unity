@@ -94060,14 +94060,100 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43e046352ff9ca2438979c78798195e7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Runtime.Scripts.Audio.AudioManager
-  sfx: []
+  sfx:
+  - id: 0
+    clips:
+    - {fileID: 8300000, guid: 0cacf9e8e361eb24e9101b28422f7c08, type: 3}
+    volume: 1
+    pitch: {x: 1, y: 1}
+  - id: 1
+    clips:
+    - {fileID: 8300000, guid: ea3b4ed3305bba445b29f0af8ac84102, type: 3}
+    - {fileID: 8300000, guid: 8e93eee09dd81b943a448d594f1b8ca0, type: 3}
+    volume: 1
+    pitch: {x: 1, y: 1}
+  - id: 2
+    clips:
+    - {fileID: 8300000, guid: 1bdc793bbf5daec4cb965a13497a5765, type: 3}
+    - {fileID: 8300000, guid: f7e69ce0e15ea004ba43e35d345463ba, type: 3}
+    volume: 1
+    pitch: {x: 1, y: 1}
+  - id: 3
+    clips:
+    - {fileID: 8300000, guid: 0d44f0cb2e91f5f4ca09aded9a1bd9ab, type: 3}
+    volume: 1
+    pitch: {x: 0.9, y: 0.9}
+  - id: 4
+    clips:
+    - {fileID: 8300000, guid: 1bdc793bbf5daec4cb965a13497a5765, type: 3}
+    - {fileID: 8300000, guid: f7e69ce0e15ea004ba43e35d345463ba, type: 3}
+    volume: 0.965
+    pitch: {x: 0.95, y: 0.95}
+  - id: 5
+    clips:
+    - {fileID: 8300000, guid: 72f526a6a9890f643a88e85a61c86c8a, type: 3}
+    - {fileID: 8300000, guid: 85016e0f2b01da248b9663dd49a161b0, type: 3}
+    - {fileID: 8300000, guid: 186de84b3207156479abe98f4958fed0, type: 3}
+    - {fileID: 8300000, guid: 1a91fcd19acf1e54bba0945d9f390849, type: 3}
+    - {fileID: 8300000, guid: 14e8a8d2158bec840b56c54f5266e692, type: 3}
+    - {fileID: 8300000, guid: 29841e7d5bbfb5b419c9ad16ca8bc4c1, type: 3}
+    - {fileID: 8300000, guid: dd1af302b8902684d9381de1f2d3a5af, type: 3}
+    - {fileID: 8300000, guid: 67c8b33e424ccdc4486edf538ab91c5a, type: 3}
+    - {fileID: 8300000, guid: 274649b0e221539409070ebf6c18918b, type: 3}
+    - {fileID: 8300000, guid: a3194b8bbc96ef84fab1f98f4b7dae3e, type: 3}
+    volume: 1
+    pitch: {x: 1, y: 1}
+  - id: 6
+    clips:
+    - {fileID: 8300000, guid: 72f526a6a9890f643a88e85a61c86c8a, type: 3}
+    - {fileID: 8300000, guid: 85016e0f2b01da248b9663dd49a161b0, type: 3}
+    - {fileID: 8300000, guid: 186de84b3207156479abe98f4958fed0, type: 3}
+    - {fileID: 8300000, guid: 1a91fcd19acf1e54bba0945d9f390849, type: 3}
+    - {fileID: 8300000, guid: 14e8a8d2158bec840b56c54f5266e692, type: 3}
+    volume: 1
+    pitch: {x: 3, y: 3}
+  - id: 7
+    clips:
+    - {fileID: 8300000, guid: 13b59a14d34add64d84a623867546ff1, type: 3}
+    volume: 1
+    pitch: {x: 1, y: 1}
+  - id: 8
+    clips:
+    - {fileID: 8300000, guid: 179db782f1044bc48b9dff5d487c4bef, type: 3}
+    volume: 0.279
+    pitch: {x: 1, y: 1}
+  - id: 9
+    clips:
+    - {fileID: 8300000, guid: 7b83d61917ac1224f942a0609b1221f2, type: 3}
+    volume: 1
+    pitch: {x: 1, y: 1}
+  - id: 10
+    clips:
+    - {fileID: 8300000, guid: 68b953a59f61f194e9e66af55d07c7ef, type: 3}
+    volume: 1
+    pitch: {x: 1, y: 1}
+  - id: 11
+    clips:
+    - {fileID: 8300000, guid: 0a338d82d61863d4aa095317ca6ce19e, type: 3}
+    volume: 1
+    pitch: {x: 1, y: 1}
+  - id: 12
+    clips:
+    - {fileID: 8300000, guid: a533219934975884e81c1add37af9930, type: 3}
+    volume: 1
+    pitch: {x: 1, y: 1}
+  - id: 13
+    clips:
+    - {fileID: 8300000, guid: d0f1afed8fa916244af6ca73579ded67, type: 3}
+    volume: 1
+    pitch: {x: 1, y: 1}
   music:
   - id: 1
     clip: {fileID: 8300000, guid: cfa3827d4df640c498cb53ce92620eb3, type: 3}
-    volume: 0.29
+    volume: 0.049
   - id: 2
     clip: {fileID: 8300000, guid: ca7b8ab6efc98914698ce19308050db6, type: 3}
-    volume: 0.29
+    volume: 0.056
   fade: 3
 --- !u!4 &1828716053 stripped
 Transform:

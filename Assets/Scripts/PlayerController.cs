@@ -54,9 +54,6 @@ namespace Runtime.Scripts.Player
         public Optional<float> rotationSmoothTime;
         public float SpeedChangeRate;
         public Optional<float> speedChangeRate;
-        public AudioClip LandingAudioClip;
-        public AudioClip[] FootstepAudioClips;
-        [Range(0, 1)] public float FootstepAudioVolume = 0.5f;
 
         [Header("Jump Physics & Overrides")]
         public float JumpHeight;
@@ -137,7 +134,6 @@ namespace Runtime.Scripts.Player
         [Header("Respawn & Spawning")]
         public List<SceneSpawnConfig> SceneSpawns = new List<SceneSpawnConfig>();
         public float yThreshold = -5f;
-        public AudioClip respawnSound;
         private Vector3 _startingPosition;
         #endregion
 
@@ -1165,7 +1161,11 @@ namespace Runtime.Scripts.Player
                 _verticalVelocity = 0f;
             }
             ResetCameraRotation(90f);
-            if (respawnSound != null) AudioSource.PlayClipAtPoint(respawnSound, transform.position);
+            if (!IsNetworkActive || IsOwner)
+            {
+                SceneDoor.Reset(); // reaparece afuera: musica Exterior
+                AudioManager.Play(Sfx.Respawn, transform.position);
+            }
         }
 
         public void ResetCameraRotation(float targetYaw)
@@ -1240,17 +1240,14 @@ namespace Runtime.Scripts.Player
         #region Audio Helpers
         private void OnFootstep(AnimationEvent animationEvent)
         {
-            if (animationEvent.animatorClipInfo.weight > 0.5f && FootstepAudioClips.Length > 0)
-            {
-                var index = Random.Range(0, FootstepAudioClips.Length);
-                AudioSource.PlayClipAtPoint(FootstepAudioClips[index], transform.TransformPoint(_controller.center), FootstepAudioVolume);
-            }
+            if (animationEvent.animatorClipInfo.weight > 0.5f)
+                AudioManager.Play(Sfx.Step, transform.TransformPoint(_controller.center));
         }
 
         private void OnLand(AnimationEvent animationEvent)
         {
-            if (animationEvent.animatorClipInfo.weight > 0.5f && LandingAudioClip != null)
-                AudioSource.PlayClipAtPoint(LandingAudioClip, transform.TransformPoint(_controller.center), FootstepAudioVolume);
+            if (animationEvent.animatorClipInfo.weight > 0.5f)
+                AudioManager.Play(Sfx.Land, transform.TransformPoint(_controller.center));
         }
         #endregion
 
