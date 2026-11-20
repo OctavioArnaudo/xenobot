@@ -270,24 +270,6 @@ public class ChargerAI : NetworkBehaviour {
 
         if (shockRoutine != null) StopCoroutine(shockRoutine);
         shockRoutine = StartCoroutine(DelayedShockwaveRoutine(groundPos, cdir));
-
-        foreach (var g in pl) {
-            if (!g || !g.activeInHierarchy) continue;
-            float d = Vector3.Distance(g.transform.position + Vector3.up, c);
-            if (d > shockRadius) continue;
-            var h = g.GetComponentInParent<HealthController>();
-            if (!h || h.EffectiveTeam != Team.Player) continue;
-            float k = 1f - d / shockRadius;
-            h.TakeDamage(Mathf.RoundToInt(impactDamage * Mathf.Lerp(.25f, 1f, k)));
-            Vector3 away = g.transform.position - c; away.y = 0f;
-            var pc = g.GetComponentInParent<PlayerController>();
-            if (pc) pc.ApplyKnockback((away.sqrMagnitude > .01f ? away.normalized : cdir) * (knockback * Mathf.Lerp(.5f, 1f, k)) + Vector3.up * 7f);
-        }
-
-        int n = Physics.OverlapSphereNonAlloc(c, shockRadius, buf, ~0, QueryTriggerInteraction.Ignore);
-        for (int i = 0; i < n; i++)
-            if (buf[i].TryGetComponent(out Smashable sm))
-                sm.Damage(smashDamage * (.4f + .6f * (1f - Mathf.Min(Vector3.Distance(buf[i].bounds.center, c) / shockRadius, 1f))));
     }
 
     Vector3 GetGroundPosition(Vector3 pos) {
@@ -303,15 +285,55 @@ public class ChargerAI : NetworkBehaviour {
         shockRoutine = null;
         if (hp != null && hp.EffectiveCurrentHealth <= 0) yield break;
 
+        // Onda expansiva agrandada un 20% en tamaño visual y en área de efecto real
+        float effectiveShockRadius = shockRadius * 1.2f;
+
         Snd(Sfx.HitHeavy);
-        ShockRing.Play(groundPos, shockRadius);
+        ShockRing.Play(groundPos, effectiveShockRadius);
         CombatFx.Slash(groundPos + Vector3.up * 0.6f, dir, 5f, new Color(1f, .25f, .2f, .9f));
+
+        // Actualizamos la lista de jugadores en tiempo real para no perder ninguno
+        pl = GameObject.FindGameObjectsWithTag("Player");
+        HashSet<HealthController> damagedPlayers = new HashSet<HealthController>();
+
+        foreach (var g in pl) {
+            if (!g || !g.activeInHierarchy) continue;
+
+            // Distancia horizontal (plano XZ) para que la onda al ras del suelo alcance con precisión al jugador
+            Vector3 flatDiff = g.transform.position - groundPos;
+            float verticalDiff = Mathf.Abs(flatDiff.y);
+            flatDiff.y = 0f;
+            float d = flatDiff.magnitude;
+
+            if (d > effectiveShockRadius || verticalDiff > 4f) continue;
+
+            var h = g.GetComponentInParent<HealthController>() ?? g.GetComponentInChildren<HealthController>();
+            if (!h || h.EffectiveTeam != Team.Player || !damagedPlayers.Add(h)) continue;
+
+            float k = 1f - (d / effectiveShockRadius);
+            h.TakeDamage(Mathf.RoundToInt(impactDamage * Mathf.Lerp(.25f, 1f, k)));
+
+            var pc = g.GetComponentInParent<PlayerController>() ?? g.GetComponentInChildren<PlayerController>();
+            if (pc) {
+                Vector3 awayDir = flatDiff.sqrMagnitude > .01f ? flatDiff.normalized : dir;
+                pc.ApplyKnockback(awayDir * (knockback * Mathf.Lerp(.5f, 1f, k)) + Vector3.up * 7f);
+            }
+        }
+
+        // Daño a cristales y obstáculos rompibles dentro del mismo radio ampliado
+        int n = Physics.OverlapSphereNonAlloc(groundPos, effectiveShockRadius, buf, ~0, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < n; i++) {
+            if (buf[i].TryGetComponent(out Smashable sm)) {
+                float dist = Vector3.Distance(buf[i].bounds.center, groundPos);
+                sm.Damage(smashDamage * (.4f + .6f * (1f - Mathf.Min(dist / effectiveShockRadius, 1f))));
+            }
+        }
     }
 
 #if UNITY_EDITOR
     void OnDrawGizmosSelected() {
         Gizmos.color = Color.yellow; Gizmos.DrawWireSphere(transform.position, detectRange);
-        Gizmos.color = Color.red; Gizmos.DrawWireSphere(transform.position, shockRadius);
+        Gizmos.color = Color.red; Gizmos.DrawWireSphere(transform.position, shockRadius * 1.2f);
     }
 #endif
 }
