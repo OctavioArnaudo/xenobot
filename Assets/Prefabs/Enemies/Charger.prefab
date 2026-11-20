@@ -162,6 +162,11 @@ MonoBehaviour:
     use: 0
     value: 0
   invulnerabilityDuration: 0.5
+  showEnemyHealthBar: 1
+  hideBarWhenFull: 1
+  healthBarOffset: {x: 0, y: 0.45, z: 0}
+  healthBarSize: {x: 1.1, y: 0.14}
+  healthBarMaxDistance: 35
   visualsToFlash: []
   flashColor: {r: 1, g: 0, b: 0, a: 1}
   flashDuration: 0.15
@@ -185,20 +190,22 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ChargerAI
   ShowTopMostFoldoutHeaderGroup: 1
   detectRange: 40
-  walkAccel: 100
-  walkSpeed: 50
+  walkAccel: 40
+  walkSpeed: 8
   wanderRadius: 40
   idleMin: 1
   idleMax: 4
-  windupTime: 1.5
-  chargeSpeed: 70
-  chargeAccel: 30
+  windupTime: 0.4
+  chargeSpeed: 50
+  chargeAccel: 80
   chargeMax: 60
   chargeTimeout: 3.5
   cooldown: 5
   shockRadius: 18
   hitRadius: 4.5
   stunTime: 0.9
+  shockwaveDelay: 0.3
+  groundHeightOffset: 0.1
   impactDamage: 100
   runDamage: 40
   runHitRadius: 10
