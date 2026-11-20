@@ -18,6 +18,7 @@ namespace Runtime.Scripts.Network
         [Header("Scene Navigation")]
         [SerializeField] private string mainScene = "MainScene";
         [SerializeField] private string lobbySceneName = "LobbyScene";
+        [SerializeField] private string biomaSceneName = "BiomaScene";
 
         [Header("Cyberpunk Theme Colors")]
         public Color panelColor = new Color(0.04f, 0.08f, 0.12f, 0.92f);
@@ -317,6 +318,18 @@ namespace Runtime.Scripts.Network
         public async void OnClickStartHostMatch()
         {
             SaveHostSettings();
+            int maxPlayers = PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 4);
+            if (_hostMaxPlayersInput != null && int.TryParse(_hostMaxPlayersInput.text, out int parsedMax))
+            {
+                maxPlayers = parsedMax;
+            }
+
+            if (maxPlayers <= 1)
+            {
+                SceneManager.LoadScene(biomaSceneName);
+                return;
+            }
+
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
             {
                 NetworkManager.Singleton.Shutdown();
@@ -366,7 +379,7 @@ namespace Runtime.Scripts.Network
                         await Unity.Services.Authentication.AuthenticationService.Instance.SignInAnonymouslyAsync();
                     }
 
-                    int maxPlayers = PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 4);
+                    maxPlayers = PlayerPrefs.GetInt(SettingsMenu.PrefKeys.GetKey(SettingsMenu.PrefKeys.Key.MaxPlayers), 4);
                     var allocation = await Unity.Services.Relay.RelayService.Instance.CreateAllocationAsync(maxPlayers - 1);
                     string joinCode = await Unity.Services.Relay.RelayService.Instance.GetJoinCodeAsync(allocation.AllocationId);
 
