@@ -788,19 +788,26 @@ namespace Runtime.Scripts.Enemy
             groundOffset = Mathf.Max(0.85f, groundOffset);
 
             EnemyCategory cat = GetCurrentCategory();
+            float targetOffset = groundOffset;
+
             if (cat == EnemyCategory.Melee)
             {
-                m_Agent.baseOffset = groundOffset;
+                targetOffset = groundOffset;
+                m_Agent.stoppingDistance = 0.1f;
             }
             else if (cat == EnemyCategory.Ranged)
             {
-                m_Agent.baseOffset = groundOffset + EffectiveHoverHeight;
+                targetOffset = groundOffset + EffectiveHoverHeight;
+                m_Agent.stoppingDistance = Mathf.Max(4f, EffectiveShootRange * 0.5f);
             }
             else
             {
                 bool isMeleeClose = m_Target != null && Vector3.Distance(transform.position, m_Target.position) <= EffectiveMeleeRange * 1.5f;
-                m_Agent.baseOffset = isMeleeClose ? groundOffset : (groundOffset + EffectiveHoverHeight);
+                targetOffset = isMeleeClose ? groundOffset : (groundOffset + EffectiveHoverHeight);
+                m_Agent.stoppingDistance = isMeleeClose ? 0.1f : 6f;
             }
+
+            m_Agent.baseOffset = Mathf.Lerp(m_Agent.baseOffset, targetOffset, 5f * Time.deltaTime);
         }
 
         private Vector3 FindCoverPosition(Vector3 targetPos)
