@@ -771,6 +771,11 @@ namespace Runtime.Scripts.Player
 
         private void HandleAimingAndCombat()
         {
+            if (crosshairUI == null && CanExecuteLocalLogic)
+            {
+                CreateDefaultCrosshairUI();
+            }
+
             if (crosshairUI != null)
             {
                 crosshairUI.SetActive(!(_gameCursor && Cursor.visible));
@@ -891,14 +896,52 @@ namespace Runtime.Scripts.Player
         #endregion
 
         #region Network Shooting Bridge
+        private void CreateDefaultCrosshairUI()
+        {
+            if (crosshairUI != null) return;
+
+            GameObject canvasGo = new GameObject("CrosshairCanvas", typeof(Canvas), typeof(CanvasScaler));
+            Canvas canvas = canvasGo.GetComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.sortingOrder = 999;
+
+            CanvasScaler scaler = canvasGo.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+
+            GameObject centerDot = new GameObject("CrosshairDot", typeof(UnityEngine.UI.Image), typeof(RectTransform));
+            centerDot.transform.SetParent(canvasGo.transform, false);
+
+            UnityEngine.UI.Image img = centerDot.GetComponent<UnityEngine.UI.Image>();
+            img.color = new Color(0f, 1f, 0.85f, 0.9f);
+
+            RectTransform rect = centerDot.GetComponent<RectTransform>();
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = new Vector2(10f, 10f);
+
+            crosshairUI = canvasGo;
+        }
+
         public void RequestFire(GameObject prefab, Vector3 direction, Vector3 spawnPos, float damage, Team team, bool enableHoming)
         {
             enableHoming = enableHoming && !aim;
+
+            if (!IsServer && prefab != null)
+            {
+                GameObject localProj = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
+                ProjectileController projComp = localProj.GetComponent<ProjectileController>();
+                if (projComp != null)
+                {
+                    projComp.enableHomingTracking = enableHoming;
+                    projComp.Launch(gameObject, direction, damage, team);
+                }
+            }
+
             if (IsNetworkActive)
             {
                 FireServerRpc(direction, spawnPos, damage, team, enableHoming);
             }
-            else
+            else if (IsServer || !IsNetworkActive)
             {
                 GameObject projObj = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
                 ProjectileController projectile = projObj.GetComponent<ProjectileController>();
@@ -910,7 +953,7 @@ namespace Runtime.Scripts.Player
             }
         }
 
-        [ServerRpc]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool enableHoming)
         {
             GameObject projectilePrefab = null;
@@ -932,7 +975,10 @@ namespace Runtime.Scripts.Player
                     projectile.Launch(gameObject, direction, damage, team);
                 }
 
-                if (projObj.TryGetComponent<NetworkObject>(out var netObj)) netObj.Spawn();
+                if (projObj.TryGetComponent<NetworkObject>(out var netObj) && !netObj.IsSpawned)
+                {
+                    netObj.Spawn();
+                }
             }
         }
         #endregion
