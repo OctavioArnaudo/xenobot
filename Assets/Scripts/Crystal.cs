@@ -320,6 +320,9 @@ namespace Runtime.Scripts.Crystals
     {
         const float Size = 4.5f;   // escala del fragmento respecto al modelo base (0.56 de alto): ~2.5 m
         public static readonly string[] Names = { "Fragmento de cristal violeta", "Fragmento de cristal rojo", "Fragmento de cristal amarillo" };
+        static readonly string[] ResourceKeysEs = { "Item_Crystal_Violeta", "Item_Crystal_Rojo", "Item_Crystal_Amarillo" };
+        static readonly string[] ResourceKeysEn = { "Item_Crystal_Violet", "Item_Crystal_Red", "Item_Crystal_Yellow" };
+
         static ItemsData[] items;
         static GameObject[] tpl;
         static PhysicsMaterial phys;
@@ -349,8 +352,6 @@ namespace Runtime.Scripts.Crystals
             phys = new PhysicsMaterial("CrystalFragment") { dynamicFriction = 0.2f, staticFriction = 0.2f, bounciness = 0.35f, frictionCombine = PhysicsMaterialCombine.Minimum, bounceCombine = PhysicsMaterialCombine.Maximum };
             var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
 
-            ItemsData masterItem = Resources.Load<ItemsData>("Crafting/Items/Data/Item_Crystal");
-
             for (int c = 0; c < 3; c++)
             {
                 var t = new GameObject("CrystalFragment");
@@ -373,7 +374,22 @@ namespace Runtime.Scripts.Crystals
                 t.AddComponent<CrystalController>();
                 tpl[c] = t;
 
-                items[c] = masterItem != null ? masterItem : (Resources.Load<ItemsData>($"Crafting/Items/Data/Item_Crystal_{c}") ?? ItemsData.Create("Item_Crystal", t));
+                ItemsData loadedItem = Resources.Load<ItemsData>($"Crafting/Items/Data/{ResourceKeysEs[c]}")
+                                    ?? Resources.Load<ItemsData>($"Crafting/Items/Data/{ResourceKeysEn[c]}")
+                                    ?? Resources.Load<ItemsData>($"Crafting/Items/Data/Item_Crystal_{c}");
+
+                if (loadedItem == null && c == 0)
+                {
+                    loadedItem = Resources.Load<ItemsData>("Crafting/Items/Data/Item_Crystal");
+                }
+
+                if (loadedItem == null)
+                {
+                    loadedItem = ItemsData.Create(Names[c], t);
+                    loadedItem.name = ResourceKeysEs[c];
+                }
+
+                items[c] = loadedItem;
             }
         }
 
