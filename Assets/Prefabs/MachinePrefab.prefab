@@ -47,14 +47,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3695932267
+  GlobalObjectIdHash: 2634126981
   InScenePlacedSourceGlobalObjectIdHash: 2634126981
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
   SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
@@ -76,13 +76,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   availableTrades:
-  - {fileID: 11400000, guid: 0ccc0bb9781340c4a4d829b342a9ed8f, type: 2}
-  - {fileID: 11400000, guid: c73dfdf4058e4f13b973f9ef61b0a184, type: 2}
+  - {fileID: 11400000, guid: 4a111111111111111111111111111103, type: 2}
+  - {fileID: 11400000, guid: d66e06e614aa3a54ba9e0f8f8aab0052, type: 2}
   requireProximity: 1
   panelWidth: 700
   panelHeight: 550
   titleH: 60
   padding: 20
+  uiScale: 2
   cornerRadius: 15
   panelColor: {r: 0.1, g: 0.1, b: 0.12, a: 0.95}
   accentColor: {r: 1, g: 0.85, b: 0, a: 1}

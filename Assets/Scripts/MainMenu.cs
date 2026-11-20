@@ -120,7 +120,11 @@ namespace Runtime.Scripts.Main
             if (coverSprite != null)
                 CreateAdaptiveImage(canvasObj.transform, "CentralCoverImage", new Vector2(0.5f, 0.52f), new Vector2(0.38f, 0.48f), Color.white, coverSprite);
 
-            CreateAdaptiveText(canvasObj.transform, "XENOBOT", new Vector2(0.5f, 0.88f), titleColor, true);
+            Sprite titleSprite = Resources.Load<Sprite>("Menus/Fonts/main_menu");
+            if (titleSprite != null)
+                CreateAdaptiveImage(canvasObj.transform, "XENOBOT", new Vector2(0.5f, 0.88f), new Vector2(0.75f, 0.18f), Color.white, titleSprite);
+            else
+                CreateAdaptiveText(canvasObj.transform, "XENOBOT", new Vector2(0.5f, 0.88f), titleColor, true);
 
             CreateAdaptiveButton(canvasObj.transform, "SETTINGS", new Vector2(0.2f, 0.6f), OpenSettings, buttonsColor);
             CreateAdaptiveButton(canvasObj.transform, "LEVELS", new Vector2(0.2f, 0.4f), OpenLevels, buttonsColor);
