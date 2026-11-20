@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Runtime.Scripts.Audio
 {
-    public enum Sfx { Shoot, HitLight, HitHeavy, EnemyShoot, EnemyHit, Step, EnemyStep, Jump, MenuOpen, MenuClose, MissionComplete, GameOver, Land, Respawn, Pickup, ChargerWindup, ChargerHit, EnemyHover }
+    public enum Sfx { Shoot, HitLight, HitHeavy, EnemyShoot, EnemyHit, Step, EnemyStep, Jump, MenuOpen, MenuClose, MissionComplete, GameOver, Land, Respawn, Pickup, ChargerWindup, ChargerHit, EnemyHover, EnemyDeath }
     public enum Music { None, Exterior, Lab }
 
     /// <summary>

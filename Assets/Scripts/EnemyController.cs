@@ -491,6 +491,7 @@ namespace Runtime.Scripts.Enemy
         {
             if (_isEnemyDead) return;
             _isEnemyDead = true;
+            Snd(Sfx.EnemyDeath);
 
             ReleaseMeleeAttackToken();
             StopMoving();
