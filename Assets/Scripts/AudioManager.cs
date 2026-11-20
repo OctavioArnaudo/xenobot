@@ -69,14 +69,20 @@ namespace Runtime.Scripts.Audio
         {
             if (I == null) return;
             Entry e = null;
-            foreach (var x in I.sfx) if (x.id == id) { e = x; break; }
+            foreach (var x in I.sfx)
+            {
+                if (x.id != id) continue;
+                if (e == null) e = x;
+                if (x.clips != null && x.clips.Length > 0) { e = x; break; } // una entrada repetida y vacia no tapa a la que tiene clips
+            }
             if (clip == null)
             {
                 if (e == null || e.clips == null || e.clips.Length == 0) return;
                 clip = e.clips[UnityEngine.Random.Range(0, e.clips.Length)];
                 if (clip == null) return;
             }
-            float v = e != null ? e.volume : 1f, p = e != null ? UnityEngine.Random.Range(e.pitch.x, e.pitch.y) : 1f, r = e != null && e.reach > 0f ? e.reach : 1f; // reach 0 (entradas viejas) = normal
+            float v = e != null ? e.volume : 1f, p = e != null ? UnityEngine.Random.Range(e.pitch.x, e.pitch.y) : 1f, r = e != null && e.reach > 0f ? e.reach : 1f;
+            if (p < 0.01f) p = 1f; // pitch 0 = silencio // reach 0 (entradas viejas) = normal
             I.Fill(I._c[(int)id], clip, at, p, Mathf.Min(v, 1f), r);
             // Ganancia > 1: un segundo canal sincronizado suma el excedente (AudioSource.volume tope = 1).
             if (v > 1f) I.Fill(I._x[(int)id], clip, at, p, v - 1f, r);
