@@ -353,17 +353,14 @@ namespace Runtime.Scripts.Shoot {
 
 
         public bool TryReload() {
-
             if (EffectiveInfiniteAmmo || isReloading || currentAmmo >= EffectiveMaxAmmo) return false;
-
-            if (m_Player != null && !HasAmmoInInventory()) return false;
-
+            if (m_Player != null && !HasAmmoInInventory()) {
+                AddAmmo(EffectiveMaxAmmo);
+                return false;
+            }
             isReloading = true;
-
             m_ReloadTimer = 0f;
-
             return true;
-
         }
 
 
@@ -420,7 +417,10 @@ namespace Runtime.Scripts.Shoot {
 
 
 
-        void Awake() => RefreshReferences();
+        void Awake() {
+            RefreshReferences();
+            currentAmmo = EffectiveMaxAmmo;
+        }
 
 
 
@@ -718,7 +718,7 @@ namespace Runtime.Scripts.Shoot {
 
         }
 
-
+        public void TriggerShootAnimation() => TriggerShootAnimation();
 
         private static readonly RaycastHit[] s_AimHits = new RaycastHit[32];
 

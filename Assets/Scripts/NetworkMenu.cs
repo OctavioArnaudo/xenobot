@@ -347,7 +347,6 @@ namespace Runtime.Scripts.Network
                         await System.Threading.Tasks.Task.Yield();
                     }
                 }
-                Destroy(NetworkManager.Singleton.gameObject);
             }
 
             ushort port = 7777;
@@ -449,7 +448,6 @@ namespace Runtime.Scripts.Network
                         await System.Threading.Tasks.Task.Yield();
                     }
                 }
-                Destroy(NetworkManager.Singleton.gameObject);
             }
 
             string roomCode = _joinCodeInput != null ? _joinCodeInput.text.Trim().ToUpper() : "";

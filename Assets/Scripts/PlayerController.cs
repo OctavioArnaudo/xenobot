@@ -492,8 +492,7 @@ namespace Runtime.Scripts.Player
 #if ENABLE_INPUT_SYSTEM
             if (_fireAction == null) RefreshInputActions();
             UpdateInputState();
-            if (Cursor.lockState == CursorLockMode.Locked) _gameCursor = true;
-            if (_gameCursor && Cursor.visible) ClearInput();
+            if (Cursor.lockState == CursorLockMode.None && Cursor.visible) ClearInput();
 #endif
 
             HandleAimingAndCombat();
@@ -910,7 +909,7 @@ namespace Runtime.Scripts.Player
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920, 1080);
 
-            GameObject centerDot = new GameObject("CrosshairDot", typeof(UnityEngine.UI.Image), typeof(RectTransform));
+            GameObject centerDot = new GameObject("CrosshairDot", typeof(UnityEngine.UI.Image));
             centerDot.transform.SetParent(canvasGo.transform, false);
 
             UnityEngine.UI.Image img = centerDot.GetComponent<UnityEngine.UI.Image>();
@@ -927,22 +926,11 @@ namespace Runtime.Scripts.Player
         {
             enableHoming = enableHoming && !aim;
 
-            if (!IsServer && prefab != null)
-            {
-                GameObject localProj = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
-                ProjectileController projComp = localProj.GetComponent<ProjectileController>();
-                if (projComp != null)
-                {
-                    projComp.enableHomingTracking = enableHoming;
-                    projComp.Launch(gameObject, direction, damage, team);
-                }
-            }
-
             if (IsNetworkActive)
             {
                 FireServerRpc(direction, spawnPos, damage, team, enableHoming);
             }
-            else if (IsServer || !IsNetworkActive)
+            else
             {
                 GameObject projObj = Instantiate(prefab, spawnPos, Quaternion.LookRotation(direction));
                 ProjectileController projectile = projObj.GetComponent<ProjectileController>();
@@ -954,7 +942,7 @@ namespace Runtime.Scripts.Player
             }
         }
 
-        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
+        [ServerRpc(RequireOwnership = false)]
         private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool enableHoming)
         {
             GameObject projectilePrefab = null;
@@ -968,7 +956,7 @@ namespace Runtime.Scripts.Player
             if (projectilePrefab != null)
             {
                 Quaternion rot = Quaternion.LookRotation(direction);
-                GameObject projObj = ProjectilePool.Get(projectilePrefab, spawnPos, rot);
+                GameObject projObj = Instantiate(projectilePrefab, spawnPos, rot);
                 ProjectileController projectile = projObj.GetComponent<ProjectileController>();
                 if (projectile != null)
                 {
@@ -978,8 +966,28 @@ namespace Runtime.Scripts.Player
 
                 if (projObj.TryGetComponent<NetworkObject>(out var netObj) && !netObj.IsSpawned)
                 {
-                    netObj.Spawn();
+                    try
+                    {
+                        netObj.Spawn();
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"[PlayerController] NetObj Spawn failed: {ex.Message}");
+                    }
                 }
+            }
+
+            FireEffectsClientRpc();
+        }
+
+        [ClientRpc]
+        private void FireEffectsClientRpc()
+        {
+            var shooter = GetComponentInChildren<ShootController>();
+            if (shooter != null)
+            {
+                shooter.TriggerShootAnimation();
+                if (shooter.MuzzleFlash) shooter.MuzzleFlash.Play();
             }
         }
         #endregion
@@ -1186,17 +1194,27 @@ namespace Runtime.Scripts.Player
             jump = false;
         }
 
+        private void TriggerJumpAnim()
+        {
+            if (_hasAnimIDJump && _animator != null) _animator.SetTrigger(_animIDJump);
+        }
+
         private void PlayJump()
         {
             AudioManager.Play(Sfx.Jump, transform.position);
+            TriggerJumpAnim();
             if (IsNetworkActive) JumpSfxServerRpc();
         }
 
-        [ServerRpc]
+        [ServerRpc(RequireOwnership = false)]
         private void JumpSfxServerRpc() => JumpSfxClientRpc();
 
         [ClientRpc]
-        private void JumpSfxClientRpc() { if (!IsOwner) AudioManager.Play(Sfx.Jump, transform.position); }
+        private void JumpSfxClientRpc()
+        {
+            if (!IsOwner) AudioManager.Play(Sfx.Jump, transform.position);
+            TriggerJumpAnim();
+        }
         #endregion
 
         #region Respawn Logic
@@ -1282,6 +1300,39 @@ namespace Runtime.Scripts.Player
             if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, forwardBackSpeed, 0.1f, Time.deltaTime);
             if (_hasAnimIDSpeedX) _animator.SetFloat(_animIDSpeedX, strafeSpeed, 0.1f, Time.deltaTime);
             if (_hasAnimIDIsGrounded) _animator.SetBool(_animIDIsGrounded, Grounded);
+
+            if (IsOwner && IsNetworkActive)
+            {
+                _syncAnimTimer += Time.deltaTime;
+                if (_syncAnimTimer >= 0.1f)
+                {
+                    _syncAnimTimer = 0f;
+                    UpdateAnimatorServerRpc(forwardBackSpeed, strafeSpeed, Grounded);
+                }
+            }
+        }
+
+        private float _syncAnimTimer;
+
+        [ServerRpc]
+        private void UpdateAnimatorServerRpc(float speed, float strafe, bool grounded)
+        {
+            UpdateAnimatorClientRpc(speed, strafe, grounded);
+        }
+
+        [ClientRpc]
+        private void UpdateAnimatorClientRpc(float speed, float strafe, bool grounded)
+        {
+            if (IsOwner) return;
+            if (!_hasAnimator || _animator == null)
+            {
+                RefreshFunctionalComponents();
+                if (!_hasAnimator) return;
+            }
+            if (!_animator.enabled) _animator.enabled = true;
+            if (_hasAnimIDSpeed) _animator.SetFloat(_animIDSpeed, speed, 0.1f, Time.deltaTime);
+            if (_hasAnimIDSpeedX) _animator.SetFloat(_animIDSpeedX, strafe, 0.1f, Time.deltaTime);
+            if (_hasAnimIDIsGrounded) _animator.SetBool(_animIDIsGrounded, grounded);
         }
 
         private bool HasParameter(Animator animator, int paramHash)
