@@ -942,7 +942,7 @@ namespace Runtime.Scripts.Player
             }
         }
 
-        [ServerRpc(RequireOwnership = false)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         private void FireServerRpc(Vector3 direction, Vector3 spawnPos, float damage, Team team, bool enableHoming)
         {
             GameObject projectilePrefab = null;
@@ -1206,7 +1206,7 @@ namespace Runtime.Scripts.Player
             if (IsNetworkActive) JumpSfxServerRpc();
         }
 
-        [ServerRpc(RequireOwnership = false)]
+        [Rpc(SendTo.Server, InvokePermission = RpcInvokePermission.Everyone)]
         private void JumpSfxServerRpc() => JumpSfxClientRpc();
 
         [ClientRpc]
